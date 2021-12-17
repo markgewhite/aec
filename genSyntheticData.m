@@ -12,9 +12,9 @@
 %           nDim        : number of dimensions
 %           basis       : functional basis 
 %                         (data object or cell array of data objects)
-%           beta        : array of proportional factors between levels
-%                         (must match the number basis elements)
-%           constraints : array of times and values for smooth function
+%           mu          : array of template magnitudes
+%           sigma       : array of template magnitude variances
+%           tau         : warping variance
 %           
 % Outputs:
 %           X     : synthetic time series
@@ -23,7 +23,8 @@
 %
 % ************************************************************************
 
-function [ X, XFd, Z ] = genSyntheticData( nObs, nDim, basis, beta )
+function [ X, XFd, Z ] = genSyntheticData( nObs, nDim, basis, ...
+                                                mu, sigma, tau )
 
 % prepare (optionally) for multiple basis layers
 if isa( basis, 'basis')
@@ -32,63 +33,73 @@ if isa( basis, 'basis')
 else
     nLevels = length( basis );
     basisFd = cell( nLevels, 1 );
-    for i = 1:nLevels
-        basisFd{i} = basis{i};
+    for j = 1:nLevels
+        basisFd{j} = basis{j};
     end
 end
 
 % initialise the number of coefficients and spacing
+% allow extra space either end for extrapolation when time warping
+% the time domains are twice as long
 nCoeff = zeros( nLevels, 1 );
 tSpan = cell( nLevels, 1 );
-for i = 1:nLevels
-    nCoeff(i) = getnbasis( basisFd{i} );
-    range = getbasisrange( basisFd{i} );
-    tSpan{i} = linspace( range(1), range(2), nCoeff(i) )';
+for j = 1:nLevels
+    nCoeff(j) = getnbasis( basisFd{j} );
+    range = getbasisrange( basisFd{j} );
+    extra = 0.5*(range(2)-range(1));
+    tSpan{j} = linspace( range(1)-extra, range(2)+extra, 2*nCoeff(j) )';
 end
+
+% set find time domain which has the required length
+tSpanFinal = linspace( range(1), range(2), nCoeff(1) )';
+
+% calculate the time step for when calculating the warp gradient
 dt = tSpan{1}(2)-tSpan{1}(1);
 
+% initialise the template array across levels
+template = zeros( 2*nCoeff(1), nDim, nLevels );
+
+% initialise the array holding the generated data
 Z = zeros( nCoeff(1), sum(nObs), nDim );
 
 a = 0;
 for c = 1:length(nObs)
 
     % generate random template function coefficients
-    % with covariance between the dimensions (arguments reversed)
-    coeff = randSeries( nCoeff(1), nDim );
-
-    % add interpolated layers (if required)
-    for i = 2:nLevels
-        coeffi = randSeries( nCoeff(i), nDim );
-        for j = 1:nDim
-            coeff(:,j) = coeff(:,j) + ...
-                           beta(i-1)*interp1( tSpan{i}, ...
-                                              coeffi(:,j), tSpan{1}, ...
-                                              'cubic' );
-        end
+    % with covariance between the series elements
+    % interpolating to the base layer (1)
+    for j = 1:nLevels
+        template( :,:,j ) = interpRandSeries( tSpan{j}, tSpan{1}, ...
+                                              2*nCoeff(j), nDim, 2 );
     end
    
     for i = 1:nObs(c)
-       
-        % vary the template function 
-        % with covariance between series elements 
+
         a = a+1;
-        Z( :, a, : ) = coeff + beta(end)*randSeries( nDim , nCoeff(1) )';
+
+        % vary the template function across levels
+        sample = zeros( 2*nCoeff(1), nDim );
+        for j = 1:nLevels 
+            sample = sample + (mu(j) + sigma(j)*randn(1,1))*template( :,:,j );
+        end
 
         % warp the time domain at the top level, ensuring monotonicity
+        % and avoiding excessive curvature by constraining the gradient
         monotonic = false;
-        m = 0;
-        while ~monotonic
-            tWarp = tSpan{nLevels}+dt*randSeries( 1, length(tSpan{nLevels}) )';
-            tWarp = interp1( tSpan{nLevels}, tWarp, tSpan{1}, 'cubic' );
-            monotonic = all( diff(tWarp)>0 );
-            m = m + 1;
-        end
-        if m > 1 
-            disp( num2str(m) );
+        excessCurvature = false;
+        while ~monotonic || excessCurvature
+            % generate a time warp series based on the top-level 
+            tWarp = tSpan{end}+tau*randSeries( 1, length(tSpan{end}) )';
+            % interpolate so it fits the initial level
+            tWarp = interp1( tSpan{end}, tWarp, tSpan{1}, 'spline' );
+            % check constraints
+            grad = diff( tWarp )/dt;
+            monotonic = all( grad>0 );
+            excessCurvature = any( grad>2 ) | any( grad<0.2 );
         end
 
         % interpolate the coefficients to the warped time points
-        Z( :, a, : ) = interp1( tSpan{1}, Z(:,a,:), tWarp, 'cubic' );
+        Z( :, a, : ) = interp1( tWarp, sample, tSpanFinal, 'spline' );
                
     end
 
@@ -96,7 +107,7 @@ end
 
 XFd = fd( Z, basisFd{1} );
 
-X = eval_fd( tSpan{1}, XFd );
+X = eval_fd( tSpanFinal, XFd );
 
 end
 
@@ -115,3 +126,24 @@ function Z = randSeries( n, d )
 
 end
 
+
+function Zq = interpRandSeries( x, xq, n, d, dcov )
+
+    % x    : points for random number generation
+    % xq   : sampling points following number generation
+    % n    : number of observation sets
+    % d    : number of dimensions for each set
+    % dcov : covariance dimension (default 1)
+    
+    switch dcov
+        case 1
+            Z = randSeries( n, d );
+        case 2
+            Z = randSeries( d, n )';
+    end
+    Zq = zeros( length(xq), d );
+    for k = 1:d
+        Zq( :, k ) = interp1( x, Z( :, k ), xq, 'cubic' );
+    end
+
+end
