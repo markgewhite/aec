@@ -3,30 +3,37 @@
 %
 % ************************************************************************
 
-setup.basisOrder = 4;
-setup.penaltyOrder = 2;
-setup.lambda = 10E0;
-setup.nBasis = 32+setup.penaltyOrder+1;
+clear;
 
-tSpan = linspace( 0, 1024, 128 );
+setup.fda.basisOrder = 4;
+setup.fda.penaltyOrder = 2;
+setup.fda.lambda = 1E2;
+setup.fda.nBasis = 50+setup.fda.penaltyOrder+1;
 
-basis = create_bspline_basis( [ tSpan(1), tSpan(end) ], ...
-                              setup.nBasis, ...
-                              setup.basisOrder);
-                          
-XFdPar = fdPar( basis, setup.penaltyOrder, setup.lambda ); 
+classSizes = [ 200 200 200 ];
+nDim = 3;
+setup.data.tFine = linspace( 0, 1000, 100 );
+setup.data.tSpan = linspace( 0, 1024, 33 );
+setup.data.ratio = [ 1 4 8 16];
+setup.data.mu = [1 2 4 8];
+setup.data.sigma = [0.25 0.5 0.75 1];
+setup.data.eta = 0.1;
+setup.data.warpLevel = 3;
+setup.data.tau = 100;
 
-adjust = setup.penaltyOrder+1;
-basisHL = create_bspline_basis( [ tSpan(1), tSpan(end) ], ...
-                              (setup.nBasis-adjust)/4+adjust, ...
-                              setup.basisOrder);
 
-basisHL2 = create_bspline_basis( [ tSpan(1), tSpan(end) ], ...
-                              (setup.nBasis-adjust)/8+adjust, ...
-                              setup.basisOrder);
+Xraw = genSyntheticData( classSizes, ...
+                      nDim, ...
+                      setup.data );
 
-[X, XFd] = genSyntheticData( [ 200 200 200 ], 3, ...
-                                { basis, basisHL, basisHL2 }, ...
-                                [1 2 4], [0.25 0.0 1], 50 );
+setup.basisFd = create_bspline_basis( ...
+                        [ setup.data.tSpan(1), setup.data.tSpan(end) ], ...
+                          setup.fda.nBasis, setup.fda.basisOrder);
+
+XFdPar = fdPar( setup.basisFd, setup.fda.penaltyOrder, setup.fda.lambda ); 
+
+XFd = smooth_basis( setup.data.tSpan, Xraw, XFdPar );
 
 plot( XFd );
+
+X = eval_fd( setup.data.tFine, XFd );
