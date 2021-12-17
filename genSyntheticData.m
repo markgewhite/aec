@@ -23,8 +23,7 @@
 %
 % ************************************************************************
 
-function [ X, XFd, Z ] = genSyntheticData( nObs, nDim, ...
-                                        basis, beta, constraints )
+function [ X, XFd, Z ] = genSyntheticData( nObs, nDim, basis, beta )
 
 % prepare (optionally) for multiple basis layers
 if isa( basis, 'basis')
@@ -46,6 +45,7 @@ for i = 1:nLevels
     range = getbasisrange( basisFd{i} );
     tSpan{i} = linspace( range(1), range(2), nCoeff(i) )';
 end
+dt = tSpan{1}(2)-tSpan{1}(1);
 
 Z = zeros( nCoeff(1), sum(nObs), nDim );
 
@@ -53,7 +53,7 @@ a = 0;
 for c = 1:length(nObs)
 
     % generate random template function coefficients
-    % with covariance between the dimensions
+    % with covariance between the dimensions (arguments reversed)
     coeff = randSeries( nCoeff(1), nDim );
 
     % add interpolated layers (if required)
@@ -66,23 +66,29 @@ for c = 1:length(nObs)
                                               'cubic' );
         end
     end
-
-    % adjust to fit constraints
-    figure(1);
-    ax1 = subplot(2,1,1);
-    ax2 = subplot(2,1,2);
-    X = eval_fd( tSpan{1}, fd( coeff, basisFd{1} ) );
-    plot( ax1, tSpan{1}, X );
-    coeff = fitToConstraints( coeff, constraints, basisFd{1} );
-    X = eval_fd( tSpan{1}, fd( coeff, basisFd{1} ) );
-    plot( ax2, tSpan{1}, X );
-    
+   
     for i = 1:nObs(c)
        
         % vary the template function 
-        % with covariance between series elements
+        % with covariance between series elements 
         a = a+1;
-        Z( :, a, : ) = coeff + beta(end)*randSeries( nDim, nCoeff(1) )';
+        Z( :, a, : ) = coeff + beta(end)*randSeries( nDim , nCoeff(1) )';
+
+        % warp the time domain at the top level, ensuring monotonicity
+        monotonic = false;
+        m = 0;
+        while ~monotonic
+            tWarp = tSpan{nLevels}+dt*randSeries( 1, length(tSpan{nLevels}) )';
+            tWarp = interp1( tSpan{nLevels}, tWarp, tSpan{1}, 'cubic' );
+            monotonic = all( diff(tWarp)>0 );
+            m = m + 1;
+        end
+        if m > 1 
+            disp( num2str(m) );
+        end
+
+        % interpolate the coefficients to the warped time points
+        Z( :, a, : ) = interp1( tSpan{1}, Z(:,a,:), tWarp, 'cubic' );
                
     end
 
@@ -109,51 +115,3 @@ function Z = randSeries( n, d )
 
 end
 
-
-function Zhat = fitToConstraints( Z, C, BFd )
-
-    [ nCoeff, nDim  ] = size( Z );
-    dZ0 = zeros( nCoeff, 1 );
-    dZ = Z;
-    %options = optimset( 'Display', 'none', ...
-    %                    'TolFun', 0.01, ...
-    %                    'TolX', 0.001, ...
-    %                    'PlotFcns', @optimplotfval) ;
-    options = optimoptions( 'particleswarm', ...
-                            'FunctionTolerance', 1E-6 );
-    lb = -5*ones( nCoeff, 1 );
-    ub = 5*ones( nCoeff, 1 );
-
-    for j = 1:nDim
-        objFcn = @(dZ) objective( dZ, Z( :, j ), C, BFd );
-        %dZ( :, j ) = fminsearch( objFcn, dZ0, options );
-        dZ( :, j ) = particleswarm( objFcn, nCoeff, lb, ub, options );
-    end
-
-    Zhat = Z + dZ;
-
-end
-
-
-function loss = objective( dZ, Z, C, BFd )
-
-    % compute the loss from the offset dZ to Z for a given curve
-    % according to the constraints C
-    % with the curve defined from Z+dZ using the basis BFd
-
-    % create the functional data object 
-    XFd = fd( Z+dZ', BFd );
-
-    % evalute the curve at the constraint points C
-    XatC = eval_fd( C(:,1), XFd );
-
-    % calculate the squared error of deviation from constraint points
-    lossC = sum( (XatC - C(:,2)).^2 );
-
-    % calculate the cost of the adjustment
-    lossZ = sum( dZ.^2 );
-
-    % compute the overall loss
-    loss = lossC + 1E-9*lossZ;
-
-end
