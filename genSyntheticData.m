@@ -48,13 +48,19 @@ template = zeros( nPts(1), nDim, nLevels );
 % initialise the array holding the generated data
 Z = zeros( length( setup.tSpan ), sum(nObs), nDim );
 
+% define the common template shared by all classes
+for j = setup.sharedLevel:nLevels
+        template( :,:,j ) = interpRandSeries( tSpan{j}, tSpan{1}, ...
+                                                 nPts(j), nDim, 2 );
+end
+
 a = 0;
 for c = 1:length(nObs)
 
     % generate random template function coefficients
     % with covariance between the series elements
     % interpolating to the base layer (1)
-    for j = 1:nLevels
+    for j = 1:setup.sharedLevel-1
         template( :,:,j ) = interpRandSeries( tSpan{j}, tSpan{1}, ...
                                                  nPts(j), nDim, 2 );
     end
@@ -85,7 +91,7 @@ for c = 1:length(nObs)
             % check constraints
             grad = diff( tWarp )/dt;
             monotonic = all( grad>0 );
-            excessCurvature = any( grad>2 ) | any( grad<0.2 );
+            excessCurvature = any( grad<0.2 );
         end
 
         % interpolate the coefficients to the warped time points
