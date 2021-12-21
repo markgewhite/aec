@@ -9,7 +9,7 @@ N = 100;
 classSizes = [ N N N ];
 nDim = 1;
 nCodes = 10;
-nRuns = 20;
+nRuns = 100;
 
 rng( 'default' );
 
@@ -43,7 +43,8 @@ setup.reg.usePC = true;
 setup.reg.nPC = 3;
 
 
-
+errAE = zeros( nRuns, 1 );
+errPCA = zeros( nRuns, 1 );
 for i = 1:nRuns
 
     disp(['*** Iteration = ' num2str(i) ' ***']);
@@ -111,8 +112,8 @@ for i = 1:nRuns
     % classify
     model = fitcdiscr( ZTrn', YTrn );
     YHatTst = predict( model, ZTst' );
-    error = loss( model, ZTst', YTst );
-    disp( ['FITCDISCR: Holdout Loss = ' num2str(error) ]);
+    errAE(i) = loss( model, ZTst', YTst );
+    disp( ['FITCDISCR: Holdout Loss = ' num2str(errAE(i)) ]);
 
     % plot the clusters
     plotClusters( ax, ZTstCan.scores, YTst, YHatTst );
@@ -152,8 +153,8 @@ for i = 1:nRuns
     % classify
     modelPCA = fitcdiscr( ZTrnPCA, YTrn );
     YHatTstPCA = predict( modelPCA, ZTstPCA );
-    error = loss( modelPCA, ZTstPCA, YTst );
-    disp( ['FITCDISCR: Holdout Loss = ' num2str(error) ]);
+    errPCA(i) = loss( modelPCA, ZTstPCA, YTst );
+    disp( ['FITCDISCR: Holdout Loss = ' num2str(errPCA(i)) ]);
 
     % plot the clusters
     ax = subplot( 2,2,4 );
@@ -161,9 +162,13 @@ for i = 1:nRuns
     title( ax, 'PCA Encoding' );
     drawnow;
 
-    pause;
-
 end
+
+disp( ['Mean AE Classification Error  = ' num2str(mean(errAE)) ] );
+disp( ['Mean PCA Classification Error = ' num2str(mean(errPCA)) ] );
+disp( ['Frequency AE error is lower than PCA error = ' ...
+            num2str( sum(errAE<errPCA) ) ] );
+
 
 
 
