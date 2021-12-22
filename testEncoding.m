@@ -42,6 +42,23 @@ setup.reg.XLambda = 1E2;
 setup.reg.usePC = true;
 setup.reg.nPC = 3;
 
+% initialise plots
+figure(3);
+ax.ae.pred = subplot( 2,2,1 );
+ax.pca.pred = subplot( 2,2,2 );
+ax.ae.cls = subplot( 2,2,3 );
+ax.pca.cls = subplot( 2,2,4 );
+figure(4);
+ax.ae.distZTrn = subplot( 2,2,1 );
+ax.pca.distZTrn = subplot( 2,2,2 );
+ax.ae.distZTst = subplot( 2,2,3 );
+ax.pca.distZTst = subplot( 2,2,4 );
+figure(5);
+ax.ae.comp = gobjects( nCodes, 1 );
+[ rows, cols ] = sqdim( nCodes );
+for i = 1:nCodes
+    ax.ae.comp(i) = subplot( rows, cols, i );
+end
 
 errAE = zeros( nRuns, 1 );
 errPCA = zeros( nRuns, 1 );
@@ -98,16 +115,21 @@ for i = 1:nRuns
     % plot resulting curves
     XTstHatFd = smooth_basis( setup.data.tFine, XTstHat, setup.fda.fdPar );
 
-    fig3 = figure(3);
-    ax = subplot( 2,2,1 );
-    subplotFd( ax, XTstHatFd );
-    title( ax, 'AE Prediction' );
+    subplotFd( ax.ae.pred, XTstHatFd );
+    title( ax.ae.pred, 'AE Prediction' );
 
     % obtain encodings
     ZTrn = encode( ae, XTrn );
     ZTst = encode( ae, XTst );
-    ax = subplot( 2,2,3 );
     ZTstCan = cda( ZTst', YTst );
+
+    % plot Z distribution 
+    plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
+    plotZDist( ax.ae.distZTst, ZTst, 'AE: Z Test', true );
+
+    % plot characteristic features
+    plotLatentComp( ax.ae.comp, ae, ZTrn, ...
+                    setup.data.tFine, setup.fda.fdPar );
 
     % classify
     model = fitcdiscr( ZTrn', YTrn );
@@ -116,8 +138,8 @@ for i = 1:nRuns
     disp( ['FITCDISCR: Holdout Loss = ' num2str(errAE(i)) ]);
 
     % plot the clusters
-    plotClusters( ax, ZTstCan.scores, YTst, YHatTst );
-    title( ax, 'AE Encoding' );
+    plotClusters( ax.ae.cls, ZTstCan.scores, YTst, YHatTst );
+    title( ax.ae.cls, 'AE Encoding' );
     drawnow;
 
 
@@ -146,9 +168,12 @@ for i = 1:nRuns
     errTstPCA = sqrt( mse( XTst, XTstHatPCA ) );
     disp( ['PCA Testing Error  = ' num2str(errTstPCA)] );
 
-    ax = subplot( 2,2,2 );
-    subplotFd( ax, XTstFdPCA );
-    title( ax, 'PCA Prediction');
+    subplotFd( ax.pca.pred, XTstFdPCA );
+    title( ax.pca.pred, 'PCA Prediction');
+
+    % plot Z distribution 
+    plotZDist( ax.pca.distZTrn, ZTrnPCA', 'PCA: Z Train', true );
+    plotZDist( ax.pca.distZTst, ZTstPCA', 'PCA: Z Test', true );
 
     % classify
     modelPCA = fitcdiscr( ZTrnPCA, YTrn );
@@ -157,10 +182,11 @@ for i = 1:nRuns
     disp( ['FITCDISCR: Holdout Loss = ' num2str(errPCA(i)) ]);
 
     % plot the clusters
-    ax = subplot( 2,2,4 );
-    plotClusters( ax, ZTstPCA, YTst, YHatTstPCA );
-    title( ax, 'PCA Encoding' );
+    plotClusters( ax.pca.cls, ZTstPCA, YTst, YHatTstPCA );
+    title( ax.pca.cls, 'PCA Encoding' );
     drawnow;
+
+    pause;
 
 end
 
