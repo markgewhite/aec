@@ -11,8 +11,11 @@ nDim = 1;
 nCodes = 10;
 nRuns = 100;
 
+adversarialDesign = true;
+
 rng( 'default' );
 
+% data generation parameters
 setup.data.tFine = linspace( 0, 1000, 21 );
 setup.data.tSpan = linspace( 0, 1024, 33 );
 setup.data.ratio = [ 4 8 16];
@@ -23,6 +26,7 @@ setup.data.eta = 0.1;
 setup.data.warpLevel = 2;
 setup.data.tau = 0;
 
+% functional data analysis parameters
 setup.fda.basisOrder = 4;
 setup.fda.penaltyOrder = 2;
 setup.fda.lambda = 1E2;
@@ -34,13 +38,32 @@ setup.fda.fdPar = fdPar( setup.fda.basisFd, ...
                          setup.fda.penaltyOrder, ...
                          setup.fda.lambda ); 
 
-setup.reg.nIterations = 2;
-setup.reg.nBasis = 12; 
-setup.reg.basisOrder = 3; 
-setup.reg.wLambda = 1E-2; 
-setup.reg.XLambda = 1E2;
-setup.reg.usePC = true;
-setup.reg.nPC = 3;
+% AAE training parameters
+setup.aae.designFcn = @aaeDesign;
+setup.aae.gradFcn = @modelGradients;
+setup.aae.nEpochs = 1000; 
+setup.aae.batchSize = 20;
+setup.aae.beta1 = 0.9;
+setup.aae.beta2 = 0.999;
+setup.aae.L2Regularization = 0.001;
+setup.aae.valFreq = 100;
+setup.aae.valSize = [2 5];
+setup.aae.distSize = 500;
+setup.aae.zDim = nCodes;
+setup.aae.xDim = length( setup.data.tFine );
+
+% encoder network parameters
+setup.aae.enc.learnRate = 0.005;
+setup.aae.enc.scale = 0.2;
+setup.aae.enc.input = setup.aae.xDim;
+setup.aae.enc.outZ = setup.aae.zDim;
+
+% decoder network parameters
+setup.aae.dec.learnRate = 0.005;
+setup.aae.dec.scale = 0.2;
+setup.aae.dec.input = setup.aae.zDim;
+setup.aae.dec.outX = setup.aae.xDim;
+
 
 % initialise plots
 figure(3);
@@ -98,14 +121,55 @@ for i = 1:nRuns
     % ----- autoencoder -----
 
     % train the autoencoder
-    disp('Training autoencoder ... ');
-    ae = trainAutoencoder( XTrn, nCodes, ...
-                           'MaxEpochs', 1000, ...
-                           'ShowProgressWindow', false );
+    if adversarialDesign
+        [dlnetEnc, dlnetDec] = trainAAE( XTrn, setup.aae );
+    else
+        disp('Training autoencoder ... ');
+        ae = trainAutoencoder( XTrn, nCodes, ...
+                               'MaxEpochs', 1000, ...
+                               'ShowProgressWindow', false );
+    end
 
-    % generate predictions and calculate errors
-    XTrnHat = predict( ae, XTrn );
-    XTstHat = predict( ae, XTst );
+    % switch to DL array format
+    dlXTrn = dlarray( XTrn, 'CB' );
+    dlXTst = dlarray( XTst, 'CB' );
+
+    % generate encodings
+    dlZTrn = predict( dlnetEnc, dlXTrn );
+    dlZTst = predict( dlnetEnc, dlXTst );
+
+    % convert back to numeric arrays
+    ZTrn = double(extractdata( dlZTrn ));
+    ZTst = double(extractdata( dlZTst ));
+
+    % plot Z distribution 
+    plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
+    plotZDist( ax.ae.distZTst, ZTst, 'AE: Z Test', true );
+
+    % plot characteristic features
+    plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, ...
+                    setup.data.tFine, setup.fda.fdPar );
+
+    % classify
+    model = fitcdiscr( ZTrn', YTrn );
+    YHatTst = predict( model, ZTst' );
+    errAE(i) = loss( model, ZTst', YTst );
+    disp( ['FITCDISCR: Holdout Loss = ' num2str(errAE(i)) ]);
+
+    % plot the clusters for test data using the training loadings 
+    % from a canonical discriminant analysis
+    ZTrnNse = ZTrn + 1E-6*randn(size(ZTrn)); % to avoid errors
+    ZTrnCanInfo = cda( ZTrn', YTrn );
+    ZTstCan = ZTst'*ZTrnCanInfo.loadings;
+    plotClusters( ax.ae.cls, ZTstCan, YTst, YHatTst );
+    title( ax.ae.cls, 'AE Encoding' );
+    drawnow;
+
+    % reconstruct the cures and calculate errors
+    dlXTrnHat = predict( dlnetDec, dlZTrn );
+    dlXTstHat = predict( dlnetDec, dlZTst );
+    XTrnHat = double(extractdata( dlXTrnHat ));
+    XTstHat = double(extractdata( dlXTstHat ));
 
     errTrn = sqrt( mse( XTrn, XTrnHat ) );
     disp( ['AE Training Error = ' num2str(errTrn)] );
@@ -118,29 +182,6 @@ for i = 1:nRuns
     subplotFd( ax.ae.pred, XTstHatFd );
     title( ax.ae.pred, 'AE Prediction' );
 
-    % obtain encodings
-    ZTrn = encode( ae, XTrn );
-    ZTst = encode( ae, XTst );
-    ZTstCan = cda( ZTst', YTst );
-
-    % plot Z distribution 
-    plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
-    plotZDist( ax.ae.distZTst, ZTst, 'AE: Z Test', true );
-
-    % plot characteristic features
-    plotLatentComp( ax.ae.comp, ae, ZTrn, ...
-                    setup.data.tFine, setup.fda.fdPar );
-
-    % classify
-    model = fitcdiscr( ZTrn', YTrn );
-    YHatTst = predict( model, ZTst' );
-    errAE(i) = loss( model, ZTst', YTst );
-    disp( ['FITCDISCR: Holdout Loss = ' num2str(errAE(i)) ]);
-
-    % plot the clusters
-    plotClusters( ax.ae.cls, ZTstCan.scores, YTst, YHatTst );
-    title( ax.ae.cls, 'AE Encoding' );
-    drawnow;
 
 
     % ----- PCA encoding -----

@@ -6,11 +6,11 @@
 %
 % Parameters:
 %           ax          : array of axis objects
-%           ae          : trained autoencoder
+%           decoder     : trained decoder network
 %           Z           : latent encodings sample
 % ************************************************************************
 
-function plotLatentComp( ax, ae, Z, tSpan, fdPar )
+function plotLatentComp( ax, decoder, Z, tSpan, fdPar )
 
 nComp = size( Z, 1);
 nPlots = min( nComp, length(ax) );
@@ -31,8 +31,9 @@ for i = 1:nPlots
     end
 
     % generate the curves using the decoder
-    cX = decode( ae, cZ );
-    
+    dlcX = predict( decoder, dlarray( cZ, 'CB' ) );
+    cX = double( extractdata( dlcX ) );
+
     % convert into smooth function
     cXFd = smooth_basis( tSpan, cX, fdPar );
 
