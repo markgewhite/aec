@@ -20,7 +20,7 @@ layersEnc = [
     featureInputLayer( paramEnc.input, 'Name', 'in', ...
                        'Normalization', 'zscore', ...
                        'Mean', 0, 'StandardDeviation', 1 ) 
-    %fullyConnectedLayer( 32, 'Name', 'fc1' )
+    fullyConnectedLayer( 50, 'Name', 'fc1' )
     %leakyReluLayer( paramEnc.scale, 'Name', 'lrelu1' )
     fullyConnectedLayer( paramEnc.outZ, 'Name', 'fc2' )
     %leakyReluLayer( paramEnc.scale, 'Name', 'lrelu2' )
@@ -33,7 +33,7 @@ dlnetEnc = dlnetwork( lgraphEnc );
 % define the decoder network
 layersDec = [
     featureInputLayer( paramDec.input, 'Name', 'in' )    
-    %fullyConnectedLayer( 32, 'Name', 'fc1' )
+    fullyConnectedLayer( 50, 'Name', 'fc1' )
     %leakyReluLayer( paramDec.scale, 'Name', 'lrelu1' )
     fullyConnectedLayer( paramDec.outX, 'Name', 'fc2' )
     %leakyReluLayer( paramDec.scale, 'Name', 'lrelu2' )
