@@ -33,12 +33,12 @@ function [  grad, state, loss, score ] = ...
 [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
 
 % calculate the reconstruction loss
-reconLoss = mean( mean( 0.5*(dlXFake - dlXReal).^2, 1 ) );
+reconLoss = mean(mean( (dlXFake - dlXReal).^2 ));
 
 % calculate the L2 regularization loss
 w = [ dlnetEnc.Learnables.Value{1}; dlnetDec.Learnables.Value{1}'];
 
-L2Loss = setup.L2Regularization*sum( w.^2, 'all' );
+L2Loss = mean( setup.L2Regularization*sum( w.^2 ) );
 
 % --- calculate gradients ---
 

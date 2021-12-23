@@ -11,7 +11,7 @@ nDim = 1;
 nCodes = 10;
 nRuns = 100;
 
-adversarialDesign = true;
+adversarialDesign = false;
 
 rng( 'default' );
 
@@ -42,7 +42,7 @@ setup.fda.fdPar = fdPar( setup.fda.basisFd, ...
 setup.aae.designFcn = @aaeDesign;
 setup.aae.gradFcn = @modelGradients;
 setup.aae.nEpochs = 1000; 
-setup.aae.batchSize = 20;
+setup.aae.batchSize = 150;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
 setup.aae.L2Regularization = 0.001;
@@ -53,13 +53,13 @@ setup.aae.zDim = nCodes;
 setup.aae.xDim = length( setup.data.tFine );
 
 % encoder network parameters
-setup.aae.enc.learnRate = 0.005;
+setup.aae.enc.learnRate = 0.02;
 setup.aae.enc.scale = 0.2;
 setup.aae.enc.input = setup.aae.xDim;
 setup.aae.enc.outZ = setup.aae.zDim;
 
 % decoder network parameters
-setup.aae.dec.learnRate = 0.005;
+setup.aae.dec.learnRate = 0.02;
 setup.aae.dec.scale = 0.2;
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
@@ -227,7 +227,7 @@ for i = 1:nRuns
     title( ax.pca.cls, 'PCA Encoding' );
     drawnow;
 
-    pause;
+    % pause;
 
 end
 
