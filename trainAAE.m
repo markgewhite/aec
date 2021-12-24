@@ -13,7 +13,7 @@
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec ] = trainAAE( trnX, setup )
+function [ dlnetEnc, dlnetDec ] = trainAAE( trnX, setup, ax )
 
 % create datastores
 dsTrnX = arrayDatastore( trnX, 'IterationDimension', 2 );
@@ -35,7 +35,7 @@ avgGS.dec = [];
 
 nIter = floor( size(trnX,2)/setup.batchSize );
 j = 0;
-loss = zeros( nIter*setup.nEpochs, 1 );
+loss = zeros( nIter*setup.nEpochs, 4 );
 fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 
 for epoch = 1:setup.nEpochs
@@ -52,7 +52,7 @@ for epoch = 1:setup.nEpochs
         dlXTrn = next( mbqTrn );
         
         % Evaluate the model gradients 
-        [ grad, state, loss(j), score ] = ...
+        [ grad, state, loss(j,:), score ] = ...
                           dlfeval(  setup.gradFcn, ...
                                     dlnetEnc, ...
                                     dlnetDec, ...
@@ -89,8 +89,19 @@ for epoch = 1:setup.nEpochs
 
     % update progress on screen
     if mod( epoch, setup.valFreq )==0
-        meanLoss = mean(loss( j-nIter+1:j ));
-        fprintf('Loss (%d) = %1.3f \n', epoch, meanLoss );
+        meanLoss = mean(loss( j-nIter+1:j, : ));
+        fprintf('Loss (%d) = %1.3f  %1.3f  %1.3f  %1.3f\n', epoch, meanLoss );
+        dlZTrn = predict( dlnetEnc, dlXTrn );
+        ZTrn = double(extractdata( dlZTrn ));
+        plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, ...
+                    setup.fda.tSpan, setup.fda.fdPar );
+        drawnow;
+    end
+
+    % update learning rates
+    if mod( epoch, setup.lrFreq )==0
+        setup.enc.learnRate = setup.enc.learnRate*setup.lrFactor;
+        setup.dec.learnRate = setup.dec.learnRate*setup.lrFactor;
     end
 
 end

@@ -17,13 +17,13 @@ function dlXComp = latentComponents( decoder, dlZ )
 % faster execution by avoiding the dl array form
 Z = extractdata( dlZ );
 nComp = size( Z, 1 );
-nRepeat = 1;
+nRepeat = 10;
 
 % compute the mean Z across the batch
 ZMean = mean( Z,2 );
 
 % initialise the components' Z codes at the mean
-ZComp = repmat( ZMean, 1, nComp*nRepeat );
+ZComp = repmat( ZMean, 1, nComp*nRepeat+1 );
 
 for j = 1:nRepeat
     for i =1:nComp
@@ -40,5 +40,9 @@ end
 % generate all the component curves using the decoder
 dlZComp = dlarray( ZComp, 'CB');
 dlXComp = forward( decoder, dlZComp );
+
+% centre about the mean curve (last curve)
+dlXComp = dlXComp-dlXComp(:,end);
+dlXComp = dlXComp(:,1:end-1);
 
 end

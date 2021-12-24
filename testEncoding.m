@@ -43,26 +43,28 @@ setup.fda.tSpan = setup.data.tFine;
 setup.aae.designFcn = @aaeDesign;
 setup.aae.gradFcn = @modelGradients;
 setup.aae.nEpochs = 2000; 
-setup.aae.batchSize = 25;
+setup.aae.batchSize = 50;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
 setup.aae.weightL2Regularization = 0.001;
-setup.aae.curveD2Regularization = 1E2;
-setup.aae.valFreq = 100;
+setup.aae.curveD2Regularization = 1E-3; %1E5; %1E-4; % 1E2;
+setup.aae.tpRegularization = 0.01;
+setup.aae.valFreq = 50;
 setup.aae.valSize = [2 5];
-setup.aae.distSize = 500;
+setup.aae.lrFreq = 250;
+setup.aae.lrFactor = 0.5;
 setup.aae.zDim = nCodes;
 setup.aae.xDim = length( setup.data.tFine );
 setup.aae.fda = setup.fda;
 
 % encoder network parameters
-setup.aae.enc.learnRate = 0.002;
+setup.aae.enc.learnRate = 0.001;
 setup.aae.enc.scale = 0.2;
 setup.aae.enc.input = setup.aae.xDim;
 setup.aae.enc.outZ = setup.aae.zDim;
 
 % decoder network parameters
-setup.aae.dec.learnRate = 0.002;
+setup.aae.dec.learnRate = 0.001;
 setup.aae.dec.scale = 0.2;
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
@@ -125,7 +127,7 @@ for i = 1:nRuns
 
     % train the autoencoder
     if adversarialDesign
-        [dlnetEnc, dlnetDec] = trainAAE( XTrn, setup.aae );
+        [dlnetEnc, dlnetDec] = trainAAE( XTrn, setup.aae, ax );
     else
         disp('Training autoencoder ... ');
         ae = trainAutoencoder( XTrn, nCodes, ...

@@ -24,6 +24,8 @@ function [  grad, state, loss, score ] = ...
                                                 dlXReal, ...
                                                 setup )
 
+loss = dlarray( zeros(4,1), 'CB' );
+
 % --- reconstruction phase ---
 
 % generate latent encodings
@@ -33,35 +35,73 @@ function [  grad, state, loss, score ] = ...
 [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
 
 % calculate the reconstruction loss
-reconLoss = mean(mean( (dlXFake - dlXReal).^2 ));
+loss(1) = mean(mean( (dlXFake - dlXReal).^2 ));
 
 % calculate the L2 regularization loss
-w = [ dlnetEnc.Learnables.Value{1}; dlnetDec.Learnables.Value{3}'];
+w = learnables( {dlnetEnc.Learnables, dlnetDec.Learnables} );
 
-L2Loss = setup.weightL2Regularization*mean( sum( w.^2 ) );
+loss(2) = setup.weightL2Regularization*mean( sum( w.^2 ) );
 
 % calculate the component roughness loss
-% dlXComp = latentComponents( dlnetDec, dlZFake );
-% XComp = double(extractdata(dlXComp));
-XComp = double(extractdata(dlXFake));
-XFd = smooth_basis( setup.fda.tSpan, XComp, setup.fda.fdPar );
-XCompD2 = eval_fd( setup.fda.tSpan, XFd, 2 );
-dlXCompD2 = dlarray( XCompD2, 'CB' );
-lossRoughness = setup.curveD2Regularization*mean( sum( dlXCompD2.^2 ) );
+dlXComp = latentComponents( dlnetDec, dlZFake );
+XComp = double(extractdata(dlXComp));
+XCompD2 = diff( XComp, 2 );
+loss(3) = setup.curveD2Regularization*mean( sum( XCompD2.^2 ) );
+
+XCompD1 = diff( XComp, 1 );
+tp = XCompD1(1:end-1,:).*XCompD1(2:end,:);
+nTP = sum( tp<0 );
+loss(4) = setup.tpRegularization*mean( nTP );
+
+%dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' ); 
+%dlXComp = forward( dlnetDec, dlZReal );
+%XComp = double(extractdata(dlXComp));
+%XFd = smooth_basis( setup.fda.tSpan, XComp, setup.fda.fdPar );
+%XCompD2 = eval_fd( setup.fda.tSpan, XFd, 2 );
+%XCompD2 = diff( XComp, 2 );
+%lossRoughness = setup.curveD2Regularization*mean( sum( XCompD2.^2 ) );
+
+%XFd = smooth_basis( setup.fda.tSpan, XComp, setup.fda.fdPar );
+%XCompD2 = eval_fd( setup.fda.tSpan, XFd, 2 );
+%dlXCompD2 = dlarray( XCompD2, 'CB' );
+%lossRoughness = setup.curveD2Regularization*mean( sum( dlXCompD2.^2 ) );
 %dlXFakeD2 = dlarray( diff(extractdata(dlXFake),2), 'CB' );
-%lossRoughness = setup.curveD2Regularization*mean( sum( dlXFakeD2.^2 ) );
 
 
 % --- calculate gradients ---
-
-loss = reconLoss + L2Loss + lossRoughness; 
-% disp(['lossRoughness = ' num2str(lossRoughness, '%.3f')]);
-
-grad.enc = dlgradient( loss, dlnetEnc.Learnables );
-grad.dec = dlgradient( loss, dlnetDec.Learnables );
+totalLoss = dlarray( sum(loss), 'CB' );
+grad.enc = dlgradient( totalLoss, dlnetEnc.Learnables );
+grad.dec = dlgradient( totalLoss, dlnetDec.Learnables );
                                
 % Calculate the scores
 score = 0;
 
 end
+
+
+function L = learnables( nets )
+
+    nNets = length( nets );
+    n = 0;
+    % count the number of learnables
+    for i = 1:nNets
+        for j = 1:length(nets{i}.Value)
+            n = n + numel(nets{i}.Value{j});
+        end
+    end
+    
+    L = zeros( n, 1 );
+    % concatenate the leanables into a flattened array
+    k = 1;
+    for i = 1:nNets
+        for j = 1:length(nets{i}.Value)
+            w = nets{i}.Value{j};
+            w = reshape( w, numel(w), 1 );
+            L(k:k+length(w)-1) = w;
+            k = k+length(w);
+        end
+    end
+
+end
+
 
