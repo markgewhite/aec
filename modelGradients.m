@@ -53,23 +53,11 @@ tp = XCompD1(1:end-1,:).*XCompD1(2:end,:);
 nTP = sum( tp<0 );
 loss(4) = setup.tpRegularization*mean( nTP );
 
-%dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' ); 
-%dlXComp = forward( dlnetDec, dlZReal );
-%XComp = double(extractdata(dlXComp));
-%XFd = smooth_basis( setup.fda.tSpan, XComp, setup.fda.fdPar );
-%XCompD2 = eval_fd( setup.fda.tSpan, XFd, 2 );
-%XCompD2 = diff( XComp, 2 );
-%lossRoughness = setup.curveD2Regularization*mean( sum( XCompD2.^2 ) );
-
-%XFd = smooth_basis( setup.fda.tSpan, XComp, setup.fda.fdPar );
-%XCompD2 = eval_fd( setup.fda.tSpan, XFd, 2 );
-%dlXCompD2 = dlarray( XCompD2, 'CB' );
-%lossRoughness = setup.curveD2Regularization*mean( sum( dlXCompD2.^2 ) );
-%dlXFakeD2 = dlarray( diff(extractdata(dlXFake),2), 'CB' );
-
+loss(5) = setup.keyRegularization* ...
+                    mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
 
 % --- calculate gradients ---
-totalLoss = dlarray( sum(loss), 'CB' );
+totalLoss = dlarray( sum(loss(1:5)), 'CB' );
 grad.enc = dlgradient( totalLoss, dlnetEnc.Learnables );
 grad.dec = dlgradient( totalLoss, dlnetDec.Learnables );
                                
@@ -104,4 +92,37 @@ function L = learnables( nets )
 
 end
 
+
+function XCost = compCost( dlXComp )
+
+[l, n] = size( dlXComp );
+
+XAbs = extractdata(abs( dlXComp ));
+XCost = zeros( size(dlXComp) );
+
+for j = 1:n
+    % find the peak value
+    [pk, pkloc] = max( XAbs(:,j) );
+    threshold = 0.1*pk;
+    % assign cost to the right
+    i = pkloc;
+    while i<l
+        i = i+1;
+        if XAbs(i,j) < threshold
+            break
+        end
+    end
+    XCost( i:end, j ) = 1;
+    % assign cost to the right
+    i = pkloc;
+    while i>1
+        i = i-1;
+        if XAbs(i,j) < threshold
+            break
+        end
+    end
+    XCost( 1:i, j ) = 1;
+end
+
+end
 
