@@ -48,16 +48,22 @@ XComp = double(extractdata(dlXComp));
 XCompD2 = diff( XComp, 2 );
 loss(3) = setup.curveD2Regularization*mean( sum( XCompD2.^2 ) );
 
+% calculate the turning points loss
 XCompD1 = diff( XComp, 1 );
 tp = XCompD1(1:end-1,:).*XCompD1(2:end,:);
 nTP = sum( tp<0 );
 loss(4) = setup.tpRegularization*mean( nTP );
 
+% calculate the key-phase component loss
 loss(5) = setup.keyRegularization* ...
                     mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
 
-% --- calculate gradients ---
-totalLoss = dlarray( sum(loss(1:5)), 'CB' );
+% calculate the component correlation loss
+loss(6) = setup.corrRegularization*mean( abs(innerProduct( dlXComp )) );
+
+
+% calculate gradients
+totalLoss = dlarray( sum(loss(1:6)), 'CB' );
 grad.enc = dlgradient( totalLoss, dlnetEnc.Learnables );
 grad.dec = dlgradient( totalLoss, dlnetDec.Learnables );
                                
@@ -126,3 +132,21 @@ end
 
 end
 
+
+function XInProdSum = innerProduct( dlXComp )
+
+[l, n] = size( dlXComp );
+
+XComp = extractdata( dlXComp );
+XComp = (XComp - mean(XComp,2))./std(XComp,[],2);
+XInProd = zeros( l, n*(n-1)/2 );
+k = 0;
+for i = 1:n
+    for j = i+1:n
+        k = k+1;
+        XInProd(:,k) = XComp(:,i).*XComp(:,j);
+    end
+end
+XInProdSum = mean( XInProd );
+
+end

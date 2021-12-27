@@ -35,7 +35,7 @@ avgGS.dec = [];
 
 nIter = floor( size(trnX,2)/setup.batchSize );
 j = 0;
-loss = zeros( nIter*setup.nEpochs, 5 );
+loss = zeros( nIter*setup.nEpochs, 6 );
 fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 
 for epoch = 1:setup.nEpochs
@@ -90,7 +90,7 @@ for epoch = 1:setup.nEpochs
     % update progress on screen
     if mod( epoch, setup.valFreq )==0
         meanLoss = mean(loss( j-nIter+1:j, : ));
-        fprintf('Loss (%d) = %1.3f  %1.3f  %1.3f  %1.3f %1.3f\n', epoch, meanLoss );
+        fprintf('Loss (%d) = %1.3f  %1.3f  %1.3f  %1.3f %1.3f %1.3f\n', epoch, meanLoss );
         dlZTrn = predict( dlnetEnc, dlXTrn );
         ZTrn = double(extractdata( dlZTrn ));
         plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, ...
