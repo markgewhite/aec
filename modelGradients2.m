@@ -35,16 +35,13 @@ loss = dlarray( zeros(5,1), 'CB' );
 [ dlZFake, state.enc ] = forward( dlnetEnc, dlXReal );
 
 % reconstruct curves from latent codes
-[ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
+dlCReal = dlarray( onehotencode( setup.cLabels(dlCReal+1), 1 ) );
+[ dlXFake, state.dec ] = forward( dlnetDec, [dlZFake; dlCReal] );
 
 % --- conditional phase ---
 
 % generate the real latent code with a true normal distribution
 dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
-
-% generate hot encodings of the training labels
-CReal = extractdata( dlCReal );
-dlCReal = dlarray( onehotencode( setup.cLabels(CReal+1), 1 ) );
 
 % predict the class from fake code using the discriminator
 [ dlDFake, state.dis ] = forward( dlnetDis, [ dlZFake; dlCReal ] );
@@ -63,7 +60,7 @@ w = learnables( {dlnetEnc.Learnables, dlnetDec.Learnables} );
 loss(2) = setup.weightL2Regularization*mean( sum( w.^2 ) );
 
 % calculate the key-phase component loss
-dlXComp = latentComponents( dlnetDec, dlZFake );
+dlXComp = latentComponents( dlnetDec, dlZFake, size(dlCReal,1) );
 loss(3) = setup.keyRegularization* ...
                     mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
 

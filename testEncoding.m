@@ -8,7 +8,7 @@ clear;
 N = 100;
 classSizes = [ N N N ];
 nDim = 1;
-nCodes = 10;
+nCodes = 4;
 nRuns = 100;
 
 adversarialDesign = true;
@@ -24,7 +24,7 @@ setup.data.mu = [1 4 8];
 setup.data.sigma = [1 6 1];
 setup.data.eta = 0.1;
 setup.data.warpLevel = 2;
-setup.data.tau = 0;
+setup.data.tau = 50;
 
 % functional data analysis parameters
 setup.fda.basisOrder = 4;
@@ -42,7 +42,7 @@ setup.fda.tSpan = setup.data.tFine;
 % AAE training parameters
 setup.aae.designFcn = @aaeDesign2;
 setup.aae.gradFcn = @modelGradients2;
-setup.aae.nEpochs = 1000; 
+setup.aae.nEpochs = 500; 
 setup.aae.batchSize = 50;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
@@ -50,7 +50,7 @@ setup.aae.weightL2Regularization = 0.002;
 setup.aae.keyRegularization = 1E0;
 setup.aae.disDRegularization = 1E0;
 setup.aae.disERegularization = 1E-1;
-setup.aae.valFreq = 50;
+setup.aae.valFreq = 100;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 250;
 setup.aae.lrFactor = 0.5;
@@ -69,7 +69,7 @@ setup.aae.enc.outZ = setup.aae.zDim;
 % decoder network parameters
 setup.aae.dec.learnRate = 0.002;
 setup.aae.dec.scale = 0.2;
-setup.aae.dec.input = setup.aae.zDim;
+setup.aae.dec.input = setup.aae.zDim + setup.aae.cDim;
 setup.aae.dec.outX = setup.aae.xDim;
 
 % discriminator network parameters
@@ -159,7 +159,7 @@ for i = 1:nRuns
     plotZDist( ax.ae.distZTst, ZTst, 'AE: Z Test', true );
 
     % plot characteristic features
-    plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, ...
+    plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.aae.cDim, ...
                     setup.data.tFine, setup.fda.fdPar );
 
     % classify
@@ -178,8 +178,10 @@ for i = 1:nRuns
     drawnow;
 
     % reconstruct the cures and calculate errors
-    dlXTrnHat = predict( dlnetDec, dlZTrn );
-    dlXTstHat = predict( dlnetDec, dlZTst );
+    dlYTrn = dlarray( onehotencode( setup.aae.cLabels(YTrn+1), 1 ) );
+    dlYTst = dlarray( onehotencode( setup.aae.cLabels(YTst+1), 1 ) );
+    dlXTrnHat = predict( dlnetDec, [dlZTrn; dlYTrn] );
+    dlXTstHat = predict( dlnetDec, [dlZTst; dlYTst] );
     XTrnHat = double(extractdata( dlXTrnHat ));
     XTstHat = double(extractdata( dlXTstHat ));
 

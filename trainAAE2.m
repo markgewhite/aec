@@ -113,7 +113,7 @@ for epoch = 1:setup.nEpochs
         fprintf('Loss (%d) = %1.3f  %1.3f  %1.3f %1.3f  %1.3f\n', epoch, meanLoss );
         dlZTrn = predict( dlnetEnc, dlXTrn );
         ZTrn = double(extractdata( dlZTrn ));
-        plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, ...
+        plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.cDim, ...
                     setup.fda.tSpan, setup.fda.fdPar );
         plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
         drawnow;
