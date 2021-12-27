@@ -42,15 +42,12 @@ setup.fda.tSpan = setup.data.tFine;
 % AAE training parameters
 setup.aae.designFcn = @aaeDesign;
 setup.aae.gradFcn = @modelGradients;
-setup.aae.nEpochs = 2000; 
+setup.aae.nEpochs = 1000; 
 setup.aae.batchSize = 50;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
 setup.aae.weightL2Regularization = 0.002;
-setup.aae.curveD2Regularization = 0; %1E5; %1E-4; % 1E2;
-setup.aae.tpRegularization = 0;
 setup.aae.keyRegularization = 1E0;
-setup.aae.corrRegularization = 1E1;
 setup.aae.valFreq = 100;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 250;
