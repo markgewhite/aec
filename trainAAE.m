@@ -1,10 +1,11 @@
 % ************************************************************************
 % Function: trainAAE
 %
-% Train a bespoke adversarial autoencoder
+% Train a bespoke adversarial autoencoder with discriminator
 %
 % Parameters:
 %           trnX        : training data
+%           trnC        : training classes
 %           setup       : structure of all training/network parameters
 %           
 % Outputs:
@@ -13,29 +14,35 @@
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec ] = trainAAE( trnX, setup, ax )
+function [ dlnetEnc, dlnetDec ] = trainAAE( trnX, trnC, setup, ax )
+
+
+% define the networks
+[ dlnetEnc, dlnetDec, dlnetDis ] = ...
+        setup.designFcn( setup.enc, setup.dec, setup.dis );   
 
 % create datastores
 dsTrnX = arrayDatastore( trnX, 'IterationDimension', 2 );
-
-% define the networks
-[ dlnetEnc, dlnetDec ] = setup.designFcn( setup.enc, setup.dec );       
+dsTrnC = arrayDatastore( trnC, 'IterationDimension', 1 );   
+dsTrn = combine( dsTrnX, dsTrnC );
 
 % setup the batches
-mbqTrn = minibatchqueue(  dsTrnX,...
+mbqTrn = minibatchqueue(  dsTrn,...
                           'MiniBatchSize', setup.batchSize, ...
                           'PartialMiniBatch', 'discard', ...
                           'MiniBatchFormat', 'CB' );
 
 % initialise training parameters
 avgG.enc = []; 
-avgG.dec = []; 
+avgG.dec = [];
+avgG.dis = []; 
 avgGS.enc = [];
 avgGS.dec = [];
+avgGS.dis = []; 
 
 nIter = floor( size(trnX,2)/setup.batchSize );
 j = 0;
-loss = zeros( nIter*setup.nEpochs, 3 );
+loss = zeros( nIter*setup.nEpochs, 5 );
 fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 
 for epoch = 1:setup.nEpochs
@@ -49,17 +56,20 @@ for epoch = 1:setup.nEpochs
         j = j + 1;
         
         % Read mini-batch of data
-        dlXTrn = next( mbqTrn );
+        [dlXTrn, dlCTrn] = next( mbqTrn );
         
         % Evaluate the model gradients 
         [ grad, state, loss(j,:), score ] = ...
                           dlfeval(  setup.gradFcn, ...
                                     dlnetEnc, ...
                                     dlnetDec, ...
+                                    dlnetDis, ...
                                     dlXTrn, ...
+                                    dlCTrn, ...
                                     setup );
         dlnetEnc.State = state.enc;
         dlnetDec.State = state.dec;
+        dlnetDis.State = state.dis;
 
         % Update the decoder network parameters
         [ dlnetDec, avgG.dec, avgGS.dec ] = ...
@@ -83,6 +93,16 @@ for epoch = 1:setup.nEpochs
                                         setup.beta1, ...
                                         setup.beta2 );
         
+        % Update the generator network parameters
+        [ dlnetDis, avgG.dis, avgGS.dis ] = ...
+                            adamupdate( dlnetDis, ...
+                                        grad.dis, ...
+                                        avgG.dis, ...
+                                        avgGS.dis, ...
+                                        j, ...
+                                        setup.dis.learnRate, ...
+                                        setup.beta1, ...
+                                        setup.beta2 );
         
 
     end
@@ -90,11 +110,12 @@ for epoch = 1:setup.nEpochs
     % update progress on screen
     if mod( epoch, setup.valFreq )==0
         meanLoss = mean(loss( j-nIter+1:j, : ));
-        fprintf('Loss (%d) = %1.3f  %1.3f  %1.3f\n', epoch, meanLoss );
+        fprintf('Loss (%d) = %1.3f  %1.3f  %1.3f %1.3f  %1.3f\n', epoch, meanLoss );
         dlZTrn = predict( dlnetEnc, dlXTrn );
         ZTrn = double(extractdata( dlZTrn ));
-        plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, ...
+        plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.cDim, ...
                     setup.fda.tSpan, setup.fda.fdPar );
+        plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
         drawnow;
     end
 

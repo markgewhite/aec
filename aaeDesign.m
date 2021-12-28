@@ -9,10 +9,12 @@
 % Outputs:
 %           dlnetEnc    : initialised encoder network
 %           dlnetDec    : initialised decoder network
+%           dlnetDis    : initialised discriminator network
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec ] = aaeDesign( paramEnc, paramDec )
+function [ dlnetEnc, dlnetDec, dlnetDis ] = ...
+                aaeDesign2( paramEnc, paramDec, paramDis )
 
 
 % define the encoder network
@@ -21,6 +23,7 @@ layersEnc = [
                        'Normalization', 'zscore', ...
                        'Mean', 0, 'StandardDeviation', 1 )
     fullyConnectedLayer( 100, 'Name', 'fc1' )
+    sigmoidLayer( 'Name', 'sig1' )
     dropoutLayer( 0.2, 'Name', 'drop2' )
     fullyConnectedLayer( paramEnc.outZ, 'Name', 'fc2' )
     ];
@@ -33,12 +36,26 @@ dlnetEnc = dlnetwork( lgraphEnc );
 layersDec = [
     featureInputLayer( paramDec.input, 'Name', 'in' )
     fullyConnectedLayer( 100, 'Name', 'fc1' )
+    sigmoidLayer( 'Name', 'sig1' )
     dropoutLayer( 0.2, 'Name', 'drop2' )
     fullyConnectedLayer( paramDec.outX, 'Name', 'fc2' )
     ];
 
 lgraphDec = layerGraph( layersDec );
 dlnetDec = dlnetwork( lgraphDec );
+
+
+% define the discriminator network
+layersDis = [
+    featureInputLayer( paramDis.input, 'Name', 'in' )
+    fullyConnectedLayer( 21, 'Name', 'fc1' )
+    dropoutLayer( 0.2, 'Name', 'drop1' )
+    fullyConnectedLayer( 1, 'Name', 'fc2' )
+    sigmoidLayer( 'Name', 'out' )
+    ];
+
+lgraphDis = layerGraph( layersDis );
+dlnetDis = dlnetwork( lgraphDis );
 
 
 end

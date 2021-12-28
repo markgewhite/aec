@@ -40,8 +40,8 @@ setup.fda.fdPar = fdPar( setup.fda.basisFd, ...
 setup.fda.tSpan = setup.data.tFine;
 
 % AAE training parameters
-setup.aae.designFcn = @aaeDesign2;
-setup.aae.gradFcn = @modelGradients2;
+setup.aae.designFcn = @aaeDesign;
+setup.aae.gradFcn = @modelGradients;
 setup.aae.nEpochs = 500; 
 setup.aae.batchSize = 50;
 setup.aae.beta1 = 0.9;
