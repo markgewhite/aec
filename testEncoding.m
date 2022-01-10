@@ -49,8 +49,9 @@ setup.aae.beta2 = 0.999;
 setup.aae.weightL2Regularization = 0.002;
 setup.aae.keyRegularization = 1E0;
 setup.aae.disDRegularization = 1E0;
-setup.aae.disERegularization = 1E-1;
-setup.aae.valFreq = 100;
+setup.aae.disERegularization = 1E0;
+setup.aae.clsRegularization = 1E2;
+setup.aae.valFreq = 10;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 250;
 setup.aae.lrFactor = 0.5;
@@ -69,13 +70,20 @@ setup.aae.enc.outZ = setup.aae.zDim;
 % decoder network parameters
 setup.aae.dec.learnRate = 0.002;
 setup.aae.dec.scale = 0.2;
-setup.aae.dec.input = setup.aae.zDim + setup.aae.cDim;
+setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
 
 % discriminator network parameters
 setup.aae.dis.learnRate = 0.002;
 setup.aae.dis.scale = 0.2;
-setup.aae.dis.input = setup.aae.zDim + setup.aae.cDim;
+setup.aae.dis.input = setup.aae.zDim;
+
+% discriminator network parameters
+setup.aae.cls.learnRate = 0.002;
+setup.aae.cls.scale = 0.2;
+setup.aae.cls.input = setup.aae.zDim;
+setup.aae.cls.output = setup.aae.cDim;
+
 
 % initialise plots
 figure(3);
@@ -97,6 +105,7 @@ end
 
 errAE = zeros( nRuns, 1 );
 errPCA = zeros( nRuns, 1 );
+errNet = zeros( nRuns, 1 );
 for i = 1:nRuns
 
     disp(['*** Iteration = ' num2str(i) ' ***']);
@@ -134,7 +143,8 @@ for i = 1:nRuns
 
     % train the autoencoder
     if adversarialDesign
-        [dlnetEnc, dlnetDec] = trainAAE2( XTrn, YTrn, setup.aae, ax );
+        [dlnetEnc, dlnetDec, dlnetCls] = ...
+                    trainAAE( XTrn, YTrn, setup.aae, ax );
     else
         disp('Training autoencoder ... ');
         ae = trainAutoencoder( XTrn, nCodes, ...
@@ -162,11 +172,19 @@ for i = 1:nRuns
     plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.aae.cDim, ...
                     setup.data.tFine, setup.fda.fdPar );
 
-    % classify
+    % classify using discriminant analysis
     model = fitcdiscr( ZTrn', YTrn );
-    YHatTst = predict( model, ZTst' );
     errAE(i) = loss( model, ZTst', YTst );
-    disp( ['FITCDISCR: Holdout Loss = ' num2str(errAE(i)) ]);
+    disp( ['FITCDISCR:          Holdout Loss = ' ...
+                            num2str( errAE(i), '%0.3f') ]);
+
+    % classify using the trained network
+    dlYHatTst = predict( dlnetCls, dlZTst );
+    YHatTst = double(   ...
+            onehotdecode( dlYHatTst, single(setup.aae.cLabels), 1 ) )' - 1;
+    errNet(i) = sum( YHatTst~=YTst )/length(YTst);
+    disp( ['NETWORK CLASSIFIER: Holdout Loss = ' ...
+                            num2str( errNet(i), '%0.3f') ]);
 
     % plot the clusters for test data using the training loadings 
     % from a canonical discriminant analysis
@@ -177,11 +195,9 @@ for i = 1:nRuns
     title( ax.ae.cls, 'AE Encoding' );
     drawnow;
 
-    % reconstruct the cures and calculate errors
-    dlYTrn = dlarray( onehotencode( setup.aae.cLabels(YTrn+1), 1 ) );
-    dlYTst = dlarray( onehotencode( setup.aae.cLabels(YTst+1), 1 ) );
-    dlXTrnHat = predict( dlnetDec, [dlZTrn; dlYTrn] );
-    dlXTstHat = predict( dlnetDec, [dlZTst; dlYTst] );
+    % reconstruct the curves and calculate errors
+    dlXTrnHat = predict( dlnetDec, dlZTrn );
+    dlXTstHat = predict( dlnetDec, dlZTst );
     XTrnHat = double(extractdata( dlXTrnHat ));
     XTstHat = double(extractdata( dlXTstHat ));
 
@@ -234,7 +250,8 @@ for i = 1:nRuns
     modelPCA = fitcdiscr( ZTrnPCA, YTrn );
     YHatTstPCA = predict( modelPCA, ZTstPCA );
     errPCA(i) = loss( modelPCA, ZTstPCA, YTst );
-    disp( ['FITCDISCR: Holdout Loss = ' num2str(errPCA(i)) ]);
+    disp( ['FITCDISCR:          Holdout Loss = ' ...
+                            num2str( errPCA(i), '%0.3f') ]);
 
     % plot the clusters
     plotClusters( ax.pca.cls, ZTstPCA, YTst, YHatTstPCA );

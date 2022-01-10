@@ -10,11 +10,12 @@
 %           dlnetEnc    : initialised encoder network
 %           dlnetDec    : initialised decoder network
 %           dlnetDis    : initialised discriminator network
+%           dlnetCls    : initialised classifier network
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec, dlnetDis ] = ...
-                aaeDesign2( paramEnc, paramDec, paramDis )
+function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls ] = ...
+                aaeDesign( paramEnc, paramDec, paramDis, paramCls )
 
 
 % define the encoder network
@@ -56,6 +57,18 @@ layersDis = [
 
 lgraphDis = layerGraph( layersDis );
 dlnetDis = dlnetwork( lgraphDis );
+
+% define the classifier network
+layersCls = [
+    featureInputLayer( paramCls.input, 'Name', 'in' )
+    fullyConnectedLayer( 21, 'Name', 'fc1' )
+    dropoutLayer( 0.2, 'Name', 'drop1' )
+    fullyConnectedLayer( paramCls.output, 'Name', 'fc2' )
+    sigmoidLayer( 'Name', 'out' )
+    ];
+
+lgraphCls = layerGraph( layersCls );
+dlnetCls = dlnetwork( lgraphCls );
 
 
 end

@@ -22,9 +22,6 @@ Zmean = repmat( mean( Z, 2 ), 1, length(zScores) );
 
 % ignore the null class
 nClass = nClass - 1;
-% initialise classes hot codes
-C = [ zeros( 1, nClass ); eye( nClass ) ];
-dlC = dlarray( repelem( C, 1, nClass ), 'CB' );
 
 for i = 1:nPlots
     
@@ -41,7 +38,7 @@ for i = 1:nPlots
     dlZComp = dlarray( repmat( ZComp, 1, nClass ), 'CB' );
 
     % generate the curves using the decoder
-    dlXComp = predict( decoder, [ dlZComp; dlC ] );
+    dlXComp = predict( decoder, dlZComp );
     XComp = double( extractdata( dlXComp ) );
 
     % convert into smooth function

@@ -7,27 +7,29 @@
 %           dlnetEnc    : encoder network
 %           dlnetDec    : decoder network
 %           dlnetDis    : discriminator network
+%           dlnetCls    : classifier network
 %           dlXReal     : training data (batch)
+%           dlCReal     : training data (batch)
 %           setup       : training parameters
 %           
 % Outputs:
 %           grad        : gradients for updating network parameters
 %           state       : network training states
 %           loss        : computed loss functions
-%           score       : computed scores for tracking progress
 %
 % ************************************************************************
 
-function [  grad, state, loss, score ] = ...
+function [  grad, state, loss ] = ...
                                 modelGradients( ...
                                                 dlnetEnc, ...
                                                 dlnetDec, ...
                                                 dlnetDis, ...
+                                                dlnetCls, ...
                                                 dlXReal, ...
                                                 dlCReal, ...
                                                 setup )
 
-loss = dlarray( zeros(5,1), 'CB' );
+loss = dlarray( zeros(6,1), 'CB' );
 
 % --- reconstruction phase ---
 
@@ -35,19 +37,27 @@ loss = dlarray( zeros(5,1), 'CB' );
 [ dlZFake, state.enc ] = forward( dlnetEnc, dlXReal );
 
 % reconstruct curves from latent codes
-dlCReal = dlarray( onehotencode( setup.cLabels(dlCReal+1), 1 ) );
-[ dlXFake, state.dec ] = forward( dlnetDec, [dlZFake; dlCReal] );
+[ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
 
 % --- conditional phase ---
 
 % generate the real latent code with a true normal distribution
 dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
 
-% predict the class from fake code using the discriminator
-[ dlDFake, state.dis ] = forward( dlnetDis, [ dlZFake; dlCReal ] );
+% predict if Z is fake using the discriminator
+[ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
 
-% predict the class from real code using the discriminator
-dlDReal = forward( dlnetDis, [ dlZReal; dlCReal ] );
+% predict if Z is real using the discriminator
+dlDReal = forward( dlnetDis, dlZReal );
+
+% --- classification phase ---
+
+% convert the real class
+dlCReal = dlarray( onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
+
+% predict the class from Z using the classifier
+[ dlCFake, state.cls ] = forward( dlnetCls, dlZFake );
+
 
 
 % --- calculate losses ---
@@ -71,17 +81,21 @@ loss(4) = -setup.disDRegularization* ...
 % calculate the adversarial loss (encoder)
 loss(5) = -setup.disERegularization*mean( log(dlDFake + eps) );
 
+% calculate the classifer loss
+loss(6) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+
 
 % calculate gradients
-lossEnc = dlarray( sum(loss([1 2 3 5])), 'CB' );
+lossEnc = dlarray( sum(loss([1 2 3 5 6])), 'CB' );
 lossDec = dlarray( sum(loss([1 2 3])), 'CB' );
 lossDis = dlarray( loss(4), 'CB' );
+lossCls = dlarray( loss(6), 'CB' );
+
 grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables );
 grad.dec = dlgradient( lossDec, dlnetDec.Learnables );
 grad.dis = dlgradient( lossDis, dlnetDis.Learnables );
+grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
 
-% Calculate the scores
-score = 0;
 
 end
 

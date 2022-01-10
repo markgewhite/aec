@@ -31,10 +31,6 @@ ZStd = std( Z, [], 2 );
 % initialise the components' Z codes at the mean
 ZComp = repmat( ZMean, 1, (nComp+1)*nClass );
 
-% initialise the classes with hot encodes
-C = [ zeros( 1, nClass ); eye( nClass ) ];
-dlCComp = dlarray( repmat( C, 1, nComp+1 ), 'CB' );
-
 for i =1:nComp
     for j = 1:nClass
     
@@ -46,7 +42,7 @@ end
 
 % generate all the component curves using the decoder
 dlZComp = dlarray( ZComp, 'CB');
-dlXComp = forward( decoder, [dlZComp; dlCComp] );
+dlXComp = forward( decoder, dlZComp );
 
 % centre about the mean curve (last curve) common to all classes
 dlXMean = mean( dlXComp(:,end-nClass+1), 2 );

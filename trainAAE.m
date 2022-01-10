@@ -11,15 +11,16 @@
 % Outputs:
 %           dlnetEnc    : trained encoder network
 %           dlnetDec    : trained decoder network
+%           dlnetCls    : trained classifier network
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec ] = trainAAE( trnX, trnC, setup, ax )
+function [ dlnetEnc, dlnetDec, dlnetCls ] = trainAAE( trnX, trnC, setup, ax )
 
 
 % define the networks
-[ dlnetEnc, dlnetDec, dlnetDis ] = ...
-        setup.designFcn( setup.enc, setup.dec, setup.dis );   
+[ dlnetEnc, dlnetDec, dlnetDis, dlnetCls ] = ...
+        setup.designFcn( setup.enc, setup.dec, setup.dis, setup.cls );   
 
 % create datastores
 dsTrnX = arrayDatastore( trnX, 'IterationDimension', 2 );
@@ -36,13 +37,15 @@ mbqTrn = minibatchqueue(  dsTrn,...
 avgG.enc = []; 
 avgG.dec = [];
 avgG.dis = []; 
+avgG.cls = [];
 avgGS.enc = [];
 avgGS.dec = [];
-avgGS.dis = []; 
+avgGS.dis = [];
+avgGS.cls = [];
 
 nIter = floor( size(trnX,2)/setup.batchSize );
 j = 0;
-loss = zeros( nIter*setup.nEpochs, 5 );
+loss = zeros( nIter*setup.nEpochs, 6 );
 fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 
 for epoch = 1:setup.nEpochs
@@ -59,17 +62,19 @@ for epoch = 1:setup.nEpochs
         [dlXTrn, dlCTrn] = next( mbqTrn );
         
         % Evaluate the model gradients 
-        [ grad, state, loss(j,:), score ] = ...
+        [ grad, state, loss(j,:) ] = ...
                           dlfeval(  setup.gradFcn, ...
                                     dlnetEnc, ...
                                     dlnetDec, ...
                                     dlnetDis, ...
+                                    dlnetCls, ...
                                     dlXTrn, ...
                                     dlCTrn, ...
                                     setup );
         dlnetEnc.State = state.enc;
         dlnetDec.State = state.dec;
         dlnetDis.State = state.dis;
+        dlnetCls.State = state.cls;
 
         % Update the decoder network parameters
         [ dlnetDec, avgG.dec, avgGS.dec ] = ...
@@ -93,7 +98,7 @@ for epoch = 1:setup.nEpochs
                                         setup.beta1, ...
                                         setup.beta2 );
         
-        % Update the generator network parameters
+        % Update the discriminator network parameters
         [ dlnetDis, avgG.dis, avgGS.dis ] = ...
                             adamupdate( dlnetDis, ...
                                         grad.dis, ...
@@ -104,13 +109,23 @@ for epoch = 1:setup.nEpochs
                                         setup.beta1, ...
                                         setup.beta2 );
         
+        % Update the classifier network parameters
+        [ dlnetCls, avgG.cls, avgGS.cls ] = ...
+                            adamupdate( dlnetCls, ...
+                                        grad.cls, ...
+                                        avgG.cls, ...
+                                        avgGS.cls, ...
+                                        j, ...
+                                        setup.cls.learnRate, ...
+                                        setup.beta1, ...
+                                        setup.beta2 );
 
     end
 
     % update progress on screen
     if mod( epoch, setup.valFreq )==0
         meanLoss = mean(loss( j-nIter+1:j, : ));
-        fprintf('Loss (%d) = %1.3f  %1.3f  %1.3f %1.3f  %1.3f\n', epoch, meanLoss );
+        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %6.3f\n', epoch, meanLoss );
         dlZTrn = predict( dlnetEnc, dlXTrn );
         ZTrn = double(extractdata( dlZTrn ));
         plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.cDim, ...
