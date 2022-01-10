@@ -6,7 +6,6 @@
 % Parameters:
 %           dlnetEnc    : encoder network
 %           dlnetDec    : decoder network
-%           dlnetDis    : discriminator network
 %           dlnetCls    : classifier network
 %           dlXReal     : training data (batch)
 %           dlCReal     : training data (batch)
@@ -23,13 +22,12 @@ function [  grad, state, loss ] = ...
                                 modelGradients( ...
                                                 dlnetEnc, ...
                                                 dlnetDec, ...
-                                                dlnetDis, ...
                                                 dlnetCls, ...
                                                 dlXReal, ...
                                                 dlCReal, ...
                                                 setup )
 
-loss = dlarray( zeros(6,1), 'CB' );
+loss = dlarray( zeros(5,1), 'CB' );
 
 % --- reconstruction phase ---
 
@@ -38,17 +36,6 @@ loss = dlarray( zeros(6,1), 'CB' );
 
 % reconstruct curves from latent codes
 [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
-
-% --- conditional phase ---
-
-% generate the real latent code with a true normal distribution
-dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
-
-% predict if Z is fake using the discriminator
-[ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
-
-% predict if Z is real using the discriminator
-dlDReal = forward( dlnetDis, dlZReal );
 
 % --- classification phase ---
 
@@ -74,26 +61,21 @@ dlXComp = latentComponents( dlnetDec, dlZFake, size(dlCReal,1) );
 loss(3) = setup.keyRegularization* ...
                     mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
 
-% calculate the adversarial loss (discriminator)
-loss(4) = -setup.disDRegularization* ...
-            mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
-
-% calculate the adversarial loss (encoder)
-loss(5) = -setup.disERegularization*mean( log(dlDFake + eps) );
-
 % calculate the classifer loss
-loss(6) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+loss(4) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+
+% calculate the cluster loss
+loss(5) = setup.cluRegularization* ...
+                clusterLoss( dlZFake, dlCFake, setup.cLabels );
 
 
 % calculate gradients
-lossEnc = dlarray( sum(loss([1 2 3 5 6])), 'CB' );
+lossEnc = dlarray( sum(loss([1 2 3 4 5])), 'CB' );
 lossDec = dlarray( sum(loss([1 2 3])), 'CB' );
-lossDis = dlarray( loss(4), 'CB' );
-lossCls = dlarray( loss(6), 'CB' );
+lossCls = dlarray( loss(4), 'CB' );
 
 grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables );
 grad.dec = dlgradient( lossDec, dlnetDec.Learnables );
-grad.dis = dlgradient( lossDis, dlnetDis.Learnables );
 grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
 
 
@@ -156,5 +138,58 @@ for j = 1:n
     end
     XCost( 1:i, j ) = 1;
 end
+
+end
+
+
+function L = clusterLoss( dlZ, dlC, labels )
+
+Z = extractdata( dlZ )';
+[ nObs, nDim ] = size( Z );
+
+C = onehotdecode( dlC, single(labels), 1 );
+grpLabel = unique( C );
+nGrps = length( grpLabel );
+
+% calculate the group centroids and deviations within the groups
+grpMean = zeros( nGrps, nDim );
+lossW = 0;
+for i = 1:nGrps
+   % extract the group
+   grp = Z( C==grpLabel(i), : );
+   % compute the group centroid
+   grpMean( i, : ) = mean( grp );
+   % add the sum squares differences
+   lossW = lossW + sum( (grp-grpMean(i,:)).^2, 'all' );
+end
+% take the mean square diffence
+lossW = lossW/nObs;
+
+% calculate between-groups loss (mutual separation)
+if nGrps>1
+    lossB = -meanSqDiffBtwAll( grpMean );
+else
+    lossB = 0;
+end
+
+%disp(['Loss W = ' num2str(lossW, '%.4f' ) ...
+%      '; Loss B = ' num2str(lossB, '%.4f' ) ]);
+
+L = lossW + lossB;
+
+
+end
+
+
+function d = meanSqDiffBtwAll( x ) 
+
+n = size( x, 1 );
+d = 0;
+for i = 1:n
+    for j = i+1:n
+      d = d + sum( (x(i,:)-x(j,:)).^2 );
+    end
+end
+d = 0.5*d/(n*(n-1));
 
 end
