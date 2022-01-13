@@ -24,8 +24,10 @@ layersEnc = [
                        'Mean', 0, 'StandardDeviation', 1 )
     fullyConnectedLayer( 100, 'Name', 'fc1' )
     sigmoidLayer( 'Name', 'sig1' )
-    dropoutLayer( 0.2, 'Name', 'drop2' )
-    fullyConnectedLayer( paramEnc.outZ, 'Name', 'fc2' )
+    %fullyConnectedLayer( 50, 'Name', 'fc2' )
+    %sigmoidLayer( 'Name', 'sig2' )
+    dropoutLayer( paramEnc.dropout, 'Name', 'drop2' )
+    fullyConnectedLayer( paramEnc.outZ, 'Name', 'fc3' )
     ];
     
 lgraphEnc = layerGraph( layersEnc );
@@ -37,8 +39,10 @@ layersDec = [
     featureInputLayer( paramDec.input, 'Name', 'in' )
     fullyConnectedLayer( 100, 'Name', 'fc1' )
     sigmoidLayer( 'Name', 'sig1' )
-    dropoutLayer( 0.2, 'Name', 'drop2' )
-    fullyConnectedLayer( paramDec.outX, 'Name', 'fc2' )
+    %fullyConnectedLayer( 100, 'Name', 'fc2' )
+    %sigmoidLayer( 'Name', 'sig2' )
+    dropoutLayer( paramDec.dropout, 'Name', 'drop2' )
+    fullyConnectedLayer( paramDec.outX, 'Name', 'fc3' )
     ];
 
 lgraphDec = layerGraph( layersDec );
@@ -49,8 +53,9 @@ dlnetDec = dlnetwork( lgraphDec );
 layersCls = [
     featureInputLayer( paramCls.input, 'Name', 'in' )
     fullyConnectedLayer( 21, 'Name', 'fc1' )
-    dropoutLayer( 0.2, 'Name', 'drop1' )
-    fullyConnectedLayer( paramCls.output, 'Name', 'fc2' )
+    sigmoidLayer( 'Name', 'sig1' )
+    dropoutLayer( paramCls.dropout, 'Name', 'drop1' )
+    fullyConnectedLayer( paramCls.output, 'Name', 'fc3' )
     sigmoidLayer( 'Name', 'out' )
     ];
 

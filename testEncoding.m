@@ -42,44 +42,49 @@ setup.fda.tSpan = setup.data.tFine;
 % AAE training parameters
 setup.aae.designFcn = @aaeDesign;
 setup.aae.gradFcn = @modelGradients;
-setup.aae.nEpochs = 500; 
+setup.aae.optimizer = 'ADAM';
+setup.aae.nEpochs = 1000; 
 setup.aae.batchSize = 50;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
-setup.aae.weightL2Regularization = 0.002;
+setup.aae.weightL2Regularization = 1E-4;
+setup.aae.orthRegularization = 1E0;
 setup.aae.keyRegularization = 1E0;
 setup.aae.clsRegularization = 1E2;
 setup.aae.cluRegularization = 1E0;
-setup.aae.valFreq = 10;
+setup.aae.valFreq = 50;
 setup.aae.valSize = [2 5];
-setup.aae.lrFreq = 250;
+setup.aae.lrFreq = 200;
 setup.aae.lrFactor = 0.5;
 setup.aae.zDim = nCodes;
 setup.aae.xDim = length( setup.data.tFine );
 setup.aae.cLabels = categorical( 0:length(classSizes) );
 setup.aae.cDim = length( setup.aae.cLabels );
 setup.aae.fda = setup.fda;
+setup.aae.pretraining = false;
+setup.aae.orthogonal = true;
+setup.aae.keyCompLoss = false;
 
 % encoder network parameters
-setup.aae.enc.learnRate = 0.002;
-setup.aae.enc.scale = 0.2;
+setup.aae.enc.learnRate = 0.02;
+setup.aae.enc.dropout = 0.1;
 setup.aae.enc.input = setup.aae.xDim;
 setup.aae.enc.outZ = setup.aae.zDim;
 
 % decoder network parameters
-setup.aae.dec.learnRate = 0.002;
-setup.aae.dec.scale = 0.2;
+setup.aae.dec.learnRate = 0.02;
+setup.aae.dec.dropout = 0.0;
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
 
 % discriminator network parameters
-setup.aae.dis.learnRate = 0.002;
-setup.aae.dis.scale = 0.2;
+setup.aae.dis.learnRate = 0.02;
+setup.aae.dis.dropout = 0.2;
 setup.aae.dis.input = setup.aae.zDim;
 
-% discriminator network parameters
-setup.aae.cls.learnRate = 0.002;
-setup.aae.cls.scale = 0.2;
+% classifier network parameters
+setup.aae.cls.learnRate = 0.02;
+setup.aae.cls.dropout = 0.1;
 setup.aae.cls.input = setup.aae.zDim;
 setup.aae.cls.output = setup.aae.cDim;
 

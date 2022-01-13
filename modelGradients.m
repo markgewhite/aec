@@ -27,7 +27,7 @@ function [  grad, state, loss ] = ...
                                                 dlCReal, ...
                                                 setup )
 
-loss = dlarray( zeros(5,1), 'CB' );
+loss = dlarray( zeros(6,1), 'CB' );
 
 % --- reconstruction phase ---
 
@@ -39,12 +39,13 @@ loss = dlarray( zeros(5,1), 'CB' );
 
 % --- classification phase ---
 
-% convert the real class
-dlCReal = dlarray( onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
-
-% predict the class from Z using the classifier
-[ dlCFake, state.cls ] = forward( dlnetCls, dlZFake );
-
+if ~setup.pretraining
+    % convert the real class
+    dlCReal = dlarray( onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
+    
+    % predict the class from Z using the classifier
+    [ dlCFake, state.cls ] = forward( dlnetCls, dlZFake );
+end
 
 
 % --- calculate losses ---
@@ -56,28 +57,44 @@ loss(1) = mean(mean( (dlXFake - dlXReal).^2 ));
 w = learnables( {dlnetEnc.Learnables, dlnetDec.Learnables} );
 loss(2) = setup.weightL2Regularization*mean( sum( w.^2 ) );
 
-% calculate the key-phase component loss
-dlXComp = latentComponents( dlnetDec, dlZFake, size(dlCReal,1) );
-loss(3) = setup.keyRegularization* ...
-                    mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
+if setup.orthogonal
+    % calculate the orthogonal loss to encourage mutual independence
+    ZFake = extractdata( dlZFake );
+    orth = ZFake*ZFake';
+    loss(3) = setup.orthRegularization* ...
+                sqrt(sum(orth.^2,'all') - sum(diag(orth).^2))/ ...
+                sum(ZFake.^2,'all');
+end
 
-% calculate the classifer loss
-loss(4) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+if setup.keyCompLoss
+    % calculate the key-phase component loss
+    dlXComp = latentComponents( dlnetDec, dlZFake, size(dlCReal,1) );
+    loss(4) = setup.keyRegularization* ...
+                        mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
+end
 
-% calculate the cluster loss
-loss(5) = setup.cluRegularization* ...
-                clusterLoss( dlZFake, dlCFake, setup.cLabels );
-
+if ~setup.pretraining
+    % calculate the classifer loss
+    loss(5) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+    
+    % calculate the cluster loss
+    loss(6) = setup.cluRegularization* ...
+                    clusterLoss( dlZFake, dlCFake, setup.cLabels );
+end
 
 % calculate gradients
-lossEnc = dlarray( sum(loss([1 2 3 4 5])), 'CB' );
-lossDec = dlarray( sum(loss([1 2 3])), 'CB' );
-lossCls = dlarray( loss(4), 'CB' );
+lossEnc = dlarray( sum(loss([1 2 3 5])), 'CB' );
+lossDec = dlarray( sum(loss([1 2]))-loss(3), 'CB' );
 
 grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables );
 grad.dec = dlgradient( lossDec, dlnetDec.Learnables );
-grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
 
+if ~setup.pretraining
+    lossCls = dlarray( loss(5), 'CB' );
+    grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
+else
+    grad.cls = 0;
+end
 
 end
 
