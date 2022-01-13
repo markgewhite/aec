@@ -83,11 +83,11 @@ if ~setup.pretraining
 end
 
 % calculate gradients
-lossEnc = dlarray( sum(loss([1 2 3 5])), 'CB' );
-lossDec = dlarray( sum(loss([1 2]))-loss(3), 'CB' );
+lossEnc = dlarray( sum(loss([1 2 3 5 6]) ), 'CB' );
+lossDec = dlarray( sum(loss([1 2]) ), 'CB' );
 
-grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables );
-grad.dec = dlgradient( lossDec, dlnetDec.Learnables );
+grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables, 'RetainData', true );
+grad.dec = dlgradient( lossDec, dlnetDec.Learnables, 'RetainData', true );
 
 if ~setup.pretraining
     lossCls = dlarray( loss(5), 'CB' );
@@ -164,35 +164,35 @@ function L = clusterLoss( dlZ, dlC, labels )
 Z = extractdata( dlZ )';
 [ nObs, nDim ] = size( Z );
 
-C = onehotdecode( dlC, single(labels), 1 );
-grpLabel = unique( C );
-nGrps = length( grpLabel );
+C = extractdata( dlC )';
+nGrps = length( labels );
+
+% standardise
+Z = (Z - mean(Z))./std( Z );
 
 % calculate the group centroids and deviations within the groups
-grpMean = zeros( nGrps, nDim );
+grpMean = zeros( nGrps-1, nDim );
+dist = zeros( nObs, nGrps-1 );
 lossW = 0;
-for i = 1:nGrps
-   % extract the group
-   grp = Z( C==grpLabel(i), : );
-   % compute the group centroid
-   grpMean( i, : ) = mean( grp );
-   % add the sum squares differences
-   lossW = lossW + sum( (grp-grpMean(i,:)).^2, 'all' );
+for i = 2:nGrps
+    % compute the weighted group centroid
+    grpMean( i, : ) = sum( C( :,i ).*Z )/sum( C(:,i) );
+    % calculate the Euclidean distances to this centroid
+    dist( :, i ) = sum( (Z-grpMean(i,:)).^2, 2 );
+    % add up the weighted distances
+    lossW = lossW + sum( C(:,i).*dist(:,i) );
 end
 % take the mean square diffence
-lossW = lossW/nObs;
+lossW = lossW/(nGrps*nObs);
 
 % calculate between-groups loss (mutual separation)
 if nGrps>1
-    lossB = -meanSqDiffBtwAll( grpMean );
+    lossB = -meanSqDiffBtwAll( grpMean( 2:end,: ) );
 else
     lossB = 0;
 end
 
-%disp(['Loss W = ' num2str(lossW, '%.4f' ) ...
-%      '; Loss B = ' num2str(lossB, '%.4f' ) ]);
-
-L = lossW + lossB;
+L = lossB + lossW;
 
 
 end

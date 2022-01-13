@@ -52,7 +52,7 @@ setup.aae.orthRegularization = 1E0;
 setup.aae.keyRegularization = 1E0;
 setup.aae.clsRegularization = 1E2;
 setup.aae.cluRegularization = 1E0;
-setup.aae.valFreq = 50;
+setup.aae.valFreq = 250;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 200;
 setup.aae.lrFactor = 0.5;
@@ -63,7 +63,7 @@ setup.aae.cDim = length( setup.aae.cLabels );
 setup.aae.fda = setup.fda;
 setup.aae.pretraining = false;
 setup.aae.orthogonal = true;
-setup.aae.keyCompLoss = false;
+setup.aae.keyCompLoss = true;
 
 % encoder network parameters
 setup.aae.enc.learnRate = 0.02;
@@ -262,11 +262,12 @@ for i = 1:nRuns
     title( ax.pca.cls, 'PCA Encoding' );
     drawnow;
 
-    pause;
+    % pause;
 
 end
 
-disp( ['Mean AE Classification Error  = ' num2str(mean(errAE)) ] );
+disp( ['Mean Disciminant Classification Error  = ' num2str(mean(errAE)) ] );
+disp( ['Mean Network Classification Error  = ' num2str(mean(errNet)) ] );
 disp( ['Mean PCA Classification Error = ' num2str(mean(errPCA)) ] );
 disp( ['Frequency AE error is lower than PCA error = ' ...
             num2str( sum(errAE<errPCA) ) ] );
