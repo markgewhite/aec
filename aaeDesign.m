@@ -18,103 +18,136 @@ function [ dlnetEnc, dlnetDec, dlnetCls ] = ...
 
 
 % define the encoder network
+% --------------------------
+
+% create the input layer
+layersEnc = featureInputLayer( paramEnc.input, 'Name', 'in', ...
+                               'Normalization', 'zscore', ...
+                               'Mean', 0, 'StandardDeviation', 1 );
+lgraphEnc = layerGraph( layersEnc );
+
+% create the hidden layers
 switch paramEnc.type
 
     case 'FullyConnected'
-        layersEnc = [
-            featureInputLayer( paramEnc.input, 'Name', 'in', ...
-                               'Normalization', 'zscore', ...
-                               'Mean', 0, 'StandardDeviation', 1 )
-
-            fullyConnectedLayer( 100, 'Name', 'fc1' )
-            sigmoidLayer( 'Name', 'sig1' )
-            
-            dropoutLayer( paramEnc.dropout, 'Name', 'drop2' )
-            fullyConnectedLayer( paramEnc.outZ, 'Name', 'fc2' )
-            ];
+        layersEnc = [];
+        for i = 1:paramEnc.nHidden
+            layersEnc = [ layersEnc; ...
+                fullyConnectedLayer( paramEnc.nFC, 'Name', ['fc' num2str(i)] )
+                sigmoidLayer( 'Name', ['sig' num2str(i)] )           
+                ]; %#ok<*AGROW> 
+        end
+        lgraphEnc = addLayers( lgraphEnc, layersEnc );
+        lgraphEnc = connectLayers( lgraphEnc, 'in', 'fc1' );
+        lastLayer = ['sig' num2str(i)];
 
     case 'Convolutional'
-        layersEnc = [
-            featureInputLayer( paramEnc.input, 'Name', 'in', ...
-                               'Normalization', 'zscore', ...
-                               'Mean', 0, 'StandardDeviation', 1 )
-            reshapeLayer( paramEnc.projectionSize, 'Name', 'proj' )
-            %projectAndReshapeLayer( paramEnc.projectionSize, ...
-            %                        paramEnc.input, 'Name', 'proj' )
-
-            convolution2dLayer( paramEnc.filterSize, ...
-                                    2*paramEnc.nFilters, 'Name', 'tconv1' )
-            batchNormalizationLayer( 'Name', 'bnorm1' )
-            reluLayer( 'Name', 'relu1' )
-
-            convolution2dLayer( paramEnc.filterSize, ...
-                                    paramEnc.nFilters, 'Name', 'tconv2' )
-            batchNormalizationLayer('Name','bnorm2')
-            reluLayer( 'Name', 'relu2' )
-
-            dropoutLayer( paramEnc.dropout, 'Name', 'drop2' )
-            fullyConnectedLayer( paramEnc.outZ, 'Name', 'fc2' )
-            ];
+        layersEnc = reshapeLayer( paramEnc.projectionSize, 'Name', 'proj' );
+        for i = 1:paramEnc.nHidden
+            nFilters = 2^(paramEnc.nHidden-i);
+            layersEnc = [ layersEnc; ...
+                convolution2dLayer( paramEnc.filterSize, ...
+                        nFilters*paramEnc.nFilters, ...
+                        'Stride', paramEnc.stride, ...
+                        'Name', ['tconv' num2str(i)] )
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                reluLayer( 'Name', ['relu' num2str(i)] )         
+                ]; %#ok<*AGROW> 
+        end
+        lgraphEnc = addLayers( lgraphEnc, layersEnc );
+        lgraphEnc = connectLayers( lgraphEnc, 'in', 'proj' );
+        lastLayer = ['relu' num2str(i)];
 
     otherwise
         error('Unrecognised encoder network type.');
 
 end
+% create the output layers
+layersEnc = [
+            dropoutLayer( paramEnc.dropout, 'Name', 'drop1' )
+            fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' )
+            ];
+lgraphEnc = addLayers( lgraphEnc, layersEnc );
+lgraphEnc = connectLayers( lgraphEnc, lastLayer, 'drop1' );
 
-lgraphEnc = layerGraph( layersEnc );
 dlnetEnc = dlnetwork( lgraphEnc );
 
 
 % define the decoder network
+% --------------------------
+
+% create the input layer
+layersDec = featureInputLayer( paramDec.input, 'Name', 'in' );
+lgraphDec = layerGraph( layersDec );
+
+% create the hidden layers
 switch paramDec.type
 
     case 'FullyConnected'
-        layersDec = [
-            featureInputLayer( paramDec.input, 'Name', 'in' )
-            fullyConnectedLayer( 100, 'Name', 'fc1' )
-            sigmoidLayer( 'Name', 'sig1' )
-            dropoutLayer( paramDec.dropout, 'Name', 'drop2' )
-            fullyConnectedLayer( paramDec.outX, 'Name', 'fc2' )
-            ];
+        layersDec = dropoutLayer( paramDec.dropout, 'Name', 'drop1' );
+        for i = 1:paramDec.nHidden
+            layersDec = [ layersDec; ...
+                fullyConnectedLayer( paramDec.nFC, 'Name', ['fc' num2str(i)] )
+                sigmoidLayer( 'Name', ['sig' num2str(i)] )           
+                ]; %#ok<*AGROW> 
+        end
+        lgraphDec = addLayers( lgraphDec, layersDec );
+        lgraphDec = connectLayers( lgraphDec, 'in', 'drop1' );
+        lastLayer = ['sig' num2str(i)];
 
     case 'Convolutional'
-        layersDec = [
-            featureInputLayer( paramDec.input, 'Name', 'in' )
+        layersDec = [  
             projectAndReshapeLayer( paramDec.projectionSize, ...
                                     paramDec.input, 'Name', 'proj' )
             dropoutLayer( paramDec.dropout, 'Name', 'drop1' )
-
-            transposedConv2dLayer( paramDec.filterSize, ...
-                                    paramDec.nFilters, 'Name', 'conv1' )
-            batchNormalizationLayer( 'Name', 'bnorm1' )
-            reluLayer( 'Name', 'relu1' )
-
-            transposedConv2dLayer( paramDec.filterSize, ...
-                                    2*paramDec.nFilters, 'Name', 'conv2' )
-            batchNormalizationLayer('Name','bnorm2')
-            reluLayer( 'Name', 'relu2' )
-
-            fullyConnectedLayer( paramDec.outX, 'Name', 'fc2' )
             ];
+        for i = 1:paramDec.nHidden
+            nFilters = 2^(i-1);
+            layersDec = [ layersDec; ...
+                transposedConv2dLayer( paramDec.filterSize, ...
+                        nFilters*paramDec.nFilters, ...
+                        'Stride', paramDec.stride, ...
+                        'Name', ['tconv' num2str(i)] )
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                reluLayer( 'Name', ['relu' num2str(i)] )            
+                ]; %#ok<*AGROW> 
+        end
+        lgraphDec = addLayers( lgraphDec, layersDec );
+        lgraphDec = connectLayers( lgraphDec, 'in', 'proj' );
+        lastLayer = ['relu' num2str(i)];
     
     otherwise
             error('Unrecognised decoder network type.');
         
 end
 
-lgraphDec = layerGraph( layersDec );
+% create the output layer
+layersDec = fullyConnectedLayer( paramDec.outX, 'Name', 'out' );
+lgraphDec = addLayers( lgraphDec, layersDec );
+lgraphDec = connectLayers( lgraphDec, lastLayer, 'out' );
 dlnetDec = dlnetwork( lgraphDec );
 
 
 % define the classifier network
-layersCls = [
-    featureInputLayer( paramCls.input, 'Name', 'in' )
-    fullyConnectedLayer( 21, 'Name', 'fc1' )
-    sigmoidLayer( 'Name', 'sig1' )
-    dropoutLayer( paramCls.dropout, 'Name', 'drop1' )
-    fullyConnectedLayer( paramCls.output, 'Name', 'fc2' )
-    sigmoidLayer( 'Name', 'out' )
-    ];
+% -----------------------------
+
+% create the input layer
+layersCls = featureInputLayer( paramCls.input, 'Name', 'in' );
+
+% create the hidden layers
+for i = 1:paramCls.nHidden
+    layersCls = [ layersCls; ...
+        fullyConnectedLayer( paramCls.nFC, 'Name', ['fc' num2str(i)] )
+        sigmoidLayer( 'Name', ['sig' num2str(i)] )
+        ];
+end
+
+% create final layers
+layersCls = [ layersCls; ...    
+        dropoutLayer( paramCls.dropout, 'Name', 'drop1' )
+        fullyConnectedLayer( paramCls.output, 'Name', 'fcout' )
+        sigmoidLayer( 'Name', 'out' )
+        ];
 
 lgraphCls = layerGraph( layersCls );
 dlnetCls = dlnetwork( lgraphCls );
