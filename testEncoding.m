@@ -52,7 +52,7 @@ setup.aae.orthRegularization = 1E0;
 setup.aae.keyRegularization = 1E0;
 setup.aae.clsRegularization = 1E2;
 setup.aae.cluRegularization = 1E0;
-setup.aae.valFreq = 250;
+setup.aae.valFreq = 200;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 200;
 setup.aae.lrFactor = 0.5;
@@ -66,16 +66,24 @@ setup.aae.orthogonal = true;
 setup.aae.keyCompLoss = true;
 
 % encoder network parameters
+setup.aae.enc.type = 'Convolutional'; %'FullyConnected'; % 
 setup.aae.enc.learnRate = 0.02;
 setup.aae.enc.dropout = 0.1;
 setup.aae.enc.input = setup.aae.xDim;
 setup.aae.enc.outZ = setup.aae.zDim;
+setup.aae.enc.projectionSize = [ setup.aae.xDim 1 1 ];
+setup.aae.enc.filterSize = [5 1];
+setup.aae.enc.nFilters = 16;
 
 % decoder network parameters
+setup.aae.dec.type = 'Convolutional'; %'FullyConnected'; % 
 setup.aae.dec.learnRate = 0.02;
-setup.aae.dec.dropout = 0.0;
+setup.aae.dec.dropout = 0.1;
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
+setup.aae.dec.projectionSize = [ 9 1 1 ];
+setup.aae.dec.filterSize = [5 1];
+setup.aae.dec.nFilters = 16;
 
 % discriminator network parameters
 setup.aae.dis.learnRate = 0.02;
