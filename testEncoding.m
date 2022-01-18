@@ -52,7 +52,7 @@ setup.aae.orthRegularization = 1E0;
 setup.aae.keyRegularization = 1E0;
 setup.aae.clsRegularization = 1E2;
 setup.aae.cluRegularization = 1E0;
-setup.aae.valFreq = 100;
+setup.aae.valFreq = 10;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 200;
 setup.aae.lrFactor = 0.5;
@@ -81,7 +81,7 @@ setup.aae.enc.nFC = 50;
 % decoder network parameters
 setup.aae.dec.type = 'Convolutional'; %'FullyConnected'; % 
 setup.aae.dec.learnRate = 0.02;
-setup.aae.dec.dropout = 0.1;
+setup.aae.dec.dropout = 0.0;
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
 setup.aae.dec.nHidden = 2;
@@ -98,10 +98,10 @@ setup.aae.dis.input = setup.aae.zDim;
 
 % classifier network parameters
 setup.aae.cls.learnRate = 0.02;
-setup.aae.cls.dropout = 0.1;
+setup.aae.cls.dropout = 0.0;
 setup.aae.cls.input = setup.aae.zDim;
 setup.aae.cls.output = setup.aae.cDim;
-setup.aae.cls.nHidden = 1;
+setup.aae.cls.nHidden = 0;
 setup.aae.cls.nFC = 5*setup.aae.zDim;
 
 % initialise plots
@@ -277,7 +277,7 @@ for i = 1:nRuns
     title( ax.pca.cls, 'PCA Encoding' );
     drawnow;
 
-    % pause;
+    pause;
 
 end
 

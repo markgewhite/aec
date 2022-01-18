@@ -21,9 +21,12 @@ function [ dlnetEnc, dlnetDec, dlnetCls ] = ...
 % --------------------------
 
 % create the input layer
-layersEnc = featureInputLayer( paramEnc.input, 'Name', 'in', ...
+layersEnc = [
+    featureInputLayer( paramEnc.input, 'Name', 'in', ...
                                'Normalization', 'zscore', ...
-                               'Mean', 0, 'StandardDeviation', 1 );
+                               'Mean', 0, 'StandardDeviation', 1 )
+    dropoutLayer( paramEnc.dropout, 'Name', 'drop' )
+    ];
 lgraphEnc = layerGraph( layersEnc );
 
 % create the hidden layers
@@ -38,7 +41,7 @@ switch paramEnc.type
                 ]; %#ok<*AGROW> 
         end
         lgraphEnc = addLayers( lgraphEnc, layersEnc );
-        lgraphEnc = connectLayers( lgraphEnc, 'in', 'fc1' );
+        lgraphEnc = connectLayers( lgraphEnc, 'drop', 'fc1' );
         lastLayer = ['sig' num2str(i)];
 
     case 'Convolutional'
@@ -55,7 +58,7 @@ switch paramEnc.type
                 ]; %#ok<*AGROW> 
         end
         lgraphEnc = addLayers( lgraphEnc, layersEnc );
-        lgraphEnc = connectLayers( lgraphEnc, 'in', 'proj' );
+        lgraphEnc = connectLayers( lgraphEnc, 'drop', 'proj' );
         lastLayer = ['relu' num2str(i)];
 
     otherwise
@@ -63,12 +66,9 @@ switch paramEnc.type
 
 end
 % create the output layers
-layersEnc = [
-            dropoutLayer( paramEnc.dropout, 'Name', 'drop1' )
-            fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' )
-            ];
+layersEnc = fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' );
 lgraphEnc = addLayers( lgraphEnc, layersEnc );
-lgraphEnc = connectLayers( lgraphEnc, lastLayer, 'drop1' );
+lgraphEnc = connectLayers( lgraphEnc, lastLayer, 'out' );
 
 dlnetEnc = dlnetwork( lgraphEnc );
 
@@ -84,7 +84,6 @@ lgraphDec = layerGraph( layersDec );
 switch paramDec.type
 
     case 'FullyConnected'
-        layersDec = dropoutLayer( paramDec.dropout, 'Name', 'drop1' );
         for i = 1:paramDec.nHidden
             layersDec = [ layersDec; ...
                 fullyConnectedLayer( paramDec.nFC, 'Name', ['fc' num2str(i)] )
@@ -92,15 +91,12 @@ switch paramDec.type
                 ]; %#ok<*AGROW> 
         end
         lgraphDec = addLayers( lgraphDec, layersDec );
-        lgraphDec = connectLayers( lgraphDec, 'in', 'drop1' );
+        lgraphDec = connectLayers( lgraphDec, 'in', 'fc1' );
         lastLayer = ['sig' num2str(i)];
 
     case 'Convolutional'
-        layersDec = [  
-            projectAndReshapeLayer( paramDec.projectionSize, ...
-                                    paramDec.input, 'Name', 'proj' )
-            dropoutLayer( paramDec.dropout, 'Name', 'drop1' )
-            ];
+        layersDec = projectAndReshapeLayer( paramDec.projectionSize, ...
+                                    paramDec.input, 'Name', 'proj' );
         for i = 1:paramDec.nHidden
             nFilters = 2^(i-1);
             layersDec = [ layersDec; ...
@@ -122,9 +118,12 @@ switch paramDec.type
 end
 
 % create the output layer
-layersDec = fullyConnectedLayer( paramDec.outX, 'Name', 'out' );
+layersDec = [
+                dropoutLayer( paramDec.dropout, 'Name', 'drop' )
+                fullyConnectedLayer( paramDec.outX, 'Name', 'out' )
+            ];
 lgraphDec = addLayers( lgraphDec, layersDec );
-lgraphDec = connectLayers( lgraphDec, lastLayer, 'out' );
+lgraphDec = connectLayers( lgraphDec, lastLayer, 'drop' );
 dlnetDec = dlnetwork( lgraphDec );
 
 
