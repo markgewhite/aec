@@ -43,7 +43,8 @@ setup.fda.tSpan = setup.data.tFine;
 setup.aae.designFcn = @aaeDesign;
 setup.aae.gradFcn = @modelGradients;
 setup.aae.optimizer = 'ADAM';
-setup.aae.nEpochs = 1000; 
+setup.aae.nEpochs = 1500;
+setup.aae.nEpochsPretraining = 500;
 setup.aae.batchSize = 50;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
@@ -52,7 +53,7 @@ setup.aae.orthRegularization = 1E0;
 setup.aae.keyRegularization = 1E0;
 setup.aae.clsRegularization = 1E2;
 setup.aae.cluRegularization = 1E0;
-setup.aae.valFreq = 10;
+setup.aae.valFreq = 100;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 200;
 setup.aae.lrFactor = 0.5;
@@ -62,8 +63,9 @@ setup.aae.cLabels = categorical( 0:length(classSizes) );
 setup.aae.cDim = length( setup.aae.cLabels );
 setup.aae.fda = setup.fda;
 setup.aae.pretraining = false;
-setup.aae.orthogonal = true;
-setup.aae.keyCompLoss = true;
+setup.aae.l2regularization = false;
+setup.aae.orthogonal = false;
+setup.aae.keyCompLoss = false;
 
 % encoder network parameters
 setup.aae.enc.type = 'Convolutional'; %'Convolutional'; % 
@@ -71,7 +73,7 @@ setup.aae.enc.learnRate = 0.02;
 setup.aae.enc.dropout = 0.1;
 setup.aae.enc.input = setup.aae.xDim;
 setup.aae.enc.outZ = setup.aae.zDim;
-setup.aae.enc.nHidden = 2;
+setup.aae.enc.nHidden = 3;
 setup.aae.enc.projectionSize = [ setup.aae.xDim 1 1 ];
 setup.aae.enc.filterSize = [5 1];
 setup.aae.enc.nFilters = 16;
@@ -84,7 +86,7 @@ setup.aae.dec.learnRate = 0.02;
 setup.aae.dec.dropout = 0.0;
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
-setup.aae.dec.nHidden = 2;
+setup.aae.dec.nHidden = 3;
 setup.aae.dec.projectionSize = [ 5 1 1 ];
 setup.aae.dec.filterSize = [5 1];
 setup.aae.dec.nFilters = 16;
@@ -98,10 +100,10 @@ setup.aae.dis.input = setup.aae.zDim;
 
 % classifier network parameters
 setup.aae.cls.learnRate = 0.02;
-setup.aae.cls.dropout = 0.0;
+setup.aae.cls.dropout = 0.2;
 setup.aae.cls.input = setup.aae.zDim;
 setup.aae.cls.output = setup.aae.cDim;
-setup.aae.cls.nHidden = 0;
+setup.aae.cls.nHidden = 1;
 setup.aae.cls.nFC = 5*setup.aae.zDim;
 
 % initialise plots

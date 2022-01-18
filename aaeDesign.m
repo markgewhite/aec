@@ -37,12 +37,14 @@ switch paramEnc.type
         for i = 1:paramEnc.nHidden
             layersEnc = [ layersEnc; ...
                 fullyConnectedLayer( paramEnc.nFC, 'Name', ['fc' num2str(i)] )
-                sigmoidLayer( 'Name', ['sig' num2str(i)] )           
+                sigmoidLayer( 'Name', ['sig' num2str(i)] )
+                dropoutLayer( paramEnc.dropout, 'Name', ...
+                                                 ['drop' num2str(i)] )
                 ]; %#ok<*AGROW> 
         end
         lgraphEnc = addLayers( lgraphEnc, layersEnc );
         lgraphEnc = connectLayers( lgraphEnc, 'drop', 'fc1' );
-        lastLayer = ['sig' num2str(i)];
+        lastLayer = ['drop' num2str(i)];
 
     case 'Convolutional'
         layersEnc = reshapeLayer( paramEnc.projectionSize, 'Name', 'proj' );
@@ -54,12 +56,14 @@ switch paramEnc.type
                         'Stride', paramEnc.stride, ...
                         'Name', ['tconv' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                reluLayer( 'Name', ['relu' num2str(i)] )         
+                reluLayer( 'Name', ['relu' num2str(i)] )
+                dropoutLayer( paramEnc.dropout, 'Name', ...
+                                                 ['drop' num2str(i)] )
                 ]; %#ok<*AGROW> 
         end
         lgraphEnc = addLayers( lgraphEnc, layersEnc );
         lgraphEnc = connectLayers( lgraphEnc, 'drop', 'proj' );
-        lastLayer = ['relu' num2str(i)];
+        lastLayer = ['drop' num2str(i)];
 
     otherwise
         error('Unrecognised encoder network type.');

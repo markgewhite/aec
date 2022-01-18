@@ -53,9 +53,11 @@ end
 % calculate the reconstruction loss
 loss(1) = mean(mean( (dlXFake - dlXReal).^2 ));
 
-% calculate the L2 regularization loss
-w = learnables( {dlnetEnc.Learnables, dlnetDec.Learnables} );
-loss(2) = setup.weightL2Regularization*mean( sum( w.^2 ) );
+if setup.l2regularization
+    % calculate the L2 regularization loss
+    w = learnables( {dlnetEnc.Learnables, dlnetDec.Learnables} );
+    loss(2) = setup.weightL2Regularization*mean( sum( w.^2 ) );
+end
 
 if setup.orthogonal
     % calculate the orthogonal loss to encourage mutual independence

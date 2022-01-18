@@ -55,6 +55,9 @@ fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 
 for epoch = 1:setup.nEpochs
     
+    % Pre-training
+    setup.pretraining = epoch<=setup.nEpochsPretraining;
+
     % Shuffle the data
     shuffle( mbqTrn );
 
@@ -166,7 +169,9 @@ for epoch = 1:setup.nEpochs
     if mod( epoch, setup.lrFreq )==0
         setup.enc.learnRate = setup.enc.learnRate*setup.lrFactor;
         setup.dec.learnRate = setup.dec.learnRate*setup.lrFactor;
-        setup.cls.learnRate = setup.cls.learnRate*setup.lrFactor;
+        if ~setup.pretraining
+            setup.cls.learnRate = setup.cls.learnRate*setup.lrFactor;
+        end
     end
 
 end
