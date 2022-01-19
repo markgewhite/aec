@@ -46,14 +46,38 @@ end
 % reconstruct curves from latent codes
 [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
 
+
+
 % --- classification phase ---
 
 if ~setup.pretraining
     % convert the real class
-    dlCReal = dlarray( onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
     
-    % predict the class from Z using the classifier
-    [ dlCFake, state.cls ] = forward( dlnetCls, dlZFake );
+    % predict the class from Z
+    switch setup.classifier
+        case 'Network'
+            dlCReal = dlarray( ...
+                onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
+            [ dlCFake, state.cls ] = forward( dlnetCls, dlZFake );
+            loss(6) = setup.clsRegularization* ...
+                    crossentropy( dlCFake, dlCReal, ...
+                                  'TargetCategories', 'Independent' ); 
+
+        otherwise
+            ZFake = double(extractdata( dlZFake ))';
+            CReal = double(extractdata( dlCReal ));
+            switch setup.classifier
+                case 'Fisher'
+                    modelCls = fitcdiscr( ZFake, CReal );
+                case 'SVM'
+                    modelCls = fitcecoc( ZFake, CReal );
+            end
+            loss(6) = setup.clsRegularization*resubLoss( modelCls );
+            CFake = predict( modelCls, ZFake );
+            dlCFake = dlarray( ...
+                    onehotencode( setup.cLabels(CFake+1), 1 ), 'CB' );
+
+    end
 end
 
 
@@ -92,7 +116,8 @@ end
 
 if ~setup.pretraining
     % calculate the classifer loss
-    loss(6) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+    % loss(6) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+   
     
     % calculate the cluster loss
     loss(7) = setup.cluRegularization* ...
@@ -100,8 +125,8 @@ if ~setup.pretraining
 end
 
 % calculate gradients
-lossEnc = dlarray( sum(loss([1 2 3 5 6 7]) ), 'CB' );
-lossDec = dlarray( sum(loss([1 2 ]) ), 'CB' ); %5?
+lossEnc = dlarray( sum(loss([1 2 3 6 ]) ), 'CB' );
+lossDec = dlarray( sum(loss([1 2 3 6 ]) ), 'CB' ); %5?
 
 grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables, 'RetainData', true );
 grad.dec = dlgradient( lossDec, dlnetDec.Learnables, 'RetainData', true );
@@ -188,19 +213,31 @@ nGrps = length( labels );
 Z = (Z - mean(Z))./std( Z );
 
 % calculate the group centroids and deviations within the groups
+
 grpMean = zeros( nGrps-1, nDim );
+% compute the weighted group centroid
+for i = 2:nGrps
+    grpMean( i, : ) = sum( C( :,i ).*Z )/sum( C(:,i) );
+end
+
 dist = zeros( nObs, nGrps-1 );
 lossW = 0;
 for i = 2:nGrps
-    % compute the weighted group centroid
-    grpMean( i, : ) = sum( C( :,i ).*Z )/sum( C(:,i) );
-    % calculate the Euclidean distances to this centroid
+    % calculate the Euclidean distances to ith centroid
     dist( :, i ) = sum( (Z-grpMean(i,:)).^2, 2 );
-    % add up the weighted distances
-    lossW = lossW + sum( C(:,i).*dist(:,i) );
+    for j = 2:nGrps
+        % weighted distances to centroid
+        wdist = sum( C(:,j).*dist(:,i) );
+        if j==i 
+            % add 
+            lossW = lossW + wdist;
+        else
+            lossW = lossW - wdist;
+        end
+    end
 end
 % take the mean square diffence
-lossW = lossW/(nGrps*nObs);
+lossW = lossW/(nGrps*nGrps*nObs);
 
 % calculate between-groups loss (mutual separation)
 if nGrps>1

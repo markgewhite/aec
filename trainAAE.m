@@ -107,7 +107,8 @@ for epoch = 1:setup.nEpochs
                                         setup.beta2 );
 
                 % Update the classifier network parameters
-                if ~setup.pretraining
+                if strcmp( setup.classifier, 'Network' ) ...
+                        && ~setup.pretraining
                     dlnetCls.State = state.cls;
                     [ dlnetCls, avgG.cls, avgGS.cls ] = ...
                                     adamupdate( dlnetCls, ...
