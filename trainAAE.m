@@ -50,7 +50,7 @@ end
 
 nIter = floor( size(trnX,2)/setup.batchSize );
 j = 0;
-loss = zeros( nIter*setup.nEpochs, 6 );
+loss = zeros( nIter*setup.nEpochs, 7 );
 fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 
 for epoch = 1:setup.nEpochs
@@ -156,8 +156,15 @@ for epoch = 1:setup.nEpochs
     % update progress on screen
     if mod( epoch, setup.valFreq )==0
         meanLoss = mean(loss( j-nIter+1:j, : ));
-        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f  %1.3f %1.3f  %6.3f\n', epoch, meanLoss );
+        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f  %1.3f  %1.3f %1.3f  %6.3f\n', epoch, meanLoss );
         dlZTrn = predict( dlnetEnc, dlXTrn );
+        if setup.variational
+            if setup.useVarMean
+                dlZTrn = dlZTrn( 1:setup.zDim, : );
+            else
+                dlZTrn = reparameterize( dlZTrn );
+            end
+        end
         ZTrn = double(extractdata( dlZTrn ));
         plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.cDim, ...
                     setup.fda.tSpan, setup.fda.fdPar );

@@ -5,7 +5,7 @@
 
 clear;
 
-N = 100;
+N = 200;
 classSizes = [ N N N ];
 nDim = 1;
 nCodes = 4;
@@ -44,35 +44,38 @@ setup.aae.designFcn = @aaeDesign;
 setup.aae.gradFcn = @modelGradients;
 setup.aae.optimizer = 'ADAM';
 setup.aae.nEpochs = 1500;
-setup.aae.nEpochsPretraining = 500;
-setup.aae.batchSize = 50;
+setup.aae.nEpochsPretraining = 10;
+setup.aae.batchSize = 100;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
 setup.aae.weightL2Regularization = 1E-4;
+setup.aae.betaRegularization = 1E0;
 setup.aae.orthRegularization = 1E0;
 setup.aae.keyRegularization = 1E0;
 setup.aae.clsRegularization = 1E2;
 setup.aae.cluRegularization = 1E0;
 setup.aae.valFreq = 100;
 setup.aae.valSize = [2 5];
-setup.aae.lrFreq = 200;
+setup.aae.lrFreq = 250;
 setup.aae.lrFactor = 0.5;
+setup.aae.nDraw = 1;
 setup.aae.zDim = nCodes;
 setup.aae.xDim = length( setup.data.tFine );
 setup.aae.cLabels = categorical( 0:length(classSizes) );
 setup.aae.cDim = length( setup.aae.cLabels );
 setup.aae.fda = setup.fda;
-setup.aae.pretraining = false;
 setup.aae.l2regularization = false;
-setup.aae.orthogonal = false;
+setup.aae.orthogonal = true;
 setup.aae.keyCompLoss = false;
+setup.aae.variational = true;
+setup.aae.useVarMean = false;
 
 % encoder network parameters
 setup.aae.enc.type = 'Convolutional'; %'Convolutional'; % 
-setup.aae.enc.learnRate = 0.02;
+setup.aae.enc.learnRate = 0.05;
 setup.aae.enc.dropout = 0.1;
 setup.aae.enc.input = setup.aae.xDim;
-setup.aae.enc.outZ = setup.aae.zDim;
+setup.aae.enc.outZ = setup.aae.zDim*(setup.aae.variational + 1);
 setup.aae.enc.nHidden = 3;
 setup.aae.enc.projectionSize = [ setup.aae.xDim 1 1 ];
 setup.aae.enc.filterSize = [5 1];
@@ -82,8 +85,8 @@ setup.aae.enc.nFC = 50;
 
 % decoder network parameters
 setup.aae.dec.type = 'Convolutional'; %'FullyConnected'; % 
-setup.aae.dec.learnRate = 0.02;
-setup.aae.dec.dropout = 0.0;
+setup.aae.dec.learnRate = 0.05;
+setup.aae.dec.dropout = 0.2;
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
 setup.aae.dec.nHidden = 3;
@@ -99,8 +102,8 @@ setup.aae.dis.dropout = 0.2;
 setup.aae.dis.input = setup.aae.zDim;
 
 % classifier network parameters
-setup.aae.cls.learnRate = 0.02;
-setup.aae.cls.dropout = 0.2;
+setup.aae.cls.learnRate = 0.05;
+setup.aae.cls.dropout = 0.0;
 setup.aae.cls.input = setup.aae.zDim;
 setup.aae.cls.output = setup.aae.cDim;
 setup.aae.cls.nHidden = 1;
@@ -180,6 +183,15 @@ for i = 1:nRuns
     % generate encodings
     dlZTrn = predict( dlnetEnc, dlXTrn );
     dlZTst = predict( dlnetEnc, dlXTst );
+    if setup.aae.variational
+        if setup.aae.useVarMean
+            dlZTrn = dlZTrn( 1:setup.aae.zDim, : );
+            dlZTst = dlZTst( 1:setup.aae.zDim, : );
+        else
+            dlZTrn = reparameterize( dlZTrn );
+            dlZTst = reparameterize( dlZTst );
+        end
+    end
 
     % convert back to numeric arrays
     ZTrn = double(extractdata( dlZTrn ));

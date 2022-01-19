@@ -27,12 +27,21 @@ function [  grad, state, loss ] = ...
                                                 dlCReal, ...
                                                 setup )
 
-loss = dlarray( zeros(6,1), 'CB' );
+loss = dlarray( zeros(7,1), 'CB' );
 
 % --- reconstruction phase ---
 
 % generate latent encodings
-[ dlZFake, state.enc ] = forward( dlnetEnc, dlXReal );
+[ dlEncOutput, state.enc ] = forward( dlnetEnc, dlXReal );
+
+if setup.variational
+    % behave as a variational autoencoder
+    [ dlZFake, dlMu, dlLogVar ] = reparameterize( dlEncOutput, setup.nDraw );
+    dlXReal = repmat( dlXReal, 1, setup.nDraw );
+    dlCReal = repmat( dlCReal, setup.nDraw, 1 );
+else
+    dlZFake = dlEncOutput;
+end
 
 % reconstruct curves from latent codes
 [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
@@ -59,11 +68,17 @@ if setup.l2regularization
     loss(2) = setup.weightL2Regularization*mean( sum( w.^2 ) );
 end
 
+if setup.variational
+    % calculate the variational loss
+    loss(3) = -setup.betaRegularization* ...
+        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar).^2) );
+end
+
 if setup.orthogonal
     % calculate the orthogonal loss to encourage mutual independence
     ZFake = extractdata( dlZFake );
     orth = ZFake*ZFake';
-    loss(3) = setup.orthRegularization* ...
+    loss(4) = setup.orthRegularization* ...
                 sqrt(sum(orth.^2,'all') - sum(diag(orth).^2))/ ...
                 sum(ZFake.^2,'all');
 end
@@ -71,28 +86,28 @@ end
 if setup.keyCompLoss
     % calculate the key-phase component loss
     dlXComp = latentComponents( dlnetDec, dlZFake, size(dlCReal,1) );
-    loss(4) = setup.keyRegularization* ...
+    loss(5) = setup.keyRegularization* ...
                         mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
 end
 
 if ~setup.pretraining
     % calculate the classifer loss
-    loss(5) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
+    loss(6) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
     
     % calculate the cluster loss
-    loss(6) = setup.cluRegularization* ...
+    loss(7) = setup.cluRegularization* ...
                     clusterLoss( dlZFake, dlCFake, setup.cLabels );
 end
 
 % calculate gradients
-lossEnc = dlarray( sum(loss([1 2 3 5 6]) ), 'CB' );
-lossDec = dlarray( sum(loss([1 2]) ), 'CB' );
+lossEnc = dlarray( sum(loss([1 2 3 5 6 7]) ), 'CB' );
+lossDec = dlarray( sum(loss([1 2 ]) ), 'CB' ); %5?
 
 grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables, 'RetainData', true );
 grad.dec = dlgradient( lossDec, dlnetDec.Learnables, 'RetainData', true );
 
 if ~setup.pretraining
-    lossCls = dlarray( loss(5), 'CB' );
+    lossCls = dlarray( loss(6), 'CB' );
     grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
 else
     grad.cls = 0;

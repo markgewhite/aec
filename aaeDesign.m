@@ -57,13 +57,11 @@ switch paramEnc.type
                         'Name', ['tconv' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
                 reluLayer( 'Name', ['relu' num2str(i)] )
-                dropoutLayer( paramEnc.dropout, 'Name', ...
-                                                 ['drop' num2str(i)] )
                 ]; %#ok<*AGROW> 
         end
         lgraphEnc = addLayers( lgraphEnc, layersEnc );
         lgraphEnc = connectLayers( lgraphEnc, 'drop', 'proj' );
-        lastLayer = ['drop' num2str(i)];
+        lastLayer = ['relu' num2str(i)];
 
     otherwise
         error('Unrecognised encoder network type.');
