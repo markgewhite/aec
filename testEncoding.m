@@ -48,26 +48,34 @@ setup.aae.nEpochsPretraining = 10;
 setup.aae.batchSize = 100;
 setup.aae.beta1 = 0.9;
 setup.aae.beta2 = 0.999;
-setup.aae.weightL2Regularization = 1E-4;
-setup.aae.betaRegularization = 1E0;
-setup.aae.orthRegularization = 1E0;
-setup.aae.keyRegularization = 1E0;
-setup.aae.clsRegularization = 1E1;
-setup.aae.cluRegularization = 1E0;
+
+setup.aae.reg.gen = 1E0;
+setup.aae.reg.dis = 1E0;
+setup.aae.reg.wl2 = 1E-4;
+setup.aae.reg.beta = 1E0;
+setup.aae.reg.orth = 1E0;
+setup.aae.reg.comp = 1E0;
+setup.aae.reg.cls = 1E1;
+setup.aae.reg.clust = 1E0;
+
 setup.aae.valFreq = 20;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 250;
 setup.aae.lrFactor = 0.5;
+
 setup.aae.nDraw = 1;
 setup.aae.zDim = nCodes;
 setup.aae.xDim = length( setup.data.tFine );
 setup.aae.cLabels = categorical( 0:length(classSizes) );
 setup.aae.cDim = length( setup.aae.cLabels );
 setup.aae.fda = setup.fda;
+
+setup.aae.variational = false;
+setup.aae.adversarial = true;
 setup.aae.l2regularization = false;
 setup.aae.orthogonal = true;
 setup.aae.keyCompLoss = false;
-setup.aae.variational = true;
+setup.aae.clusterLoss = true;
 setup.aae.useVarMean = true;
 setup.aae.classifier = 'Network';
 
@@ -98,9 +106,11 @@ setup.aae.dec.stride = [1 1];
 setup.aae.dec.nFC = 50;
 
 % discriminator network parameters
-setup.aae.dis.learnRate = 0.02;
+setup.aae.dis.learnRate = 0.05;
 setup.aae.dis.dropout = 0.2;
 setup.aae.dis.input = setup.aae.zDim;
+setup.aae.dis.nHidden = 1;
+setup.aae.dis.nFC = 5*setup.aae.zDim;
 
 % classifier network parameters
 setup.aae.cls.learnRate = 0.05;
@@ -168,7 +178,7 @@ for i = 1:nRuns
 
     % train the autoencoder
     if adversarialDesign
-        [dlnetEnc, dlnetDec, dlnetCls] = ...
+        [dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
                     trainAAE( XTrn, YTrn, setup.aae, ax );
     else
         disp('Training autoencoder ... ');

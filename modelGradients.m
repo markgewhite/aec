@@ -6,6 +6,7 @@
 % Parameters:
 %           dlnetEnc    : encoder network
 %           dlnetDec    : decoder network
+%           dlnetDis    : discriminator network
 %           dlnetCls    : classifier network
 %           dlXReal     : training data (batch)
 %           dlCReal     : training data (batch)
@@ -22,12 +23,11 @@ function [  grad, state, loss ] = ...
                                 modelGradients( ...
                                                 dlnetEnc, ...
                                                 dlnetDec, ...
+                                                dlnetDis, ...
                                                 dlnetCls, ...
                                                 dlXReal, ...
                                                 dlCReal, ...
                                                 setup )
-
-loss = dlarray( zeros(7,1), 'CB' );
 
 % --- reconstruction phase ---
 
@@ -46,20 +46,47 @@ end
 % reconstruct curves from latent codes
 [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
 
+% calculate the reconstruction loss
+loss.recon = mean(mean( (dlXFake - dlXReal).^2 ));
+
+if setup.adversarial   
+    % predict authenticity from real Z using the discriminator
+    dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
+    dlDReal = forward( dlnetDis, dlZReal );
+    
+    % predict authenticity from fake Z
+    [ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
+    
+    % discriminator loss for Z
+    loss.dis = -setup.reg.dis* ...
+                    mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
+    loss.gen = -setup.reg.gen* ...
+                    mean( log(dlDFake + eps) );
+else
+    loss.dis = 0;
+    loss.gen = 0;
+    state.dis = [];
+end
+
+if setup.variational && ~setup.adversarial
+    % calculate the variational loss
+    loss.var = -setup.reg.beta* ...
+        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar).^2) );
+else
+    loss.var = 0;
+end
 
 
 % --- classification phase ---
 
 if ~setup.pretraining
-    % convert the real class
-    
     % predict the class from Z
     switch setup.classifier
         case 'Network'
             dlCReal = dlarray( ...
                 onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
             [ dlCFake, state.cls ] = forward( dlnetCls, dlZFake );
-            loss(6) = setup.clsRegularization* ...
+            loss.cls = setup.reg.cls* ...
                     crossentropy( dlCFake, dlCReal, ...
                                   'TargetCategories', 'Independent' ); 
 
@@ -72,71 +99,77 @@ if ~setup.pretraining
                 case 'SVM'
                     modelCls = fitcecoc( ZFake, CReal );
             end
-            loss(6) = setup.clsRegularization*resubLoss( modelCls );
+            loss.cls = setup.reg.cls*resubLoss( modelCls );
             CFake = predict( modelCls, ZFake );
             dlCFake = dlarray( ...
                     onehotencode( setup.cLabels(CFake+1), 1 ), 'CB' );
 
     end
+
+else
+    loss.cls = 0;
 end
 
 
-% --- calculate losses ---
-
-% calculate the reconstruction loss
-loss(1) = mean(mean( (dlXFake - dlXReal).^2 ));
+% --- calculate other losses ---
 
 if setup.l2regularization
     % calculate the L2 regularization loss
     w = learnables( {dlnetEnc.Learnables, dlnetDec.Learnables} );
-    loss(2) = setup.weightL2Regularization*mean( sum( w.^2 ) );
-end
-
-if setup.variational
-    % calculate the variational loss
-    loss(3) = -setup.betaRegularization* ...
-        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar).^2) );
+    loss.wl2 = setup.reg.wl2*mean( sum( w.^2 ) );
+else
+    loss.wl2 = 0;
 end
 
 if setup.orthogonal
     % calculate the orthogonal loss to encourage mutual independence
     ZFake = extractdata( dlZFake );
     orth = ZFake*ZFake';
-    loss(4) = setup.orthRegularization* ...
-                sqrt(sum(orth.^2,'all') - sum(diag(orth).^2))/ ...
-                sum(ZFake.^2,'all');
+    loss.orth = setup.reg.orth* ...
+                    sqrt(sum(orth.^2,'all') - sum(diag(orth).^2))/ ...
+                    sum(ZFake.^2,'all');
+else
+    loss.orth = 0;
 end
 
 if setup.keyCompLoss
     % calculate the key-phase component loss
     dlXComp = latentComponents( dlnetDec, dlZFake, size(dlCReal,1) );
-    loss(5) = setup.keyRegularization* ...
+    loss.comp = setup.reg.comp* ...
                         mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
+else
+    loss.comp = 0;
 end
 
-if ~setup.pretraining
-    % calculate the classifer loss
-    % loss(6) = setup.clsRegularization*mean(mean( (dlCFake - dlCReal).^2 ));
-   
-    
+if setup.clusterLoss && ~setup.pretraining
     % calculate the cluster loss
-    loss(7) = setup.cluRegularization* ...
-                    clusterLoss( dlZFake, dlCFake, setup.cLabels );
+    loss.clust = setup.reg.clust* ...
+                clusterLoss( dlZFake, dlCFake, setup.cLabels );
+else
+    loss.clust = 0;
 end
 
-% calculate gradients
-lossEnc = dlarray( sum(loss([1 2 3 6 ]) ), 'CB' );
-lossDec = dlarray( sum(loss([1 2 3 6 ]) ), 'CB' ); %5?
+
+% --- calculate gradients ---
+lossEnc = loss.recon + loss.gen + loss.var + loss.cls + loss.comp;
+lossDec = loss.recon + loss.dis;
 
 grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables, 'RetainData', true );
 grad.dec = dlgradient( lossDec, dlnetDec.Learnables, 'RetainData', true );
 
+if setup.adversarial
+    grad.dis = dlgradient( loss.dis, dlnetDis.Learnables, 'RetainData', true );
+else
+    grad.dis = 0;
+end
+
 if ~setup.pretraining
-    lossCls = dlarray( loss(6), 'CB' );
-    grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
+    grad.cls = dlgradient( loss.cls, dlnetCls.Learnables );
 else
     grad.cls = 0;
 end
+
+loss = struct2array( loss );
 
 end
 
