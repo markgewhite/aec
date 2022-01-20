@@ -43,7 +43,7 @@ setup.fda.tSpan = setup.data.tFine;
 setup.aae.designFcn = @aaeDesign;
 setup.aae.gradFcn = @modelGradients;
 setup.aae.optimizer = 'ADAM';
-setup.aae.nEpochs = 250;
+setup.aae.nEpochs = 1500;
 setup.aae.nEpochsPretraining = 10;
 setup.aae.batchSize = 100;
 setup.aae.beta1 = 0.9;
@@ -58,7 +58,7 @@ setup.aae.reg.comp = 1E0;
 setup.aae.reg.cls = 1E1;
 setup.aae.reg.clust = 1E0;
 
-setup.aae.valFreq = 20;
+setup.aae.valFreq = 100;
 setup.aae.valSize = [2 5];
 setup.aae.lrFreq = 250;
 setup.aae.lrFactor = 0.5;
@@ -70,7 +70,7 @@ setup.aae.cLabels = categorical( 0:length(classSizes) );
 setup.aae.cDim = length( setup.aae.cLabels );
 setup.aae.fda = setup.fda;
 
-setup.aae.variational = false;
+setup.aae.variational = true;
 setup.aae.adversarial = true;
 setup.aae.l2regularization = false;
 setup.aae.orthogonal = true;

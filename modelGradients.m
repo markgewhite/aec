@@ -59,7 +59,7 @@ if setup.adversarial
     
     % discriminator loss for Z
     loss.dis = -setup.reg.dis* ...
-                    mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
+                    0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
     loss.gen = -setup.reg.gen* ...
                     mean( log(dlDFake + eps) );
 else
