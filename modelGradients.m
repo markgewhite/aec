@@ -71,7 +71,7 @@ end
 if setup.variational && ~setup.adversarial
     % calculate the variational loss
     loss.var = -setup.reg.beta* ...
-        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar).^2) );
+        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar)) );
 else
     loss.var = 0;
 end
