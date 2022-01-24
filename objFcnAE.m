@@ -20,9 +20,10 @@ setup.aae.dec.dropout = setup.aae.enc.dropout;
 setup.aae.dec.filterSize = setup.aae.enc.filterSize;
 setup.aae.dec.stride = setup.aae.enc.stride;
 setup.aae.dec.nHidden = setup.aae.enc.nHidden;
+setup.aae.dec.scale = setup.aae.enc.scale;
 
 % generate a new data set
-%rng( setup.randomSeed );
+rng( setup.randomSeed );
 Xraw = genSyntheticData( setup.data.classSizes, ...
                          setup.data.sigDim, ...
                          setup.data );
@@ -34,7 +35,7 @@ N = setup.data.classSizes;
 Y = [ repelem( 1, N(1) ) repelem( 2, N(2) ) repelem( 3, N(3) ) ]';
 
 % partitioning
-%rng( 'shuffle' );
+rng( 'shuffle' );
 cvPart = cvpartition( Y, 'Holdout', 0.5 );
 XTrn = X( :, training(cvPart) );
 XTst = X( :, test(cvPart)  );
@@ -42,7 +43,7 @@ YTrn = Y( training(cvPart) );
 YTst = Y( test(cvPart)  );
 
 % train the autoencoder
-[dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
+[dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrace ] = ...
                     trainAAE( XTrn, YTrn, setup.aae );
 
 % switch to DL array format

@@ -86,27 +86,30 @@ setup.aae.classifier = 'Network';
 % encoder network parameters
 setup.aae.enc.type = 'Convolutional'; %'Convolutional'; % 
 setup.aae.enc.learnRate = 0.02;
-setup.aae.enc.dropout = 0.1;
 setup.aae.enc.input = setup.aae.xDim;
 setup.aae.enc.outZ = setup.aae.zDim*(setup.aae.variational + 1);
-setup.aae.enc.nHidden = 3;
-setup.aae.enc.projectionSize = [ setup.aae.xDim sigDim 1 ];
-setup.aae.enc.filterSize = 5;
-setup.aae.enc.nFilters = 16;
-setup.aae.enc.stride = 1;
+setup.aae.enc.projectionSize = setup.aae.xDim; % [ setup.aae.xDim sigDim 1 ];
+setup.aae.enc.nHidden = 2;
+setup.aae.enc.filterSize = 3;
+setup.aae.enc.nFilters = 8;
+setup.aae.enc.stride = 2;
+setup.aae.enc.scale = 0.2;
+setup.aae.enc.dropout = 0.5;
 setup.aae.enc.nFC = 50;
 
 % decoder network parameters
 setup.aae.dec.type = 'Convolutional'; %'FullyConnected'; % 
 setup.aae.dec.learnRate = 0.005;
-setup.aae.dec.dropout = 0.2;
+
 setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
-setup.aae.dec.nHidden = 3;
-setup.aae.dec.projectionSize = [ 5 sigDim 1 ];
-setup.aae.dec.filterSize = 5;
-setup.aae.dec.nFilters = 16;
-setup.aae.dec.stride = 1;
+setup.aae.dec.projectionSize = 5; % [ 5 sigDim 1 ];
+setup.aae.dec.nHidden = 2;
+setup.aae.dec.filterSize = 3;
+setup.aae.dec.nFilters = 8;
+setup.aae.dec.stride = 2;
+setup.aae.dec.scale = 0.2;
+setup.aae.dec.dropout = 0.5;
 setup.aae.dec.nFC = 50;
 
 % discriminator network parameters

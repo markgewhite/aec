@@ -48,7 +48,8 @@ switch paramEnc.type
         lastLayer = ['drop' num2str(i)];
 
     case 'Convolutional'
-        layersEnc = reshapeLayer( paramEnc.projectionSize, 'Name', 'proj' );
+        projectionSize = [ paramEnc.projectionSize 1 1 ];
+        layersEnc = reshapeLayer( projectionSize, 'Name', 'proj' );
         filterSize = [ paramEnc.filterSize 1 ];
         stride = [ paramEnc.stride 1 ];
         for i = 1:paramEnc.nHidden
@@ -59,7 +60,8 @@ switch paramEnc.type
                         'Stride', stride, ...
                         'Name', ['tconv' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                reluLayer( 'Name', ['relu' num2str(i)] )
+                leakyReluLayer( paramEnc.scale, ...
+                                'Name', ['relu' num2str(i)] )
                 ]; %#ok<*AGROW> 
         end
         lgraphEnc = addLayers( lgraphEnc, layersEnc );
@@ -100,7 +102,8 @@ switch paramDec.type
         lastLayer = ['sig' num2str(i)];
 
     case 'Convolutional'
-        layersDec = projectAndReshapeLayer( paramDec.projectionSize, ...
+        projectionSize = [ paramDec.projectionSize 1 1 ];
+        layersDec = projectAndReshapeLayer( projectionSize, ...
                                     paramDec.input, 'Name', 'proj' );
         filterSize = [ paramDec.filterSize 1 ];
         stride = [ paramDec.stride 1 ];
@@ -112,7 +115,8 @@ switch paramDec.type
                         'Stride', stride, ...
                         'Name', ['tconv' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                reluLayer( 'Name', ['relu' num2str(i)] )            
+                leakyReluLayer( paramDec.scale, ...
+                                'Name', ['relu' num2str(i)] )            
                 ]; %#ok<*AGROW> 
         end
         lgraphDec = addLayers( lgraphDec, layersDec );

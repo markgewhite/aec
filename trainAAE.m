@@ -16,7 +16,7 @@
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls ] = ...
+function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, loss ] = ...
                             trainAAE( trnX, trnC, setup, ax )
 
 
