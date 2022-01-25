@@ -95,8 +95,6 @@ setup.aae.enc.nFilters = 8;
 setup.aae.enc.stride = 2;
 setup.aae.enc.scale = 0.2;
 setup.aae.enc.dropout = 0.1;
-setup.aae.enc.maxPooling = false;
-setup.aae.enc.poolSize = 3;
 setup.aae.enc.nFC = 50;
 
 % decoder network parameters
@@ -112,8 +110,6 @@ setup.aae.dec.nFilters = 8;
 setup.aae.dec.stride = 2;
 setup.aae.dec.scale = 0.2;
 setup.aae.dec.dropout = 0;
-setup.aae.dec.maxPooling = false;
-setup.aae.dec.poolSize = 3;
 setup.aae.dec.nFC = 50;
 
 % discriminator network parameters
