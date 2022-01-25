@@ -20,16 +20,29 @@ if isempty( hp )
     return
 end
 
-for i = size( hp, 2 )
+for i = 1:size( hp, 2 )
 
     hpName = hp.Properties.VariableNames{i};
+
+    if iscategorical( hp.(hpName) )
+        switch hp.(hpName)
+            case 'false'
+                value = false;
+            case 'true'
+                value = true;
+            otherwise
+                value = char(hp.(hpName));
+        end
+    else
+        value = hp.(hpName);
+    end
 
     if contains( hpName, '__' )
         optGroup = extractBefore( hpName, '__' );
         optVar = extractAfter( hpName, '__' );
-        setup.(optGroup).(optVar) = hp.(hpName);
+        setup.(optGroup).(optVar) = value;
     else
-        setup.(optVar) = hp.(hpName);
+        setup.(hpName) = value;
     end
 
 end

@@ -63,10 +63,20 @@ switch paramEnc.type
                 leakyReluLayer( paramEnc.scale, ...
                                 'Name', ['relu' num2str(i)] )
                 ]; %#ok<*AGROW> 
+            if paramEnc.maxPooling
+                poolSize = [ paramEnc.poolSize 1 ];
+                layersEnc = [ layersEnc; ...
+                    maxPooling2dLayer( poolSize, ...
+                            'Name', ['mpool' num2str(i)] ) ];
+            end
         end
         lgraphEnc = addLayers( lgraphEnc, layersEnc );
         lgraphEnc = connectLayers( lgraphEnc, 'drop', 'proj' );
-        lastLayer = ['relu' num2str(i)];
+        if paramEnc.maxPooling
+            lastLayer = ['mpool' num2str(i)];
+        else
+            lastLayer = ['relu' num2str(i)];
+        end
 
     otherwise
         error('Unrecognised encoder network type.');
@@ -118,11 +128,21 @@ switch paramDec.type
                 leakyReluLayer( paramDec.scale, ...
                                 'Name', ['relu' num2str(i)] )            
                 ]; %#ok<*AGROW> 
+            if paramDec.maxPooling
+                poolSize = [ paramDec.poolSize 1 ];
+                layersDec = [ layersDec; ...
+                    maxPooling2dLayer( poolSize, ...
+                            'Name', ['mpool' num2str(i)] ) ];
+            end
         end
         lgraphDec = addLayers( lgraphDec, layersDec );
         lgraphDec = connectLayers( lgraphDec, 'in', 'proj' );
-        lastLayer = ['relu' num2str(i)];
-    
+        if paramDec.maxPooling
+            lastLayer = ['mpool' num2str(i)];
+        else
+            lastLayer = ['relu' num2str(i)];
+        end
+
     otherwise
             error('Unrecognised decoder network type.');
         

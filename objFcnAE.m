@@ -16,7 +16,7 @@ function obj = objFcnAE( hyperparams, setup )
 setup.aae = unpackHyperparameters( setup.aae, hyperparams );
 
 % impose the same setup for the decoder as the encoder
-setup.aae.dec.dropout = setup.aae.enc.dropout;
+% setup.aae.dec.dropout = setup.aae.enc.dropout;
 setup.aae.dec.filterSize = setup.aae.enc.filterSize;
 setup.aae.dec.stride = setup.aae.enc.stride;
 setup.aae.dec.nHidden = setup.aae.enc.nHidden;
