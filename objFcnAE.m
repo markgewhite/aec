@@ -91,7 +91,7 @@ errTrn = sqrt( mse( XTrn, XTrnHat ) );
 errTst = sqrt( mse( XTst, XTstHat ) );
 
 % set the objective function's output
-obj = errTst;
+obj = mean( lossTrace(end-9:end, 7) );
 
 end
 

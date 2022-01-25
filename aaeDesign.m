@@ -148,13 +148,12 @@ layersDis = featureInputLayer( paramDis.input, 'Name', 'in' );
 for i = 1:paramDis.nHidden
     layersDis = [ layersDis; ...
         fullyConnectedLayer( paramDis.nFC, 'Name', ['fc' num2str(i)] )
-        sigmoidLayer( 'Name', ['sig' num2str(i)] )
+        leakyReluLayer( paramDis.scale, 'Name', ['relu' num2str(i)] )
         ];
 end
 
 % create final layers
 layersDis = [ layersDis; ...    
-        dropoutLayer( paramDis.dropout, 'Name', 'drop1' )
         fullyConnectedLayer( 1, 'Name', 'fcout' )
         sigmoidLayer( 'Name', 'out' )
         ];

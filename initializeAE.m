@@ -91,7 +91,7 @@ setup.aae.enc.outZ = setup.aae.zDim*(setup.aae.variational + 1);
 setup.aae.enc.projectionSize = setup.aae.xDim; % [ setup.aae.xDim sigDim 1 ];
 setup.aae.enc.nHidden = 1;
 setup.aae.enc.filterSize = 3;
-setup.aae.enc.nFilters = 8;
+setup.aae.enc.nFilters = 18;
 setup.aae.enc.stride = 3;
 setup.aae.enc.scale = 0.2;
 setup.aae.enc.dropout = 0.1;
@@ -105,8 +105,8 @@ setup.aae.dec.input = setup.aae.zDim;
 setup.aae.dec.outX = setup.aae.xDim;
 setup.aae.dec.projectionSize = 5; % [ 5 sigDim 1 ];
 setup.aae.dec.nHidden = 1;
-setup.aae.dec.filterSize = 3;
-setup.aae.dec.nFilters = 8;
+setup.aae.dec.filterSize = 18;
+setup.aae.dec.nFilters = 32;
 setup.aae.dec.stride = 3;
 setup.aae.dec.scale = 0.2;
 setup.aae.dec.dropout = 0;
@@ -114,10 +114,11 @@ setup.aae.dec.nFC = 50;
 
 % discriminator network parameters
 setup.aae.dis.learnRate = 0.01;
-setup.aae.dis.dropout = 0.2;
+setup.aae.dis.dropout = 0.0;
 setup.aae.dis.input = setup.aae.zDim;
 setup.aae.dis.nHidden = 1;
 setup.aae.dis.nFC = 5*setup.aae.zDim;
+setup.aae.dis.scale = 0.0;
 
 % classifier network parameters
 setup.aae.cls.learnRate = 0.01;
