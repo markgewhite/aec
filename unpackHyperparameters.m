@@ -37,9 +37,9 @@ for i = 1:size( hp, 2 )
         value = hp.(hpName);
     end
 
-    if contains( hpName, '__' )
-        optGroup = extractBefore( hpName, '__' );
-        optVar = extractAfter( hpName, '__' );
+    if contains( hpName, '_x_' )
+        optGroup = extractBefore( hpName, '_x_' );
+        optVar = extractAfter( hpName, '_x_' );
         setup.(optGroup).(optVar) = value;
     else
         setup.(hpName) = value;

@@ -21,8 +21,17 @@ function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, loss ] = ...
 
 
 % define the networks
-[ dlnetEnc, dlnetDec, dlnetDis, dlnetCls ] = ...
+try
+    [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls ] = ...
         setup.designFcn( setup.enc, setup.dec, setup.dis, setup.cls );   
+catch
+    dlnetEnc = [];
+    dlnetDec = [];
+    dlnetDis = [];
+    dlnetCls = [];
+    loss = NaN;
+    return
+end
 
 % create datastores
 dsTrnX = arrayDatastore( trnX, 'IterationDimension', 2 );

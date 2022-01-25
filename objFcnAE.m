@@ -45,6 +45,10 @@ YTst = Y( test(cvPart)  );
 % train the autoencoder
 [dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrace ] = ...
                     trainAAE( XTrn, YTrn, setup.aae );
+if isnan( lossTrace )
+    obj = NaN;
+    return
+end
 
 % switch to DL array format
 dlXTrn = dlarray( XTrn, 'CB' );
