@@ -114,19 +114,20 @@ setup.aae.dec.nFC = 50;
 
 % discriminator network parameters
 setup.aae.dis.learnRate = 0.01;
-setup.aae.dis.dropout = 0.0;
 setup.aae.dis.input = setup.aae.zDim;
-setup.aae.dis.nHidden = 1;
-setup.aae.dis.nFC = 5*setup.aae.zDim;
-setup.aae.dis.scale = 0.0;
+setup.aae.dis.nHidden = 4;
+setup.aae.dis.nFC = 100;
+setup.aae.dis.scale = 0.3;
+setup.aae.dis.dropout = 0.15;
 
 % classifier network parameters
 setup.aae.cls.learnRate = 0.01;
-setup.aae.cls.dropout = 0.0;
 setup.aae.cls.input = setup.aae.zDim;
 setup.aae.cls.output = setup.aae.cDim;
 setup.aae.cls.nHidden = 1;
-setup.aae.cls.nFC = 5*setup.aae.zDim;
+setup.aae.cls.nFC = 300;
+setup.aae.cls.scale = 0.3;
+setup.aae.cls.dropout = 0.15;
 
 
 end

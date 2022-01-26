@@ -149,6 +149,7 @@ for i = 1:paramDis.nHidden
     layersDis = [ layersDis; ...
         fullyConnectedLayer( paramDis.nFC, 'Name', ['fc' num2str(i)] )
         leakyReluLayer( paramDis.scale, 'Name', ['relu' num2str(i)] )
+        dropoutLayer( paramDis.dropout, 'Name', ['drop' num2str(i)] )
         ];
 end
 
@@ -174,13 +175,13 @@ layersCls = featureInputLayer( paramCls.input, 'Name', 'in' );
 for i = 1:paramCls.nHidden
     layersCls = [ layersCls; ...
         fullyConnectedLayer( paramCls.nFC, 'Name', ['fc' num2str(i)] )
-        sigmoidLayer( 'Name', ['sig' num2str(i)] )
+        leakyReluLayer( paramCls.scale, 'Name', ['relu' num2str(i)] )
+        dropoutLayer( paramCls.dropout, 'Name', ['drop' num2str(i)] )
         ];
 end
 
 % create final layers
 layersCls = [ layersCls; ...    
-        dropoutLayer( paramCls.dropout, 'Name', 'drop1' )
         fullyConnectedLayer( paramCls.output, 'Name', 'fcout' )
         sigmoidLayer( 'Name', 'out' )
         ];

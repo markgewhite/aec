@@ -22,6 +22,9 @@ setup.aae.dec.stride = setup.aae.enc.stride;
 setup.aae.dec.nHidden = setup.aae.enc.nHidden;
 setup.aae.dec.scale = setup.aae.enc.scale;
 
+% update dependencies
+setup.aae.enc.outZ = setup.aae.zDim*(setup.aae.variational + 1);
+
 % generate a new data set
 rng( setup.randomSeed );
 Xraw = genSyntheticData( setup.data.classSizes, ...
@@ -91,8 +94,17 @@ errTrn = sqrt( mse( XTrn, XTrnHat ) );
 errTst = sqrt( mse( XTst, XTstHat ) );
 
 % set the objective function's output
-obj = mean( lossTrace(end-9:end, 7) );
-
+switch setup.objective
+    case 'TestError'
+        obj = errTst;
+    case 'TrainError'
+        obj = errTrn;
+    case 'OrthogonalLoss'
+        obj = mean( lossTrace(end-9:end, 7) );
+    case 'ClassificationError'
+        obj = errNet;
+    otherwise
+        error('Unrecognised objective');
 end
 
 
