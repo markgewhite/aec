@@ -73,6 +73,7 @@ for epoch = 1:setup.nEpochs
     
     % Pre-training
     setup.pretraining = epoch<=setup.nEpochsPretraining;
+    setup.normalDistribution = epoch<=20;
 
     % Shuffle the data
     shuffle( mbqTrn );

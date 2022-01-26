@@ -49,33 +49,6 @@ end
 % calculate the reconstruction loss
 loss.recon = mean(mean( (dlXFake - dlXReal).^2 ));
 
-if setup.adversarial   
-    % predict authenticity from real Z using the discriminator
-    dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
-    dlDReal = forward( dlnetDis, dlZReal );
-    
-    % predict authenticity from fake Z
-    [ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
-    
-    % discriminator loss for Z
-    loss.dis = -setup.reg.dis* ...
-                    0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
-    loss.gen = -setup.reg.gen* ...
-                    mean( log(dlDFake + eps) );
-else
-    loss.dis = 0;
-    loss.gen = 0;
-    state.dis = [];
-end
-
-if setup.variational && ~setup.adversarial
-    % calculate the variational loss
-    loss.var = -setup.reg.beta* ...
-        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar)) );
-else
-    loss.var = 0;
-end
-
 
 % --- classification phase ---
 
@@ -108,6 +81,40 @@ if ~setup.pretraining
 
 else
     loss.cls = 0;
+end
+
+
+% --- distribution matching phase ---
+
+if setup.adversarial   
+    % predict authenticity from real Z using the discriminator
+    if setup.pretraining || setup.normalDistribution
+        dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
+    else
+        dlZReal = genZReal( dlZFake, dlCFake );
+    end
+    dlDReal = forward( dlnetDis, dlZReal );
+    
+    % predict authenticity from fake Z
+    [ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
+    
+    % discriminator loss for Z
+    loss.dis = -setup.reg.dis* ...
+                    0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
+    loss.gen = -setup.reg.gen* ...
+                    mean( log(dlDFake + eps) );
+else
+    loss.dis = 0;
+    loss.gen = 0;
+    state.dis = [];
+end
+
+if setup.variational && ~setup.adversarial
+    % calculate the variational loss
+    loss.var = -setup.reg.beta* ...
+        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar)) );
+else
+    loss.var = 0;
 end
 
 
@@ -230,6 +237,42 @@ for j = 1:n
     end
     XCost( 1:i, j ) = 1;
 end
+
+end
+
+
+function dlZReal = genZReal( dlZ, dlC )
+
+Z = extractdata( dlZ )';
+[ nObs, nDim ] = size( Z );
+
+C = extractdata( dlC )';
+nGrps = size( C, 2 );
+
+% standardise
+% Z = (Z - mean(Z))./std( Z );
+
+ZDraw = zeros( nObs, nDim, nGrps );
+grpMean = zeros( nDim, nGrps );
+grpTarget = zeros( nDim, nGrps );
+pt = [ 0 -1 1 ];
+for i = 1:nGrps
+    % compute the weighted group centroid
+    grpMean( :, i ) = sum( C( :,i ).*Z )/sum( C(:,i) );
+    grpTarget( :, i ) = repelem( pt(i), nDim );
+    % generate a Gaussian distribution about this mean
+    ZDraw( :, :, i ) = grpTarget( :, i )' + 0.5*randn( nObs, nDim );
+end
+
+draw = rand( nObs, 1 );
+ZReal = zeros( nObs, nDim );
+grpProp = [0 cumsum(sum(C))/sum(C,'all')];
+for i = 1:nGrps
+    grpIdx = (draw>grpProp(i) & draw<=grpProp(i+1));
+    ZReal(grpIdx,:) = ZDraw(grpIdx,:,i);
+end
+
+dlZReal = dlarray( ZReal', 'CB' );
 
 end
 

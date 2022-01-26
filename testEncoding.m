@@ -6,14 +6,9 @@
 clear;
 
 
-N = 200;
-classSizes = [ N N N ];
-nDim = 1;
 nCodes = 4;
 nRuns = 100;
-
-% initalise setup
-setup = initializeAE( nCodes, classSizes, nDim );
+dataSource = 'JumpVGRF';
 
 % initialise plots
 figure(3);
@@ -40,13 +35,10 @@ for i = 1:nRuns
 
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
-    % generate a new data set for each iteration
-    Xraw = genSyntheticData( classSizes, nDim, setup.data );
-    XFd = smooth_basis( setup.data.tSpan, Xraw, setup.fda.fdPar );
-    X = eval_fd( setup.data.tFine, XFd );
+    [X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes ); 
 
-    % classes
-    Y = [ repelem(1,N) repelem(2,N) repelem(3,N) ]';
+    % initalise autoencoder setup
+    setup.aae = initializeAE( setup.data );
 
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
@@ -102,7 +94,7 @@ for i = 1:nRuns
 
     % plot characteristic features
     plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.aae.cDim, ...
-                    setup.data.tFine, setup.fda.fdPar );
+                    setup.data.tFine, setup.data.fda.fdPar );
 
     % classify using discriminant analysis
     model = fitcdiscr( ZTrn', YTrn );
@@ -123,6 +115,10 @@ for i = 1:nRuns
     ZTrnNse = ZTrn + 1E-6*randn(size(ZTrn)); % to avoid errors
     ZTrnCanInfo = cda( ZTrn', YTrn );
     ZTstCan = ZTst'*ZTrnCanInfo.loadings;
+    if size( ZTstCan, 2 )==1
+        % only one canonical dimension
+        ZTstCan = [ ZTstCan ZTstCan ]; %#ok<AGROW> 
+    end
     plotClusters( ax.ae.cls, ZTstCan, YTst, YHatTst );
     title( ax.ae.cls, 'AE Encoding' );
     drawnow;
@@ -139,7 +135,8 @@ for i = 1:nRuns
     disp( ['AE Testing Error  = ' num2str(errTst)] );
 
     % plot resulting curves
-    XTstHatFd = smooth_basis( setup.data.tFine, XTstHat, setup.fda.fdPar );
+    XTstHatFd = smooth_basis( setup.data.tFine, XTstHat, ...
+                                setup.data.fda.fdPar );
 
     subplotFd( ax.ae.pred, XTstHatFd );
     title( ax.ae.pred, 'AE Prediction' );
@@ -149,8 +146,8 @@ for i = 1:nRuns
     % ----- PCA encoding -----
 
     disp('Running PCA ... ');
-    XTrnFd = smooth_basis( setup.data.tFine, XTrn, setup.fda.fdPar );
-    XTstFd = smooth_basis( setup.data.tFine, XTst, setup.fda.fdPar );
+    XTrnFd = smooth_basis( setup.data.tFine, XTrn, setup.data.fda.fdPar );
+    XTstFd = smooth_basis( setup.data.tFine, XTst, setup.data.fda.fdPar );
     pcaXTrnFd = pca_fd( XTrnFd, nCodes );
 
     % generate predictions and calculate errors
@@ -161,7 +158,7 @@ for i = 1:nRuns
                           nCodes, true );
     
     XTrnFdPCA = pcaXTrnFd.meanfd + pcaXTrnFd.fdhatfd;
-    XTstFdPCA = reconstructFd( pcaXTrnFd, ZTstPCA, setup.fda );
+    XTstFdPCA = reconstructFd( pcaXTrnFd, ZTstPCA, setup.data.fda );
 
     XTrnHatPCA = eval_fd( setup.data.tFine, XTrnFdPCA );
     XTstHatPCA = eval_fd( setup.data.tFine, XTstFdPCA );
