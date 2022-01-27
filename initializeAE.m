@@ -31,11 +31,10 @@ setup.reg.wl2 = 1E-4;
 setup.reg.beta = 1E0;
 setup.reg.orth = 1E0;
 setup.reg.comp = 1E0;
-setup.reg.cls = 1E1;
+setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
-setup.valFreq = 50;
-%setup.valSize = [2 5];
+setup.valFreq = 100;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
 

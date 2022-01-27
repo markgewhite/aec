@@ -45,7 +45,7 @@ switch source
         Xraw = padData( Xraw, maxLen, 1 );
 
         setup.tSpan = linspace( -maxLen+1, 0, maxLen );
-        setup.tFine = linspace( -maxLen+1, 0, 101 );
+        setup.tFine = linspace( -maxLen+1, 0, 21 );
 
         setup.nDraw = 1;
         setup.cLabels = categorical( 0:2 );

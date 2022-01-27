@@ -148,10 +148,14 @@ else
     loss.comp = 0;
 end
 
-if setup.clusterLoss && ~setup.pretraining
+if setup.clusterLoss % && ~setup.pretraining
     % calculate the cluster loss
+    if setup.pretraining
+        dlCReal = dlarray( ...
+                onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
+    end
     loss.clust = setup.reg.clust* ...
-                clusterLoss( dlZFake, dlCFake, setup.cLabels );
+                clusterLoss( dlZFake, dlCReal, setup.cLabels );
 else
     loss.clust = 0;
 end
@@ -171,7 +175,9 @@ else
 end
 
 if ~setup.pretraining
-    grad.cls = dlgradient( loss.cls, dlnetCls.Learnables );
+    % make cluster loss traceable
+    lossCls = loss.recon + loss.cls - loss.recon;
+    grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
 else
     grad.cls = 0;
 end
@@ -254,12 +260,9 @@ Z = (Z - mean(Z))./std(Z);
 
 ZDraw = zeros( nObs, nDim, nGrps );
 grpMean = zeros( nDim, nGrps );
-grpTarget = zeros( nDim, nGrps );
-pt = [ 0 -1 1 ];
 for i = 1:nGrps
     % compute the weighted group centroid
     grpMean( :, i ) = sum( C( :,i ).*Z )/sum( C(:,i) );
-    grpTarget( :, i ) = repelem( pt(i), nDim );
     % generate a Gaussian distribution about this mean
     ZDraw( :, :, i ) = grpMean( :, i )' + randn( nObs, nDim );
 end
