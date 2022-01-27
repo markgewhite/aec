@@ -5,6 +5,7 @@
 
 clear;
 
+rng( 0 );
 
 nCodes = 4;
 nRuns = 100;

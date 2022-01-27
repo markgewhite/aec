@@ -88,7 +88,7 @@ end
 
 if setup.adversarial   
     % predict authenticity from real Z using the discriminator
-    if setup.pretraining || setup.normalDistribution
+    if setup.pretraining || setup.unimodal
         dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
     else
         dlZReal = genZReal( dlZFake, dlCFake );
@@ -250,7 +250,7 @@ C = extractdata( dlC )';
 nGrps = size( C, 2 );
 
 % standardise
-% Z = (Z - mean(Z))./std( Z );
+Z = (Z - mean(Z))./std(Z);
 
 ZDraw = zeros( nObs, nDim, nGrps );
 grpMean = zeros( nDim, nGrps );
@@ -261,7 +261,7 @@ for i = 1:nGrps
     grpMean( :, i ) = sum( C( :,i ).*Z )/sum( C(:,i) );
     grpTarget( :, i ) = repelem( pt(i), nDim );
     % generate a Gaussian distribution about this mean
-    ZDraw( :, :, i ) = grpTarget( :, i )' + 0.5*randn( nObs, nDim );
+    ZDraw( :, :, i ) = grpMean( :, i )' + randn( nObs, nDim );
 end
 
 draw = rand( nObs, 1 );

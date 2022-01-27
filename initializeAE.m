@@ -34,8 +34,8 @@ setup.reg.comp = 1E0;
 setup.reg.cls = 1E1;
 setup.reg.clust = 1E0;
 
-setup.valFreq = 25;
-setup.valSize = [2 5];
+setup.valFreq = 50;
+%setup.valSize = [2 5];
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
 
@@ -45,8 +45,9 @@ setup.cDim = config.cDim;
 setup.cLabels = config.cLabels;
 setup.nDraw = config.nDraw;
 
-setup.variational = true;
+setup.variational = false;
 setup.adversarial = true;
+setup.unimodal = false;
 setup.l2regularization = false;
 setup.orthogonal = true;
 setup.keyCompLoss = false;
