@@ -76,6 +76,14 @@ else
     loss.var = 0;
 end
 
+if setup.wasserstein
+    % calculate the maximum mean discrepancy loss
+    dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
+    loss.mmd = mmdLoss( dlZFake, dlZReal, setup.mmd );
+else
+    loss.mmd = 0;
+end
+
 
 % --- classification phase ---
 

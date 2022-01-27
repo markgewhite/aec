@@ -74,14 +74,19 @@ setup.aae.cLabels = categorical( 0:length(classSizes) );
 setup.aae.cDim = length( setup.aae.cLabels );
 setup.aae.fda = setup.fda;
 
-setup.aae.variational = true;
-setup.aae.adversarial = true;
+setup.aae.variational = false;
+setup.aae.adversarial = false;
+setup.aae.wasserstein = true;
 setup.aae.l2regularization = false;
 setup.aae.orthogonal = true;
 setup.aae.keyCompLoss = false;
 setup.aae.clusterLoss = true;
 setup.aae.useVarMean = true;
 setup.aae.classifier = 'Network';
+
+setup.aae.mmd.scale = 2;
+setup.aae.mmd.kernel = 'IMQ';
+setup.aae.mmd.baseType = 'Normal';
 
 % encoder network parameters
 setup.aae.enc.type = 'Convolutional'; %'Convolutional'; % 

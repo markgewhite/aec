@@ -64,7 +64,7 @@ end
 
 nIter = floor( size(trnX,2)/setup.batchSize );
 j = 0;
-loss = zeros( nIter*setup.nEpochs, 9 );
+loss = zeros( nIter*setup.nEpochs, 10 );
 if setup.verbose
     fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 end
@@ -198,7 +198,7 @@ for epoch = 1:setup.nEpochs
     % update progress on screen
     if setup.verbose && mod( epoch, setup.valFreq )==0
         meanLoss = mean(loss( j-nIter+1:j, : ));
-        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f %1.3f  %1.3f\n', epoch, meanLoss );
+        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f\n', epoch, meanLoss );
         dlZTrn = predict( dlnetEnc, dlXTrn );
         if setup.variational
             if setup.useVarMean
