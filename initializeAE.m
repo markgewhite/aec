@@ -45,8 +45,9 @@ setup.cLabels = config.cLabels;
 setup.nDraw = config.nDraw;
 
 setup.variational = false;
-setup.adversarial = true;
+setup.adversarial = false;
 setup.unimodal = false;
+setup.wasserstein = true;
 setup.l2regularization = false;
 setup.orthogonal = true;
 setup.keyCompLoss = false;
@@ -54,7 +55,13 @@ setup.clusterLoss = true;
 setup.useVarMean = true;
 setup.classifier = 'Network';
 
+setup.mmd.scale = 2;
+setup.mmd.kernel = 'IMQ';
+setup.mmd.baseType = 'Normal';
+
 setup.fda = config.fda;
+
+
 
 % encoder network parameters
 setup.enc.type = 'Convolutional'; %'Convolutional'; % 

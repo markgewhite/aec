@@ -49,6 +49,41 @@ end
 % calculate the reconstruction loss
 loss.recon = mean(mean( (dlXFake - dlXReal).^2 ));
 
+if setup.adversarial   
+    % predict authenticity from real Z using the discriminator
+    dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
+    dlDReal = forward( dlnetDis, dlZReal );
+    
+    % predict authenticity from fake Z
+    [ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
+    
+    % discriminator loss for Z
+    loss.dis = -setup.reg.dis* ...
+                    0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
+    loss.gen = -setup.reg.gen* ...
+                    mean( log(dlDFake + eps) );
+else
+    loss.dis = 0;
+    loss.gen = 0;
+    state.dis = [];
+end
+
+if setup.variational && ~setup.adversarial
+    % calculate the variational loss
+    loss.var = -setup.reg.beta* ...
+        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar)) );
+else
+    loss.var = 0;
+end
+
+if setup.wasserstein
+    % calculate the maximum mean discrepancy loss
+    dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
+    loss.mmd = mmdLoss( dlZFake, dlZReal, setup.mmd );
+else
+    loss.mmd = 0;
+end
+
 
 % --- classification phase ---
 
