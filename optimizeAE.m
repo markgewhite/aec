@@ -6,18 +6,12 @@
 clear;
 
 
-N = 200;
-classSizes = [ N N N ];
-nDim = 1;
-nCodes = 4;
-
 % initalise setup
-setup = initializeAE( nCodes, classSizes, nDim );
-setup.aae.nEpochs = 200;
-setup.aae.verbose = false;
-setup.aae.nEpochsPretraining = 10;
-setup.randomSeed = 123;
-setup.objective = 'ClassificationError';
+setup.opt.nCodes = 4;
+setup.opt.dataSource = 'JumpVGRF';
+setup.opt.randomSeed = 123;
+setup.opt.objective = 'ClassificationError';
+setup.opt.nEpochs = 200;
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'nEpochs', ...
@@ -60,31 +54,31 @@ varDef(11) = optimizableVariable( 'dis_x_dropout', ...
 
 varDef(12) = optimizableVariable( 'cls_x_nHidden', ...
         [0 5], ...
-        'Type', 'integer', 'Optimize', false );
+        'Type', 'integer', 'Optimize', true );
 varDef(13) = optimizableVariable( 'cls_x_nFC', ...
         [5 300], ...
-        'Type', 'integer', 'Optimize', false );
+        'Type', 'integer', 'Optimize', true );
 varDef(14) = optimizableVariable( 'cls_x_scale', ...
         [0 1.0], ...
-        'Type', 'real', 'Optimize', false );
+        'Type', 'real', 'Optimize', true );
 varDef(15) = optimizableVariable( 'cls_x_dropout', ...
         [0 0.9], ...
-        'Type', 'real', 'Optimize', false );
+        'Type', 'real', 'Optimize', true );
 
 varDef(16) = optimizableVariable( 'variational', ...
         ["false" "true"], ...
-        'Type', 'categorical', 'Optimize', true );
+        'Type', 'categorical', 'Optimize', false );
 
 varDef(17) = optimizableVariable( 'adversarial', ...
         ["false" "true"], ...
-        'Type', 'categorical', 'Optimize', true );
+        'Type', 'categorical', 'Optimize', false );
 
 % setup objective function
 objFcn = @(x) objFcnAE( x, setup );
 
 % run optimisation
 output = bayesopt( objFcn, varDef, ...
-            'MaxObjectiveEvaluations', 20 );
+            'MaxObjectiveEvaluations', 50 );
 
 
 

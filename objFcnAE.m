@@ -12,6 +12,13 @@
 
 function obj = objFcnAE( hyperparams, setup )
 
+% initialise data    
+[X, ~, Y, setup.data ] = initializeData( setup.opt.dataSource, ...
+                                         setup.opt.nCodes ); 
+
+% initalise autoencoder setup
+setup.aae = initializeAE( setup.data );
+
 % update the configuration with the specified settings
 setup.aae = unpackHyperparameters( setup.aae, hyperparams );
 
@@ -23,22 +30,12 @@ setup.aae.dec.nHidden = setup.aae.enc.nHidden;
 setup.aae.dec.scale = setup.aae.enc.scale;
 
 % update dependencies
-setup.aae.enc.outZ = setup.aae.zDim*(setup.aae.variational + 1);
-
-% generate a new data set
-rng( setup.randomSeed );
-Xraw = genSyntheticData( setup.data.classSizes, ...
-                         setup.data.sigDim, ...
-                         setup.data );
-XFd = smooth_basis( setup.data.tSpan, Xraw, setup.fda.fdPar );
-X = eval_fd( setup.data.tFine, XFd );
-
-% classes
-N = setup.data.classSizes;
-Y = [ repelem( 1, N(1) ) repelem( 2, N(2) ) repelem( 3, N(3) ) ]';
+% setup.aae.enc.outZ = setup.aae.zDim*(setup.aae.variational + 1);
+setup.aae.nEpochs = setup.opt.nEpochs;
+setup.aae.verbose = false;
 
 % partitioning
-rng( 'shuffle' );
+rng( setup.opt.randomSeed );
 cvPart = cvpartition( Y, 'Holdout', 0.5 );
 XTrn = X( :, training(cvPart) );
 XTst = X( :, test(cvPart)  );
@@ -94,7 +91,7 @@ errTrn = sqrt( mse( XTrn, XTrnHat ) );
 errTst = sqrt( mse( XTst, XTstHat ) );
 
 % set the objective function's output
-switch setup.objective
+switch setup.opt.objective
     case 'TestError'
         obj = errTst;
     case 'TrainError'
@@ -108,5 +105,5 @@ switch setup.objective
 end
 
 
-
+end
 

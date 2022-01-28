@@ -29,65 +29,94 @@ function [  grad, state, loss ] = ...
                                                 dlCReal, ...
                                                 setup )
 
-% --- reconstruction phase ---
+% --- Autoencoder phase ---
 
-% generate latent encodings
-[ dlEncOutput, state.enc ] = forward( dlnetEnc, dlXReal );
+if setup.postTraining || setup.preTraining
+    % autoencoder training
 
-if setup.variational
-    % behave as a variational autoencoder
-    [ dlZFake, dlMu, dlLogVar ] = reparameterize( dlEncOutput, setup.nDraw );
-    dlXReal = repmat( dlXReal, 1, setup.nDraw );
-    dlCReal = repmat( dlCReal, setup.nDraw, 1 );
-else
-    dlZFake = dlEncOutput;
-end
-
-% reconstruct curves from latent codes
-[ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
-
-% calculate the reconstruction loss
-loss.recon = mean(mean( (dlXFake - dlXReal).^2 ));
-
-if setup.adversarial   
-    % predict authenticity from real Z using the discriminator
-    dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
-    dlDReal = forward( dlnetDis, dlZReal );
+    % generate latent encodings
+    [ dlEncOutput, state.enc ] = forward( dlnetEnc, dlXReal );
     
-    % predict authenticity from fake Z
-    [ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
+    if setup.variational
+        % behave as a variational autoencoder
+        [ dlZFake, dlMu, dlLogVar ] = reparameterize( dlEncOutput, setup.nDraw );
+        dlXReal = repmat( dlXReal, 1, setup.nDraw );
+        dlCReal = repmat( dlCReal, setup.nDraw, 1 );
+    else
+        dlZFake = dlEncOutput;
+    end
     
-    % discriminator loss for Z
-    loss.dis = -setup.reg.dis* ...
-                    0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
-    loss.gen = -setup.reg.gen* ...
-                    mean( log(dlDFake + eps) );
+    % reconstruct curves from latent codes
+    [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
+    
+    % calculate the reconstruction loss
+    loss.recon = mean(mean( (dlXFake - dlXReal).^2 ));
+    
+    if setup.adversarial   
+        % predict authenticity from real Z using the discriminator
+        dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
+        dlDReal = forward( dlnetDis, dlZReal );
+        
+        % predict authenticity from fake Z
+        [ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
+        
+        % discriminator loss for Z
+        loss.dis = -setup.reg.dis* ...
+                        0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
+        loss.gen = -setup.reg.gen* ...
+                        mean( log(dlDFake + eps) );
+    else
+        loss.dis = 0;
+        loss.gen = 0;
+        state.dis = [];
+    end
+    
+    if setup.variational && ~setup.adversarial && ~setup.wasserstein
+        % calculate the variational loss
+        loss.var = -setup.reg.beta* ...
+            0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar)) );
+    else
+        loss.var = 0;
+    end
+    
+    if setup.wasserstein
+        % calculate the maximum mean discrepancy loss
+        dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
+        loss.mmd = mmdLoss( dlZFake, dlZReal, setup.mmd );
+    else
+        loss.mmd = 0;
+    end
+
+
 else
+    % no autoencoder training
+    dlEncOutput = predict( dlnetEnc, dlXReal );
+    
+    if setup.variational
+        % behave as a variational autoencoder
+        dlZFake = reparameterize( dlEncOutput, setup.nDraw );
+        dlCReal = repmat( dlCReal, setup.nDraw, 1 );
+    else
+        dlZFake = dlEncOutput;
+    end
+
+    loss.recon = 0;
     loss.dis = 0;
     loss.gen = 0;
-    state.dis = [];
-end
-
-if setup.variational && ~setup.adversarial
-    % calculate the variational loss
-    loss.var = -setup.reg.beta* ...
-        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar)) );
-else
     loss.var = 0;
-end
-
-if setup.wasserstein
-    % calculate the maximum mean discrepancy loss
-    dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
-    loss.mmd = mmdLoss( dlZFake, dlZReal, setup.mmd );
-else
     loss.mmd = 0;
+    state.enc = [];
+    state.dec = [];
+    state.dis = [];
+
 end
 
 
-% --- classification phase ---
 
-if ~setup.pretraining
+% --- Classification phase ---
+
+if ~setup.preTraining
+    % train the classifier
     % predict the class from Z
     switch setup.classifier
         case 'Network'
@@ -114,42 +143,15 @@ if ~setup.pretraining
 
     end
 
+    % make cluster loss traceable
+    lossCls = loss.cls + loss.recon - loss.recon;
+    grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
+
+
 else
     loss.cls = 0;
-end
+    grad.cls = 0;
 
-
-% --- distribution matching phase ---
-
-if setup.adversarial   
-    % predict authenticity from real Z using the discriminator
-    if setup.pretraining || setup.unimodal
-        dlZReal = dlarray( randn( setup.zDim, setup.batchSize ), 'CB' );
-    else
-        dlZReal = genZReal( dlZFake, dlCFake );
-    end
-    dlDReal = forward( dlnetDis, dlZReal );
-    
-    % predict authenticity from fake Z
-    [ dlDFake, state.dis ] = forward( dlnetDis, dlZFake );
-    
-    % discriminator loss for Z
-    loss.dis = -setup.reg.dis* ...
-                    0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
-    loss.gen = -setup.reg.gen* ...
-                    mean( log(dlDFake + eps) );
-else
-    loss.dis = 0;
-    loss.gen = 0;
-    state.dis = [];
-end
-
-if setup.variational && ~setup.adversarial
-    % calculate the variational loss
-    loss.var = -setup.reg.beta* ...
-        0.5*mean( sum(1 + dlLogVar - dlMu.^2 - exp(dlLogVar)) );
-else
-    loss.var = 0;
 end
 
 
@@ -185,7 +187,7 @@ end
 
 if setup.clusterLoss % && ~setup.pretraining
     % calculate the cluster loss
-    if setup.pretraining
+    if setup.preTraining
         dlCReal = dlarray( ...
                 onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
     end
@@ -195,31 +197,34 @@ else
     loss.clust = 0;
 end
 
+% --- calculate the autoencoder losses ---
 
-% --- calculate gradients ---
-lossEnc = loss.recon + loss.gen + loss.var + loss.cls + loss.comp;
-lossDec = loss.recon + loss.dis;
+if setup.postTraining || setup.preTraining
+    % calculate overall loss functions
+    lossEnc = loss.recon + loss.gen + loss.mmd + loss.var + loss.cls + loss.comp;
+    lossDec = loss.recon + loss.dis;
+    
+    grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables, 'RetainData', true );
+    grad.dec = dlgradient( lossDec, dlnetDec.Learnables, 'RetainData', true );
+    
+    if setup.adversarial
+        grad.dis = dlgradient( loss.dis, dlnetDis.Learnables, 'RetainData', true );
+    else
+        grad.dis = 0;
+    end
 
-grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables, 'RetainData', true );
-grad.dec = dlgradient( lossDec, dlnetDec.Learnables, 'RetainData', true );
-
-if setup.adversarial
-    grad.dis = dlgradient( loss.dis, dlnetDis.Learnables, 'RetainData', true );
 else
+    grad.enc = 0;
+    grad.dec = 0;
     grad.dis = 0;
-end
 
-if ~setup.pretraining
-    % make cluster loss traceable
-    lossCls = loss.recon + loss.cls - loss.recon;
-    grad.cls = dlgradient( lossCls, dlnetCls.Learnables );
-else
-    grad.cls = 0;
 end
 
 loss = struct2array( loss );
 
 end
+
+
 
 
 function L = learnables( nets )

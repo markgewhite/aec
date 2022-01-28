@@ -18,8 +18,8 @@ function setup = initializeAE( config )
 setup.designFcn = @aaeDesign;
 setup.gradFcn = @modelGradients;
 setup.optimizer = 'ADAM';
-setup.nEpochs = 1500;
-setup.nEpochsPretraining = 10;
+setup.nEpochs = 3000;
+setup.nEpochsPretraining = 1000;
 setup.batchSize = 100;
 setup.beta1 = 0.9;
 setup.beta2 = 0.999;
@@ -44,7 +44,8 @@ setup.cDim = config.cDim;
 setup.cLabels = config.cLabels;
 setup.nDraw = config.nDraw;
 
-setup.variational = false;
+setup.postTraining = false; % preTraining is set during training
+setup.variational = true;
 setup.adversarial = false;
 setup.unimodal = false;
 setup.wasserstein = true;
@@ -104,10 +105,20 @@ setup.dis.dropout = 0.15;
 setup.cls.learnRate = 0.01;
 setup.cls.input = config.zDim;
 setup.cls.output = config.cDim;
-setup.cls.nHidden = 1;
-setup.cls.nFC = 300;
-setup.cls.scale = 0.3;
-setup.cls.dropout = 0.15;
+switch config.source
+    case 'Synthetic'
+        setup.cls.nHidden = 1;
+        setup.cls.nFC = 300;
+        setup.cls.scale = 0.3;
+        setup.cls.dropout = 0.15;
+    case 'JumpVGRF'
+        setup.cls.nHidden = 1;
+        setup.cls.nFC = 150;
+        setup.cls.scale = 1.0;
+        setup.cls.dropout = 0.25;
+    otherwise
+        error('Unrecognised data source');
+end
 
 
 end

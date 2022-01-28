@@ -14,6 +14,7 @@
 function [ X, XFd, Y, setup ] = initializeData( source, nCodes )
 
 % get data
+setup.source = source;
 switch source
     case 'Synthetic'
         setup.synth.ratio = [ 4 8 16];

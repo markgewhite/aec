@@ -122,9 +122,13 @@ if ndim == 2
         %  plot all curves
         if href && (frng(1) <= 0 && frng(2) >= 0)
             if nargout > 0
-                Hline = plot( ax, x, fdmat, '-', x, zeros(nx), ':');
+                Hline = plot( ax, x, fdmat, '-', ...
+                                  x, zeros(nx), ':', ...
+                                  'Linewidth', 1 );
             else
-                plot( ax, x, fdmat, '-', x, zeros(nx), ':')
+                plot( ax, x, fdmat, '-', ...
+                          x, zeros(nx), ':', ...
+                          'Linewidth', 1 );
             end
         else
             if nargout > 0
