@@ -18,8 +18,8 @@ function setup = initializeAE( config )
 setup.designFcn = @aaeDesign;
 setup.gradFcn = @modelGradients;
 setup.optimizer = 'ADAM';
-setup.nEpochs = 3000;
-setup.nEpochsPretraining = 1000;
+setup.nEpochs = 1500;
+setup.nEpochsPretraining = 10;
 setup.batchSize = 100;
 setup.beta1 = 0.9;
 setup.beta2 = 0.999;
@@ -44,11 +44,11 @@ setup.cDim = config.cDim;
 setup.cLabels = config.cLabels;
 setup.nDraw = config.nDraw;
 
-setup.postTraining = false; % preTraining is set during training
+setup.postTraining = true; % preTraining is set during training
 setup.variational = true;
-setup.adversarial = false;
+setup.adversarial = true;
 setup.unimodal = false;
-setup.wasserstein = true;
+setup.wasserstein = false;
 setup.l2regularization = false;
 setup.orthogonal = true;
 setup.keyCompLoss = false;
@@ -70,12 +70,26 @@ setup.enc.learnRate = 0.01;
 setup.enc.input = config.xDim;
 setup.enc.outZ = config.zDim*(setup.variational + 1);
 setup.enc.projectionSize = config.xDim; % [ setup.xDim sigDim 1 ];
-setup.enc.nHidden = 1;
-setup.enc.filterSize = 3;
-setup.enc.nFilters = 18;
-setup.enc.stride = 3;
-setup.enc.scale = 0.2;
-setup.enc.dropout = 0.1;
+switch config.source
+    case 'Synthetic'
+        setup.enc.nHidden = 1;
+        setup.enc.filterSize = 3;
+        setup.enc.nFilters = 18;
+        setup.enc.stride = 3;
+        setup.enc.scale = 0.2;
+        setup.enc.dropout = 0.1;
+
+    case 'JumpVGRF'
+        setup.enc.nHidden = 1;
+        setup.enc.filterSize = 3;
+        setup.enc.nFilters = 220;
+        setup.enc.stride = 2;
+        setup.enc.scale = 0.4;
+        setup.enc.dropout = 0.1;
+
+    otherwise
+        error('Unrecognised data source');
+end
 setup.enc.nFC = 50;
 
 % decoder network parameters

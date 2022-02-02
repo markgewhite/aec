@@ -10,7 +10,7 @@
 %
 % ************************************************************************
 
-function obj = objFcnAE( hyperparams, setup )
+function [ obj, constraint ] = objFcnAE( hyperparams, setup )
 
 % initialise data    
 [X, ~, Y, setup.data ] = initializeData( setup.opt.dataSource, ...
@@ -30,7 +30,6 @@ setup.aae.dec.nHidden = setup.aae.enc.nHidden;
 setup.aae.dec.scale = setup.aae.enc.scale;
 
 % update dependencies
-% setup.aae.enc.outZ = setup.aae.zDim*(setup.aae.variational + 1);
 setup.aae.nEpochs = setup.opt.nEpochs;
 setup.aae.verbose = false;
 
@@ -43,10 +42,10 @@ YTrn = Y( training(cvPart) );
 YTst = Y( test(cvPart)  );
 
 % train the autoencoder
-[dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrace ] = ...
+[dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrace, constraint ] = ...
                     trainAAE( XTrn, YTrn, setup.aae );
 if isnan( lossTrace )
-    obj = NaN;
+    obj = 0;
     return
 end
 

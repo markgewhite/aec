@@ -16,7 +16,7 @@
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, loss ] = ...
+function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, loss, constraint ] = ...
                             trainAAE( trnX, trnC, setup, ax )
 
 
@@ -30,6 +30,7 @@ catch
     dlnetDis = [];
     dlnetCls = [];
     loss = NaN;
+    constraint = 1;
     return
 end
 
@@ -102,8 +103,14 @@ for epoch = 1:setup.nEpochs
             case 'ADAM'
                 if setup.postTraining || setup.preTraining 
 
-                    dlnetEnc.State = state.enc;
-                    dlnetDec.State = state.dec;
+                    try
+                        dlnetEnc.State = state.enc;
+                        dlnetDec.State = state.dec;
+                    catch
+                        loss = NaN;
+                        constraint = 2;
+                        return
+                    end
                     % Update the decoder network parameters
                     [ dlnetDec, avgG.dec, avgGS.dec ] = ...
                                 adamupdate( dlnetDec, ...
@@ -241,6 +248,7 @@ for epoch = 1:setup.nEpochs
 
 end
 
+constraint = -1;
 
 end
 
