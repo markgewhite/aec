@@ -46,7 +46,7 @@ switch source
         Xraw = padData( Xraw, maxLen, 1 );
 
         setup.tSpan = linspace( -maxLen+1, 0, maxLen );
-        setup.tFine = linspace( -maxLen+1, 0, 21 );
+        setup.tFine = linspace( -maxLen+1, 0, 101 );
 
         setup.nDraw = 1;
         setup.cLabels = categorical( 0:2 );
@@ -63,7 +63,7 @@ setup.xDim = length( setup.tFine );
 % functional data analysis parameters
 setup.fda.basisOrder = 4;
 setup.fda.penaltyOrder = 2;
-setup.fda.lambda = 1E2;
+setup.fda.lambda = 1E-1; % 1E2
 setup.fda.nBasis = 20+setup.fda.penaltyOrder+1;
 setup.fda.basisFd = create_bspline_basis( ...
                         [ setup.tSpan(1), setup.tSpan(end) ], ...

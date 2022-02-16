@@ -38,7 +38,9 @@ switch paramEnc.type
         for i = 1:paramEnc.nHidden
             layersEnc = [ layersEnc; ...
                 fullyConnectedLayer( paramEnc.nFC, 'Name', ['fc' num2str(i)] )
-                sigmoidLayer( 'Name', ['sig' num2str(i)] )
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                leakyReluLayer( paramEnc.scale, ...
+                                'Name', ['relu' num2str(i)] )
                 dropoutLayer( paramEnc.dropout, 'Name', ...
                                                  ['drop' num2str(i)] )
                 ]; %#ok<*AGROW> 
@@ -91,15 +93,18 @@ lgraphDec = layerGraph( layersDec );
 switch paramDec.type
 
     case 'FullyConnected'
+        layersDec= [];
         for i = 1:paramDec.nHidden
             layersDec = [ layersDec; ...
                 fullyConnectedLayer( paramDec.nFC, 'Name', ['fc' num2str(i)] )
-                sigmoidLayer( 'Name', ['sig' num2str(i)] )           
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                leakyReluLayer( paramDec.scale, ...
+                                'Name', ['relu' num2str(i)] )           
                 ]; %#ok<*AGROW> 
         end
         lgraphDec = addLayers( lgraphDec, layersDec );
         lgraphDec = connectLayers( lgraphDec, 'in', 'fc1' );
-        lastLayer = ['sig' num2str(i)];
+        lastLayer = ['relu' num2str(i)];
 
     case 'Convolutional'
         projectionSize = [ paramDec.projectionSize 1 1 ];

@@ -18,7 +18,7 @@ function setup = initializeAE( config )
 setup.designFcn = @aaeDesign;
 setup.gradFcn = @modelGradients;
 setup.optimizer = 'ADAM';
-setup.nEpochs = 1500;
+setup.nEpochs = 1000;
 setup.nEpochsPretraining = 10;
 setup.batchSize = 100;
 setup.beta1 = 0.9;
@@ -65,7 +65,7 @@ setup.fda = config.fda;
 
 
 % encoder network parameters
-setup.enc.type = 'Convolutional'; %'Convolutional'; % 
+setup.enc.type = 'FullyConnected'; %'Convolutional'; % 
 setup.enc.learnRate = 0.01;
 setup.enc.input = config.xDim;
 setup.enc.outZ = config.zDim*(setup.variational + 1);
@@ -80,32 +80,61 @@ switch config.source
         setup.enc.dropout = 0.1;
 
     case 'JumpVGRF'
-        setup.enc.nHidden = 1;
-        setup.enc.filterSize = 3;
-        setup.enc.nFilters = 220;
-        setup.enc.stride = 2;
-        setup.enc.scale = 0.4;
-        setup.enc.dropout = 0.1;
-
+        switch setup.enc.type
+            case 'FullyConnected'
+                setup.enc.nHidden = 1;
+                setup.enc.nFC = 100;
+                setup.enc.scale = 0.2;
+                setup.enc.dropout = 0.1;
+            case 'Convolutional'
+                setup.enc.nHidden = 1;
+                setup.enc.filterSize = 3;
+                setup.enc.nFilters = 220;
+                setup.enc.stride = 2;
+                setup.enc.scale = 0.4;
+                setup.enc.dropout = 0.1;
+        end
     otherwise
         error('Unrecognised data source');
 end
-setup.enc.nFC = 50;
+
 
 % decoder network parameters
-setup.dec.type = 'Convolutional'; %'FullyConnected'; % 
+setup.dec.type = 'FullyConnected'; %'FullyConnected'; % 
 setup.dec.learnRate = 0.01;
-
 setup.dec.input = config.zDim;
 setup.dec.outX = config.xDim;
 setup.dec.projectionSize = 5; % [ 5 sigDim 1 ];
-setup.dec.nHidden = 1;
-setup.dec.filterSize = 18;
-setup.dec.nFilters = 32;
-setup.dec.stride = 3;
-setup.dec.scale = 0.2;
-setup.dec.dropout = 0;
 setup.dec.nFC = 50;
+switch config.source
+    case 'Synthetic'
+        setup.dec.nHidden = 1;
+        setup.dec.filterSize = 3;
+        setup.dec.nFilters = 18;
+        setup.dec.stride = 3;
+        setup.dec.scale = 0.2;
+        setup.dec.dropout = 0;
+
+    case 'JumpVGRF'
+        switch setup.dec.type
+            case 'FullyConnected'
+                setup.dec.nHidden = 1;
+                setup.dec.nFC = 100;
+                setup.dec.scale = 0.2;
+                setup.dec.dropout = 0;
+            case 'Convolutional'
+                setup.dec.nHidden = 1;
+                setup.dec.filterSize = 18;
+                setup.dec.nFilters = 32;
+                setup.dec.stride = 3;
+                setup.dec.scale = 0.2;
+                setup.dec.dropout = 0;
+
+        end
+    otherwise
+        error('Unrecognised data source');
+end
+
 
 % discriminator network parameters
 setup.dis.learnRate = 0.01;
@@ -122,14 +151,14 @@ setup.cls.output = config.cDim;
 switch config.source
     case 'Synthetic'
         setup.cls.nHidden = 1;
-        setup.cls.nFC = 300;
-        setup.cls.scale = 0.3;
+        setup.cls.nFC = 100;
+        setup.cls.scale = 0.2;
         setup.cls.dropout = 0.15;
     case 'JumpVGRF'
         setup.cls.nHidden = 1;
-        setup.cls.nFC = 150;
+        setup.cls.nFC = 100;
         setup.cls.scale = 1.0;
-        setup.cls.dropout = 0.25;
+        setup.cls.dropout = 0.0;
     otherwise
         error('Unrecognised data source');
 end
