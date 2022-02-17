@@ -48,7 +48,7 @@ setup.postTraining = true; % preTraining is set during training
 setup.variational = false;
 setup.adversarial = false;
 setup.unimodal = false;
-setup.wasserstein = false;
+setup.wasserstein = true;
 setup.l2regularization = false;
 setup.orthogonal = true;
 setup.keyCompLoss = false;
@@ -58,6 +58,8 @@ setup.classifier = 'Network';
 
 setup.embedding = true;
 setup.nKernels = 1000;
+setup.candidateStart = 3; % *2+1
+setup.nCandidates = 4;
 
 setup.mmd.scale = 2;
 setup.mmd.kernel = 'IMQ';
@@ -90,9 +92,9 @@ switch config.source
         switch setup.enc.type
             case 'FullyConnected'
                 setup.enc.nHidden = 1;
-                setup.enc.nFC = 100;
-                setup.enc.scale = 0.2;
-                setup.enc.dropout = 0.1;
+                setup.enc.nFC = 128;
+                setup.enc.scale = 0;
+                setup.enc.dropout = 0.10;
             case 'Convolutional'
                 setup.enc.nHidden = 1;
                 setup.enc.filterSize = 3;

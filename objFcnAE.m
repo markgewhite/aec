@@ -22,9 +22,17 @@ setup.aae = initializeAE( setup.data );
 % update the configuration with the specified settings
 setup.aae = unpackHyperparameters( setup.aae, hyperparams );
 
+% update dependencies
+setup.aae.nEpochs = setup.opt.nEpochs;
+setup.aae.verbose = false;
+if setup.aae.embedding
+    setup.aae.enc.input = 2*setup.aae.nKernels;
+end
+
 % genereate embedding with transform
 if setup.aae.embedding
-    kernels = generateKernels( size( X,1 ), setup.aae.nKernels );
+    kernels = generateKernels( size( X,1 ), setup.aae.nKernels, ...
+        setup.aae.candidateStart, setup.aae.nCandidates );
     XT = applyKernels( X, kernels );
 else
     XT  = X;
@@ -38,9 +46,7 @@ end
 %setup.aae.dec.nHidden = setup.aae.enc.nHidden;
 %setup.aae.dec.scale = setup.aae.enc.scale;
 
-% update dependencies
-setup.aae.nEpochs = setup.opt.nEpochs;
-setup.aae.verbose = false;
+
 
 % partitioning
 rng( setup.opt.randomSeed );

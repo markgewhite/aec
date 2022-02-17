@@ -13,9 +13,18 @@
 %
 % ************************************************************************
 
-function kernels = generateKernels( nPoints, nKernels )
+function kernels = generateKernels( nPoints, nKernels, ...
+                                    candidateStart, nCandidates )
 
-candidateLengths = [ 3 5 7 9 11 ];
+if nargin < 3
+    candidateStart = 7;
+    nCandidates = 4;
+else
+    candidateStart = candidateStart*2 + 1;
+end
+
+candidateLengths = linspace( candidateStart, ...
+                    candidateStart+(nCandidates-1)*2, nCandidates );
 kernels.lengths = candidateLengths(   ...
                     randi( length(candidateLengths), nKernels, 1) );
 

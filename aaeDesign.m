@@ -34,8 +34,9 @@ switch paramEnc.type
 
     case 'FullyConnected'
         for i = 1:paramEnc.nHidden
+            nNodes = fix( paramEnc.nFC*2^(1-i) );
             layersEnc = [ layersEnc; ...
-                fullyConnectedLayer( paramEnc.nFC, 'Name', ['fc' num2str(i)] )
+                fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
                 leakyReluLayer( paramEnc.scale, ...
                                 'Name', ['relu' num2str(i)] )
@@ -85,8 +86,9 @@ switch paramDec.type
 
     case 'FullyConnected'
         for i = 1:paramDec.nHidden
+            nNodes = fix( paramDec.nFC*2^(-paramDec.nHidden+i) );
             layersDec = [ layersDec; ...
-                fullyConnectedLayer( paramDec.nFC, 'Name', ['fc' num2str(i)] )
+                fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
                 leakyReluLayer( paramDec.scale, ...
                                 'Name', ['relu' num2str(i)] )           

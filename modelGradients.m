@@ -202,7 +202,8 @@ end
 
 if setup.postTraining || setup.preTraining
     % calculate overall loss functions
-    lossEnc = loss.recon + loss.gen + loss.mmd + loss.var + loss.cls + loss.comp;
+    lossEnc = loss.recon + loss.gen + loss.mmd + ...
+               loss.var + loss.cls + loss.comp;
     lossDec = loss.recon + loss.dis;
     
     grad.enc = dlgradient( lossEnc, dlnetEnc.Learnables, 'RetainData', true );
