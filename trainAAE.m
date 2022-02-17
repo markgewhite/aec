@@ -17,7 +17,7 @@
 % ************************************************************************
 
 function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, loss, constraint ] = ...
-                            trainAAE( trnX, trnC, setup, ax )
+                            trainAAE( trnX, trnXT, trnC, setup, ax )
 
 
 % define the networks
@@ -36,8 +36,10 @@ end
 
 % create datastores
 dsTrnX = arrayDatastore( trnX, 'IterationDimension', 2 );
+dsTrnXT = arrayDatastore( trnXT, 'IterationDimension', 2 );
 dsTrnC = arrayDatastore( trnC, 'IterationDimension', 1 );   
-dsTrn = combine( dsTrnX, dsTrnC );
+
+dsTrn = combine( dsTrnX, dsTrnXT, dsTrnC );
 
 % setup the batches
 mbqTrn = minibatchqueue(  dsTrn,...
@@ -84,7 +86,7 @@ for epoch = 1:setup.nEpochs
         j = j + 1;
         
         % Read mini-batch of data
-        [dlXTrn, dlCTrn] = next( mbqTrn );
+        [ dlXTrn, dlXTTrn, dlCTrn ] = next( mbqTrn );
         
         % Evaluate the model gradients 
         [ grad, state, loss(j,:) ] = ...
@@ -94,6 +96,7 @@ for epoch = 1:setup.nEpochs
                                     dlnetDis, ...
                                     dlnetCls, ...
                                     dlXTrn, ...
+                                    dlXTTrn, ...
                                     dlCTrn, ...
                                     setup );
 
@@ -217,7 +220,7 @@ for epoch = 1:setup.nEpochs
     if setup.verbose && mod( epoch, setup.valFreq )==0
         meanLoss = mean(loss( j-nIter+1:j, : ));
         fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f\n', epoch, meanLoss );
-        dlZTrn = predict( dlnetEnc, dlXTrn );
+        dlZTrn = predict( dlnetEnc, dlXTTrn );
         if setup.variational
             if setup.useVarMean
                 dlZTrn = dlZTrn( 1:setup.zDim, : );

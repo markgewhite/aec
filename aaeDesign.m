@@ -26,15 +26,13 @@ layersEnc = [
     featureInputLayer( paramEnc.input, 'Name', 'in', ...
                                'Normalization', 'zscore', ...
                                'Mean', 0, 'StandardDeviation', 1 )
-    dropoutLayer( paramEnc.dropout, 'Name', 'drop' )
+    dropoutLayer( paramEnc.dropout, 'Name', 'drop0' )
     ];
-lgraphEnc = layerGraph( layersEnc );
 
 % create the hidden layers
 switch paramEnc.type
 
     case 'FullyConnected'
-        layersEnc = [];
         for i = 1:paramEnc.nHidden
             layersEnc = [ layersEnc; ...
                 fullyConnectedLayer( paramEnc.nFC, 'Name', ['fc' num2str(i)] )
@@ -45,40 +43,34 @@ switch paramEnc.type
                                                  ['drop' num2str(i)] )
                 ]; %#ok<*AGROW> 
         end
-        lgraphEnc = addLayers( lgraphEnc, layersEnc );
-        lgraphEnc = connectLayers( lgraphEnc, 'drop', 'fc1' );
-        lastLayer = ['drop' num2str(i)];
 
     case 'Convolutional'
         projectionSize = [ paramEnc.projectionSize 1 1 ];
-        layersEnc = reshapeLayer( projectionSize, 'Name', 'proj' );
+        layersEnc = [ layersEnc; ...
+                      reshapeLayer( projectionSize, 'Name', 'proj' ) ];
         filterSize = [ paramEnc.filterSize 1 ];
         stride = [ paramEnc.stride 1 ];
         for i = 1:paramEnc.nHidden
             nFilters = 2^(paramEnc.nHidden-i);
             layersEnc = [ layersEnc; ...
-                convolution2dLayer( filterSize, ...
-                        nFilters*paramEnc.nFilters, ...
-                        'Stride', stride, ...
-                        'Name', ['tconv' num2str(i)] )
+                            convolution2dLayer( filterSize, ...
+                                    nFilters*paramEnc.nFilters, ...
+                                    'Stride', stride, ...
+                                    'Name', ['tconv' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
                 leakyReluLayer( paramEnc.scale, ...
                                 'Name', ['relu' num2str(i)] )
                 ]; %#ok<*AGROW> 
         end
-        lgraphEnc = addLayers( lgraphEnc, layersEnc );
-        lgraphEnc = connectLayers( lgraphEnc, 'drop', 'proj' );
-        lastLayer = ['relu' num2str(i)];
 
     otherwise
         error('Unrecognised encoder network type.');
 
 end
 % create the output layers
-layersEnc = fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' );
-lgraphEnc = addLayers( lgraphEnc, layersEnc );
-lgraphEnc = connectLayers( lgraphEnc, lastLayer, 'out' );
-
+layersEnc = [ layersEnc; ...
+              fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' ) ];
+lgraphEnc = layerGraph( layersEnc );
 dlnetEnc = dlnetwork( lgraphEnc );
 
 
@@ -87,13 +79,11 @@ dlnetEnc = dlnetwork( lgraphEnc );
 
 % create the input layer
 layersDec = featureInputLayer( paramDec.input, 'Name', 'in' );
-lgraphDec = layerGraph( layersDec );
 
 % create the hidden layers
 switch paramDec.type
 
     case 'FullyConnected'
-        layersDec= [];
         for i = 1:paramDec.nHidden
             layersDec = [ layersDec; ...
                 fullyConnectedLayer( paramDec.nFC, 'Name', ['fc' num2str(i)] )
@@ -102,14 +92,12 @@ switch paramDec.type
                                 'Name', ['relu' num2str(i)] )           
                 ]; %#ok<*AGROW> 
         end
-        lgraphDec = addLayers( lgraphDec, layersDec );
-        lgraphDec = connectLayers( lgraphDec, 'in', 'fc1' );
-        lastLayer = ['relu' num2str(i)];
 
     case 'Convolutional'
         projectionSize = [ paramDec.projectionSize 1 1 ];
-        layersDec = projectAndReshapeLayer( projectionSize, ...
-                                    paramDec.input, 'Name', 'proj' );
+        layersDec = [ layersDec; ...
+                      projectAndReshapeLayer( projectionSize, ...
+                                    paramDec.input, 'Name', 'proj' ) ];
         filterSize = [ paramDec.filterSize 1 ];
         stride = [ paramDec.stride 1 ];
         for i = 1:paramDec.nHidden
@@ -124,9 +112,6 @@ switch paramDec.type
                                 'Name', ['relu' num2str(i)] )            
                 ]; %#ok<*AGROW> 
         end
-        lgraphDec = addLayers( lgraphDec, layersDec );
-        lgraphDec = connectLayers( lgraphDec, 'in', 'proj' );
-        lastLayer = ['relu' num2str(i)];
 
     otherwise
             error('Unrecognised decoder network type.');
@@ -134,12 +119,9 @@ switch paramDec.type
 end
 
 % create the output layer
-layersDec = [
-                dropoutLayer( paramDec.dropout, 'Name', 'drop' )
-                fullyConnectedLayer( paramDec.outX, 'Name', 'out' )
-            ];
-lgraphDec = addLayers( lgraphDec, layersDec );
-lgraphDec = connectLayers( lgraphDec, lastLayer, 'drop' );
+layersDec = [ layersDec; ...
+              fullyConnectedLayer( paramDec.outX, 'Name', 'out' ) ];
+lgraphDec = layerGraph( layersDec );
 dlnetDec = dlnetwork( lgraphDec );
 
 

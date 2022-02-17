@@ -36,15 +36,26 @@ for i = 1:nRuns
 
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
+    % prepare data
     [X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes ); 
 
     % initalise autoencoder setup
     setup.aae = initializeAE( setup.data );
 
+    if setup.aae.embedding
+        % genereate embedding with transform
+        kernels = generateKernels( size( X,1 ), setup.aae.nKernels );
+        XT = applyKernels( X, kernels );
+    else
+        XT  = X;
+    end
+
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
     XTrn = X( :, training(cvPart) );
+    XTTrn = XT( :, training(cvPart) );
     XTst = X( :, test(cvPart)  );
+    XTTst = XT( :, test(cvPart)  );
     YTrn = Y( training(cvPart) );
     YTst = Y( test(cvPart)  );
 
@@ -66,15 +77,15 @@ for i = 1:nRuns
 
     % train the autoencoder
     [dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
-                    trainAAE( XTrn, YTrn, setup.aae, ax );
+                    trainAAE( XTrn, XTTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
-    dlXTrn = dlarray( XTrn, 'CB' );
-    dlXTst = dlarray( XTst, 'CB' );
+    dlXTTrn = dlarray( XTTrn, 'CB' );
+    dlXTTst = dlarray( XTTst, 'CB' );
 
     % generate encodings
-    dlZTrn = predict( dlnetEnc, dlXTrn );
-    dlZTst = predict( dlnetEnc, dlXTst );
+    dlZTrn = predict( dlnetEnc, dlXTTrn );
+    dlZTst = predict( dlnetEnc, dlXTTst );
     if setup.aae.variational
         if setup.aae.useVarMean
             dlZTrn = dlZTrn( 1:setup.aae.zDim, : );

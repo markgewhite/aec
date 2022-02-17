@@ -22,12 +22,21 @@ setup.aae = initializeAE( setup.data );
 % update the configuration with the specified settings
 setup.aae = unpackHyperparameters( setup.aae, hyperparams );
 
+% genereate embedding with transform
+if setup.aae.embedding
+    kernels = generateKernels( size( X,1 ), setup.aae.nKernels );
+    XT = applyKernels( X, kernels );
+else
+    XT  = X;
+end
+
+
 % impose the same setup for the decoder as the encoder
-% setup.aae.dec.dropout = setup.aae.enc.dropout;
-setup.aae.dec.filterSize = setup.aae.enc.filterSize;
-setup.aae.dec.stride = setup.aae.enc.stride;
-setup.aae.dec.nHidden = setup.aae.enc.nHidden;
-setup.aae.dec.scale = setup.aae.enc.scale;
+%setup.aae.dec.dropout = setup.aae.enc.dropout;
+%setup.aae.dec.filterSize = setup.aae.enc.filterSize;
+%setup.aae.dec.stride = setup.aae.enc.stride;
+%setup.aae.dec.nHidden = setup.aae.enc.nHidden;
+%setup.aae.dec.scale = setup.aae.enc.scale;
 
 % update dependencies
 setup.aae.nEpochs = setup.opt.nEpochs;
@@ -37,25 +46,27 @@ setup.aae.verbose = false;
 rng( setup.opt.randomSeed );
 cvPart = cvpartition( Y, 'Holdout', 0.5 );
 XTrn = X( :, training(cvPart) );
+XTTrn = XT( :, training(cvPart) );
 XTst = X( :, test(cvPart)  );
+XTTst = XT( :, test(cvPart)  );
 YTrn = Y( training(cvPart) );
 YTst = Y( test(cvPart)  );
 
 % train the autoencoder
 [dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrace, constraint ] = ...
-                    trainAAE( XTrn, YTrn, setup.aae );
+                    trainAAE( XTrn, XTTrn, YTrn, setup.aae );
 if isnan( lossTrace )
     obj = 0;
     return
 end
 
 % switch to DL array format
-dlXTrn = dlarray( XTrn, 'CB' );
-dlXTst = dlarray( XTst, 'CB' );
+dlXTTrn = dlarray( XTTrn, 'CB' );
+dlXTTst = dlarray( XTTst, 'CB' );
 
 % generate encodings
-dlZTrn = predict( dlnetEnc, dlXTrn );
-dlZTst = predict( dlnetEnc, dlXTst );
+dlZTrn = predict( dlnetEnc, dlXTTrn );
+dlZTst = predict( dlnetEnc, dlXTTst );
 if setup.aae.variational
     if setup.aae.useVarMean
         dlZTrn = dlZTrn( 1:setup.aae.zDim, : );

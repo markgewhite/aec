@@ -45,8 +45,8 @@ setup.cLabels = config.cLabels;
 setup.nDraw = config.nDraw;
 
 setup.postTraining = true; % preTraining is set during training
-setup.variational = true;
-setup.adversarial = true;
+setup.variational = false;
+setup.adversarial = false;
 setup.unimodal = false;
 setup.wasserstein = false;
 setup.l2regularization = false;
@@ -55,6 +55,9 @@ setup.keyCompLoss = false;
 setup.clusterLoss = true;
 setup.useVarMean = true;
 setup.classifier = 'Network';
+
+setup.embedding = true;
+setup.nKernels = 1000;
 
 setup.mmd.scale = 2;
 setup.mmd.kernel = 'IMQ';
@@ -67,7 +70,11 @@ setup.fda = config.fda;
 % encoder network parameters
 setup.enc.type = 'FullyConnected'; %'Convolutional'; % 
 setup.enc.learnRate = 0.01;
-setup.enc.input = config.xDim;
+if setup.embedding
+    setup.enc.input = 2*setup.nKernels;
+else
+    setup.enc.input = config.xDim;
+end
 setup.enc.outZ = config.zDim*(setup.variational + 1);
 setup.enc.projectionSize = config.xDim; % [ setup.xDim sigDim 1 ];
 switch config.source
