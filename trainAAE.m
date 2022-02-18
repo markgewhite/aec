@@ -16,8 +16,8 @@
 %
 % ************************************************************************
 
-function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, loss, constraint ] = ...
-                            trainAAE( trnX, trnXT, trnC, setup, ax )
+function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrn, constraint ] = ...
+                            trainAAE( X, XT, Y, setup, ax )
 
 
 % define the networks
@@ -29,23 +29,34 @@ catch
     dlnetDec = [];
     dlnetDis = [];
     dlnetCls = [];
-    loss = NaN;
+    lossTrn = NaN;
     constraint = 1;
     return
 end
 
-% create datastores
-dsTrnX = arrayDatastore( trnX, 'IterationDimension', 2 );
-dsTrnXT = arrayDatastore( trnXT, 'IterationDimension', 2 );
-dsTrnC = arrayDatastore( trnC, 'IterationDimension', 1 );   
+% re-partition training to create a validation set
+cvPart = cvpartition( Y, 'Holdout', 0.25 );
 
-dsTrn = combine( dsTrnX, dsTrnXT, dsTrnC );
+% create training set
+XTrn = X( :, training(cvPart) );
+XTTrn = XT( :, training(cvPart) );
+YTrn = Y( training(cvPart) );
+
+% create datastores
+dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
+dsXTTrn = arrayDatastore( XTTrn, 'IterationDimension', 2 );
+dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
+dsTrn = combine( dsXTrn, dsXTTrn, dsYTrn );
 
 % setup the batches
-mbqTrn = minibatchqueue(  dsTrn,...
-                          'MiniBatchSize', setup.batchSize, ...
-                          'PartialMiniBatch', 'discard', ...
-                          'MiniBatchFormat', 'CB' );
+mbqTrn = minibatchqueue( dsTrn,...
+                      'MiniBatchSize', setup.batchSize, ...
+                      'PartialMiniBatch', 'discard', ...
+                      'MiniBatchFormat', 'CB' );
+
+% create validation set - straight to dlarray
+dlXTVal = dlarray( XT( :, test(cvPart)  ), 'CB' );
+dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
 
 % initialise training parameters
 switch setup.optimizer
@@ -65,9 +76,15 @@ switch setup.optimizer
         vel.cls = [];
 end
 
-nIter = floor( size(trnX,2)/setup.batchSize );
+nIter = floor( size(XTrn,2)/setup.batchSize );
+
 j = 0;
-loss = zeros( nIter*setup.nEpochs, 10 );
+v = 0;
+vp = setup.valPatience;
+
+lossTrn = zeros( nIter*setup.nEpochs, 10 );
+lossVal = zeros( ceil(nIter*setup.nEpochs/setup.valFreq), 1 );
+
 if setup.verbose
     fprintf('Training AAE (%d epochs): \n', setup.nEpochs );
 end
@@ -86,10 +103,10 @@ for epoch = 1:setup.nEpochs
         j = j + 1;
         
         % Read mini-batch of data
-        [ dlXTrn, dlXTTrn, dlCTrn ] = next( mbqTrn );
+        [ dlXTrn, dlXTTrn, dlYTrn ] = next( mbqTrn );
         
         % Evaluate the model gradients 
-        [ grad, state, loss(j,:) ] = ...
+        [ grad, state, lossTrn(j,:) ] = ...
                           dlfeval(  setup.gradFcn, ...
                                     dlnetEnc, ...
                                     dlnetDec, ...
@@ -97,7 +114,7 @@ for epoch = 1:setup.nEpochs
                                     dlnetCls, ...
                                     dlXTrn, ...
                                     dlXTTrn, ...
-                                    dlCTrn, ...
+                                    dlYTrn, ...
                                     setup );
 
 
@@ -110,7 +127,7 @@ for epoch = 1:setup.nEpochs
                         dlnetEnc.State = state.enc;
                         dlnetDec.State = state.dec;
                     catch
-                        loss = NaN;
+                        lossTrn = NaN;
                         constraint = 2;
                         return
                     end
@@ -216,18 +233,30 @@ for epoch = 1:setup.nEpochs
 
     end
 
-    % update progress on screen
-    if setup.verbose && mod( epoch, setup.valFreq )==0
-        meanLoss = mean(loss( j-nIter+1:j, : ));
-        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f\n', epoch, meanLoss );
-        dlZTrn = predict( dlnetEnc, dlXTTrn );
-        if setup.variational
-            if setup.useVarMean
-                dlZTrn = dlZTrn( 1:setup.zDim, : );
-            else
-                dlZTrn = reparameterize( dlZTrn );
+    if mod( epoch, setup.valFreq )==0
+        % run a validation check
+        dlZVal = getEncoding( dlnetEnc, dlXTVal, setup );
+        dlYHatVal = predict( dlnetCls, dlZVal );
+        dlYHatVal = double( ...
+            onehotdecode( dlYHatVal, single(setup.cLabels), 1 ))' - 1;
+        v = v + 1;
+        lossVal(v) = sum( dlYHatVal~=dlYVal )/length(dlYVal);
+
+        if v > 2*vp-1
+            if min(lossVal(v-2*vp+1:v-vp)) < min(lossVal(v-vp+1:v))
+                % no longer improving - stop training
+                break
             end
         end
+    end
+
+    % update progress on screen
+    if setup.verbose && mod( epoch, setup.updateFreq )==0
+        meanLoss = mean(lossTrn( j-nIter+1:j, : ));
+        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f : %1.3f\n', ...
+            epoch, meanLoss, lossVal(v) );
+
+        dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup );
         ZTrn = double(extractdata( dlZTrn ));
         plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.cDim, ...
                     setup.fda.tSpan, setup.fda.fdPar );
@@ -254,4 +283,6 @@ end
 constraint = -1;
 
 end
+
+
 

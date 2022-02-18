@@ -42,9 +42,9 @@ for i = 1:nRuns
     % initalise autoencoder setup
     setup.aae = initializeAE( setup.data );
 
-    if setup.aae.embedding
+    if setup.data.embedding
         % genereate embedding with transform
-        kernels = generateKernels( size( X,1 ), setup.aae.nKernels );
+        kernels = generateKernels( size( X,1 ), setup.data );
         XT = applyKernels( X, kernels );
     else
         XT  = X;
@@ -84,17 +84,8 @@ for i = 1:nRuns
     dlXTTst = dlarray( XTTst, 'CB' );
 
     % generate encodings
-    dlZTrn = predict( dlnetEnc, dlXTTrn );
-    dlZTst = predict( dlnetEnc, dlXTTst );
-    if setup.aae.variational
-        if setup.aae.useVarMean
-            dlZTrn = dlZTrn( 1:setup.aae.zDim, : );
-            dlZTst = dlZTst( 1:setup.aae.zDim, : );
-        else
-            dlZTrn = reparameterize( dlZTrn );
-            dlZTst = reparameterize( dlZTst );
-        end
-    end
+    dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup.aae );
+    dlZTst = getEncoding( dlnetEnc, dlXTTst, setup.aae );
 
     % convert back to numeric arrays
     ZTrn = double(extractdata( dlZTrn ));

@@ -60,6 +60,13 @@ end
 setup.zDim = nCodes;
 setup.xDim = length( setup.tFine );
 
+% data embedding parameters
+setup.embedding = true;
+setup.nKernels = 1000;
+setup.candidateStart = 3; % *2+1
+setup.nCandidates = 4;
+setup.isInterdependent = true;
+
 % functional data analysis parameters
 setup.fda.basisOrder = 4;
 setup.fda.penaltyOrder = 2;

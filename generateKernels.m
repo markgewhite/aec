@@ -13,33 +13,31 @@
 %
 % ************************************************************************
 
-function kernels = generateKernels( nPoints, nKernels, ...
-                                    candidateStart, nCandidates )
+function kernels = generateKernels( nPoints, setup )
 
-if nargin < 3
-    candidateStart = 7;
-    nCandidates = 4;
-else
-    candidateStart = candidateStart*2 + 1;
-end
+start = setup.candidateStart*2 + 1; % odd numbers
 
-candidateLengths = linspace( candidateStart, ...
-                    candidateStart+(nCandidates-1)*2, nCandidates );
+candidateLengths = linspace( start, start+(setup.nCandidates-1)*2, ...
+                             setup.nCandidates );
 kernels.lengths = candidateLengths(   ...
-                    randi( length(candidateLengths), nKernels, 1) );
+                    randi( length(candidateLengths), setup.nKernels, 1) );
 
 kernels.weights = zeros( sum( kernels.lengths ), 1 );
-kernels.biases = zeros( nKernels, 1 );
-kernels.dilations = zeros( nKernels, 1 );
-kernels.paddings = zeros( nKernels, 1 );
+kernels.biases = zeros( setup.nKernels, 1 );
+kernels.dilations = zeros( setup.nKernels, 1 );
+kernels.paddings = zeros( setup.nKernels, 1 );
 
 a1 = 1;
 
-for i = 1:nKernels
+for i = 1:setup.nKernels
 
     l = kernels.lengths(i);
 
-    w = randn( l, 1 );
+    if setup.isInterdependent
+        w = randSeries( 1, l );
+    else
+        w = randn( l, 1 );
+    end
 
     b1 = a1 + l - 1;
     kernels.weights( a1:b1 ) = w - mean(w);

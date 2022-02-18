@@ -34,7 +34,7 @@ switch paramEnc.type
 
     case 'FullyConnected'
         for i = 1:paramEnc.nHidden
-            nNodes = fix( paramEnc.nFC*2^(1-i) );
+            nNodes = fix( paramEnc.nFC*2^(paramEnc.fcFactor*(1-i)) );
             layersEnc = [ layersEnc; ...
                 fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
@@ -86,7 +86,7 @@ switch paramDec.type
 
     case 'FullyConnected'
         for i = 1:paramDec.nHidden
-            nNodes = fix( paramDec.nFC*2^(-paramDec.nHidden+i) );
+            nNodes = fix( paramDec.nFC*2^(paramDec.fcFactor*(-paramDec.nHidden+i)) );
             layersDec = [ layersDec; ...
                 fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                 batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )

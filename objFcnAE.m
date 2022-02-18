@@ -25,14 +25,10 @@ setup.aae = unpackHyperparameters( setup.aae, hyperparams );
 % update dependencies
 setup.aae.nEpochs = setup.opt.nEpochs;
 setup.aae.verbose = false;
-if setup.aae.embedding
-    setup.aae.enc.input = 2*setup.aae.nKernels;
-end
 
 % genereate embedding with transform
-if setup.aae.embedding
-    kernels = generateKernels( size( X,1 ), setup.aae.nKernels, ...
-        setup.aae.candidateStart, setup.aae.nCandidates );
+if setup.data.embedding
+    kernels = generateKernels( size( X,1 ), setup.data );
     XT = applyKernels( X, kernels );
 else
     XT  = X;
@@ -71,17 +67,8 @@ dlXTTrn = dlarray( XTTrn, 'CB' );
 dlXTTst = dlarray( XTTst, 'CB' );
 
 % generate encodings
-dlZTrn = predict( dlnetEnc, dlXTTrn );
-dlZTst = predict( dlnetEnc, dlXTTst );
-if setup.aae.variational
-    if setup.aae.useVarMean
-        dlZTrn = dlZTrn( 1:setup.aae.zDim, : );
-        dlZTst = dlZTst( 1:setup.aae.zDim, : );
-    else
-        dlZTrn = reparameterize( dlZTrn );
-        dlZTst = reparameterize( dlZTst );
-    end
-end
+dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup.aae );
+dlZTst = getEncoding( dlnetEnc, dlXTTst, setup.aae );
 
 % convert back to numeric arrays
 ZTrn = double(extractdata( dlZTrn ));

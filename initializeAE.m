@@ -20,7 +20,7 @@ setup.gradFcn = @modelGradients;
 setup.optimizer = 'ADAM';
 setup.nEpochs = 1000;
 setup.nEpochsPretraining = 10;
-setup.batchSize = 100;
+setup.batchSize = 50;
 setup.beta1 = 0.9;
 setup.beta2 = 0.999;
 setup.verbose = true;
@@ -34,9 +34,11 @@ setup.reg.comp = 1E0;
 setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
-setup.valFreq = 100;
+setup.valFreq = 5;
+setup.updateFreq = 50;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
+setup.valPatience = 10;
 
 setup.xDim = config.xDim;
 setup.zDim = config.zDim;
@@ -48,18 +50,13 @@ setup.postTraining = true; % preTraining is set during training
 setup.variational = false;
 setup.adversarial = false;
 setup.unimodal = false;
-setup.wasserstein = true;
+setup.wasserstein = false;
 setup.l2regularization = false;
 setup.orthogonal = true;
 setup.keyCompLoss = false;
 setup.clusterLoss = true;
 setup.useVarMean = true;
 setup.classifier = 'Network';
-
-setup.embedding = true;
-setup.nKernels = 1000;
-setup.candidateStart = 3; % *2+1
-setup.nCandidates = 4;
 
 setup.mmd.scale = 2;
 setup.mmd.kernel = 'IMQ';
@@ -72,8 +69,8 @@ setup.fda = config.fda;
 % encoder network parameters
 setup.enc.type = 'FullyConnected'; %'Convolutional'; % 
 setup.enc.learnRate = 0.01;
-if setup.embedding
-    setup.enc.input = 2*setup.nKernels;
+if config.embedding
+    setup.enc.input = 2*config.nKernels;
 else
     setup.enc.input = config.xDim;
 end
@@ -91,8 +88,9 @@ switch config.source
     case 'JumpVGRF'
         switch setup.enc.type
             case 'FullyConnected'
-                setup.enc.nHidden = 1;
-                setup.enc.nFC = 128;
+                setup.enc.nHidden = 3;
+                setup.enc.nFC = 512;
+                setup.enc.fcFactor = 2;
                 setup.enc.scale = 0;
                 setup.enc.dropout = 0.10;
             case 'Convolutional'
@@ -127,8 +125,9 @@ switch config.source
     case 'JumpVGRF'
         switch setup.dec.type
             case 'FullyConnected'
-                setup.dec.nHidden = 1;
-                setup.dec.nFC = 100;
+                setup.dec.nHidden = 3;
+                setup.dec.nFC = 64;
+                setup.dec.fcFactor = 1;
                 setup.dec.scale = 0.2;
                 setup.dec.dropout = 0;
             case 'Convolutional'
@@ -166,8 +165,8 @@ switch config.source
     case 'JumpVGRF'
         setup.cls.nHidden = 1;
         setup.cls.nFC = 100;
-        setup.cls.scale = 1.0;
-        setup.cls.dropout = 0.0;
+        setup.cls.scale = 0.2;
+        setup.cls.dropout = 0.2;
     otherwise
         error('Unrecognised data source');
 end
