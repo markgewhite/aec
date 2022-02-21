@@ -26,6 +26,7 @@ kernels.weights = zeros( sum( kernels.lengths ), 1 );
 kernels.biases = zeros( setup.nKernels, 1 );
 kernels.dilations = zeros( setup.nKernels, 1 );
 kernels.paddings = zeros( setup.nKernels, 1 );
+kernels.correlations = zeros( setup.nKernels, 1 );
 
 a1 = 1;
 
@@ -34,13 +35,18 @@ for i = 1:setup.nKernels
     l = kernels.lengths(i);
 
     if setup.isInterdependent
-        w = randSeries( 1, l );
+        w = randSeries( 1, l )';
     else
         w = randn( l, 1 );
     end
 
+    if setup.smooth
+        w = smooth( w );
+    end
+
     b1 = a1 + l - 1;
     kernels.weights( a1:b1 ) = w - mean(w);
+    kernels.correlations(i) = corr( w(1:end-1), w(2:end) );
 
     kernels.biases(i) = 2*rand - 1;
 
@@ -58,3 +64,23 @@ end
 
 end
 
+function wHat = smooth( w )
+ 
+    basisOrder = 4;
+    penaltyOrder = 2;
+    lambda = 1E-3; % 1E2
+    nBasis = length(w)+penaltyOrder;
+    tSpan = 1:length(w);
+    basisFd = create_bspline_basis( ...
+                            [ tSpan(1), tSpan(end) ], ...
+                              nBasis, basisOrder);
+    params = fdPar( basisFd, ...
+                             penaltyOrder, ...
+                             lambda );
+    % smooth the data
+    wFd = smooth_basis( tSpan, w, params );
+    
+    % re-sample it
+    wHat = eval_fd( tSpan, wFd );
+
+end

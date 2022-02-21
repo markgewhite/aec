@@ -243,7 +243,7 @@ for epoch = 1:setup.nEpochs
         lossVal(v) = sum( dlYHatVal~=dlYVal )/length(dlYVal);
 
         if v > 2*vp-1
-            if min(lossVal(v-2*vp+1:v-vp)) < min(lossVal(v-vp+1:v))
+            if mean(lossVal(v-2*vp+1:v-vp)) < mean(lossVal(v-vp+1:v))
                 % no longer improving - stop training
                 break
             end

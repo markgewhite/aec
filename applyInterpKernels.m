@@ -1,7 +1,7 @@
 % ************************************************************************
-% Function: applyKernels
+% Function: applyInterpKernels
 %
-% Apply random convolutional kernels (ROCKET)
+% Apply interpolated random convolutional kernels (ROCKET)
 % Code adapted from original Python implementation.
 %
 % Parameters:
@@ -13,7 +13,7 @@
 %
 % ************************************************************************
 
-function XT = applyKernels( X, kernels )
+function XT = applyInterpKernels( X, kernels )
 
 nObs = size( X, 2 );
 nKernels = length( kernels.lengths );
@@ -50,17 +50,33 @@ end
 function XT = applyKernel( X, weight, len, ...
                                       bias, dilation, padding )
 
-    X = [ zeros( padding, 1 ); X; zeros( padding, 1 ) ];
+    inLen = length( X );
+    outLen = (inLen + 2*padding) - (len - 1)*dilation;
     
     ppv = 0;
     high = -Inf;
-       
-    nCalc = length( X ) - (len-1)*dilation;
-    idxRng = 0:dilation:(len-1)*dilation;
-    for i = 1:nCalc
+    
+    endPt = inLen + padding - (len - 1)*dilation;
 
-        idxRng = idxRng + 1;
-        total = bias + sum( weight.*X(idxRng) );
+    kLen = (len - 1)*dilation + 1;
+    x = 1:dilation:kLen;
+    xq = 1:kLen;
+
+    w = interp1( x, weight, xq, 'cubic' );
+
+    for i = -padding+1:endPt
+
+        total = bias;
+        index = i;
+
+        for j = 1:len
+
+            if index > 0 && index < inLen
+                total = total + w(j)*X(index);
+            end
+            index = index + 1;
+        
+        end
 
         if total > high
             high = total;
@@ -72,9 +88,8 @@ function XT = applyKernel( X, weight, len, ...
 
     end
 
-    XT = [ ppv/nCalc, high ];
+    XT = [ ppv/outLen, high ];
 
 end
-
 
 

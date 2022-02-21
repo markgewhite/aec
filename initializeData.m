@@ -11,7 +11,7 @@
 % ************************************************************************
 
 
-function [ X, XFd, Y, setup ] = initializeData( source, nCodes )
+function [ X, XFd, Y, setup ] = initializeData( source, nCodes, nPts )
 
 % get data
 setup.source = source;
@@ -46,7 +46,7 @@ switch source
         Xraw = padData( Xraw, maxLen, 1 );
 
         setup.tSpan = linspace( -maxLen+1, 0, maxLen );
-        setup.tFine = linspace( -maxLen+1, 0, 101 );
+        setup.tFine = linspace( -maxLen+1, 0, nPts );
 
         setup.nDraw = 1;
         setup.cLabels = categorical( 0:2 );
@@ -58,7 +58,7 @@ end
 
 % data generation parameters
 setup.zDim = nCodes;
-setup.xDim = length( setup.tFine );
+setup.xDim = length( setup.tSpan );
 
 % data embedding parameters
 setup.embedding = true;
@@ -70,8 +70,8 @@ setup.isInterdependent = true;
 % functional data analysis parameters
 setup.fda.basisOrder = 4;
 setup.fda.penaltyOrder = 2;
-setup.fda.lambda = 1E-1; % 1E2
-setup.fda.nBasis = 20+setup.fda.penaltyOrder+1;
+setup.fda.lambda = 1E2; % 1E2
+setup.fda.nBasis = setup.xDim+setup.fda.penaltyOrder;
 setup.fda.basisFd = create_bspline_basis( ...
                         [ setup.tSpan(1), setup.tSpan(end) ], ...
                           setup.fda.nBasis, setup.fda.basisOrder);

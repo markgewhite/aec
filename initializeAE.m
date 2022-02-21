@@ -35,10 +35,10 @@ setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
 setup.valFreq = 5;
-setup.updateFreq = 50;
+setup.updateFreq = 100;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
-setup.valPatience = 10;
+setup.valPatience = 20;
 
 setup.xDim = config.xDim;
 setup.zDim = config.zDim;
@@ -50,7 +50,7 @@ setup.postTraining = true; % preTraining is set during training
 setup.variational = false;
 setup.adversarial = false;
 setup.unimodal = false;
-setup.wasserstein = false;
+setup.wasserstein = true;
 setup.l2regularization = false;
 setup.orthogonal = true;
 setup.keyCompLoss = false;
