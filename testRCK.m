@@ -14,18 +14,17 @@ dataSource = 'JumpVGRF';
 % prepare data
 [X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
 setup.data.isInterdependent = false;
-setup.data.nKernels = 1000;
+setup.data.nKernels = 10000;
 setup.data.smooth = false;
 
 lossTrn = zeros( nRuns, 1 );
 lossTst = zeros( nRuns, 1 );
-
 for i = 1:nRuns
     % define kernels
     kernels = generateKernels( size( X,1 ), setup.data );
     
     % apply kernels
-    XT = applyKernels( X, kernels );
+    [ XT, conv ] = applyKernels( X, kernels );
     
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
@@ -51,16 +50,16 @@ kID = 1:2:setup.data.nKernels*2-1;
 betaMP = mdl.Beta( kID );
 betaPPV = mdl.Beta( kID+1 );
 
-[ betaMP, orderID ] = sort( abs(betaMP), 'descend' );
-lMP = kernels.lengths( orderID );
-dMP = kernels.dilations( orderID );
-cMP = kernels.correlations( orderID );
+[ betaMP, orderMP ] = sort( abs(betaMP), 'descend' );
+lMP = kernels.lengths( orderMP );
+dMP = kernels.dilations( orderMP );
+cMP = kernels.correlations( orderMP );
 
 
-[ betaPPV, orderID ] = sort( abs(betaPPV), 'descend' );
-lPPV = kernels.lengths( orderID );
-dPPV = kernels.dilations( orderID );
-cPPV = kernels.correlations( orderID );
+[ betaPPV, orderPPV ] = sort( abs(betaPPV), 'descend' );
+lPPV = kernels.lengths( orderPPV );
+dPPV = kernels.dilations( orderPPV );
+cPPV = kernels.correlations( orderPPV );
 
 % beta plots
 figure;
@@ -99,8 +98,30 @@ hold( ax, 'on' );
 legend( ax, {'MP', 'PPV'} );
 title( ax, 'Correlations');
 
+% convolutions plots
+figure;
+ax1 = subplot(2,1,1);
+ax2 = subplot(2,1,2);
 
+for i = 1:25
+    idx = orderMP(i);
+    plotConvolutions( ax1, setup.data.tFine, ...
+                      conv(idx, test(cvPart) ), YTst, ...
+                      kernels.dilations(idx), kernels.paddings(idx) );
+    title( ax1, [ num2str(i) ': ' num2str(betaMP(i)) ] );
+    plotKernel( ax2, setup.data.tFine, idx, kernels );
+    pause;
+end
 
+for i = 1:25
+    idx = orderPPV(i);
+    plotConvolutions( ax1, setup.data.tFine, ...
+                      conv(idx, test(cvPart) ), YTst, ...
+                      kernels.dilations(idx), kernels.paddings(idx) );
+    title( ax1, [ num2str(i) ': ' num2str(betaPPV(i)) ] );
+    plotKernel( ax2, setup.data.tFine, idx, kernels );
+    pause;
+end
 
 
 

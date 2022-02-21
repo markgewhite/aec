@@ -13,12 +13,13 @@
 %
 % ************************************************************************
 
-function XT = applyKernels( X, kernels )
+function [ XT, conv ] = applyKernels( X, kernels )
 
 nObs = size( X, 2 );
 nKernels = length( kernels.lengths );
 
 XT = zeros( nKernels*2, nObs ); % 2 features per kernel
+conv = cell( nKernels, nObs ); % store convolutions
 
 for i = 1:nObs
 
@@ -30,7 +31,7 @@ for i = 1:nObs
         b1 = a1 + kernels.lengths(j) - 1;
         b2 = a2 + 1;
 
-        XT( a2:b2, i ) = applyKernel( X( :, i ), ...
+        [ XT( a2:b2, i ), conv{ j, i } ] = applyKernel( X( :, i ), ...
                                       kernels.weights( a1:b1 ), ...
                                       kernels.lengths(j), ...
                                       kernels.biases(j), ...
@@ -47,7 +48,7 @@ end
 end
 
 
-function XT = applyKernel( X, weight, len, ...
+function [ XT, conv ] = applyKernel( X, weight, len, ...
                                       bias, dilation, padding )
 
     X = [ zeros( padding, 1 ); X; zeros( padding, 1 ) ];
@@ -57,16 +58,17 @@ function XT = applyKernel( X, weight, len, ...
        
     nCalc = length( X ) - (len-1)*dilation;
     idxRng = 0:dilation:(len-1)*dilation;
+    conv = zeros( nCalc, 1 );
     for i = 1:nCalc
 
         idxRng = idxRng + 1;
-        total = bias + sum( weight.*X(idxRng) );
+        conv(i) = bias + sum( weight.*X(idxRng) );
 
-        if total > high
-            high = total;
+        if conv(i) > high
+            high = conv(i);
         end
 
-        if total > 0
+        if conv(i) > 0
             ppv = ppv + 1;
         end
 
