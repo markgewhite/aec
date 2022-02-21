@@ -233,14 +233,24 @@ for epoch = 1:setup.nEpochs
 
     end
 
-    if mod( epoch, setup.valFreq )==0
+    if ~setup.preTraining && mod( epoch, setup.valFreq )==0
+        
         % run a validation check
-        dlZVal = getEncoding( dlnetEnc, dlXTVal, setup );
-        dlYHatVal = predict( dlnetCls, dlZVal );
-        dlYHatVal = double( ...
-            onehotdecode( dlYHatVal, single(setup.cLabels), 1 ))' - 1;
         v = v + 1;
-        lossVal(v) = sum( dlYHatVal~=dlYVal )/length(dlYVal);
+        dlZVal = getEncoding( dlnetEnc, dlXTVal, setup );
+        switch setup.validationFcn
+            case 'Network'
+                dlYHatVal = predict( dlnetCls, dlZVal );
+                dlYHatVal = double( ...
+                    onehotdecode( dlYHatVal, single(setup.cLabels), 1 ))' - 1;
+                lossVal(v) = sum( dlYHatVal~=dlYVal )/length(dlYVal);
+
+            case 'Fisher'
+                ZVal = double(extractdata( dlZVal ));
+                YVal = double(extractdata( dlYVal ));
+                model = fitcdiscr( ZVal', YVal );
+                lossVal(v) = loss( model, ZVal', YVal );
+        end
 
         if v > 2*vp-1
             if mean(lossVal(v-2*vp+1:v-vp)) < mean(lossVal(v-vp+1:v))
@@ -248,13 +258,19 @@ for epoch = 1:setup.nEpochs
                 break
             end
         end
+
     end
 
     % update progress on screen
     if setup.verbose && mod( epoch, setup.updateFreq )==0
         meanLoss = mean(lossTrn( j-nIter+1:j, : ));
-        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f : %1.3f\n', ...
-            epoch, meanLoss, lossVal(v) );
+        fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f', ...
+            epoch, meanLoss );
+        if setup.preTraining
+            fprintf('\n');
+        else
+            fprintf(' : %1.3f\n', lossVal(v));
+        end
 
         dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup );
         ZTrn = double(extractdata( dlZTrn ));

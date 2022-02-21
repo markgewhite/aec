@@ -9,6 +9,7 @@ rng( 0 );
 
 nCodes = 4;
 nRuns = 100;
+nPts = 21;
 dataSource = 'JumpVGRF';
 
 % initialise plots
@@ -37,7 +38,7 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    [X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes ); 
+    [X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
 
     % initalise autoencoder setup
     setup.aae = initializeAE( setup.data );
@@ -62,15 +63,15 @@ for i = 1:nRuns
     disp('Generated and partitioned data.');
 
     % plot the data
-    fig1 = figure(1);
-    plot( XFd );
-    drawnow;
+    %fig1 = figure(1);
+    %plot( XFd );
+    %drawnow;
 
     % plot the first four components
-    pcaXFd = pca_fd( XFd, 4 );
-    fig2 = figure(2);
-    plot_pca_fd( pcaXFd, 1, 1:4 );
-    drawnow;
+    %pcaXFd = pca_fd( XFd, 4 );
+    %fig2 = figure(2);
+    %plot_pca_fd( pcaXFd, 1, 1:4 );
+    %drawnow;
 
 
     % ----- autoencoder -----

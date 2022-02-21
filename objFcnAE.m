@@ -14,7 +14,8 @@ function [ obj, constraint ] = objFcnAE( hyperparams, setup )
 
 % initialise data    
 [X, ~, Y, setup.data ] = initializeData( setup.opt.dataSource, ...
-                                         setup.opt.nCodes ); 
+                                         setup.opt.nCodes, ...
+                                         setup.opt.nPts ); 
 
 % initalise autoencoder setup
 setup.aae = initializeAE( setup.data );
@@ -103,6 +104,8 @@ switch setup.opt.objective
         obj = mean( lossTrace(end-9:end, 7) );
     case 'ClassificationError'
         obj = errNet;
+    case 'FisherError'
+        obj = errAE;
     otherwise
         error('Unrecognised objective');
 end

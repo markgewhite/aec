@@ -35,7 +35,7 @@ setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
 setup.valFreq = 5;
-setup.updateFreq = 100;
+setup.updateFreq = 50;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
 setup.valPatience = 20;
@@ -48,15 +48,16 @@ setup.nDraw = config.nDraw;
 
 setup.postTraining = true; % preTraining is set during training
 setup.variational = false;
-setup.adversarial = false;
+setup.adversarial = true;
 setup.unimodal = false;
-setup.wasserstein = true;
+setup.wasserstein = false;
 setup.l2regularization = false;
 setup.orthogonal = true;
 setup.keyCompLoss = false;
 setup.clusterLoss = true;
 setup.useVarMean = true;
 setup.classifier = 'Network';
+setup.validationFcn = 'Fisher';
 
 setup.mmd.scale = 2;
 setup.mmd.kernel = 'IMQ';
