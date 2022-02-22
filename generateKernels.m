@@ -40,6 +40,10 @@ for i = 1:setup.nKernels
         w = randn( l, 1 );
     end
 
+    if setup.smooth
+        w = smooth( w );
+    end
+
     b1 = a1 + l - 1;
     kernels.weights( a1:b1 ) = w - mean(w);
     kernels.correlations(i) = corr( w(1:end-1), w(2:end) );
