@@ -13,24 +13,31 @@
 %
 % ************************************************************************
 
-function K = fitKernels( X, nFeatures )
+function K = fitKernels( X, nFeatures, nMetrics )
 
-inputLength = size( X, 2 );
-K.nKernels = 84;
+inputLength = size( X, 1 );
+K.kernels = 84;
 K.length = 9;
+
+if nMetrics >= 1 && nMetrics <=4
+    K.metrics = nMetrics;
+else
+    error('Number of metrics not in correct range (1-4).');
+end
+
 maxDilationsPerKernel = 32;
 
-[ K.dilations, K.nFeaturesPerDilation ] = fitDilations( ...
-                inputLength, K.nKernels, nFeatures, ...
+[ K.dilations, K.featuresPerDilation ] = fitDilations( ...
+                inputLength, K.kernels, nFeatures, ...
                 K.length, maxDilationsPerKernel );
 
-nFeaturesPerKernel = sum( K.nFeaturesPerDilation );
+featuresPerKernel = sum( K.featuresPerDilation );
 
-Q = quantiles( K.nKernels*nFeaturesPerKernel );
+Q = quantiles( K.kernels*featuresPerKernel );
 
-K.biases = fitBiases( X, K.nKernels, ...
+K.biases = fitBiases( X, K.kernels, ...
                          K.length, K.dilations, ...
-                         K.nFeaturesPerDilation, Q );
+                         K.featuresPerDilation, Q );
 
 end
 
@@ -61,14 +68,14 @@ end
 function Q = quantiles( n )
 
     % low-discrepancy sequence to assign quantiles to kernel/dilation combinations
-    Q = mod( (0:n+1)*(sqrt(5) + 1)/2, 1 );
+    Q = mod( (1:n)*(sqrt(5) + 1)/2, 1 );
 
 end
 
 
 function biases = fitBiases( X, nKernels, kLen, dilations, nFeatPerD, Q )
 
-    [ nObs, inLen ] = size( X );
+    [ inLen, nObs ] = size( X );
 
     % equivalent to:
     % >>> from itertools import combinations
@@ -95,45 +102,45 @@ function biases = fitBiases( X, nKernels, kLen, dilations, nFeatPerD, Q )
 
     featIdxStart = 1;
 
-    for dilIdx = 1:nDil
+    for dIdx = 1:nDil
 
-        dilation = dilations( dilIdx );
+        dilation = dilations( dIdx );
         padding = fix( ((kLen - 1) * dilation)/2 );
 
-        nFeatThisD = nFeatPerD( dilIdx );
+        nFeatThisD = nFeatPerD( dIdx );
 
         for kIdx = 1:nKernels
 
             featIdxEnd = featIdxStart + nFeatThisD - 1;
 
-            x = X( randi(nObs), : );
+            x = X( :, randi(nObs) );
 
-            A = -x;        % A = alpha * X = -X
-            G = x + x + x; % G = gamma * X = 3X
+            A = -x';        % A = alpha * X = -X
+            G = x + x + x;  % G = gamma * X = 3X
 
             C_alpha = A;
 
             C_gamma = zeros( kLen, inLen );
-            C_gamma( fix(kLen/2), : ) = G;
+            C_gamma( ceil(kLen/2), : ) = G;
 
             Dstart = dilation;
             Dend = inLen - padding;
 
-            for gammaIdx = 1:fix(kLen/2)
+            for gIdx = 1:fix(kLen/2)
 
                 C_alpha( inLen-Dend+1:end ) = ...
                     C_alpha( inLen-Dend+1:end) + A( 1:Dend );
-                C_gamma( gammaIdx, inLen-Dend+1:end ) = G( 1:Dend );
+                C_gamma( gIdx, inLen-Dend+1:end ) = G( 1:Dend );
 
                 Dend = Dend + dilation;
 
             end
 
-            for gammaIdx = fix(kLen/2)+1:kLen
+            for gIdx = fix(kLen/2)+1:kLen
 
                 C_alpha( 1:inLen-Dstart+1 ) = ...
                     C_alpha( 1:inLen-Dstart+1 ) + A( Dstart:end );
-                C_gamma( gammaIdx, 1:inLen-Dstart+1 ) = G( Dstart:end );
+                C_gamma( gIdx, 1:inLen-Dstart+1 ) = G( Dstart:end );
 
                 Dstart = Dstart + dilation;
 

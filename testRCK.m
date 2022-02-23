@@ -7,27 +7,35 @@ clear;
 
 rng( 0 );
 nCodes = 4;
-nPts = 21;
+nPts = 101;
 nRuns = 10;
 nFolds = 10;
 dataSource = 'JumpVGRF';
-method = 'Multi';
+method = 'PPV';
+algorithm = 'MiniRocket';
 
 % prepare data
 [X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
 setup.data.isInterdependent = false;
-setup.data.nKernels = 4000;
-setup.data.smooth = false;
+setup.data.nKernels = 2000;
+setup.data.nMetrics = 3;
+setup.data.smooth = true;
 
 lossTrn = zeros( nRuns, nFolds );
 lossTst = zeros( nRuns, nFolds );
 for i = 1:nRuns
-    % define kernels
-    kernels = generateKernels( size( X,1 ), setup.data );
-    
-    % apply kernels
-    XT = applyKernels( X, kernels, method );
-    setup.data.nFeatures = size( XT, 1 )/setup.data.nKernels;
+
+    switch algorithm
+        case 'Rocket'
+            kernels = generateKernels( size( X,1 ), setup.data );   
+            XT = applyKernels( X, kernels, method );
+            setup.data.nMetrics = size( XT, 1 )/setup.data.nKernels;
+
+        case 'MiniRocket'
+            kernels = fitKernels( X, setup.data.nKernels, setup.data.nMetrics );   
+            XT = rocketTransform( X, kernels );
+    end
+
 
     for j = 1:nFolds
     
@@ -39,9 +47,18 @@ for i = 1:nRuns
         YTst = Y( test(cvPart)  );
         
         % classify
-        mdl = fitclinear( XTTrn, YTrn );
-        lossTrn( i, j ) = loss( mdl, XTTrn, YTrn );
-        lossTst( i, j ) = loss( mdl, XTTst, YTst );
+        mdl = fitclinear( XTTrn, YTrn, ...
+                          'Lambda', logspace(-8,0,33) );
+        [ ~, best ] = min(loss( mdl, XTTst, YTst ));
+        [~, orderID] = sort( mdl.Beta(:,best) );
+        select = orderID <= size( XTTrn, 2 )*0.8;
+        mdl = fitclinear( XTTrn( :, select ), YTrn, ...
+                          'Lambda', logspace(-8,0,33) );
+
+        [ lossTst( i, j ), best ] = min(loss( mdl, XTTst( :, select), YTst ));
+        disp(['Best = ' num2str(best)]);
+        lossTrnLambda = loss( mdl, XTTrn( :, select), YTrn );
+        lossTrn( i, j ) = lossTrnLambda( best );
 
     end
     
@@ -67,7 +84,7 @@ disp(['Overall Test Loss  = ' num2str( mean(lossTst,'all'), '%.3f' ) ...
               ' +/- ' num2str( std(lossTst,[],'all'), '%.3f' ) ]);
 
 % coefficients
-kID = 1 : setup.data.nFeatures : setup.data.nKernels*setup.data.nFeatures-1;
+kID = 1 : setup.data.nMetrics : setup.data.nKernels*setup.data.nMetrics-1;
 betaMP = mdl.Beta( kID );
 betaPPV = mdl.Beta( kID+1 );
 

@@ -15,12 +15,26 @@
 
 function features = rocketTransform( X, kernels )
 
-[ nObs, inLen ] = size( X );
-nKernels = kernels.nKernels;
+[ inLen, nObs ] = size( X );
+nKernels = kernels.kernels;
 kLen = kernels.length;
+nMetrics = kernels.metrics;
 dilations = kernels.dilations;
-nFeatPerD = kernels.nFeaturesPerDilation;
+nFeatPerD = kernels.featuresPerDilation;
 biases = kernels.biases;
+
+switch nMetrics
+    case 1
+        featureFcn = @compute1Feature;
+    case 2
+        featureFcn = @compute2Features;
+    case 3
+        featureFcn = @compute3Features;
+    case 4
+        featureFcn = @compute4Features;
+    otherwise
+        error('Number of metrics not within range.');
+end
 
 % equivalent to:
 % >>> from itertools import combinations
@@ -42,49 +56,50 @@ indices = reshape( indices, nKernels, 3 );
 
 nDil = length(dilations);
 
-nFeat = nKernels*sum( nFeatPerD );
-features = zeros( nObs, nFeat );
+nFeat = nKernels*sum( nFeatPerD )*nMetrics;
+features = zeros( nFeat, nObs );
 
 for i = 1:nObs
 
-    x = X( i, : );
+    x = X( :, i );
     
-    A = -x;        % A = alpha * X = -X
-    G = x + x + x; % G = gamma * X = 3X
+    A = -x';        % A = alpha * X = -X
+    G = x + x + x;  % G = gamma * X = 3X
 
-    featIdxStart = 1;
+    fIdxStart = 1;
+    bIdx = 1;
 
-    for dilIdx = 1:nDil
+    for dIdx = 1:nDil
 
-        padding0 = mod( dilIdx, 2 );
-        dilation = dilations( dilIdx );
+        padding0 = mod( dIdx, 2 );
+        dilation = dilations( dIdx );
         padding = fix( ((kLen - 1) * dilation)/2 );
 
-        nFeatThisD = nFeatPerD( dilIdx );
+        nFeatThisD = nFeatPerD( dIdx );
 
         C_alpha = A;
 
         C_gamma = zeros( kLen, inLen );
-        C_gamma( fix(kLen/2), : ) = G;
+        C_gamma( ceil(kLen/2), : ) = G;
 
         Dstart = dilation;
         Dend = inLen - padding;
 
-        for gammaIdx = 1:fix(kLen/2)
+        for gIdx = 1:fix(kLen/2)
 
             C_alpha( inLen-Dend+1:end ) = ...
                 C_alpha( inLen-Dend+1:end) + A( 1:Dend );
-            C_gamma( gammaIdx, inLen-Dend+1:end ) = G( 1:Dend );
+            C_gamma( gIdx, inLen-Dend+1:end ) = G( 1:Dend );
 
             Dend = Dend + dilation;
 
         end
 
-        for gammaIdx = fix(kLen/2)+1:kLen
+        for gIdx = fix(kLen/2)+1:kLen
 
             C_alpha( 1:inLen-Dstart+1 ) = ...
                 C_alpha( 1:inLen-Dstart+1 ) + A( Dstart:end );
-            C_gamma( gammaIdx, 1:inLen-Dstart+1 ) = G( Dstart:end );
+            C_gamma( gIdx, 1:inLen-Dstart+1 ) = G( Dstart:end );
 
             Dstart = Dstart + dilation;
 
@@ -92,7 +107,7 @@ for i = 1:nObs
     
         for kIdx = 1:nKernels
     
-            featIdxEnd = featIdxStart + nFeatThisD - 1;
+            fIdxEnd = fIdxStart + nFeatThisD*nMetrics - 1;
     
             padding1 = mod( padding0 + kIdx, 2 );
 
@@ -102,19 +117,36 @@ for i = 1:nObs
                   C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
 
             if padding1 == 0
-                for fIdx = 0:nFeatThisD-1
-                    features( i, featIdxStart + fIdx) = ...
-                                PPV(C, biases(featIdxStart + fIdx));
+
+                f1 = fIdxStart;
+                f2 = f1+nMetrics-1;
+                for j = 0:nFeatThisD-1
+
+                    features( f1:f2, i) = ...
+                        featureFcn( C, biases(bIdx + j), inLen);
+
+                    f1 = f2+1;
+                    f2 = f2+nMetrics;
+
                 end
+
             else
-                for fIdx = 0:nFeatThisD-1
-                    features( i, featIdxStart + fIdx - 1) = ...
-                                PPV( C(padding:end-padding+1), ...
-                                           biases(featIdxStart + fIdx));
+                cLen = length(C)-2*padding;
+                f1 = fIdxStart;
+                f2 = f1+nMetrics-1;
+                for j = 0:nFeatThisD-1
+
+                    features( f1:f2, i ) = ...
+                        featureFcn( C(padding+1:end-padding), ...
+                                      biases(bIdx + j), cLen );
+                    f1 = f2+1;
+                    f2 = f2+nMetrics;
+
                 end
             end
     
-            featIdxStart = featIdxEnd + 1;
+            fIdxStart = fIdxEnd + 1;
+            bIdx = bIdx + nFeatThisD;
     
         end
     
@@ -125,8 +157,70 @@ end
 end
 
 
-function z = PPV(a, b)
-    z = mean( a > b );
+function z = compute1Feature( conv, bias, len )
+
+    pos = conv > bias;
+    ppv = sum( pos );
+
+    z = ppv/len;
+
 end
 
 
+function z = compute2Features( conv, bias, len )
+
+    pos = conv > bias;
+
+    ppv = sum( pos );
+    mpv = sum( conv(pos) );
+
+    z = [ ppv mpv ]/len;
+
+end
+
+
+function z = compute3Features( conv, bias, len )
+
+    pos = conv > bias;
+    idx = 1:len;
+
+    ppv = sum( pos );
+    mpv = sum( conv(pos) );
+    mipv = sum( idx(pos) );
+
+    z = [ ppv mpv mipv ]/len;
+
+end
+
+
+function z = compute4Features( conv, bias, len )
+
+    ppv = 0;
+    mpv = 0;
+    mipv = 0;
+    cpv = 0;
+    lspv = 0;
+
+    for i = 1:len
+
+        if conv(i) > bias
+            ppv = ppv + 1;
+            mpv = mpv + conv(i);
+            mipv = mipv + i;
+            cpv = cpv + 1;
+        else
+            if cpv > lspv
+                lspv = cpv;
+            end
+            cpv = 0;
+        end
+
+    end
+
+    if lspv == 0
+        lspv = cpv;
+    end
+
+    z = [ ppv mpv mipv lspv ]/len;
+
+end

@@ -34,6 +34,9 @@ end
 nObs = size( X, 2 );
 nKernels = length( kernels.lengths );
 
+% standardize
+X = (X - mean(X, 'all'))./std(X, [], 'all' );
+
 XT = zeros( nKernels*nFeatures, nObs ); % 2 features per kernel
 
 for i = 1:nObs
