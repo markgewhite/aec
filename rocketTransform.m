@@ -5,24 +5,34 @@
 % Code adapted from original Python implementation.
 %
 % Parameters:
-%           X       : data
-%           kernels : initialised kernels data structure
+%           X          : data
+%           parameters : initialised parameters
 %           
 % Outputs:
-%           XT      : transformed data
+%           features   : transformed data
+%           nDilTrunc  : number of dilations truncated
 %
 % ************************************************************************
 
-function features = rocketTransform( X, kernels )
+function [ features, nDilTrunc ] = rocketTransform( X, parameters )
 
-[ inLen, nObs ] = size( X );
-nKernels = kernels.kernels;
-kLen = kernels.length;
-nMetrics = kernels.metrics;
-dilations = kernels.dilations;
-nFeatPerD = kernels.featuresPerDilation;
-biases = kernels.biases;
+% extract parameters
+nKernels = parameters.kernels;
+kLen = parameters.length;
+nMetrics = parameters.metrics;
+dilations = parameters.dilations;
+nFeatPerD = parameters.featuresPerDilation;
+biases = parameters.biases;
 
+% determine X size
+lengthsVary = iscell( X );
+if lengthsVary
+    nObs = length( X );
+else
+    [ inLen, nObs ] = size( X );
+end
+
+% set the feature calculation function
 switch nMetrics
     case 1
         featureFcn = @compute1Feature;
@@ -36,9 +46,9 @@ switch nMetrics
         error('Number of metrics not within range.');
 end
 
-% equivalent to:
-% >>> from itertools import combinations
-% >>> indices = np.array([_ for _ in combinations(np.arange(9), 3)], dtype = np.int32)
+% define the all possible kernel combinations 
+% triplet combinations in the range 0-8.
+% this matrix is taken from Python so one is added for Matlab indexing
 indices = [
     0,1,2,0,1,3,0,1,4,0,1,5,0,1,6,0,1,7,0,1,8, ...
     0,2,3,0,2,4,0,2,5,0,2,6,0,2,7,0,2,8,0,3,4, ...
@@ -55,98 +65,135 @@ indices = [
 indices = reshape( indices, nKernels, 3 );
 
 nDil = length(dilations);
+nDilTrunc = 0;
 
 nFeat = nKernels*sum( nFeatPerD )*nMetrics;
 features = zeros( nFeat, nObs );
 
 for i = 1:nObs
 
-    x = X( :, i );
+    % extract the next curve
+    if lengthsVary
+        x = X{ i };
+        inLen = length( x ); %costly?
+    else
+        x = X( :, i );
+    end
+
+    % set dilation upper limit in case this time series is too short
+    maxDil = fix( 2^log2( (inLen - 1) / (kLen - 1)) );
     
+    % obtain alpha and gamme vectors efficiently
     A = -x';        % A = alpha * X = -X
     G = x + x + x;  % G = gamma * X = 3X
 
-    fIdxStart = 1;
-    bIdx = 1;
+    f1 = 1; % feature index counter: 1st in block of metrics
+    b = 1; % bias index counter
 
-    for dIdx = 1:nDil
+    % loop over all specified dilations for this curve
+    for d = 1:nDil 
 
-        padding0 = mod( dIdx, 2 );
-        dilation = dilations( dIdx );
+        % include padding on alternate dilations
+        padding0 = mod( d, 2 );
+
+        % extract the specified dilation
+        dilation = dilations( d );
+        if dilation > maxDil
+            % time series to too short for reference dilation
+            % find the largest dilation that is valid
+            dilation = dilations( find(dilations<maxDil, 1, 'last') );
+            if isempty(dilation)
+                dilation = 1;
+            end
+            nDilTrunc = nDilTrunc + 1;
+        end
+
+        % set the padding in proportion
         padding = fix( ((kLen - 1) * dilation)/2 );
 
-        nFeatThisD = nFeatPerD( dIdx );
+        % extract the number of features per dilation
+        nFeatThisD = nFeatPerD( d ); 
 
+        % calculate the convolution matrices
         C_alpha = A;
 
         C_gamma = zeros( kLen, inLen );
-        C_gamma( ceil(kLen/2), : ) = G;
+        C_gamma( ceil(kLen/2), : ) = G; % middle row
 
-        Dstart = dilation;
-        Dend = inLen - padding;
+        t1 = dilation;
+        t2 = inLen - padding;
 
-        for gIdx = 1:fix(kLen/2)
+        % loop over the top half
+        for g = 1:fix(kLen/2)
 
-            C_alpha( inLen-Dend+1:end ) = ...
-                C_alpha( inLen-Dend+1:end) + A( 1:Dend );
-            C_gamma( gIdx, inLen-Dend+1:end ) = G( 1:Dend );
+            C_alpha( inLen-t2+1:end ) = ...
+                C_alpha( inLen-t2+1:end) + A( 1:t2 );
+            C_gamma( g, inLen-t2+1:end ) = G( 1:t2 );
 
-            Dend = Dend + dilation;
-
-        end
-
-        for gIdx = fix(kLen/2)+1:kLen
-
-            C_alpha( 1:inLen-Dstart+1 ) = ...
-                C_alpha( 1:inLen-Dstart+1 ) + A( Dstart:end );
-            C_gamma( gIdx, 1:inLen-Dstart+1 ) = G( Dstart:end );
-
-            Dstart = Dstart + dilation;
+            t2 = t2 + dilation;
 
         end
-    
-        for kIdx = 1:nKernels
-    
-            fIdxEnd = fIdxStart + nFeatThisD*nMetrics - 1;
-    
-            padding1 = mod( padding0 + kIdx, 2 );
 
-            cIdx = indices( kIdx, : );
+        % loop over the bottom half
+        for g = fix(kLen/2)+1:kLen
+
+            C_alpha( 1:inLen-t1+1 ) = ...
+                C_alpha( 1:inLen-t1+1 ) + A( t1:end );
+            C_gamma( g, 1:inLen-t1+1 ) = G( t1:end );
+
+            t1 = t1 + dilation;
+
+        end
     
+        % compute the convolutions for each kernel
+        for k = 1:nKernels
+    
+            % set the feature block end point
+            f2 = f1 + nFeatThisD*nMetrics - 1;
+    
+            % alternate padding 
+            padding1 = mod( padding0 + k, 2 );
+
+            % combine alpha & gamma matrices to obtain convolution matrix
+            cIdx = indices( k, : );    
             C = C_alpha + ...
                   C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
 
-            if padding1 == 0
+            % compute the features 
+            cLen = length(C)-2*padding;
+            if padding1 == 0 || cLen<=0
 
-                f1 = fIdxStart;
-                f2 = f1+nMetrics-1;
-                for j = 0:nFeatThisD-1
+                % without padding
+                m1 = f1;
+                m2 = m1+nMetrics-1;
+                for f = 0:nFeatThisD-1
 
-                    features( f1:f2, i) = ...
-                        featureFcn( C, biases(bIdx + j), inLen);
+                    features( m1:m2, i) = ...
+                        featureFcn( C, biases(b + f), inLen );
 
-                    f1 = f2+1;
-                    f2 = f2+nMetrics;
+                    m1 = m2+1;
+                    m2 = m2+nMetrics;
 
                 end
 
             else
-                cLen = length(C)-2*padding;
-                f1 = fIdxStart;
-                f2 = f1+nMetrics-1;
-                for j = 0:nFeatThisD-1
+                % with padding
+                m1 = f1;
+                m2 = m1+nMetrics-1;
+                for f = 0:nFeatThisD-1
 
-                    features( f1:f2, i ) = ...
+                    features( m1:m2, i ) = ...
                         featureFcn( C(padding+1:end-padding), ...
-                                      biases(bIdx + j), cLen );
-                    f1 = f2+1;
-                    f2 = f2+nMetrics;
+                                      biases(b + f), cLen );
+                    m1 = m2+1;
+                    m2 = m2+nMetrics;
 
                 end
+
             end
     
-            fIdxStart = fIdxEnd + 1;
-            bIdx = bIdx + nFeatThisD;
+            f1 = f2 + 1;
+            b = b + nFeatThisD;
     
         end
     
@@ -154,8 +201,20 @@ for i = 1:nObs
 
 end
 
+% standardise by metric so all are in the same z-score range
+fIdx = 0:nMetrics:f2-nMetrics;
+for i = 1:nMetrics
+    fIdx = fIdx + 1;
+    features(fIdx, :) =  (features(fIdx, :)-mean(features(fIdx, :)))./...
+                                std( features(fIdx, :) );
 end
 
+end
+
+
+
+% the following functions have been optmised for fast execution
+% wherever possible
 
 function z = compute1Feature( conv, bias, len )
 
@@ -192,7 +251,8 @@ function z = compute3Features( conv, bias, len )
 
 end
 
-
+% this is the slowest function by far
+% the if statements are costly, as is the loop, but is unavoidable
 function z = compute4Features( conv, bias, len )
 
     ppv = 0;

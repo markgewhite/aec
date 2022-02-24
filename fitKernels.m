@@ -13,31 +13,40 @@
 %
 % ************************************************************************
 
-function K = fitKernels( X, nFeatures, nMetrics )
+function params = fitKernels( X, nFeatures, nMetrics, sampleRatio )
 
-inputLength = size( X, 1 );
-K.kernels = 84;
-K.length = 9;
+if iscell( X )
+    % X is a cell array of time series of differing lengths
+    % set a reference length
+    inputLength = fix( max(cellfun( @length, X )) );
+else
+    % X is numeric array of time series of fixed length
+    inputLength = size( X, 1 );
+end
+params.kernels = 84;
+params.length = 9;
+params.sampleRatio = sampleRatio;
 
 if nMetrics >= 1 && nMetrics <=4
-    K.metrics = nMetrics;
+    params.metrics = nMetrics;
 else
     error('Number of metrics not in correct range (1-4).');
 end
 
 maxDilationsPerKernel = 32;
 
-[ K.dilations, K.featuresPerDilation ] = fitDilations( ...
-                inputLength, K.kernels, nFeatures, ...
-                K.length, maxDilationsPerKernel );
+% determine the dilations in proportion to time series length
+[ params.dilations, params.featuresPerDilation ] = fitDilations( ...
+                inputLength, params.kernels, nFeatures, ...
+                params.length, maxDilationsPerKernel );
 
-featuresPerKernel = sum( K.featuresPerDilation );
+featuresPerKernel = sum( params.featuresPerDilation );
 
-Q = quantiles( K.kernels*featuresPerKernel );
+% compute quantile to fit within 95% CI of convolution distribution
+quantiles = 0.025+0.95*quasiRandom( params.kernels*featuresPerKernel );
 
-K.biases = fitBiases( X, K.kernels, ...
-                         K.length, K.dilations, ...
-                         K.featuresPerDilation, Q );
+% compute biases based on convolution distributions
+params.biases = fitBiases( X, params, quantiles );
 
 end
 
@@ -65,7 +74,7 @@ function [ dil, nFeatPerD ] = fitDilations( inLen, nKernels, nFeat, kLen, maxDil
 end
 
 
-function Q = quantiles( n )
+function Q = quasiRandom( n )
 
     % low-discrepancy sequence to assign quantiles to kernel/dilation combinations
     Q = mod( (1:n)*(sqrt(5) + 1)/2, 1 );
@@ -73,13 +82,27 @@ function Q = quantiles( n )
 end
 
 
-function biases = fitBiases( X, nKernels, kLen, dilations, nFeatPerD, Q )
+function biases = fitBiases( X, parameters, Q  )
 
-    [ inLen, nObs ] = size( X );
+    % unpack parameters
+    nKernels = parameters.kernels;
+    kLen = parameters.length;
+    dilations = parameters.dilations;
+    nFeatPerD = parameters.featuresPerDilation;
+    sampleRatio = parameters.sampleRatio;
 
-    % equivalent to:
-    % >>> from itertools import combinations
-    % >>> indices = np.array([_ for _ in combinations(np.arange(9), 3)], dtype = np.int32)
+    % determine X size
+    lengthsVary = iscell( X );
+    if lengthsVary
+        nObs = length( X );
+        XLens = cellfun( @length, X );
+    else
+        [ inLen, nObs ] = size( X );
+    end
+
+    % define the all possible kernel combinations 
+    % triplet combinations in the range 0-8.
+    % this matrix is taken from Python so one is added for Matlab indexing
     indices = [
         0,1,2,0,1,3,0,1,4,0,1,5,0,1,6,0,1,7,0,1,8, ...
         0,2,3,0,2,4,0,2,5,0,2,6,0,2,7,0,2,8,0,3,4, ...
@@ -95,66 +118,104 @@ function biases = fitBiases( X, nKernels, kLen, dilations, nFeatPerD, Q )
         4,6,7,4,6,8,4,7,8,5,6,7,5,6,8,5,7,8,6,7,8 ] + 1;
     indices = reshape( indices, nKernels, 3 );
 
-    nDil = length(dilations);
+    % sample from the training set
+    nSample = fix( sampleRatio*nObs );
+
+    nDil = length( dilations );
 
     nFeat = nKernels*sum( nFeatPerD );
     biases = zeros( nFeat, 1 );
 
-    featIdxStart = 1;
+    f1 = 1; % feature index counter: 1st in block of metrics
 
-    for dIdx = 1:nDil
+    % loop over all specified dilations
+    for d = 1:nDil 
 
-        dilation = dilations( dIdx );
+        % extract the specified dilation
+        dilation = dilations( d );
+        % set the padding in proportion
         padding = fix( ((kLen - 1) * dilation)/2 );
 
-        nFeatThisD = nFeatPerD( dIdx );
+        % extract the number of features per dilation
+        nFeatThisD = nFeatPerD( d ); 
 
-        for kIdx = 1:nKernels
+        for k = 1:nKernels
 
-            featIdxEnd = featIdxStart + nFeatThisD - 1;
+            f2 = f1+ nFeatThisD - 1;
 
-            x = X( :, randi(nObs) );
+            % loop over randomly selected curve
+            % to build up a representative convolution distribution
 
-            A = -x';        % A = alpha * X = -X
-            G = x + x + x;  % G = gamma * X = 3X
+            % sample without replacement
+            sample = randperm( nObs, nSample );
+            % define long vector to hold multiple convolutions
+            if lengthsVary
+                C = zeros( sum( XLens(sample) ), 1 ); 
+            else
+                C = zeros( nSample*inLen, 1 ); 
+            end
 
-            C_alpha = A;
+            c1 = 1;
+            for i = 1:nSample
 
-            C_gamma = zeros( kLen, inLen );
-            C_gamma( ceil(kLen/2), : ) = G;
+                % use a randomly selected curve
+                if lengthsVary
+                    x = X{ sample(i) };
+                    inLen = XLens( sample(i) ); %costly?
+                else
+                    x = X( :, sample(i) );
+                end
+                c2 = c1 + inLen - 1;
 
-            Dstart = dilation;
-            Dend = inLen - padding;
+                % obtain alpha and gamme vectors efficiently
+                A = -x';        % A = alpha * X = -X
+                G = x + x + x;  % G = gamma * X = 3X
+    
+                % calculate the convolution matrices
+                C_alpha = A;
+        
+                C_gamma = zeros( kLen, inLen );
+                C_gamma( ceil(kLen/2), : ) = G; % middle row
+        
+                t1 = dilation;
+                t2 = inLen - padding;
+        
+                % loop over the top half
+                for g = 1:fix(kLen/2)
+        
+                    C_alpha( inLen-t2+1:end ) = ...
+                        C_alpha( inLen-t2+1:end) + A( 1:t2 );
+                    C_gamma( g, inLen-t2+1:end ) = G( 1:t2 );
+        
+                    t2 = t2 + dilation;
+        
+                end
+        
+                % loop over the bottom half
+                for g = fix(kLen/2)+1:kLen
+        
+                    C_alpha( 1:inLen-t1+1 ) = ...
+                        C_alpha( 1:inLen-t1+1 ) + A( t1:end );
+                    C_gamma( g, 1:inLen-t1+1 ) = G( t1:end );
+        
+                    t1 = t1 + dilation;
+        
+                end
+        
+                % combine alpha & gamma matrices to obtain convolution matrix
+                cIdx = indices( k, : );    
+                C( c1:c2 ) = C_alpha + ...
+                      C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
 
-            for gIdx = 1:fix(kLen/2)
-
-                C_alpha( inLen-Dend+1:end ) = ...
-                    C_alpha( inLen-Dend+1:end) + A( 1:Dend );
-                C_gamma( gIdx, inLen-Dend+1:end ) = G( 1:Dend );
-
-                Dend = Dend + dilation;
+                c1 = c2 + 1;
 
             end
 
-            for gIdx = fix(kLen/2)+1:kLen
+            % set biases from a pseudo-random quantile 
+            % of the convolution distribution
+            biases( f1:f2 ) = quantile( C, Q(f1:f2) );
 
-                C_alpha( 1:inLen-Dstart+1 ) = ...
-                    C_alpha( 1:inLen-Dstart+1 ) + A( Dstart:end );
-                C_gamma( gIdx, 1:inLen-Dstart+1 ) = G( Dstart:end );
-
-                Dstart = Dstart + dilation;
-
-            end
-
-            cIdx = indices( kIdx, : );
-
-            C = C_alpha + ...
-                  C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
-
-            biases( featIdxStart:featIdxEnd ) = ...
-                quantile( C, Q(featIdxStart:featIdxEnd) );
-
-            featIdxStart = featIdxEnd + 1;
+            f1 = f2 + 1;
 
         end
 

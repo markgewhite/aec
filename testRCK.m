@@ -5,38 +5,49 @@
 
 clear;
 
-rng( 0 );
 nCodes = 4;
-nPts = 101;
+nPts = 1+512/4; % 101 with padding to 1500 ms
+doPadding = false;
 nRuns = 10;
 nFolds = 10;
 dataSource = 'JumpVGRF';
 method = 'PPV';
 algorithm = 'MiniRocket';
+nKernels = 2000;
+nMetrics = 4;
+sampleRatio = 0.05;
+useSubset = false;
+subsetProp = 0.8;
 
 % prepare data
-[X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
-setup.data.isInterdependent = false;
-setup.data.nKernels = 2000;
-setup.data.nMetrics = 3;
-setup.data.smooth = true;
+[X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, ...
+                                            nPts, doPadding ); 
+nObs = length( Y );
 
 lossTrn = zeros( nRuns, nFolds );
 lossTst = zeros( nRuns, nFolds );
 for i = 1:nRuns
 
-    switch algorithm
-        case 'Rocket'
-            kernels = generateKernels( size( X,1 ), setup.data );   
-            XT = applyKernels( X, kernels, method );
-            setup.data.nMetrics = size( XT, 1 )/setup.data.nKernels;
-
-        case 'MiniRocket'
-            kernels = fitKernels( X, setup.data.nKernels, setup.data.nMetrics );   
-            XT = rocketTransform( X, kernels );
+    rng( 'shuffle' );
+    parameters = fitKernels( X, nKernels, nMetrics, sampleRatio );   
+    [ XT, nTrunc ] = rocketTransform( X, parameters );
+    
+    if i==1
+        % initialise beta now knowing how many coefficients
+        nFeatures = size( XT, 1 );
+        if useSubset
+            beta = zeros( nRuns, nFolds, fix(nFeatures*subsetProp) );
+        else
+            beta = zeros( nRuns, nFolds, nFeatures );
+        end
+        if nTrunc > 0
+        disp(['Dilations truncated = ' ...
+          num2str(100*nTrunc/(nObs*length(parameters.dilations)), '%.1f') '%']);
+        end
     end
 
-
+    rng( 'default' ); % to generate fixed partitions
+    fprintf('Best = ');
     for j = 1:nFolds
     
         % partitioning
@@ -49,19 +60,29 @@ for i = 1:nRuns
         % classify
         mdl = fitclinear( XTTrn, YTrn, ...
                           'Lambda', logspace(-8,0,33) );
-        [ ~, best ] = min(loss( mdl, XTTst, YTst ));
-        [~, orderID] = sort( mdl.Beta(:,best) );
-        select = orderID <= size( XTTrn, 2 )*0.8;
-        mdl = fitclinear( XTTrn( :, select ), YTrn, ...
-                          'Lambda', logspace(-8,0,33) );
 
-        [ lossTst( i, j ), best ] = min(loss( mdl, XTTst( :, select), YTst ));
-        disp(['Best = ' num2str(best)]);
-        lossTrnLambda = loss( mdl, XTTrn( :, select), YTrn );
+        if useSubset
+            % select highest ranked features
+            [ ~, best ] = min(loss( mdl, XTTst, YTst ));
+            [~, orderID] = sort( mdl.Beta(:,best) );
+            selection = orderID <= nFeatures*subsetProp;
+            mdl = fitclinear( XTTrn( :, selection ), YTrn, ...
+                              'Lambda', logspace(-8,0,33) );
+        else
+            % use all features
+            selection = true( nFeatures, 1 );
+        end
+
+        [ lossTst( i, j ), best ] = min(loss( mdl, XTTst( :, selection), YTst ));
+        fprintf( ' %2d', best );
+        lossTrnLambda = loss( mdl, XTTrn( :, selection), YTrn );
         lossTrn( i, j ) = lossTrnLambda( best );
 
+        beta( i, j, : ) = mdl.Beta( :, best );
+
     end
-    
+    fprintf('\n');
+
     disp(['Train Loss = ' num2str( mean(lossTrn(i,:)), '%.3f' ) ...
               ' +/- ' num2str( std(lossTrn(i,:)), '%.3f' ) ]);
     disp(['Test Loss  = ' num2str( mean(lossTst(i,:)), '%.3f' ) ...
@@ -83,58 +104,38 @@ disp(['Overall Train Loss = ' num2str( mean(lossTrn,'all'), '%.3f' ) ...
 disp(['Overall Test Loss  = ' num2str( mean(lossTst,'all'), '%.3f' ) ...
               ' +/- ' num2str( std(lossTst,[],'all'), '%.3f' ) ]);
 
-% coefficients
-kID = 1 : setup.data.nMetrics : setup.data.nKernels*setup.data.nMetrics-1;
-betaMP = mdl.Beta( kID );
-betaPPV = mdl.Beta( kID+1 );
-
-[ betaMP, orderMP ] = sort( abs(betaMP), 'descend' );
-lMP = kernels.lengths( orderMP );
-dMP = kernels.dilations( orderMP );
-cMP = kernels.correlations( orderMP );
-
-[ betaPPV, orderPPV ] = sort( abs(betaPPV), 'descend' );
-lPPV = kernels.lengths( orderPPV );
-dPPV = kernels.dilations( orderPPV );
-cPPV = kernels.correlations( orderPPV );
-
-
 % beta plots
 figure;
-ax = subplot(2,2,1);
-plot( ax, betaMP );
-hold( ax, 'on' );
-plot( ax, betaPPV );
-hold( ax, 'off' );
-legend( ax, {'MP', 'PPV'} );
-title( ax, 'Beta' );
+palette = lines(7);
+metrics = {'PPV', 'MPV', 'MIPV', 'LSPV' };
 
-% length plots
-ax = subplot(2,2,2);
-bar( ax, lMP );
-hold( ax, 'on' );
-bar( ax, lPPV );
-hold( ax, 'on' );
-legend( ax, {'MP', 'PPV'} );
-title( ax, 'Lengths');
+kID = 0 : nMetrics : nFeatures-nMetrics-1;
+for m = 1:nMetrics
+    kID = kID + 1;
+    colour = palette(m,:);
+    ax = subplot(2,2,m);
+    hold( ax, 'on' );
+    betaSorted = zeros( length(kID), 1 );
+    for i = 1:nRuns
+        for j = 1:nFolds
+            betaS = sort( abs(beta( i, j, kID )), 'descend' );
+            betaS = squeeze(  betaS );
+            plot( ax, betaS, 'Color', colour );
+            betaSorted = betaSorted + betaS;
+        end
+    end
+    plot( ax, betaSorted/(nRuns*nFolds), 'Color', [0 0 0], 'LineWidth', 2 );
+    hold( ax, 'off' );
+    ax.YScale = 'log';
+    grid( ax, 'on' );
+    ylim( ax, [0.001 1] );
+    title( ax, metrics(m) );
+end
 
-% dilation plots
-ax = subplot(2,2,3);
-plot( ax, dMP );
-hold( ax, 'on' );
-plot( ax, dPPV );
-hold( ax, 'on' );
-legend( ax, {'MP', 'PPV'} );
-title( ax, 'Dilations');
 
-% correlation plots
-ax = subplot(2,2,4);
-plot( ax, cMP );
-hold( ax, 'on' );
-plot( ax, cPPV );
-hold( ax, 'on' );
-legend( ax, {'MP', 'PPV'} );
-title( ax, 'Correlations');
+
+
+
 
 
 

@@ -11,10 +11,16 @@
 % ************************************************************************
 
 
-function [ X, XFd, Y, setup ] = initializeData( source, nCodes, nPts )
+function [ X, XFd, Y, setup ] = initializeData( source, nCodes, ...
+                                                nPts, doPadding )
+
+if nargin < 4
+    doPadding = true;
+end
 
 % get data
 setup.source = source;
+
 switch source
     case 'Synthetic'
         setup.synth.ratio = [ 4 8 16];
@@ -32,7 +38,7 @@ switch source
         N = 200;
         classSizes = [ N N N ];
 
-        Xraw = genSyntheticData( classSizes, 1, setup.synth );
+        XRaw = genSyntheticData( classSizes, 1, setup.synth );
         Y = [ repelem(1,N) repelem(2,N) repelem(3,N) ]';
 
         setup.nDraw = 1;
@@ -40,13 +46,20 @@ switch source
         setup.cDim = length( setup.cLabels );
 
     case 'JumpVGRF'
-        [ Xraw, Y ] = getJumpGRFData;
+        [ XRaw, Y ] = getJumpGRFData;
         Y = Y + 1;
-        maxLen = min( 1500, max( cellfun( @length, Xraw ) ) );
-        Xraw = padData( Xraw, maxLen, 1 );
+        XLen = cellfun( @length, XRaw );
+        maxLen = max( XLen );
+        if doPadding
+            padLen = min( 1500, maxLen );
+        else
+            padLen = maxLen;
+        end
 
-        setup.tSpan = linspace( -maxLen+1, 0, maxLen );
-        setup.tFine = linspace( -maxLen+1, 0, nPts );
+        XRaw = padData( XRaw, padLen, 1 ); % always pad at this point
+
+        setup.tSpan = linspace( -padLen+1, 0, padLen );
+        setup.tFine = linspace( -padLen+1, 0, nPts );
 
         setup.nDraw = 1;
         setup.cLabels = categorical( 0:2 );
@@ -70,7 +83,7 @@ setup.isInterdependent = false;
 % functional data analysis parameters
 setup.fda.basisOrder = 4;
 setup.fda.penaltyOrder = 2;
-setup.fda.lambda = 1E2; % 1E2
+setup.fda.lambda = 1E5; % 1E2
 setup.fda.nBasis = setup.xDim+setup.fda.penaltyOrder;
 setup.fda.basisFd = create_bspline_basis( ...
                         [ setup.tSpan(1), setup.tSpan(end) ], ...
@@ -81,10 +94,20 @@ setup.fda.fdPar = fdPar( setup.fda.basisFd, ...
 setup.fda.tSpan = setup.tFine;
 
 % smooth the data
-XFd = smooth_basis( setup.tSpan, Xraw, setup.fda.fdPar );
-
+XFd = smooth_basis( setup.tSpan, XRaw, setup.fda.fdPar );
 % re-sample it
 X = eval_fd( setup.tFine, XFd );
+
+if ~doPadding
+    % re-package the data into a cell array with variable lengths
+    nObs = size(X,2);
+    XCell = cell( nObs, 1 );
+    for i = 1:nObs
+        adjLen = ceil( nPts*XLen(i)/maxLen );
+        XCell{i} = X( nPts-adjLen+1:end, i );
+    end
+    X = XCell;
+end
 
 
 end
