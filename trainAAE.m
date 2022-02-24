@@ -17,7 +17,7 @@
 % ************************************************************************
 
 function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrn, constraint ] = ...
-                            trainAAE( X, XT, Y, setup, ax )
+                            trainAAE( XG, XT, Y, setup, ax )
 
 
 % define the networks
@@ -38,15 +38,15 @@ end
 cvPart = cvpartition( Y, 'Holdout', 0.25 );
 
 % create training set
-XTrn = X( :, training(cvPart) );
+XGTrn = XG( :, training(cvPart) );
 XTTrn = XT( :, training(cvPart) );
 YTrn = Y( training(cvPart) );
 
 % create datastores
-dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
 dsXTTrn = arrayDatastore( XTTrn, 'IterationDimension', 2 );
+dsXGTrn = arrayDatastore( XGTrn, 'IterationDimension', 2 );
 dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
-dsTrn = combine( dsXTrn, dsXTTrn, dsYTrn );
+dsTrn = combine( dsXTTrn, dsXGTrn, dsYTrn );
 
 % setup the batches
 mbqTrn = minibatchqueue( dsTrn,...
@@ -76,7 +76,7 @@ switch setup.optimizer
         vel.cls = [];
 end
 
-nIter = floor( size(XTrn,2)/setup.batchSize );
+nIter = floor( size(XGTrn,2)/setup.batchSize );
 
 j = 0;
 v = 0;
@@ -103,7 +103,7 @@ for epoch = 1:setup.nEpochs
         j = j + 1;
         
         % Read mini-batch of data
-        [ dlXTrn, dlXTTrn, dlYTrn ] = next( mbqTrn );
+        [ dlXTTrn, dlXGTrn, dlYTrn ] = next( mbqTrn );
         
         % Evaluate the model gradients 
         [ grad, state, lossTrn(j,:) ] = ...
@@ -112,8 +112,8 @@ for epoch = 1:setup.nEpochs
                                     dlnetDec, ...
                                     dlnetDis, ...
                                     dlnetCls, ...
-                                    dlXTrn, ...
                                     dlXTTrn, ...
+                                    dlXGTrn, ...
                                     dlYTrn, ...
                                     setup );
 
@@ -275,7 +275,7 @@ for epoch = 1:setup.nEpochs
         dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup );
         ZTrn = double(extractdata( dlZTrn ));
         plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.cDim, ...
-                    setup.fda.tSpan, setup.fda.fdPar );
+                        setup.fda.tSpan, setup.fda.fdPar );
         plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
         drawnow;
     end

@@ -78,7 +78,7 @@ end
 %  set up fine mesh of evaluation points and evaluate curves
 
 if nargin < 5
-    nx = max([501, 10*nbasis+1]);
+    nx = min([201, 10*nbasis+1]);
 end
 
 x     = linspace(rangex(1),rangex(2),nx)';

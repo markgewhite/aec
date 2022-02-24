@@ -35,7 +35,7 @@ setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
 setup.valFreq = 5;
-setup.updateFreq = 50;
+setup.updateFreq = 10;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
 setup.valPatience = 20;
@@ -70,11 +70,7 @@ setup.fda = config.fda;
 % encoder network parameters
 setup.enc.type = 'FullyConnected'; %'Convolutional'; % 
 setup.enc.learnRate = 0.01;
-if config.embedding
-    setup.enc.input = 2*config.nKernels;
-else
-    setup.enc.input = config.xDim;
-end
+setup.enc.input = config.xDimFine;
 setup.enc.outZ = config.zDim*(setup.variational + 1);
 setup.enc.projectionSize = config.xDim; % [ setup.xDim sigDim 1 ];
 switch config.source
@@ -126,8 +122,8 @@ switch config.source
     case 'JumpVGRF'
         switch setup.dec.type
             case 'FullyConnected'
-                setup.dec.nHidden = 3;
-                setup.dec.nFC = 64;
+                setup.dec.nHidden = 1;
+                setup.dec.nFC = 32;
                 setup.dec.fcFactor = 1;
                 setup.dec.scale = 0.2;
                 setup.dec.dropout = 0;

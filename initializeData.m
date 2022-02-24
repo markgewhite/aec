@@ -11,10 +11,10 @@
 % ************************************************************************
 
 
-function [ X, XFd, Y, setup ] = initializeData( source, nCodes, ...
-                                                nPts, doPadding )
+function [ XFine, X, XFd, Y, setup ] = initializeData( source, nCodes, ...
+                                            nPts, nPtsFine, doPadding )
 
-if nargin < 4
+if nargin < 5
     doPadding = true;
 end
 
@@ -58,8 +58,8 @@ switch source
 
         XRaw = padData( XRaw, padLen, 1 ); % always pad at this point
 
-        setup.tSpan = linspace( -padLen+1, 0, padLen );
-        setup.tFine = linspace( -padLen+1, 0, nPts );
+        tStart = -padLen+1;
+        tEnd = 0;
 
         setup.nDraw = 1;
         setup.cLabels = categorical( 0:2 );
@@ -69,45 +69,50 @@ switch source
         error('Unrecognised data source.');
 end
 
-% data generation parameters
-setup.zDim = nCodes;
-setup.xDim = length( setup.tFine );
-
 % data embedding parameters
 setup.embedding = true;
-setup.nKernels = 100;
-setup.candidateStart = 3; % *2+1
-setup.nCandidates = 4;
-setup.isInterdependent = false;
+setup.embed.nKernels = 1000;
+setup.embed.nMetrics = 4;
+setup.embed.sampleRatio = 0.05;
 
 % functional data analysis parameters
 setup.fda.basisOrder = 4;
 setup.fda.penaltyOrder = 2;
 setup.fda.lambda = 1E5; % 1E2
-setup.fda.nBasis = setup.xDim+setup.fda.penaltyOrder;
+setup.fda.nBasis = fix(padLen/10)+setup.fda.penaltyOrder;
+
 setup.fda.basisFd = create_bspline_basis( ...
-                        [ setup.tSpan(1), setup.tSpan(end) ], ...
+                        [ tStart, tEnd ], ...
                           setup.fda.nBasis, setup.fda.basisOrder);
 setup.fda.fdPar = fdPar( setup.fda.basisFd, ...
                          setup.fda.penaltyOrder, ...
                          setup.fda.lambda );
-setup.fda.tSpan = setup.tFine;
+
+setup.fda.tSpan = linspace( tStart, tEnd, nPts );
+setup.fda.tFine = linspace( tStart, tEnd, nPtsFine );
 
 % smooth the data
-XFd = smooth_basis( setup.tSpan, XRaw, setup.fda.fdPar );
+XFd = smooth_basis( linspace( tStart, tEnd, padLen ), ...
+                    XRaw, setup.fda.fdPar );
 % re-sample it
-X = eval_fd( setup.tFine, XFd );
+X = eval_fd( setup.fda.tSpan, XFd );
+XFine = eval_fd( setup.fda.tFine, XFd );
 
 if ~doPadding
     % re-package the data into a cell array with variable lengths
     nObs = size(X,2);
     XCell = cell( nObs, 1 );
     for i = 1:nObs
-        adjLen = ceil( nPts*XLen(i)/maxLen );
-        XCell{i} = X( nPts-adjLen+1:end, i );
+        adjLen = ceil( nPtsFine*XLen(i)/maxLen );
+        XCell{i} = XFine( nPtsFine-adjLen+1:end, i );
     end
     X = XCell;
 end
+
+% data generation parameters
+setup.zDim = nCodes;
+setup.xDim = length( setup.fda.tSpan );
+setup.xDimFine = length( setup.fda.tFine );
 
 
 end

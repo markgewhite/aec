@@ -10,6 +10,8 @@ rng( 0 );
 nCodes = 4;
 nRuns = 100;
 nPts = 21;
+nPtsFine = 201;
+doPadding = true;
 dataSource = 'JumpVGRF';
 
 % initialise plots
@@ -38,27 +40,31 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    [X, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
-
-    % initalise autoencoder setup
-    setup.aae = initializeAE( setup.data );
-
-    if setup.data.embedding
-        % genereate embedding with transform
-        kernels = generateKernels( size( X,1 ), setup.data );
-        XT = applyKernels( X, kernels );
-    else
-        XT  = X;
-    end
+    [XIn, XGen, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, ...
+                                               nPts, nPtsFine, doPadding ); 
 
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
-    XTrn = X( :, training(cvPart) );
-    XTTrn = XT( :, training(cvPart) );
-    XTst = X( :, test(cvPart)  );
-    XTTst = XT( :, test(cvPart)  );
+    XTrn = XIn( :, training(cvPart) );
+    XTst = XIn( :, test(cvPart)  );
+    XGTrn = XGen( :, training(cvPart) );
+    XGTst = XGen( :, test(cvPart)  );
     YTrn = Y( training(cvPart) );
     YTst = Y( test(cvPart)  );
+
+    if setup.data.embedding
+        % genereate embedding with transform
+        setup.data.embed.params = fitKernels( XTrn, ...
+                                      setup.data.embed.nKernels, ...
+                                      setup.data.embed.nMetrics, ...
+                                      setup.data.embed.sampleRatio );   
+        XTTrn = rocketTransform( XTrn, setup.data.embed.params );
+        XTTst = rocketTransform( XTst, setup.data.embed.params );
+        setup.data.xDimFine = size( XTTrn, 1 );
+    else
+        XTTrn = XTrn;
+        XTTst = XTst; 
+    end
 
     disp('Generated and partitioned data.');
 
@@ -76,9 +82,12 @@ for i = 1:nRuns
 
     % ----- autoencoder -----
 
+    % initalise autoencoder setup
+    setup.aae = initializeAE( setup.data );
+
     % train the autoencoder
     [dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
-                    trainAAE( XTrn, XTTrn, YTrn, setup.aae, ax );
+                    trainAAE( XGTrn, XTTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
     dlXTTrn = dlarray( XTTrn, 'CB' );
@@ -98,7 +107,7 @@ for i = 1:nRuns
 
     % plot characteristic features
     plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.aae.cDim, ...
-                    setup.data.tFine, setup.data.fda.fdPar );
+                    setup.data.fda.tSpan, setup.data.fda.fdPar );
 
     % classify using discriminant analysis
     model = fitcdiscr( ZTrn', YTrn );
@@ -133,13 +142,13 @@ for i = 1:nRuns
     XTrnHat = double(extractdata( dlXTrnHat ));
     XTstHat = double(extractdata( dlXTstHat ));
 
-    errTrn = sqrt( mse( XTrn, XTrnHat ) );
+    errTrn = sqrt( mse( XGTrn, XTrnHat ) );
     disp( ['AE Training Error = ' num2str(errTrn)] );
-    errTst = sqrt( mse( XTst, XTstHat ) );
+    errTst = sqrt( mse( XGTst, XTstHat ) );
     disp( ['AE Testing Error  = ' num2str(errTst)] );
 
     % plot resulting curves
-    XTstHatFd = smooth_basis( setup.data.tFine, XTstHat, ...
+    XTstHatFd = smooth_basis( setup.data.fda.tSpan, XTstHat, ...
                                 setup.data.fda.fdPar );
 
     subplotFd( ax.ae.pred, XTstHatFd );
@@ -150,8 +159,8 @@ for i = 1:nRuns
     % ----- PCA encoding -----
 
     disp('Running PCA ... ');
-    XTrnFd = smooth_basis( setup.data.tFine, XTrn, setup.data.fda.fdPar );
-    XTstFd = smooth_basis( setup.data.tFine, XTst, setup.data.fda.fdPar );
+    XTrnFd = smooth_basis( setup.data.fda.tFine, XTrn, setup.data.fda.fdPar );
+    XTstFd = smooth_basis( setup.data.fda.tFine, XTst, setup.data.fda.fdPar );
     pcaXTrnFd = pca_fd( XTrnFd, nCodes );
 
     % generate predictions and calculate errors
@@ -164,8 +173,8 @@ for i = 1:nRuns
     XTrnFdPCA = pcaXTrnFd.meanfd + pcaXTrnFd.fdhatfd;
     XTstFdPCA = reconstructFd( pcaXTrnFd, ZTstPCA, setup.data.fda );
 
-    XTrnHatPCA = eval_fd( setup.data.tFine, XTrnFdPCA );
-    XTstHatPCA = eval_fd( setup.data.tFine, XTstFdPCA );
+    XTrnHatPCA = eval_fd( setup.data.fda.tSpan, XTrnFdPCA );
+    XTstHatPCA = eval_fd( setup.data.fda.tSpan, XTstFdPCA );
     
     errTrnPCA = sqrt( mse( XTrn, XTrnHatPCA ) );
     disp( ['PCA Training Error = ' num2str(errTrnPCA)] );
