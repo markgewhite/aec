@@ -14,8 +14,16 @@
 
 function [ X, A, S ] =  getJumpGRFData
 
+if ismac
+    rootpath = '/Users/markgewhite/Google Drive/';
+else 
+    rootpath = 'C:\Users\m.g.e.white\My Drive\';
+end
+dataFolder = 'Academia/Postdoc/Datasets/MFT';
+datapath = [ rootpath dataFolder ];
+
 % load data from file
-load( 'data/jumpGRFData.mat', ...
+load( fullfile( datapath, 'jumpGRFData.mat' ), ...
       'grf', 'bwall', 'sDataID', 'sJumpID', ...
       'jumpOrder', 'nJumpsPerSubject' );
 

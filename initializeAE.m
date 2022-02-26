@@ -82,7 +82,7 @@ switch config.source
         setup.enc.scale = 0.2;
         setup.enc.dropout = 0.1;
 
-    case 'JumpVGRF'
+    case {'JumpVGRF', 'MFT'}
         switch setup.enc.type
             case 'FullyConnected'
                 setup.enc.nHidden = 3;
@@ -107,7 +107,7 @@ end
 setup.dec.type = 'FullyConnected'; %'FullyConnected'; % 
 setup.dec.learnRate = 0.01;
 setup.dec.input = config.zDim;
-setup.dec.outX = config.xDim;
+setup.dec.outX = config.xDim*config.nChannels;
 setup.dec.projectionSize = 5; % [ 5 sigDim 1 ];
 setup.dec.nFC = 50;
 switch config.source
@@ -119,7 +119,7 @@ switch config.source
         setup.dec.scale = 0.2;
         setup.dec.dropout = 0;
 
-    case 'JumpVGRF'
+    case {'JumpVGRF', 'MFT'}
         switch setup.dec.type
             case 'FullyConnected'
                 setup.dec.nHidden = 1;
@@ -159,7 +159,7 @@ switch config.source
         setup.cls.nFC = 100;
         setup.cls.scale = 0.2;
         setup.cls.dropout = 0.15;
-    case 'JumpVGRF'
+    case {'JumpVGRF', 'MFT'}
         setup.cls.nHidden = 1;
         setup.cls.nFC = 100;
         setup.cls.scale = 0.2;

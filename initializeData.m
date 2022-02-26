@@ -44,6 +44,7 @@ switch source
         setup.nDraw = 1;
         setup.cLabels = categorical( 0:length(classSizes) );
         setup.cDim = length( setup.cLabels );
+        setup.nChannels = 1;
 
     case 'JumpVGRF'
         [ XRaw, Y ] = getJumpGRFData;
@@ -61,9 +62,36 @@ switch source
         tStart = -padLen+1;
         tEnd = 0;
 
+        setup.fda.basisOrder = 4;
+        setup.fda.penaltyOrder = 2;
+        setup.fda.lambda = 1E5; % 1E2
+        setup.fda.nBasis = fix(padLen/10)+setup.fda.penaltyOrder;
+
         setup.nDraw = 1;
         setup.cLabels = categorical( 0:2 );
         setup.cDim = length( setup.cLabels );
+        setup.nChannels = 1;
+
+    case 'MFT'
+        [ XRaw, Y ] = getMFTData;
+        XLen = cellfun( @length, XRaw );
+        maxLen = max( XLen );
+        padLen = maxLen;
+
+        XRaw = padData( XRaw, padLen, 1 ); % always pad at this point
+
+        tStart = 1;
+        tEnd = padLen;
+
+        setup.fda.basisOrder = 4;
+        setup.fda.penaltyOrder = 2;
+        setup.fda.lambda = 1E0;
+        setup.fda.nBasis = fix(padLen/4)+setup.fda.penaltyOrder;
+
+        setup.nDraw = 1;
+        setup.cLabels = categorical( 0:max(Y) );
+        setup.cDim = length( setup.cLabels );
+        setup.nChannels = 3;
 
     otherwise
         error('Unrecognised data source.');
@@ -76,11 +104,6 @@ setup.embed.nMetrics = 4;
 setup.embed.sampleRatio = 0.05;
 
 % functional data analysis parameters
-setup.fda.basisOrder = 4;
-setup.fda.penaltyOrder = 2;
-setup.fda.lambda = 1E5; % 1E2
-setup.fda.nBasis = fix(padLen/10)+setup.fda.penaltyOrder;
-
 setup.fda.basisFd = create_bspline_basis( ...
                         [ tStart, tEnd ], ...
                           setup.fda.nBasis, setup.fda.basisOrder);
@@ -102,11 +125,15 @@ if ~doPadding
     % re-package the data into a cell array with variable lengths
     nObs = size(X,2);
     XCell = cell( nObs, 1 );
+    XFineCell = cell( nObs, 1 );
     for i = 1:nObs
+        adjLen = ceil( nPts*XLen(i)/maxLen );
+        XCell{i} = XFine( nPts-adjLen+1:end, i );
         adjLen = ceil( nPtsFine*XLen(i)/maxLen );
-        XCell{i} = XFine( nPtsFine-adjLen+1:end, i );
+        XFineCell{i} = XFine( nPtsFine-adjLen+1:end, i );
     end
     X = XCell;
+    XFine = XFineCell;
 end
 
 % data generation parameters

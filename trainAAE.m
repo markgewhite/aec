@@ -38,8 +38,8 @@ end
 cvPart = cvpartition( Y, 'Holdout', 0.25 );
 
 % create training set
-XGTrn = XG( :, training(cvPart) );
-XTTrn = XT( :, training(cvPart) );
+XGTrn = splitData( XG, training(cvPart) );
+XTTrn = splitData( XT, training(cvPart) );
 YTrn = Y( training(cvPart) );
 
 % create datastores

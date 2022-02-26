@@ -9,10 +9,10 @@ rng( 0 );
 
 nCodes = 4;
 nRuns = 100;
-nPts = 21;
-nPtsFine = 201;
-doPadding = true;
-dataSource = 'JumpVGRF';
+nPts = 21; % 21 for JumpVGRF
+nPtsFine = 51; % 201 for JumpVGRF
+doPadding = false;
+dataSource = 'MFT';
 
 % initialise plots
 figure(3);
@@ -45,10 +45,10 @@ for i = 1:nRuns
 
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
-    XTrn = XIn( :, training(cvPart) );
-    XTst = XIn( :, test(cvPart)  );
-    XGTrn = XGen( :, training(cvPart) );
-    XGTst = XGen( :, test(cvPart)  );
+    XTrn = splitData( XIn, training(cvPart) );
+    XTst = splitData( XIn, test(cvPart) );
+    XGTrn = splitData( XGen, training(cvPart) );
+    XGTst = splitData( XGen, test(cvPart) );
     YTrn = Y( training(cvPart) );
     YTst = Y( test(cvPart)  );
 
