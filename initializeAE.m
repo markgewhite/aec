@@ -20,7 +20,7 @@ setup.gradFcn = @modelGradients;
 setup.optimizer = 'ADAM';
 setup.nEpochs = 1000;
 setup.nEpochsPretraining = 10;
-setup.batchSize = 50;
+setup.batchSize = 100;
 setup.beta1 = 0.9;
 setup.beta2 = 0.999;
 setup.verbose = true;
@@ -35,15 +35,16 @@ setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
 setup.valFreq = 5;
-setup.updateFreq = 10;
+setup.updateFreq = 25;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
-setup.valPatience = 20;
+setup.valPatience = 50;
 
 setup.xDim = config.xDim;
 setup.zDim = config.zDim;
 setup.cDim = config.cDim;
 setup.cLabels = config.cLabels;
+setup.nChannels = config.nChannels;
 setup.nDraw = config.nDraw;
 
 setup.postTraining = true; % preTraining is set during training
@@ -70,7 +71,7 @@ setup.fda = config.fda;
 % encoder network parameters
 setup.enc.type = 'FullyConnected'; %'Convolutional'; % 
 setup.enc.learnRate = 0.01;
-setup.enc.input = config.xDimFine;
+setup.enc.input = config.nFeatures;
 setup.enc.outZ = config.zDim*(setup.variational + 1);
 setup.enc.projectionSize = config.xDim; % [ setup.xDim sigDim 1 ];
 switch config.source
@@ -82,7 +83,7 @@ switch config.source
         setup.enc.scale = 0.2;
         setup.enc.dropout = 0.1;
 
-    case {'JumpVGRF', 'MFT'}
+    case {'JumpVGRF', 'MSFT'}
         switch setup.enc.type
             case 'FullyConnected'
                 setup.enc.nHidden = 3;
@@ -107,7 +108,7 @@ end
 setup.dec.type = 'FullyConnected'; %'FullyConnected'; % 
 setup.dec.learnRate = 0.01;
 setup.dec.input = config.zDim;
-setup.dec.outX = config.xDim*config.nChannels;
+setup.dec.outX = [ config.xDim config.nChannels ];
 setup.dec.projectionSize = 5; % [ 5 sigDim 1 ];
 setup.dec.nFC = 50;
 switch config.source
@@ -119,12 +120,12 @@ switch config.source
         setup.dec.scale = 0.2;
         setup.dec.dropout = 0;
 
-    case {'JumpVGRF', 'MFT'}
+    case {'JumpVGRF', 'MSFT'}
         switch setup.dec.type
             case 'FullyConnected'
-                setup.dec.nHidden = 1;
-                setup.dec.nFC = 32;
-                setup.dec.fcFactor = 1;
+                setup.dec.nHidden = 2; % 1
+                setup.dec.nFC = 64; % 32
+                setup.dec.fcFactor = 2; % 1
                 setup.dec.scale = 0.2;
                 setup.dec.dropout = 0;
             case 'Convolutional'
@@ -159,7 +160,7 @@ switch config.source
         setup.cls.nFC = 100;
         setup.cls.scale = 0.2;
         setup.cls.dropout = 0.15;
-    case {'JumpVGRF', 'MFT'}
+    case {'JumpVGRF', 'MSFT'}
         setup.cls.nHidden = 1;
         setup.cls.nFC = 100;
         setup.cls.scale = 0.2;

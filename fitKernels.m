@@ -19,9 +19,11 @@ if iscell( X )
     % X is a cell array of time series of differing lengths
     % set a reference length
     inputLength = fix( max(cellfun( @length, X )) );
+    nDim = size( X{1}, 2 );
 else
     % X is numeric array of time series of fixed length
     inputLength = size( X, 1 );
+    nDim = size( X, 3 );
 end
 params.kernels = 84;
 params.length = 9;
@@ -43,7 +45,8 @@ maxDilationsPerKernel = 32;
 featuresPerKernel = sum( params.featuresPerDilation );
 
 % compute quantile to fit within 95% CI of convolution distribution
-quantiles = 0.025+0.95*quasiRandom( params.kernels*featuresPerKernel );
+quantiles = 0.025+0.95*quasiRandom( params.kernels*featuresPerKernel*nDim );
+quantiles = reshape( quantiles, params.kernels*featuresPerKernel, nDim );
 
 % compute biases based on convolution distributions
 params.biases = fitBiases( X, params, quantiles );
@@ -95,9 +98,10 @@ function biases = fitBiases( X, parameters, Q  )
     lengthsVary = iscell( X );
     if lengthsVary
         nObs = length( X );
+        nDim = size( X{1}, 2 );
         XLens = cellfun( @length, X );
     else
-        [ inLen, nObs ] = size( X );
+        [ inLen, nObs, nDim ] = size( X );
     end
 
     % define the all possible kernel combinations 
@@ -124,7 +128,7 @@ function biases = fitBiases( X, parameters, Q  )
     nDil = length( dilations );
 
     nFeat = nKernels*sum( nFeatPerD );
-    biases = zeros( nFeat, 1 );
+    biases = zeros( nFeat, nDim );
 
     f1 = 1; % feature index counter: 1st in block of metrics
 
@@ -150,62 +154,35 @@ function biases = fitBiases( X, parameters, Q  )
             sample = randperm( nObs, nSample );
             % define long vector to hold multiple convolutions
             if lengthsVary
-                C = zeros( sum( XLens(sample) ), 1 ); 
+                C = zeros( sum( XLens(sample) ), nDim ); 
             else
-                C = zeros( nSample*inLen, 1 ); 
+                C = zeros( nSample*inLen, nDim ); 
             end
 
             c1 = 1;
+            cIdx = indices( k, : );
             for i = 1:nSample
 
-                % use a randomly selected curve
-                if lengthsVary
-                    x = X{ sample(i) };
-                    inLen = XLens( sample(i) ); %costly?
-                else
-                    x = X( :, sample(i) );
-                end
-                c2 = c1 + inLen - 1;
+                for j = 1:nDim
 
-                % obtain alpha and gamme vectors efficiently
-                A = -x';        % A = alpha * X = -X
-                G = x + x + x;  % G = gamma * X = 3X
-    
-                % calculate the convolution matrices
-                C_alpha = A;
-        
-                C_gamma = zeros( kLen, inLen );
-                C_gamma( ceil(kLen/2), : ) = G; % middle row
-        
-                t1 = dilation;
-                t2 = inLen - padding;
-        
-                % loop over the top half
-                for g = 1:fix(kLen/2)
-        
-                    C_alpha( inLen-t2+1:end ) = ...
-                        C_alpha( inLen-t2+1:end) + A( 1:t2 );
-                    C_gamma( g, inLen-t2+1:end ) = G( 1:t2 );
-        
-                    t2 = t2 + dilation;
-        
+                    % use a randomly selected curve
+                    if lengthsVary
+                        x = X{ sample(i) }(:, j);
+                        inLen = XLens( sample(i) ); %costly?
+                    else
+                        x = squeeze(X( :, sample(i), j ));
+                    end
+                    c2 = c1 + inLen - 1;
+       
+                    % calculate the convolution matrices
+                    [ C_alpha, C_gamma ] = convolution( x, ...
+                                        kLen, inLen, padding, dilation );
+
+                    % combine alpha & gamma matrices to obtain convolution matrix
+                    C( c1:c2, j ) = C_alpha + ...
+                        C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
+
                 end
-        
-                % loop over the bottom half
-                for g = fix(kLen/2)+1:kLen
-        
-                    C_alpha( 1:inLen-t1+1 ) = ...
-                        C_alpha( 1:inLen-t1+1 ) + A( t1:end );
-                    C_gamma( g, 1:inLen-t1+1 ) = G( t1:end );
-        
-                    t1 = t1 + dilation;
-        
-                end
-        
-                % combine alpha & gamma matrices to obtain convolution matrix
-                cIdx = indices( k, : );    
-                C( c1:c2 ) = C_alpha + ...
-                      C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
 
                 c1 = c2 + 1;
 
@@ -213,8 +190,9 @@ function biases = fitBiases( X, parameters, Q  )
 
             % set biases from a pseudo-random quantile 
             % of the convolution distribution
-            biases( f1:f2 ) = quantile( C, Q(f1:f2) );
-
+            for j = 1:nDim
+                biases( f1:f2, j ) = quantile( C(:,j), Q(f1:f2, j) );
+            end
             f1 = f2 + 1;
 
         end
@@ -222,6 +200,8 @@ function biases = fitBiases( X, parameters, Q  )
     end
 
 end
+
+
 
 
 

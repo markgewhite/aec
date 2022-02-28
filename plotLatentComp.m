@@ -10,7 +10,7 @@
 %           Z           : latent encodings sample
 % ************************************************************************
 
-function plotLatentComp( ax, decoder, Z, nClass, tSpan, fdPar )
+function plotLatentComp( ax, decoder, Z, c, tSpan, fdPar )
 
 nComp = size( Z, 1);
 nPlots = min( nComp, length(ax) );
@@ -21,7 +21,7 @@ zScores = linspace( -2, 2, 3 );
 Zmean = repmat( mean( Z, 2 ), 1, length(zScores) );
 
 % ignore the null class
-nClass = nClass - 1;
+% nClass = nClass - 1;
 
 for i = 1:nPlots
     
@@ -35,11 +35,15 @@ for i = 1:nPlots
     end
     
     % duplicate for each class
-    dlZComp = dlarray( repmat( ZComp, 1, nClass ), 'CB' );
+    %dlZComp = dlarray( repmat( ZComp, 1, nClass ), 'CB' );
+    dlZComp = dlarray( ZComp, 'CB' );
 
     % generate the curves using the decoder
     dlXComp = predict( decoder, dlZComp );
     XComp = double( extractdata( dlXComp ) );
+
+    % select the requested channel
+    XComp = squeeze( XComp(:,c,:) );
 
     % convert into smooth function
     XCompFd = smooth_basis( tSpan, XComp, fdPar );

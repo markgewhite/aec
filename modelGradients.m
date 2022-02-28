@@ -51,7 +51,7 @@ if setup.postTraining || setup.preTraining
     [ dlXFake, state.dec ] = forward( dlnetDec, dlZFake );
     
     % calculate the reconstruction loss
-    loss.recon = mean(mean( (dlXFake - dlXReal).^2 ));
+    loss.recon = squeeze(mean( (dlXFake - dlXReal).^2, 'all' ));
     
     if setup.adversarial   
         % predict authenticity from real Z using the discriminator
@@ -66,6 +66,7 @@ if setup.postTraining || setup.preTraining
                         0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
         loss.gen = -setup.reg.gen* ...
                         mean( log(dlDFake + eps) );
+        
     else
         loss.dis = 0;
         loss.gen = 0;
@@ -222,6 +223,7 @@ else
 
 end
 
+loss.recon = stripdims( loss.recon );
 loss = struct2array( loss );
 
 end

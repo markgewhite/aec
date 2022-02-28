@@ -10,27 +10,8 @@ rng( 0 );
 nCodes = 4;
 nRuns = 100;
 nPts = 21; % 21 for JumpVGRF
-nPtsFine = 51; % 201 for JumpVGRF
-doPadding = false;
-dataSource = 'MFT';
-
-% initialise plots
-figure(3);
-ax.ae.pred = subplot( 2,2,1 );
-ax.pca.pred = subplot( 2,2,2 );
-ax.ae.cls = subplot( 2,2,3 );
-ax.pca.cls = subplot( 2,2,4 );
-figure(4);
-ax.ae.distZTrn = subplot( 2,2,1 );
-ax.pca.distZTrn = subplot( 2,2,2 );
-ax.ae.distZTst = subplot( 2,2,3 );
-ax.pca.distZTst = subplot( 2,2,4 );
-figure(5);
-ax.ae.comp = gobjects( nCodes, 1 );
-[ rows, cols ] = sqdim( nCodes );
-for i = 1:nCodes
-    ax.ae.comp(i) = subplot( rows, cols, i );
-end
+nPtsFine = 101; % 201 for JumpVGRF
+dataSource = 'MSFT';
 
 errAE = zeros( nRuns, 1 );
 errPCA = zeros( nRuns, 1 );
@@ -41,7 +22,7 @@ for i = 1:nRuns
 
     % prepare data
     [XIn, XGen, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, ...
-                                               nPts, nPtsFine, doPadding ); 
+                                               nPts, nPtsFine ); 
 
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
@@ -60,25 +41,16 @@ for i = 1:nRuns
                                       setup.data.embed.sampleRatio );   
         XTTrn = rocketTransform( XTrn, setup.data.embed.params );
         XTTst = rocketTransform( XTst, setup.data.embed.params );
-        setup.data.xDimFine = size( XTTrn, 1 );
     else
         XTTrn = XTrn;
         XTTst = XTst; 
     end
+    setup.data.nFeatures = size( XTTrn, 1 );
 
     disp('Generated and partitioned data.');
 
-    % plot the data
-    %fig1 = figure(1);
-    %plot( XFd );
-    %drawnow;
-
-    % plot the first four components
-    %pcaXFd = pca_fd( XFd, 4 );
-    %fig2 = figure(2);
-    %plot_pca_fd( pcaXFd, 1, 1:4 );
-    %drawnow;
-
+    % initialise plots
+    ax = initializePlots( nCodes, setup.data.nChannels );
 
     % ----- autoencoder -----
 
@@ -106,8 +78,10 @@ for i = 1:nRuns
     plotZDist( ax.ae.distZTst, ZTst, 'AE: Z Test', true );
 
     % plot characteristic features
-    plotLatentComp( ax.ae.comp, dlnetDec, ZTrn, setup.aae.cDim, ...
+    for j = 1:setup.data.nChannels
+        plotLatentComp( ax.ae.comp(:,j), dlnetDec, ZTrn, j, ...
                     setup.data.fda.tSpan, setup.data.fda.fdPar );
+    end
 
     % classify using discriminant analysis
     model = fitcdiscr( ZTrn', YTrn );

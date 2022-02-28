@@ -19,7 +19,7 @@ if ismac
 else 
     rootpath = 'C:\Users\m.g.e.white\My Drive\';
 end
-dataFolder = 'Academia/Postdoc/Datasets/MFT';
+dataFolder = 'Academia/Postdoc/Datasets/';
 datapath = [ rootpath dataFolder ];
 
 % load data from file

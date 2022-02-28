@@ -122,7 +122,8 @@ end
 
 % create the output layer
 layersDec = [ layersDec; ...
-              fullyConnectedLayer( paramDec.outX, 'Name', 'out' ) ];
+              fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
+              reshapeLayer( paramDec.outX, 'Name', 'out' ) ];
 lgraphDec = layerGraph( layersDec );
 dlnetDec = dlnetwork( lgraphDec );
 

@@ -59,8 +59,8 @@ classdef reshapeLayer < nnet.layer.Layer & ...
            
             % Reshape.
             outputSize = layer.OutputSize;
-            Z = reshape(X, outputSize(1), outputSize(2), outputSize(3), []);
-            Z = dlarray(Z,'SSCB');
+            Z = reshape(X, outputSize(1), outputSize(2), []);
+            Z = dlarray(Z,'SCB');
         end
     end
 end

@@ -28,8 +28,9 @@ biases = parameters.biases;
 lengthsVary = iscell( X );
 if lengthsVary
     nObs = length( X );
+    nDim = size( X{1},2 );
 else
-    [ inLen, nObs ] = size( X );
+    [ inLen, nObs, nDim ] = size( X );
 end
 
 % set the feature calculation function
@@ -67,136 +68,110 @@ indices = reshape( indices, nKernels, 3 );
 nDil = length(dilations);
 nDilTrunc = 0;
 
-nFeat = nKernels*sum( nFeatPerD )*nMetrics;
+nFeat = nKernels*sum( nFeatPerD )*nMetrics*nDim;
 features = zeros( nFeat, nObs );
 
 for i = 1:nObs
 
-    % extract the next curve
-    if lengthsVary
-        x = X{ i };
-        inLen = length( x ); %costly?
-    else
-        x = X( :, i );
-    end
-
-    % set dilation upper limit in case this time series is too short
-    maxDil = fix( 2^log2( (inLen - 1) / (kLen - 1)) );
-    
-    % obtain alpha and gamme vectors efficiently
-    A = -x';        % A = alpha * X = -X
-    G = x + x + x;  % G = gamma * X = 3X
-
     f1 = 1; % feature index counter: 1st in block of metrics
-    b = 1; % bias index counter
 
-    % loop over all specified dilations for this curve
-    for d = 1:nDil 
+    for j = 1:nDim
 
-        % include padding on alternate dilations
-        padding0 = mod( d, 2 );
-
-        % extract the specified dilation
-        dilation = dilations( d );
-        if dilation > maxDil
-            % time series to too short for reference dilation
-            % find the largest dilation that is valid
-            dilation = dilations( find(dilations<maxDil, 1, 'last') );
-            if isempty(dilation)
-                dilation = 1;
-            end
-            nDilTrunc = nDilTrunc + 1;
-        end
-
-        % set the padding in proportion
-        padding = fix( ((kLen - 1) * dilation)/2 );
-
-        % extract the number of features per dilation
-        nFeatThisD = nFeatPerD( d ); 
-
-        % calculate the convolution matrices
-        C_alpha = A;
-
-        C_gamma = zeros( kLen, inLen );
-        C_gamma( ceil(kLen/2), : ) = G; % middle row
-
-        t1 = dilation;
-        t2 = inLen - padding;
-
-        % loop over the top half
-        for g = 1:fix(kLen/2)
-
-            C_alpha( inLen-t2+1:end ) = ...
-                C_alpha( inLen-t2+1:end) + A( 1:t2 );
-            C_gamma( g, inLen-t2+1:end ) = G( 1:t2 );
-
-            t2 = t2 + dilation;
-
-        end
-
-        % loop over the bottom half
-        for g = fix(kLen/2)+1:kLen
-
-            C_alpha( 1:inLen-t1+1 ) = ...
-                C_alpha( 1:inLen-t1+1 ) + A( t1:end );
-            C_gamma( g, 1:inLen-t1+1 ) = G( t1:end );
-
-            t1 = t1 + dilation;
-
+        % extract the next curve
+        if lengthsVary
+            x = X{ i }( :, j );
+            inLen = length( x ); %costly?
+        else
+            x = squeeze(X( :, i, j ));
         end
     
-        % compute the convolutions for each kernel
-        for k = 1:nKernels
+        % set dilation upper limit in case this time series is too short
+        maxDil = fix( 2^log2( (inLen - 1) / (kLen - 1)) );
     
-            % set the feature block end point
-            f2 = f1 + nFeatThisD*nMetrics - 1;
+        b = 1; % bias index counter
     
-            % alternate padding 
-            padding1 = mod( padding0 + k, 2 );
-
-            % combine alpha & gamma matrices to obtain convolution matrix
-            cIdx = indices( k, : );    
-            C = C_alpha + ...
-                  C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
-
-            % compute the features 
-            cLen = length(C)-2*padding;
-            if padding1 == 0 || cLen<=0
-
-                % without padding
-                m1 = f1;
-                m2 = m1+nMetrics-1;
-                for f = 0:nFeatThisD-1
-
-                    features( m1:m2, i) = ...
-                        featureFcn( C, biases(b + f), inLen );
-
-                    m1 = m2+1;
-                    m2 = m2+nMetrics;
-
+        % loop over all specified dilations for this curve
+        for d = 1:nDil 
+    
+            % include padding on alternate dilations
+            padding0 = mod( d, 2 );
+    
+            % extract the specified dilation
+            dilation = dilations( d );
+            if dilation > maxDil
+                % time series to too short for reference dilation
+                % find the largest dilation that is valid
+                dilation = dilations( find(dilations<maxDil, 1, 'last') );
+                if isempty(dilation)
+                    dilation = 1;
                 end
-
-            else
-                % with padding
-                m1 = f1;
-                m2 = m1+nMetrics-1;
-                for f = 0:nFeatThisD-1
-
-                    features( m1:m2, i ) = ...
-                        featureFcn( C(padding+1:end-padding), ...
-                                      biases(b + f), cLen );
-                    m1 = m2+1;
-                    m2 = m2+nMetrics;
-
-                end
-
+                nDilTrunc = nDilTrunc + 1;
             end
     
-            f1 = f2 + 1;
-            b = b + nFeatThisD;
+            % set the padding in proportion
+            padding = fix( ((kLen - 1) * dilation)/2 );
     
+            % extract the number of features per dilation
+            nFeatThisD = nFeatPerD( d );
+
+            % calculate the convolution
+            [ C_alpha, C_gamma ] = convolution( x, ...
+                                        kLen, inLen, padding, dilation );
+           
+            % compute the convolutions for each kernel
+            for k = 1:nKernels
+        
+                % set the feature block end point
+                f2 = f1 + nFeatThisD*nMetrics - 1;
+        
+                % alternate padding 
+                padding1 = mod( padding0 + k, 2 );
+    
+                % combine alpha & gamma matrices to obtain convolution matrix
+                cIdx = indices( k, : );    
+                C = C_alpha + ...
+                      C_gamma(cIdx(1),:)+C_gamma(cIdx(2),:)+C_gamma(cIdx(3),:);
+    
+                % compute the features 
+                cLen = length(C)-2*padding;
+                if padding1 == 0 || cLen<=0
+    
+                    % without padding
+                    m1 = f1;
+                    m2 = m1+nMetrics-1;
+                    for f = 0:nFeatThisD-1
+    
+                        features( m1:m2, i) = ...
+                            featureFcn( C, biases( b+f, j ), inLen );
+    
+                        m1 = m2+1;
+                        m2 = m2+nMetrics;
+    
+                    end
+    
+                else
+                    % with padding
+                    m1 = f1;
+                    m2 = m1+nMetrics-1;
+                    for f = 0:nFeatThisD-1
+    
+                        features( m1:m2, i ) = ...
+                            featureFcn( C(padding+1:end-padding), ...
+                                          biases( b+f, j ), cLen );
+                        m1 = m2+1;
+                        m2 = m2+nMetrics;
+    
+                    end
+    
+                end
+        
+                f1 = f2 + 1;
+                b = b + nFeatThisD;
+        
+            end
+        
         end
-    
+
     end
 
 end

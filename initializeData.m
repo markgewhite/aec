@@ -6,17 +6,17 @@
 % Parameters:
 %           
 % Outputs:
+%           X     : data as cell array, variable length (fine)
+%           XN    : data as numeric array, normalised length (coarse)
+%           XFd   : functional data object equivalent of X
+%           Y     : associated variable (e.g. class, outcome)
 %           setup : initialised setup structure
 %
 % ************************************************************************
 
 
-function [ XFine, X, XFd, Y, setup ] = initializeData( source, nCodes, ...
-                                            nPts, nPtsFine, doPadding )
-
-if nargin < 5
-    doPadding = true;
-end
+function [ X, XN, XFd, Y, setup ] = initializeData( source, nCodes, ...
+                                            nPts, nPtsFine )
 
 % get data
 setup.source = source;
@@ -51,16 +51,14 @@ switch source
         Y = Y + 1;
         XLen = cellfun( @length, XRaw );
         maxLen = max( XLen );
-        if doPadding
-            padLen = min( 1500, maxLen );
-        else
-            padLen = maxLen;
-        end
+        padLen = min( 1500, maxLen );
 
         XRaw = padData( XRaw, padLen, 1 ); % always pad at this point
 
         tStart = -padLen+1;
         tEnd = 0;
+        padValue = 1;
+        normalization = 'PAD';
 
         setup.fda.basisOrder = 4;
         setup.fda.penaltyOrder = 2;
@@ -72,20 +70,21 @@ switch source
         setup.cDim = length( setup.cLabels );
         setup.nChannels = 1;
 
-    case 'MFT'
+    case 'MSFT'
         [ XRaw, Y ] = getMFTData;
         XLen = cellfun( @length, XRaw );
         maxLen = max( XLen );
         padLen = maxLen;
 
-        XRaw = padData( XRaw, padLen, 1 ); % always pad at this point
+        XRaw = padData( XRaw, padLen, 'same' ); 
 
         tStart = 1;
         tEnd = padLen;
+        normalization = 'LTN';
 
         setup.fda.basisOrder = 4;
         setup.fda.penaltyOrder = 2;
-        setup.fda.lambda = 1E0;
+        setup.fda.lambda = 1E-2;
         setup.fda.nBasis = fix(padLen/4)+setup.fda.penaltyOrder;
 
         setup.nDraw = 1;
@@ -96,12 +95,6 @@ switch source
     otherwise
         error('Unrecognised data source.');
 end
-
-% data embedding parameters
-setup.embedding = true;
-setup.embed.nKernels = 1000;
-setup.embed.nMetrics = 4;
-setup.embed.sampleRatio = 0.05;
 
 % functional data analysis parameters
 setup.fda.basisFd = create_bspline_basis( ...
@@ -117,29 +110,39 @@ setup.fda.tFine = linspace( tStart, tEnd, nPtsFine );
 % smooth the data
 XFd = smooth_basis( linspace( tStart, tEnd, padLen ), ...
                     XRaw, setup.fda.fdPar );
-% re-sample it
-X = eval_fd( setup.fda.tSpan, XFd );
-XFine = eval_fd( setup.fda.tFine, XFd );
 
-if ~doPadding
-    % re-package the data into a cell array with variable lengths
-    nObs = size(X,2);
-    XCell = cell( nObs, 1 );
-    XFineCell = cell( nObs, 1 );
-    for i = 1:nObs
-        adjLen = ceil( nPts*XLen(i)/maxLen );
-        XCell{i} = XFine( nPts-adjLen+1:end, i );
-        adjLen = ceil( nPtsFine*XLen(i)/maxLen );
-        XFineCell{i} = XFine( nPtsFine-adjLen+1:end, i );
-    end
-    X = XCell;
-    XFine = XFineCell;
+% create cell array of time series with variable lengths
+XFine = eval_fd( setup.fda.tFine, XFd );
+nObs = size( XFine,2);
+X = cell( nObs, 1 );
+for i = 1:nObs
+    XLen(i) = ceil( nPtsFine*XLen(i)/maxLen );
+    X{i} = squeeze(XFine( nPtsFine-XLen(i)+1:end, i, : ));
+end
+
+% prepare normalized data of fixed length
+switch normalization
+
+    case 'LTN' % time normalization
+        XN = timeNormalize( X, nPts );
+    case 'PAD' % padding
+        XN = padData( X, nPtsFine, padValue );
+        XN = timeNormalize( XN, nPts );
+    otherwise
+        error('Unrecognized normalization method.');
+
 end
 
 % data generation parameters
 setup.zDim = nCodes;
 setup.xDim = length( setup.fda.tSpan );
 setup.xDimFine = length( setup.fda.tFine );
+
+% data embedding parameters
+setup.embedding = true;
+setup.embed.nKernels = 100;
+setup.embed.nMetrics = 1;
+setup.embed.sampleRatio = 0.05;
 
 
 end

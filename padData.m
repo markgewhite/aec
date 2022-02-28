@@ -15,18 +15,27 @@
 
 function XP = padData( X, padLen, padValue )
 
-% number of series
-nObs = length( X );
+if ischar( padValue )
+    if strcmpi( padValue, 'same' )
+        sameValue = true;
+    else
+        error( 'Unrecognised padding type.');
+    end
+else
+    sameValue = false;
+end
 
-% number of dimensions (assuming all the same)
+nObs = length( X );
 nDim = size( X{1}, 2 );
 
-% padded matrix of series
 XP = zeros( padLen, nObs, nDim );
 
 for i = 1:nObs
     % trial length
     trialLen = min( [ size(X{i}, 1), padLen] );
+    if sameValue
+        padValue = X{i}(1);
+    end
     % insert padding at beginning
     XP( :, i, : ) = [ ones( padLen-trialLen, nDim )*padValue; ...
                         X{i}(end - trialLen+1:end, :) ];
