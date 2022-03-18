@@ -31,12 +31,11 @@ C_gamma( ceil(kLen/2), : ) = G; % middle row
 
 t1 = dilation;
 t2 = inLen - padding;
-
+ 
 % loop over the top half
 for g = 1:fix(kLen/2)
 
-    C_alpha( inLen-t2+1:end ) = ...
-        C_alpha( inLen-t2+1:end) + A( 1:t2 );
+    C_alpha( inLen-t2+1:end ) = C_alpha( inLen-t2+1:end ) + A( 1:t2 );
     C_gamma( g, inLen-t2+1:end ) = G( 1:t2 );
 
     t2 = t2 + dilation;
@@ -46,8 +45,7 @@ end
 % loop over the bottom half
 for g = fix(kLen/2)+1:kLen
 
-    C_alpha( 1:inLen-t1+1 ) = ...
-        C_alpha( 1:inLen-t1+1 ) + A( t1:end );
+    C_alpha( 1:inLen-t1+1 ) = C_alpha( 1:inLen-t1+1 ) + A( t1:end );
     C_gamma( g, 1:inLen-t1+1 ) = G( t1:end );
 
     t1 = t1 + dilation;

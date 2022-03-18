@@ -94,12 +94,12 @@ for i = 1:nObs
         for d = 1:nDil 
     
             % include padding on alternate dilations
-            padding0 = mod( d, 2 );
+            padding0 = mod( d, 2 ); % WORK ON THIS
     
             % extract the specified dilation
             dilation = dilations( d );
             if dilation > maxDil
-                % time series to too short for reference dilation
+                % time series is too short for reference dilation
                 % find the largest dilation that is valid
                 dilation = dilations( find(dilations<maxDil, 1, 'last') );
                 if isempty(dilation)
@@ -125,7 +125,7 @@ for i = 1:nObs
                 f2 = f1 + nFeatThisD*nMetrics - 1;
         
                 % alternate padding 
-                padding1 = mod( padding0 + k, 2 );
+                padding1 = mod( padding0 + k, 2 ); % AND THIS
     
                 % combine alpha & gamma matrices to obtain convolution matrix
                 cIdx = indices( k, : );    
@@ -136,7 +136,7 @@ for i = 1:nObs
                 cLen = length(C)-2*padding;
                 if padding1 == 0 || cLen<=0
     
-                    % without padding
+                    % with padding
                     m1 = f1;
                     m2 = m1+nMetrics-1;
                     for f = 0:nFeatThisD-1
@@ -150,7 +150,7 @@ for i = 1:nObs
                     end
     
                 else
-                    % with padding
+                    % without padding
                     m1 = f1;
                     m2 = m1+nMetrics-1;
                     for f = 0:nFeatThisD-1

@@ -8,7 +8,7 @@
 %       padValue: padding value
 %
 % Output:
-%       Graphs
+%       XP: padded numeric array
 %
 % ************************************************************************
 
