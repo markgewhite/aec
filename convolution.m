@@ -43,7 +43,7 @@ for g = 1:fix(kLen/2)
 end
 
 % loop over the bottom half
-for g = fix(kLen/2)+1:kLen
+for g = ceil(kLen/2)+1:kLen
 
     C_alpha( 1:inLen-t1+1 ) = C_alpha( 1:inLen-t1+1 ) + A( t1:end );
     C_gamma( g, 1:inLen-t1+1 ) = G( t1:end );
