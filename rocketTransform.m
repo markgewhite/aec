@@ -94,7 +94,7 @@ for i = 1:nObs
         for d = 1:nDil 
     
             % include padding on alternate dilations
-            padding0 = mod( d, 2 ); % WORK ON THIS
+            padding0 = mod( d-1, 2 ); % -1 to match Python code
     
             % extract the specified dilation
             dilation = dilations( d );
@@ -125,7 +125,7 @@ for i = 1:nObs
                 f2 = f1 + nFeatThisD*nMetrics - 1;
         
                 % alternate padding 
-                padding1 = mod( padding0 + k, 2 ); % AND THIS
+                padding1 = mod( padding0 + k - 1, 2 );
     
                 % combine alpha & gamma matrices to obtain convolution matrix
                 cIdx = indices( k, : );    
