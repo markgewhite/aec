@@ -140,9 +140,11 @@ setup.xDimFine = length( setup.fda.tFine );
 
 % data embedding parameters
 setup.embedding = true;
-setup.embed.nKernels = 100;
-setup.embed.nMetrics = 1;
+setup.embed.nKernels = 1000;
+setup.embed.nMetrics = 4;
 setup.embed.sampleRatio = 0.05;
+setup.embed.usePCA = true;
+setup.embed.retainThreshold = 0.5; % percentage
 
 
 end

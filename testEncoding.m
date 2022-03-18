@@ -34,13 +34,9 @@ for i = 1:nRuns
     YTst = Y( test(cvPart)  );
 
     if setup.data.embedding
-        % genereate embedding with transform
-        setup.data.embed.params = fitKernels( XTrn, ...
-                                      setup.data.embed.nKernels, ...
-                                      setup.data.embed.nMetrics, ...
-                                      setup.data.embed.sampleRatio );   
-        XTTrn = rocketTransform( XTrn, setup.data.embed.params );
-        XTTst = rocketTransform( XTst, setup.data.embed.params );
+        % generate embedding with transform
+        [XTTrn, XTTst, setup.data.embed.params ] = ...
+                    genEmbedding( XTrn, XTst, setup.data.embed );
     else
         XTTrn = XTrn;
         XTTst = XTst; 
