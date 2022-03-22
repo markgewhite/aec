@@ -35,7 +35,7 @@ setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
 setup.valFreq = 5;
-setup.updateFreq = 25;
+setup.updateFreq = 10;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
 setup.valPatience = 50;
@@ -69,11 +69,17 @@ setup.fda = config.fda;
 
 
 % encoder network parameters
-setup.enc.type = 'FullyConnected'; %'Convolutional'; % 
+setup.enc.type = 'TCN'; %'Convolutional'; % 
 setup.enc.learnRate = 0.01;
-setup.enc.input = config.nFeatures;
+if config.embedding
+    setup.enc.input = config.nFeatures;
+else
+    setup.enc.input = config.xDim*config.nChannels;
+    setup.enc.nChannels = config.nChannels;
+end
+
 setup.enc.outZ = config.zDim*(setup.variational + 1);
-setup.enc.projectionSize = config.xDim; % [ setup.xDim sigDim 1 ];
+setup.enc.projectionSize = config.xDim; % [ config.xDim config.nChannels 1 ];
 switch config.source
     case 'Synthetic'
         setup.enc.nHidden = 1;
@@ -98,6 +104,13 @@ switch config.source
                 setup.enc.stride = 2;
                 setup.enc.scale = 0.4;
                 setup.enc.dropout = 0.1;
+            case 'TCN'
+                setup.enc.projectionSize = [config.xDim setup.enc.nChannels]; 
+                setup.enc.nHidden = 3;
+                setup.enc.filterSize = 5;
+                setup.enc.nFilters = 16;
+                setup.enc.scale = 0.2;
+                setup.enc.dropout = 0.10;
         end
     otherwise
         error('Unrecognised data source');
@@ -105,7 +118,7 @@ end
 
 
 % decoder network parameters
-setup.dec.type = 'FullyConnected'; %'FullyConnected'; % 
+setup.dec.type = 'TCN'; %'FullyConnected'; % 
 setup.dec.learnRate = 0.01;
 setup.dec.input = config.zDim;
 setup.dec.outX = [ config.xDim config.nChannels ];
@@ -135,6 +148,13 @@ switch config.source
                 setup.dec.stride = 3;
                 setup.dec.scale = 0.2;
                 setup.dec.dropout = 0;
+            case 'TCN'
+                setup.dec.projectionSize = [ config.xDim 1 config.nChannels ];
+                setup.dec.nHidden = 3;
+                setup.dec.filterSize = 5;
+                setup.dec.nFilters = 16;
+                setup.dec.scale = 0.2;
+                setup.dec.dropout = 0.10;
 
         end
     otherwise

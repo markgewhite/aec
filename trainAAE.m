@@ -40,7 +40,8 @@ cvPart = cvpartition( Y, 'Holdout', 0.25 );
 % create training set
 XNTrn = XN( :, training(cvPart), : );
 XNTrn = reshape( XNTrn, size(XNTrn,1)*size(XNTrn,3), size(XNTrn,2) );
-XTTrn = XT( :, training(cvPart) );
+XTTrn = XT( :, training(cvPart), : );
+XTTrn = reshape( XTTrn, size(XTTrn,1)*size(XTTrn,3), size(XTTrn,2) );
 YTrn = Y( training(cvPart) );
 
 % create datastores
@@ -56,7 +57,10 @@ mbqTrn = minibatchqueue( dsTrn,...
                       'MiniBatchFormat', 'CB' );
 
 % create validation set - straight to dlarray
-dlXTVal = dlarray( XT( :, test(cvPart)  ), 'CB' );
+XTVal = XT( :, test(cvPart), : );
+XTVal = reshape( XTVal, size(XTVal,1)*size(XTVal,3), size(XTVal,2) );
+
+dlXTVal = dlarray( XTVal, 'CB' );
 dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
 
 % initialise training parameters

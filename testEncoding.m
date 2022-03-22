@@ -9,7 +9,7 @@ rng( 0 );
 
 nCodes = 4;
 nRuns = 100;
-nPts = 21; % 21 for JumpVGRF
+nPts = 32; % 21 for JumpVGRF
 nPtsFine = 101; % 201 for JumpVGRF
 dataSource = 'MSFT';
 
@@ -37,9 +37,15 @@ for i = 1:nRuns
         % generate embedding with transform
         [XTTrn, XTTst, setup.data.embed.params ] = ...
                     genEmbedding( XTrn, XTst, setup.data.embed );
+        XTFormat = 'CB';
     else
-        XTTrn = XTrn;
-        XTTst = XTst; 
+        XTTrn = XGTrn;
+        XTTst = XGTst; 
+        if ndims(XTTrn)==2 %#ok<ISMAT> 
+            XTFormat = 'CB';
+        else
+            XTFormat = 'SBC';
+        end
     end
     setup.data.nFeatures = size( XTTrn, 1 );
 
@@ -58,8 +64,8 @@ for i = 1:nRuns
                     trainAAE( XGTrn, XTTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
-    dlXTTrn = dlarray( XTTrn, 'CB' );
-    dlXTTst = dlarray( XTTst, 'CB' );
+    dlXTTrn = dlarray( XTTrn, XTFormat );
+    dlXTTst = dlarray( XTTst, XTFormat );
 
     % generate encodings
     dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup.aae );

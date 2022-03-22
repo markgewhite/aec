@@ -71,8 +71,20 @@ classdef projectAndReshapeLayer < nnet.layer.Layer & ...
             
             % Reshape.
             outputSize = layer.OutputSize;
-            Z = reshape(X, outputSize(1), outputSize(2), outputSize(3), []);
-            Z = dlarray(Z,'SSCB');
+            switch ndims( outputSize )
+                case 2
+                    if outputSize(2)==1
+                        Z = reshape(X, outputSize(1), outputSize(3), []);
+                    else
+                        Z = reshape(X, outputSize(1), outputSize(1), []);
+                    end
+                    Z = dlarray(Z,'SCB');
+                case 3
+                    Z = reshape(X, outputSize(1), outputSize(2), outputSize(3), []);
+                    Z = dlarray(Z,'SSCB');
+                otherwise
+                    error('OutputSize should have 2 or 3 dimensions.');
+            end
         end
     end
 end

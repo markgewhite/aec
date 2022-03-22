@@ -53,7 +53,7 @@ switch source
         maxLen = max( XLen );
         padLen = min( 1500, maxLen );
 
-        XRaw = padData( XRaw, padLen, 1 ); % always pad at this point
+        XRaw = padData( XRaw, padLen, 1, 'start' );
 
         tStart = -padLen+1;
         tEnd = 0;
@@ -76,7 +76,7 @@ switch source
         maxLen = max( XLen );
         padLen = maxLen;
 
-        XRaw = padData( XRaw, padLen, 'same' ); 
+        XRaw = padData( XRaw, padLen, 'same', 'start' ); 
 
         tStart = 1;
         tEnd = padLen;
@@ -112,6 +112,7 @@ XFd = smooth_basis( linspace( tStart, tEnd, padLen ), ...
                     XRaw, setup.fda.fdPar );
 
 % create cell array of time series with variable lengths
+% assumes that padding is at the start
 XFine = eval_fd( setup.fda.tFine, XFd );
 nObs = size( XFine,2);
 X = cell( nObs, 1 );
@@ -139,7 +140,7 @@ setup.xDim = length( setup.fda.tSpan );
 setup.xDimFine = length( setup.fda.tFine );
 
 % data embedding parameters
-setup.embedding = true;
+setup.embedding = false;
 setup.embed.nKernels = 1000;
 setup.embed.nMetrics = 4;
 setup.embed.sampleRatio = 0.05;
