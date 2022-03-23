@@ -35,10 +35,10 @@ setup.reg.cls = 1E0;
 setup.reg.clust = 1E0;
 
 setup.valFreq = 5;
-setup.updateFreq = 10;
+setup.updateFreq = 25;
 setup.lrFreq = 250;
 setup.lrFactor = 0.5;
-setup.valPatience = 50;
+setup.valPatience = 50; % 50
 
 setup.xDim = config.xDim;
 setup.zDim = config.zDim;
@@ -118,7 +118,7 @@ end
 
 
 % decoder network parameters
-setup.dec.type = 'TCN'; %'FullyConnected'; % 
+setup.dec.type = 'FullyConnected'; %'FullyConnected'; % 
 setup.dec.learnRate = 0.01;
 setup.dec.input = config.zDim;
 setup.dec.outX = [ config.xDim config.nChannels ];

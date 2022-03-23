@@ -39,9 +39,7 @@ cvPart = cvpartition( Y, 'Holdout', 0.25 );
 
 % create training set
 XNTrn = XN( :, training(cvPart), : );
-XNTrn = reshape( XNTrn, size(XNTrn,1)*size(XNTrn,3), size(XNTrn,2) );
-XTTrn = XT( :, training(cvPart), : );
-XTTrn = reshape( XTTrn, size(XTTrn,1)*size(XTTrn,3), size(XTTrn,2) );
+XTTrn = XT( :, training(cvPart) );
 YTrn = Y( training(cvPart) );
 
 % create datastores
@@ -54,11 +52,10 @@ dsTrn = combine( dsXTTrn, dsXNTrn, dsYTrn );
 mbqTrn = minibatchqueue( dsTrn,...
                       'MiniBatchSize', setup.batchSize, ...
                       'PartialMiniBatch', 'discard', ...
-                      'MiniBatchFormat', 'CB' );
+                      'MiniBatchFormat', {'CB','SSCB','CB'} );
 
 % create validation set - straight to dlarray
-XTVal = XT( :, test(cvPart), : );
-XTVal = reshape( XTVal, size(XTVal,1)*size(XTVal,3), size(XTVal,2) );
+XTVal = XT( :, test(cvPart) );
 
 dlXTVal = dlarray( XTVal, 'CB' );
 dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
@@ -109,8 +106,7 @@ for epoch = 1:setup.nEpochs
         
         % Read mini-batch of data
         [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
-        dlXNTrn = dlarray( reshape( dlXNTrn, ...
-            setup.xDim, setup.nChannels, size(dlXNTrn,2) ), 'SCB' );
+        dlXNTrn = dlarray( squeeze(dlXNTrn), 'SCB' );
         
         % Evaluate the model gradients 
         [ grad, state, lossTrn(j,:) ] = ...

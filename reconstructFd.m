@@ -23,14 +23,16 @@ function XFd = reconstructFd( pcaFd, scores, setup )
     tFine = linspace( range(1), range(2), nKnots*10 );
 
     % create the set of points from the mean for each curve
-    [ nCurves, nComp ] = size( scores );
+    [ nCurves, nComp, nChannels ] = size( scores );
     XPts = repmat( eval_fd( tFine, pcaFd.meanfd ), 1, nCurves );
 
     % linearly combine the components, pointswise
-    for j = 1:nComp
-        HPts = eval_fd( tFine, pcaFd.harmfd );
-        for i = 1:nCurves
-            XPts(:,i) = XPts(:,i) + scores(i,j)*HPts(:,j);
+    HPts = eval_fd( tFine, pcaFd.harmfd );
+    for k = 1:nChannels
+        for j = 1:nComp        
+            for i = 1:nCurves
+                XPts(:,i,k) = XPts(:,i,k) + scores(i,j,k)*HPts(:,j,k);
+            end
         end
     end
 

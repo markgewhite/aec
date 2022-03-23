@@ -37,15 +37,10 @@ for i = 1:nRuns
         % generate embedding with transform
         [XTTrn, XTTst, setup.data.embed.params ] = ...
                     genEmbedding( XTrn, XTst, setup.data.embed );
-        XTFormat = 'CB';
     else
-        XTTrn = XGTrn;
-        XTTst = XGTst; 
-        if ndims(XTTrn)==2 %#ok<ISMAT> 
-            XTFormat = 'CB';
-        else
-            XTFormat = 'SBC';
-        end
+        % flatten the inputs in 'CB' dimensions
+        XTTrn = reshape( XGTrn, size(XGTrn,1)*size(XGTrn,3), size(XGTrn,2) );
+        XTTst = reshape( XGTst, size(XGTst,1)*size(XGTst,3), size(XGTst,2) );
     end
     setup.data.nFeatures = size( XTTrn, 1 );
 
@@ -64,8 +59,8 @@ for i = 1:nRuns
                     trainAAE( XGTrn, XTTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
-    dlXTTrn = dlarray( XTTrn, XTFormat );
-    dlXTTst = dlarray( XTTst, XTFormat );
+    dlXTTrn = dlarray( XTTrn, 'CB' );
+    dlXTTst = dlarray( XTTst, 'CB' );
 
     % generate encodings
     dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup.aae );
@@ -113,30 +108,32 @@ for i = 1:nRuns
     drawnow;
 
     % reconstruct the curves and calculate errors
-    dlXTrnHat = predict( dlnetDec, dlZTrn );
-    dlXTstHat = predict( dlnetDec, dlZTst );
-    XTrnHat = double(extractdata( dlXTrnHat ));
-    XTstHat = double(extractdata( dlXTstHat ));
+    dlXGTrnHat = predict( dlnetDec, dlZTrn );
+    dlXGTstHat = predict( dlnetDec, dlZTst );
+    XGTrnHat = double(extractdata( dlXGTrnHat ));
+    XGTstHat = double(extractdata( dlXGTstHat ));
+    XGTrnHat = permute( XGTrnHat, [1 3 2] );
+    XGTstHat = permute( XGTstHat, [1 3 2] );
 
-    errTrn = sqrt( mse( XGTrn, XTrnHat ) );
+    errTrn = sqrt( mse( XGTrn, XGTrnHat ) );
     disp( ['AE Training Error = ' num2str(errTrn)] );
-    errTst = sqrt( mse( XGTst, XTstHat ) );
+    errTst = sqrt( mse( XGTst, XGTstHat ) );
     disp( ['AE Testing Error  = ' num2str(errTst)] );
 
     % plot resulting curves
-    XTstHatFd = smooth_basis( setup.data.fda.tSpan, XTstHat, ...
+    XTstHatFd = smooth_basis( setup.data.fda.tSpan, XGTstHat, ...
                                 setup.data.fda.fdPar );
 
-    subplotFd( ax.ae.pred, XTstHatFd );
-    title( ax.ae.pred, 'AE Prediction' );
+    %subplotFd( ax.ae.pred, XTstHatFd );
+    %title( ax.ae.pred, 'AE Prediction' );
 
 
 
     % ----- PCA encoding -----
 
     disp('Running PCA ... ');
-    XTrnFd = smooth_basis( setup.data.fda.tFine, XTrn, setup.data.fda.fdPar );
-    XTstFd = smooth_basis( setup.data.fda.tFine, XTst, setup.data.fda.fdPar );
+    XTrnFd = smooth_basis( setup.data.fda.tSpan, XGTrn, setup.data.fda.fdPar );
+    XTstFd = smooth_basis( setup.data.fda.tSpan, XGTst, setup.data.fda.fdPar );
     pcaXTrnFd = pca_fd( XTrnFd, nCodes );
 
     % generate predictions and calculate errors
@@ -152,15 +149,19 @@ for i = 1:nRuns
     XTrnHatPCA = eval_fd( setup.data.fda.tSpan, XTrnFdPCA );
     XTstHatPCA = eval_fd( setup.data.fda.tSpan, XTstFdPCA );
     
-    errTrnPCA = sqrt( mse( XTrn, XTrnHatPCA ) );
+    errTrnPCA = sqrt( mse( XGTrn, XTrnHatPCA ) );
     disp( ['PCA Training Error = ' num2str(errTrnPCA)] );
-    errTstPCA = sqrt( mse( XTst, XTstHatPCA ) );
+    errTstPCA = sqrt( mse( XGTst, XTstHatPCA ) );
     disp( ['PCA Testing Error  = ' num2str(errTstPCA)] );
 
-    subplotFd( ax.pca.pred, XTstFdPCA );
-    title( ax.pca.pred, 'PCA Prediction');
+    %subplotFd( ax.pca.pred, XTstFdPCA );
+    %title( ax.pca.pred, 'PCA Prediction');
 
-    % plot Z distribution 
+    % plot Z distribution
+    ZTrnPCA = reshape( ZTrnPCA, size(ZTrnPCA,1), ...
+                            size(ZTrnPCA,2)*size(ZTrnPCA,3) );
+    ZTstPCA = reshape( ZTstPCA, size(ZTstPCA,1), ...
+                            size(ZTstPCA,2)*size(ZTstPCA,3) );
     plotZDist( ax.pca.distZTrn, ZTrnPCA', 'PCA: Z Train', true );
     plotZDist( ax.pca.distZTst, ZTstPCA', 'PCA: Z Test', true );
 
