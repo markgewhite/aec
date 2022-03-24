@@ -72,7 +72,7 @@ setup.discriminatorFcn = @aeDiscriminatorDesign;
 setup.classifierFcn = @aeClassifierDesign;
 
 % encoder network parameters
-setup.enc.learnRate = 0.01;
+setup.enc.learnRate = 0.001;
 if config.embedding
     setup.enc.input = config.nFeatures;
 else
@@ -108,12 +108,13 @@ switch config.source
                 setup.enc.dropout = 0.1;
             case 'aeTCNDesign'
                 setup.enc.projectionSize = [config.xDim setup.enc.nChannels]; 
-                setup.enc.nHidden = 3;
+                setup.enc.nHidden = 4;
                 setup.enc.filterSize = 5;
                 setup.enc.nFilters = 16;
                 setup.enc.scale = 0.2;
                 setup.enc.initialDropout = 0.1;
                 setup.enc.dropout = 0.05;
+                setup.enc.useSkips = true;
         end
     otherwise
         error('Unrecognised data source');
@@ -121,7 +122,7 @@ end
 
 
 % decoder network parameters
-setup.dec.learnRate = 0.01;
+setup.dec.learnRate = 0.001;
 setup.dec.input = config.zDim;
 setup.dec.outX = [ config.xDim config.nChannels ];
 setup.dec.projectionSize = 5; % [ 5 sigDim 1 ];
@@ -152,12 +153,13 @@ switch config.source
                 setup.dec.dropout = 0;
             case 'aeTCNDesign'
                 setup.dec.projectionSize = [ config.xDim 1 config.nChannels ];
-                setup.dec.nHidden = 3;
+                setup.dec.nHidden = 4;
                 setup.dec.filterSize = 5;
                 setup.dec.nFilters = 16;
                 setup.dec.scale = 0.2;
-                setup.dec.initialDropout = 0.1;
+                setup.dec.initialDropout = 0;
                 setup.dec.dropout = 0.05;
+                setup.dec.useSkips = true;
 
         end
     otherwise

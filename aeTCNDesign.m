@@ -19,6 +19,7 @@ function [ dlnetEnc, dlnetDec ] = aeTCNDesign( paramEnc, paramDec )
 % define the encoder network
 % --------------------------
 
+% define input layers
 layersEnc = [ featureInputLayer( paramEnc.input, 'Name', 'in', ...
                        'Normalization', 'zscore', ...
                        'Mean', 0, 'StandardDeviation', 1 )
@@ -26,27 +27,23 @@ layersEnc = [ featureInputLayer( paramEnc.input, 'Name', 'in', ...
                             'Name', 'drop0' )
               reshapeLayer( paramEnc.projectionSize, ...
                             'Name', 'proj' ) ];
+lgraphEnc = layerGraph( layersEnc );
+lastLayer = 'proj';
 
+% create hidden layers
 for i = 1:paramEnc.nHidden
     nDilation = 2^(i-1);
-    layersEnc = [ layersEnc; ...
-        convolution1dLayer( paramEnc.filterSize, ...
-                            paramEnc.nFilters, ...
-                            'DilationFactor', nDilation, ...
-                            'Padding', 'causal', ...
-                            'Name', ['conv' num2str(i)] )
-        batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-        leakyReluLayer( paramEnc.scale, ...
-                        'Name', ['relu' num2str(i)] )
-        spatialDropoutLayer( paramEnc.dropout, ...
-                             'Name', ['drop' num2str(i)] )
-        ]; %#ok<*AGROW> 
+    [lgraphEnc, lastLayer] = addResidualBlock( lgraphEnc, i, ...
+                                        nDilation, lastLayer, paramEnc );
 end
 
-layersEnc = [ layersEnc; ...
-      fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' ) ];
+% add the output layers
+outLayers = fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' );
 
-lgraphEnc = layerGraph( layersEnc );
+lgraphEnc = addLayers( lgraphEnc, outLayers );
+lgraphEnc = connectLayers( lgraphEnc, ...
+                           lastLayer, 'out' );
+
 dlnetEnc = dlnetwork( lgraphEnc );
 
 
@@ -59,30 +56,82 @@ layersDec = [ featureInputLayer( paramDec.input, 'Name', 'in' )
                             'Name', 'drop0' )
               projectAndReshapeLayer( paramDec.projectionSize, ...
                             paramDec.input, 'Name', 'proj' ) ];
+
+lgraphDec = layerGraph( layersDec );
+lastLayer = 'proj';
+
 for i = 1:paramDec.nHidden
     nDilation = 2^(paramDec.nHidden-i);
-    layersDec = [ layersDec; ...
-        convolution1dLayer( paramDec.filterSize, ...
-                            paramDec.nFilters, ...
-                            'DilationFactor', nDilation, ...
-                            'Padding', 'causal', ...
-                            'Name', ['conv' num2str(i)] )
-        batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-        leakyReluLayer( paramDec.scale, ...
-                        'Name', ['relu' num2str(i)] )
-        spatialDropoutLayer( paramDec.dropout, ...
-                             'Name', ['drop' num2str(i)] )
-        ]; %#ok<*AGROW> 
+    [lgraphDec, lastLayer] = addResidualBlock( lgraphDec, i, ...
+                                        nDilation, lastLayer, paramDec );
+end
+
+% add the output layers
+outLayers = [ fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
+              reshapeLayer( paramDec.outX, 'Name', 'out' ) ];
+
+lgraphDec = addLayers( lgraphDec, outLayers );
+lgraphDec = connectLayers( lgraphDec, ...
+                           lastLayer, 'fcout' );
+
+dlnetDec = dlnetwork( lgraphDec );
+
+
 end
 
 
 
-layersDec = [ layersDec; ...
-              fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
-              reshapeLayer( paramDec.outX, 'Name', 'out' ) ];
+function [ lgraph, lastLayer ] = addResidualBlock( ...
+                                  lgraph, i, nDilation, lastLayer, params )
 
-lgraphDec = layerGraph( layersDec );
-dlnetDec = dlnetwork( lgraphDec );
+    % define residual block
+    block = [   convolution1dLayer( params.filterSize, ...
+                                    params.nFilters, ...
+                                    'DilationFactor', nDilation, ...
+                                    'Padding', 'causal', ...
+                                    'Name', ['conv' num2str(i)] )
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                leakyReluLayer( params.scale, ...
+                                'Name', ['relu' num2str(i)] )
+                spatialDropoutLayer( params.dropout, ...
+                                     'Name', ['drop' num2str(i)] )
+                ];
+
+    if params.useSkips
+        % append an addition layer to the block
+        block = [ block; 
+                  additionLayer( 2, 'Name', ['add' num2str(i)] ) ];
+
+        lgraph = addLayers( lgraph, block );
+        lgraph = connectLayers( lgraph, ...
+                            lastLayer, ['conv' num2str(i)] );
+
+        if i == 1
+            % include convolution in first skip connection
+            skipLayer = convolution1dLayer( 1, params.nFilters, ...
+                                            'Name', 'convSkip' );
+            lgraph = addLayers( lgraph, skipLayer );
+            lgraph = connectLayers( lgraph, ...
+                                       lastLayer, 'convSkip' );
+            lgraph = connectLayers( lgraph, ...
+                               'convSkip', ['add' num2str(i) '/in2'] );
+        else
+            % connect the skip
+            lgraph = connectLayers( lgraph, ...
+                               lastLayer, ['add' num2str(i) '/in2'] );
+        end
+    
+        lastLayer = ['add' num2str(i)];
+
+    else
+        % connect layers at the front
+        lgraph = addLayers( lgraph, block );
+        lgraph = connectLayers( lgraph, ...
+                                lastLayer, ['conv' num2str(i)] );
+        lastLayer = ['drop' num2str(i)];
+
+    end
+
 
 
 end
