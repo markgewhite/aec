@@ -66,10 +66,12 @@ setup.mmd.baseType = 'Normal';
 
 setup.fda = config.fda;
 
-
+% specify the network initialisation functions
+setup.autoencoderFcn = @aeTCNDesign;
+setup.discriminatorFcn = @aeDiscriminatorDesign;
+setup.classifierFcn = @aeClassifierDesign;
 
 % encoder network parameters
-setup.enc.type = 'TCN'; %'Convolutional'; % 
 setup.enc.learnRate = 0.01;
 if config.embedding
     setup.enc.input = config.nFeatures;
@@ -90,21 +92,21 @@ switch config.source
         setup.enc.dropout = 0.1;
 
     case {'JumpVGRF', 'MSFT'}
-        switch setup.enc.type
-            case 'FullyConnected'
+        switch char(setup.autoencoderFcn)
+            case 'aeFCDesign'
                 setup.enc.nHidden = 3;
                 setup.enc.nFC = 512;
                 setup.enc.fcFactor = 2;
                 setup.enc.scale = 0;
                 setup.enc.dropout = 0.10;
-            case 'Convolutional'
+            case 'aeConvDesign'
                 setup.enc.nHidden = 1;
                 setup.enc.filterSize = 3;
                 setup.enc.nFilters = 220;
                 setup.enc.stride = 2;
                 setup.enc.scale = 0.4;
                 setup.enc.dropout = 0.1;
-            case 'TCN'
+            case 'aeTCNDesign'
                 setup.enc.projectionSize = [config.xDim setup.enc.nChannels]; 
                 setup.enc.nHidden = 3;
                 setup.enc.filterSize = 5;
@@ -119,7 +121,6 @@ end
 
 
 % decoder network parameters
-setup.dec.type = 'TCN'; %'FullyConnected'; % 
 setup.dec.learnRate = 0.01;
 setup.dec.input = config.zDim;
 setup.dec.outX = [ config.xDim config.nChannels ];
@@ -135,27 +136,28 @@ switch config.source
         setup.dec.dropout = 0;
 
     case {'JumpVGRF', 'MSFT'}
-        switch setup.dec.type
-            case 'FullyConnected'
+        switch char(setup.autoencoderFcn)
+            case 'aeFCDesign'
                 setup.dec.nHidden = 2; % 1
                 setup.dec.nFC = 64; % 32
                 setup.dec.fcFactor = 2; % 1
                 setup.dec.scale = 0.2;
                 setup.dec.dropout = 0;
-            case 'Convolutional'
+            case 'aeConvDesign'
                 setup.dec.nHidden = 1;
                 setup.dec.filterSize = 18;
                 setup.dec.nFilters = 32;
                 setup.dec.stride = 3;
                 setup.dec.scale = 0.2;
                 setup.dec.dropout = 0;
-            case 'TCN'
+            case 'aeTCNDesign'
                 setup.dec.projectionSize = [ config.xDim 1 config.nChannels ];
                 setup.dec.nHidden = 3;
                 setup.dec.filterSize = 5;
                 setup.dec.nFilters = 16;
                 setup.dec.scale = 0.2;
-                setup.dec.dropout = 0.0;
+                setup.dec.initialDropout = 0.1;
+                setup.dec.dropout = 0.05;
 
         end
     otherwise

@@ -22,8 +22,9 @@ function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrn, constraint ] = ...
 
 % define the networks
 try
-    [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls ] = ...
-        setup.designFcn( setup.enc, setup.dec, setup.dis, setup.cls );   
+    [ dlnetEnc, dlnetDec ] = setup.autoencoderFcn( setup.enc, setup.dec );
+    dlnetDis = setup.discriminatorFcn( setup.dis );
+    dlnetCls = setup.classifierFcn( setup.cls ); 
 catch
     dlnetEnc = [];
     dlnetDec = [];
