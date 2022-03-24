@@ -110,7 +110,8 @@ switch config.source
                 setup.enc.filterSize = 5;
                 setup.enc.nFilters = 16;
                 setup.enc.scale = 0.2;
-                setup.enc.dropout = 0.10;
+                setup.enc.initialDropout = 0.1;
+                setup.enc.dropout = 0.05;
         end
     otherwise
         error('Unrecognised data source');
@@ -118,7 +119,7 @@ end
 
 
 % decoder network parameters
-setup.dec.type = 'FullyConnected'; %'FullyConnected'; % 
+setup.dec.type = 'TCN'; %'FullyConnected'; % 
 setup.dec.learnRate = 0.01;
 setup.dec.input = config.zDim;
 setup.dec.outX = [ config.xDim config.nChannels ];
@@ -154,7 +155,7 @@ switch config.source
                 setup.dec.filterSize = 5;
                 setup.dec.nFilters = 16;
                 setup.dec.scale = 0.2;
-                setup.dec.dropout = 0.10;
+                setup.dec.dropout = 0.0;
 
         end
     otherwise
