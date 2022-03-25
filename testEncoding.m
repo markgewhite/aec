@@ -11,7 +11,7 @@ nCodes = 4;
 nRuns = 100;
 nPts = 32; % 21 for JumpVGRF
 nPtsFine = 101; % 201 for JumpVGRF
-dataSource = 'MSFT';
+dataSource = 'JumpVGRF';
 
 errAE = zeros( nRuns, 1 );
 errPCA = zeros( nRuns, 1 );
@@ -112,8 +112,10 @@ for i = 1:nRuns
     dlXGTstHat = predict( dlnetDec, dlZTst );
     XGTrnHat = double(extractdata( dlXGTrnHat ));
     XGTstHat = double(extractdata( dlXGTstHat ));
-    XGTrnHat = permute( XGTrnHat, [1 3 2] );
-    XGTstHat = permute( XGTstHat, [1 3 2] );
+    if size( XGTrnHat, 3 ) > 1
+        XGTrnHat = permute( XGTrnHat, [1 3 2] );
+        XGTstHat = permute( XGTstHat, [1 3 2] );
+    end
 
     errTrn = sqrt( mse( XGTrn, XGTrnHat ) );
     disp( ['AE Training Error = ' num2str(errTrn)] );

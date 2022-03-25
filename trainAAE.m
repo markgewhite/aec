@@ -50,10 +50,15 @@ dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );
 dsTrn = combine( dsXTTrn, dsXNTrn, dsYTrn );
 
 % setup the batches
+if size( XNTrn, 3 ) > 1
+    XNfmt = 'SSCB';
+else
+    XNfmt = 'CB';
+end
 mbqTrn = minibatchqueue( dsTrn,...
                       'MiniBatchSize', setup.batchSize, ...
                       'PartialMiniBatch', 'discard', ...
-                      'MiniBatchFormat', {'CB','SSCB','CB'} );
+                      'MiniBatchFormat', {'CB', XNfmt, 'CB'} );
 
 % create validation set - straight to dlarray
 XTVal = XT( :, test(cvPart) );
@@ -107,7 +112,9 @@ for epoch = 1:setup.nEpochs
         
         % Read mini-batch of data
         [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
-        dlXNTrn = dlarray( squeeze(dlXNTrn), 'SCB' );
+        if size( XNTrn, 3 ) > 1
+            dlXNTrn = dlarray( squeeze(dlXNTrn), 'SCB' );
+        end
         
         % Evaluate the model gradients 
         [ grad, state, lossTrn(j,:) ] = ...

@@ -69,11 +69,14 @@ for i = 1:paramDec.nHidden
 end
 
 % add the output layers
-outLayers = [ maxPooling1dLayer( 9, 'Stride', 7, ...
-                                 'Padding', 'same', ...
-                                 'Name', 'maxPool' )
-              fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
-              reshapeLayer( paramDec.outX, 'Name', 'out' ) ];
+if paramDec.outX(2) > 1
+    outLayers = [ globalMaxPooling1dLayer( 'Name', 'maxPool' )
+                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
+                  reshapeLayer( paramDec.outX, 'Name', 'out' ) ];
+else
+    outLayers = [ globalMaxPooling1dLayer( 'Name', 'maxPool' )
+                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'out' ) ];
+end
 
 lgraphDec = addLayers( lgraphDec, outLayers );
 lgraphDec = connectLayers( lgraphDec, ...

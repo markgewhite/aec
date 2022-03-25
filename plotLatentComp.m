@@ -42,9 +42,11 @@ for i = 1:nPlots
     dlXComp = predict( decoder, dlZComp );
     XComp = double( extractdata( dlXComp ) );
 
-    % select the requested channel
-    XComp = squeeze( XComp(:,c,:) );
-
+    if size(XComp,3) > 1
+        % select the requested channel
+        XComp = squeeze( XComp(:,c,:) );
+    end
+    
     % convert into smooth function
     XCompFd = smooth_basis( tSpan, XComp, fdPar );
 

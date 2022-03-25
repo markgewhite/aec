@@ -52,6 +52,7 @@ switch source
         XLen = cellfun( @length, XRaw );
         maxLen = max( XLen );
         padLen = min( 1500, maxLen );
+        padLoc = 'start';
 
         XRaw = padData( XRaw, padLen, 1, 'start' );
 
@@ -75,6 +76,7 @@ switch source
         XLen = cellfun( @length, XRaw );
         maxLen = max( XLen );
         padLen = maxLen;
+        padLoc = 'both';
 
         XRaw = padData( XRaw, padLen, 'same', 'start' ); 
 
@@ -127,7 +129,7 @@ switch normalization
     case 'LTN' % time normalization
         XN = timeNormalize( X, nPts );
     case 'PAD' % padding
-        XN = padData( X, nPtsFine, padValue );
+        XN = padData( X, nPtsFine, padValue, padLoc );
         XN = timeNormalize( XN, nPts );
     otherwise
         error('Unrecognized normalization method.');
