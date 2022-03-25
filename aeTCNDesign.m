@@ -90,21 +90,27 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
                                     'DilationFactor', nDilation, ...
                                     'Padding', 'causal', ...
                                     'Name', ['conv' num2str(i)] )
-                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] ) ];
+
+    if params.useSkips
+        block = [ block; 
+                  additionLayer( 2, 'Name', ['add' num2str(i)] ) ];
+    end
+
+    block = [ block;
                 leakyReluLayer( params.scale, ...
                                 'Name', ['relu' num2str(i)] )
                 spatialDropoutLayer( params.dropout, ...
                                      'Name', ['drop' num2str(i)] )
                 ];
 
-    if params.useSkips
-        % append an addition layer to the block
-        block = [ block; 
-                  additionLayer( 2, 'Name', ['add' num2str(i)] ) ];
-
-        lgraph = addLayers( lgraph, block );
-        lgraph = connectLayers( lgraph, ...
+    % connect layers at the front
+    lgraph = addLayers( lgraph, block );
+    lgraph = connectLayers( lgraph, ...
                             lastLayer, ['conv' num2str(i)] );
+    
+    if params.useSkips
+        % include a short circuit ('skip')
 
         if i == 1
             % include convolution in first skip connection
@@ -120,18 +126,9 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
             lgraph = connectLayers( lgraph, ...
                                lastLayer, ['add' num2str(i) '/in2'] );
         end
-    
-        lastLayer = ['add' num2str(i)];
-
-    else
-        % connect layers at the front
-        lgraph = addLayers( lgraph, block );
-        lgraph = connectLayers( lgraph, ...
-                                lastLayer, ['conv' num2str(i)] );
-        lastLayer = ['drop' num2str(i)];
 
     end
 
-
+    lastLayer = ['drop' num2str(i)];
 
 end
