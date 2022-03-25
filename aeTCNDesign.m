@@ -38,11 +38,12 @@ for i = 1:paramEnc.nHidden
 end
 
 % add the output layers
-outLayers = fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' );
+outLayers = [ globalMaxPooling1dLayer( 'Name', 'maxPool' )
+              fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' ) ];
 
 lgraphEnc = addLayers( lgraphEnc, outLayers );
 lgraphEnc = connectLayers( lgraphEnc, ...
-                           lastLayer, 'out' );
+                           lastLayer, 'maxPool' );
 
 dlnetEnc = dlnetwork( lgraphEnc );
 
@@ -68,12 +69,15 @@ for i = 1:paramDec.nHidden
 end
 
 % add the output layers
-outLayers = [ fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
+outLayers = [ maxPooling1dLayer( 9, 'Stride', 7, ...
+                                 'Padding', 'same', ...
+                                 'Name', 'maxPool' )
+              fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
               reshapeLayer( paramDec.outX, 'Name', 'out' ) ];
 
 lgraphDec = addLayers( lgraphDec, outLayers );
 lgraphDec = connectLayers( lgraphDec, ...
-                           lastLayer, 'fcout' );
+                           lastLayer, 'maxPool' );
 
 dlnetDec = dlnetwork( lgraphDec );
 
