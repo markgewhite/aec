@@ -32,9 +32,9 @@ lastLayer = 'proj';
 
 % create hidden layers
 for i = 1:paramEnc.nHidden
-    nDilation = 2^(i-1);
+    dilations = [ 2^(i*2-2) 2^(i*2-1) ];
     [lgraphEnc, lastLayer] = addResidualBlock( lgraphEnc, i, ...
-                                        nDilation, lastLayer, paramEnc );
+                                        dilations, lastLayer, paramEnc );
 end
 
 % add the output layers
@@ -61,9 +61,10 @@ lgraphDec = layerGraph( layersDec );
 lastLayer = 'proj';
 
 for i = 1:paramDec.nHidden
-    nDilation = 2^(paramDec.nHidden-i);
+    dilations = [ 2^(2*(paramDec.nHidden-i)+1) ...
+                    2^(2*(paramDec.nHidden-i)) ];
     [lgraphDec, lastLayer] = addResidualBlock( lgraphDec, i, ...
-                                        nDilation, lastLayer, paramDec );
+                                        dilations, lastLayer, paramDec );
 end
 
 % add the output layers
@@ -82,15 +83,29 @@ end
 
 
 function [ lgraph, lastLayer ] = addResidualBlock( ...
-                                  lgraph, i, nDilation, lastLayer, params )
+                                  lgraph, i, dilations, lastLayer, params )
+
+    i1 = i*2-1;
+    i2 = i1+1;
 
     % define residual block
     block = [   convolution1dLayer( params.filterSize, ...
                                     params.nFilters, ...
-                                    'DilationFactor', nDilation, ...
+                                    'DilationFactor', dilations(1), ...
                                     'Padding', 'causal', ...
-                                    'Name', ['conv' num2str(i)] )
-                batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] ) ];
+                                    'Name', ['conv' num2str(i1)] )
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i1)] )
+                leakyReluLayer( params.scale, ...
+                                'Name', ['relu' num2str(i1)] )
+                spatialDropoutLayer( params.dropout, ...
+                                     'Name', ['drop' num2str(i1)] )
+                convolution1dLayer( params.filterSize, ...
+                                    params.nFilters, ...
+                                    'DilationFactor', dilations(2), ...
+                                    'Padding', 'causal', ...
+                                    'Name', ['conv' num2str(i2)] )
+                batchNormalizationLayer( 'Name', ['bnorm' num2str(i2)] )
+                ];
 
     if params.useSkips
         block = [ block; 
@@ -99,15 +114,15 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
 
     block = [ block;
                 leakyReluLayer( params.scale, ...
-                                'Name', ['relu' num2str(i)] )
+                                'Name', ['relu' num2str(i2)] )
                 spatialDropoutLayer( params.dropout, ...
-                                     'Name', ['drop' num2str(i)] )
+                                     'Name', ['drop' num2str(i2)] )
                 ];
 
     % connect layers at the front
     lgraph = addLayers( lgraph, block );
     lgraph = connectLayers( lgraph, ...
-                            lastLayer, ['conv' num2str(i)] );
+                            lastLayer, ['conv' num2str(i1)] );
     
     if params.useSkips
         % include a short circuit ('skip')
@@ -129,6 +144,6 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
 
     end
 
-    lastLayer = ['drop' num2str(i)];
+    lastLayer = ['drop' num2str(i2)];
 
 end

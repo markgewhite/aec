@@ -108,7 +108,7 @@ switch config.source
                 setup.enc.dropout = 0.1;
             case 'aeTCNDesign'
                 setup.enc.projectionSize = [config.xDim setup.enc.nChannels]; 
-                setup.enc.nHidden = 4;
+                setup.enc.nHidden = 2;
                 setup.enc.filterSize = 5;
                 setup.enc.nFilters = 16;
                 setup.enc.scale = 0.2;
@@ -153,7 +153,7 @@ switch config.source
                 setup.dec.dropout = 0;
             case 'aeTCNDesign'
                 setup.dec.projectionSize = [ config.xDim 1 config.nChannels ];
-                setup.dec.nHidden = 4;
+                setup.dec.nHidden = 2;
                 setup.dec.filterSize = 5;
                 setup.dec.nFilters = 16;
                 setup.dec.scale = 0.2;
