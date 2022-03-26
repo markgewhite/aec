@@ -21,28 +21,29 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    [XIn, XGen, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, ...
+    [X, XN, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, ...
                                                nPts, nPtsFine ); 
 
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
-    XTrn = splitData( XIn, training(cvPart) );
-    XTst = splitData( XIn, test(cvPart) );
-    XGTrn = splitData( XGen, training(cvPart) );
-    XGTst = splitData( XGen, test(cvPart) );
+    XTrn = splitData( X, training(cvPart) );
+    XTst = splitData( X, test(cvPart) );
+    XNTrn = splitData( XN, training(cvPart) );
+    XNTst = splitData( XN, test(cvPart) );
     YTrn = Y( training(cvPart) );
     YTst = Y( test(cvPart)  );
 
     if setup.data.embedding
         % generate embedding with transform
-        [XTTrn, XTTst, setup.data.embed.params ] = ...
+        [XTrn, XTst, setup.data.embed.params ] = ...
                     genEmbedding( XTrn, XTst, setup.data.embed );
+        setup.data.nFeatures = size( XTrn, 1 );
     else
         % flatten the inputs in 'CB' dimensions
-        XTTrn = reshape( XGTrn, size(XGTrn,1)*size(XGTrn,3), size(XGTrn,2) );
-        XTTst = reshape( XGTst, size(XGTst,1)*size(XGTst,3), size(XGTst,2) );
+        %XTTrn = reshape( XGTrn, size(XGTrn,1)*size(XGTrn,3), size(XGTrn,2) );
+        %XTTst = reshape( XGTst, size(XGTst,1)*size(XGTst,3), size(XGTst,2) );
     end
-    setup.data.nFeatures = size( XTTrn, 1 );
+    
 
     disp('Generated and partitioned data.');
 
@@ -56,7 +57,7 @@ for i = 1:nRuns
 
     % train the autoencoder
     [dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
-                    trainAAE( XGTrn, XTTrn, YTrn, setup.aae, ax );
+                    trainAAE( XNTrn, XTTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
     dlXTTrn = dlarray( XTTrn, 'CB' );
@@ -117,9 +118,9 @@ for i = 1:nRuns
         XGTstHat = permute( XGTstHat, [1 3 2] );
     end
 
-    errTrn = sqrt( mse( XGTrn, XGTrnHat ) );
+    errTrn = sqrt( mse( XNTrn, XGTrnHat ) );
     disp( ['AE Training Error = ' num2str(errTrn)] );
-    errTst = sqrt( mse( XGTst, XGTstHat ) );
+    errTst = sqrt( mse( XNTst, XGTstHat ) );
     disp( ['AE Testing Error  = ' num2str(errTst)] );
 
     % plot resulting curves
@@ -134,8 +135,8 @@ for i = 1:nRuns
     % ----- PCA encoding -----
 
     disp('Running PCA ... ');
-    XTrnFd = smooth_basis( setup.data.fda.tSpan, XGTrn, setup.data.fda.fdPar );
-    XTstFd = smooth_basis( setup.data.fda.tSpan, XGTst, setup.data.fda.fdPar );
+    XTrnFd = smooth_basis( setup.data.fda.tSpan, XNTrn, setup.data.fda.fdPar );
+    XTstFd = smooth_basis( setup.data.fda.tSpan, XNTst, setup.data.fda.fdPar );
     pcaXTrnFd = pca_fd( XTrnFd, nCodes );
 
     % generate predictions and calculate errors
@@ -151,9 +152,9 @@ for i = 1:nRuns
     XTrnHatPCA = eval_fd( setup.data.fda.tSpan, XTrnFdPCA );
     XTstHatPCA = eval_fd( setup.data.fda.tSpan, XTstFdPCA );
     
-    errTrnPCA = sqrt( mse( XGTrn, XTrnHatPCA ) );
+    errTrnPCA = sqrt( mse( XNTrn, XTrnHatPCA ) );
     disp( ['PCA Training Error = ' num2str(errTrnPCA)] );
-    errTstPCA = sqrt( mse( XGTst, XTstHatPCA ) );
+    errTstPCA = sqrt( mse( XNTst, XTstHatPCA ) );
     disp( ['PCA Testing Error  = ' num2str(errTstPCA)] );
 
     %subplotFd( ax.pca.pred, XTstFdPCA );

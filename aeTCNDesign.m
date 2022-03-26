@@ -20,15 +20,13 @@ function [ dlnetEnc, dlnetDec ] = aeTCNDesign( paramEnc, paramDec )
 % --------------------------
 
 % define input layers
-layersEnc = [ featureInputLayer( paramEnc.input, 'Name', 'in', ...
+layersEnc = [ sequenceInputLayer( paramEnc.input, 'Name', 'in', ...
                        'Normalization', 'zscore', ...
                        'Mean', 0, 'StandardDeviation', 1 )
               dropoutLayer( paramEnc.initialDropout, ...
-                            'Name', 'drop0' )
-              reshapeLayer( paramEnc.projectionSize, ...
-                            'Name', 'proj' ) ];
+                            'Name', 'drop0' ) ];
 lgraphEnc = layerGraph( layersEnc );
-lastLayer = 'proj';
+lastLayer = 'drop0';
 
 % create hidden layers
 for i = 1:paramEnc.nHidden
@@ -97,13 +95,12 @@ switch paramDec.pooling
         error( 'Unrecognised pooling type for the decoder.' );
 end
 
+outLayers = [ outLayers; 
+              fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' ) ];
+
 if paramDec.outX(2) > 1
     outLayers = [ outLayers; 
-                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
-                  reshapeLayer( paramDec.outX, 'Name', 'reshape' ) ];
-else
-    outLayers = [ outLayers;
-                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' ) ];
+              reshapeLayer( paramDec.outX, 'Name', 'reshape' ) ];
 end
 
 outLayers = [ outLayers;

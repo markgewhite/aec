@@ -77,7 +77,7 @@ setup.enc.nChannels = config.nChannels;
 if config.embedding
     setup.enc.input = config.nFeatures;
 else
-    setup.enc.input = config.xDim*config.nChannels;
+    setup.enc.input = config.nChannels;
 end
 
 setup.enc.outZ = config.zDim*(setup.variational + 1);

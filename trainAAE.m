@@ -17,7 +17,7 @@
 % ************************************************************************
 
 function [ dlnetEnc, dlnetDec, dlnetDis, dlnetCls, lossTrn, constraint ] = ...
-                            trainAAE( XN, XT, Y, setup, ax )
+                            trainAAE( X, XN, Y, setup, ax )
 
 
 % define the networks
@@ -40,30 +40,53 @@ cvPart = cvpartition( Y, 'Holdout', 0.25 );
 
 % create training set
 XNTrn = XN( :, training(cvPart), : );
-XTTrn = XT( :, training(cvPart) );
+XTrn = X( :, training(cvPart) );
 YTrn = Y( training(cvPart) );
 
-% create datastores
-dsXTTrn = arrayDatastore( XTTrn, 'IterationDimension', 2 );
+% create the datastore for the input X
+if setup.enc.embedding
+    % X is a numeric array
+    dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
+else
+    % X is a cell array containing sequences of variable length
+    dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 1, ...
+                             'OutputType', 'same' );
+end
+% create the datastore for the time-normalised output X
 dsXNTrn = arrayDatastore( XNTrn, 'IterationDimension', 2 );
-dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
-dsTrn = combine( dsXTTrn, dsXNTrn, dsYTrn );
-
-% setup the batches
 if size( XNTrn, 3 ) > 1
     XNfmt = 'SSCB';
 else
     XNfmt = 'CB';
 end
-mbqTrn = minibatchqueue( dsTrn,...
+
+% create the datastore for the labels/outcomes
+dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
+
+% combine them
+dsTrn = combine( dsXTrn, dsXNTrn, dsYTrn );
+
+
+% setup the minibatch queues
+if setup.enc.embedding
+    mbqTrn = minibatchqueue( dsTrn,...
                       'MiniBatchSize', setup.batchSize, ...
                       'PartialMiniBatch', 'discard', ...
                       'MiniBatchFormat', {'CB', XNfmt, 'CB'} );
 
-% create validation set - straight to dlarray
-XTVal = XT( :, test(cvPart) );
+else
+    mbqTrn = minibatchqueue(  dsTrn,...
+                      'MiniBatchSize', setup.batchSize, ...
+                      'PartialMiniBatch', 'discard', ...
+                      'MiniBatchFcn', @preprocTrnSeqBatch, ...
+                      'MiniBatchFormat', {'CTB', XNfmt, 'CB'} );
+end
 
-dlXTVal = dlarray( XTVal, 'CB' );
+
+% create validation set - straight to dlarray
+XVal = X( :, test(cvPart) );
+
+dlXVal = dlarray( XVal, 'CB' );
 dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
 
 % initialise training parameters
@@ -248,7 +271,7 @@ for epoch = 1:setup.nEpochs
         
         % run a validation check
         v = v + 1;
-        dlZVal = getEncoding( dlnetEnc, dlXTVal, setup );
+        dlZVal = getEncoding( dlnetEnc, dlXVal, setup );
         switch setup.validationFcn
             case 'Network'
                 dlYHatVal = predict( dlnetCls, dlZVal );
