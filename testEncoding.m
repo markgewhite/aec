@@ -57,7 +57,7 @@ for i = 1:nRuns
 
     % train the autoencoder
     [dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
-                    trainAAE( XNTrn, XTTrn, YTrn, setup.aae, ax );
+                    trainAAE( XTrn, XNTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
     dlXTTrn = dlarray( XTTrn, 'CB' );

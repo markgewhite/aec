@@ -37,6 +37,8 @@ setup.source = source;
 
 % smooth the raw data
 tSpanRaw = 1:setup.maxLen;
+tSpanResampled = linspace( 1, setup.maxLen, ...
+                           fix(setup.maxLen/setup.resample)+1 );
 
 rawBasisFd = create_bspline_basis( [1 setup.maxLen], ...
                                    setup.fda.nBasis, ...
@@ -45,8 +47,14 @@ rawFdPar = fdPar( rawBasisFd, ...
                   setup.fda.penaltyOrder, ...
                   setup.fda.lambda );
 
+% smooth
 XFd = smooth_basis( tSpanRaw, XRaw, rawFdPar );
-XRaw = eval_fd( tSpanRaw, XFd );
+% resample
+XRaw = eval_fd( tSpanResampled, XFd );
+% adjust lengths
+XLen = ceil( size( XRaw, 1 )*XLen/setup.maxLen );
+setup.maxLen = size( XRaw, 1 );
+
 
 % re-create cell array of time series after smoothing
 nObs = size( XRaw, 2 );
@@ -79,6 +87,11 @@ switch setup.normalization
     otherwise
         error('Unrecognized normalization method.');
 
+end
+
+% transpose so the channel is the first dimension for the encoder
+for i = 1:nObs
+    X{i} = X{i}';
 end
 
 
@@ -130,6 +143,7 @@ function [XRaw, Y, XLen, setup ] = initSyntheticData
 
     setup.maxLen = 33;
     XLen = ones( 3*N, 1 )*maxLen;
+    setup.resample = 1;
 
     setup.tSpan = linspace( 0, 1024, 33 );
     setup.tFine = linspace( 0, 1000, 21 );
@@ -149,16 +163,24 @@ function [XRaw, Y, XLen, setup ] = initJumpVGRFData
     [ XRaw, Y ] = getJumpGRFData;
     Y = Y + 1;
 
+    % get raw lengths
     XLen = cellfun( @length, XRaw );
     setup.maxLen = max( XLen );
+    setup.resample = 10;
 
+    % setup padding
+    XLenLimit = 1500;
     setup.normalization = 'PAD';
-    setup.padLen = min( 1500, setup.maxLen );
+    setup.padLen = min( setup.maxLen, XLenLimit );
     setup.padLoc = 'start';
     setup.padValue = 1;
 
     % initially pad the series for smoothing
-    XRaw = padData( XRaw, setup.maxLen, setup.padValue, setup.padLoc );
+    XRaw = padData( XRaw, setup.padLen, setup.padValue, setup.padLoc );
+
+    % revise the lengths taking into the limit
+    XLen = min( XLen, XLenLimit);
+    setup.maxLen = max( XLen );
 
     setup.tStart = -setup.padLen+1;
     setup.tEnd = 0;
@@ -183,6 +205,7 @@ function [XRaw, Y, XLen, setup ] = initMSFTData
 
     XLen = cellfun( @length, XRaw );
     setup.maxLen = max( XLen );
+    setup.resample = 1;
 
     setup.normalization = 'LTN';
     setup.padLen = maxLen;

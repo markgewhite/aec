@@ -40,18 +40,36 @@ cvPart = cvpartition( Y, 'Holdout', 0.25 );
 
 % create training set
 XNTrn = XN( :, training(cvPart), : );
-XTrn = X( :, training(cvPart) );
 YTrn = Y( training(cvPart) );
 
 % create the datastore for the input X
-if setup.enc.embedding
-    % X is a numeric array
-    dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
-else
+if iscell( X )
     % X is a cell array containing sequences of variable length
+    XTrn = X( training(cvPart) );
+
+    % sort them in ascending order of length
+    XLen = cellfun( @length, XTrn );
+    [ XLen, orderIdx ] = sort( XLen, 'descend' );
+
+    XTrn = XTrn( orderIdx );
     dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 1, ...
                              'OutputType', 'same' );
+
+    % create validation set - straight to dlarray
+    XVal = preprocMiniBatch( X( test(cvPart) ) );
+    dlXVal = dlarray( XVal, 'CTB' );
+
+else
+    % X is a numeric array
+    XTrn = X( :, training(cvPart) );
+    dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
+
+    % create validation set - straight to dlarray
+    XVal = X( :, test(cvPart) );
+    dlXVal = dlarray( XVal, 'CB' );
+
 end
+
 % create the datastore for the time-normalised output X
 dsXNTrn = arrayDatastore( XNTrn, 'IterationDimension', 2 );
 if size( XNTrn, 3 ) > 1
@@ -68,26 +86,21 @@ dsTrn = combine( dsXTrn, dsXNTrn, dsYTrn );
 
 
 % setup the minibatch queues
-if setup.enc.embedding
+if iscell( X )
+    mbqTrn = minibatchqueue(  dsTrn,...
+                      'MiniBatchSize', setup.batchSize, ...
+                      'PartialMiniBatch', 'return', ...
+                      'MiniBatchFcn', @preprocMiniBatch, ...
+                      'MiniBatchFormat', {'CTB', XNfmt, 'CB'} );
+else
     mbqTrn = minibatchqueue( dsTrn,...
                       'MiniBatchSize', setup.batchSize, ...
                       'PartialMiniBatch', 'discard', ...
                       'MiniBatchFormat', {'CB', XNfmt, 'CB'} );
-
-else
-    mbqTrn = minibatchqueue(  dsTrn,...
-                      'MiniBatchSize', setup.batchSize, ...
-                      'PartialMiniBatch', 'discard', ...
-                      'MiniBatchFcn', @preprocTrnSeqBatch, ...
-                      'MiniBatchFormat', {'CTB', XNfmt, 'CB'} );
 end
 
-
-% create validation set - straight to dlarray
-XVal = X( :, test(cvPart) );
-
-dlXVal = dlarray( XVal, 'CB' );
 dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
+
 
 % initialise training parameters
 switch setup.optimizer
@@ -125,8 +138,13 @@ for epoch = 1:setup.nEpochs
     % Pre-training
     setup.preTraining = epoch<=setup.nEpochsPretraining;
 
-    % Shuffle the data
-    shuffle( mbqTrn );
+    if iscell( X )
+        % reset whilst preserving the order
+        reset( mbqTrn );
+    else
+        % reset with a shuffled order
+        shuffle( mbqTrn );
+    end
 
     % Loop over mini-batches.
     for i = 1:nIter
