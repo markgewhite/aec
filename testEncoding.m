@@ -9,7 +9,7 @@ rng( 0 );
 
 nCodes = 4;
 nRuns = 100;
-nPts = 32; % 21 for JumpVGRF
+nPts = 101; % 21 for JumpVGRF
 nPtsFine = 101; % 201 for JumpVGRF
 dataSource = 'JumpVGRF';
 

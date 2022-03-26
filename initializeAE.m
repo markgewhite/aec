@@ -73,11 +73,11 @@ setup.classifierFcn = @aeClassifierDesign;
 
 % encoder network parameters
 setup.enc.learnRate = 0.001;
+setup.enc.nChannels = config.nChannels;
 if config.embedding
     setup.enc.input = config.nFeatures;
 else
     setup.enc.input = config.xDim*config.nChannels;
-    setup.enc.nChannels = config.nChannels;
 end
 
 setup.enc.outZ = config.zDim*(setup.variational + 1);
@@ -94,8 +94,8 @@ switch config.source
     case {'JumpVGRF', 'MSFT'}
         switch char(setup.autoencoderFcn)
             case 'aeFCDesign'
-                setup.enc.nHidden = 3;
-                setup.enc.nFC = 512;
+                setup.enc.nHidden = 1;% 3
+                setup.enc.nFC = 16; % 512
                 setup.enc.fcFactor = 2;
                 setup.enc.scale = 0;
                 setup.enc.dropout = 0.10;
@@ -115,6 +115,7 @@ switch config.source
                 setup.enc.initialDropout = 0.1;
                 setup.enc.dropout = 0.05;
                 setup.enc.useSkips = true;
+                setup.enc.pooling = 'None';
         end
     otherwise
         error('Unrecognised data source');
@@ -139,9 +140,9 @@ switch config.source
     case {'JumpVGRF', 'MSFT'}
         switch char(setup.autoencoderFcn)
             case 'aeFCDesign'
-                setup.dec.nHidden = 2; % 1
-                setup.dec.nFC = 64; % 32
-                setup.dec.fcFactor = 2; % 1
+                setup.dec.nHidden = 1; % 1 2
+                setup.dec.nFC = 16; % 32 64
+                setup.dec.fcFactor = 2; % 1 2
                 setup.dec.scale = 0.2;
                 setup.dec.dropout = 0;
             case 'aeConvDesign'
@@ -160,7 +161,7 @@ switch config.source
                 setup.dec.initialDropout = 0;
                 setup.dec.dropout = 0.05;
                 setup.dec.useSkips = true;
-
+                setup.dec.pooling = 'None';
         end
     otherwise
         error('Unrecognised data source');

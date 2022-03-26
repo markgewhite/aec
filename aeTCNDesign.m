@@ -38,12 +38,26 @@ for i = 1:paramEnc.nHidden
 end
 
 % add the output layers
-outLayers = [ globalMaxPooling1dLayer( 'Name', 'maxPool' )
+switch paramEnc.pooling
+    case 'GlobalMax'
+        outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
+        poolingLayer = 'maxPool';
+    case 'GlobalAvg'
+        outLayers = globalAveragePooling1dLayer( 'Name', 'avgPool' );
+        poolingLayer = 'avgPool';
+    case 'None'
+        outLayers = [];
+        poolingLayer = 'out';
+    otherwise
+        error( 'Unrecognised pooling type for the decoder.' );
+end
+
+outLayers = [ outLayers;
               fullyConnectedLayer( paramEnc.outZ, 'Name', 'out' ) ];
 
 lgraphEnc = addLayers( lgraphEnc, outLayers );
 lgraphEnc = connectLayers( lgraphEnc, ...
-                           lastLayer, 'maxPool' );
+                           lastLayer, poolingLayer );
 
 dlnetEnc = dlnetwork( lgraphEnc );
 
@@ -69,18 +83,38 @@ for i = 1:paramDec.nHidden
 end
 
 % add the output layers
-if paramDec.outX(2) > 1
-    outLayers = [ globalMaxPooling1dLayer( 'Name', 'maxPool' )
-                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
-                  reshapeLayer( paramDec.outX, 'Name', 'out' ) ];
-else
-    outLayers = [ globalMaxPooling1dLayer( 'Name', 'maxPool' )
-                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'out' ) ];
+switch paramDec.pooling
+    case 'GlobalMax'
+        outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
+        poolingLayer = 'maxPool';
+    case 'GlobalAvg'
+        outLayers = globalAveragePooling1dLayer( 'Name', 'avgPool' );
+        poolingLayer = 'avgPool';
+    case 'None'
+        outLayers = [];
+        poolingLayer = 'fcout';
+    otherwise
+        error( 'Unrecognised pooling type for the decoder.' );
 end
+
+if paramDec.outX(2) > 1
+    outLayers = [ outLayers; 
+                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' )
+                  reshapeLayer( paramDec.outX, 'Name', 'reshape' ) ];
+else
+    outLayers = [ outLayers;
+                  fullyConnectedLayer( prod(paramDec.outX), 'Name', 'fcout' ) ];
+end
+
+outLayers = [ outLayers;
+              functionLayer( @(X) smoothOutput( X, 'Gaussian' ), ...
+                             'Formattable', false, ...
+                             'Description', 'Smoothing', ...
+                             'Name', 'out' ) ];
 
 lgraphDec = addLayers( lgraphDec, outLayers );
 lgraphDec = connectLayers( lgraphDec, ...
-                           lastLayer, 'maxPool' );
+                           lastLayer, poolingLayer );
 
 dlnetDec = dlnetwork( lgraphDec );
 
