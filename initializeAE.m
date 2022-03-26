@@ -115,7 +115,7 @@ switch config.source
                 setup.enc.initialDropout = 0.1;
                 setup.enc.dropout = 0.05;
                 setup.enc.useSkips = true;
-                setup.enc.pooling = 'None';
+                setup.enc.pooling = 'GlobalAvg';
         end
     otherwise
         error('Unrecognised data source');
@@ -161,7 +161,7 @@ switch config.source
                 setup.dec.initialDropout = 0;
                 setup.dec.dropout = 0.05;
                 setup.dec.useSkips = true;
-                setup.dec.pooling = 'None';
+                setup.dec.pooling = 'GlobalMax';
         end
     otherwise
         error('Unrecognised data source');
