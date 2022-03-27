@@ -82,7 +82,7 @@ switch setup.normalization
     case 'LTN' % time normalization
         XN = timeNormalize( X, nPts );
     case 'PAD' % padding
-        XN = padData( X, setup.padLen, setup.padValue, setup.padLoc );
+        XN = padData( X, setup.maxLen, setup.padValue, setup.padLoc );
         XN = timeNormalize( XN, nPts );
     otherwise
         error('Unrecognized normalization method.');
