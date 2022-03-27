@@ -79,6 +79,9 @@ if config.embedding
 else
     setup.enc.input = config.nChannels;
 end
+setup.enc.padValue = config.padValue;
+setup.enc.padLoc = config.padLoc;
+
 
 setup.enc.outZ = config.zDim*(setup.variational + 1);
 setup.enc.projectionSize = config.xDim; % [ config.xDim config.nChannels 1 ];

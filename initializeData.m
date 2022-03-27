@@ -60,11 +60,11 @@ setup.maxLen = size( XRaw, 1 );
 nObs = size( XRaw, 2 );
 X = cell( nObs, 1 );
 switch setup.padLoc
-    case 'start'
+    case 'left'
         for i = 1:nObs
             X{i} = squeeze(XRaw( setup.maxLen-XLen(i)+1:end, i, : ));
         end
-    case 'end'
+    case 'right'
         for i = 1:nObs
             X{i} = squeeze(XRaw( 1:XLen(i), i, : ));
         end
@@ -87,11 +87,6 @@ switch setup.normalization
     otherwise
         error('Unrecognized normalization method.');
 
-end
-
-% transpose so the channel is the first dimension for the encoder
-for i = 1:nObs
-    X{i} = X{i}';
 end
 
 
@@ -172,7 +167,7 @@ function [XRaw, Y, XLen, setup ] = initJumpVGRFData
     XLenLimit = 1500;
     setup.normalization = 'PAD';
     setup.padLen = min( setup.maxLen, XLenLimit );
-    setup.padLoc = 'start';
+    setup.padLoc = 'left';
     setup.padValue = 1;
 
     % initially pad the series for smoothing
