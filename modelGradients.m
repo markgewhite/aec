@@ -180,7 +180,7 @@ end
 
 if setup.keyCompLoss
     % calculate the key-phase component loss
-    dlXComp = latentComponents( dlnetDec, dlZFake, size(dlCReal,1) );
+    dlXComp = latentComponents( dlnetDec, dlZFake, 10 );
     loss.comp = setup.reg.comp* ...
                         mean(mean( abs(dlXComp).*compCost( dlXComp ) ));
 else
@@ -189,7 +189,7 @@ end
 
 if setup.clusterLoss % && ~setup.pretraining
     % calculate the cluster loss
-    if setup.preTraining
+    if setup.preTraining || ~strcmp( setup.classifier, 'Network' )
         dlCReal = dlarray( ...
                 onehotencode( setup.cLabels(dlCReal+1), 1 ), 'CB' );
     end

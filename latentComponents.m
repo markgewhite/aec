@@ -10,42 +10,35 @@
 % Parameters:
 %           decoder     : trained decoder network
 %           dlZ         : latent encodings sample
-%           nClass      : number of classes
+%
 % ************************************************************************
 
-function dlXComp = latentComponents( decoder, dlZ, nClass )
-
-% faster execution by avoiding the dl array form
-Z = extractdata( dlZ );
+function dlXComp = latentComponents( decoder, dlZ, nSample )
 
 % number of components
-nComp = size( Z, 1 );
-
-% ignore the null class
-nClass = nClass - 1;
+nComp = size( dlZ, 1 );
 
 % compute the mean Z across the batch
-ZMean = mean( Z,2 );
-ZStd = std( Z, [], 2 );
+dlZMean = mean( dlZ, 2 );
+dlZStd = std( dlZ, [], 2 );
 
 % initialise the components' Z codes at the mean
-ZComp = repmat( ZMean, 1, (nComp+1)*nClass );
+dlZComp = repmat( dlZMean, 1, (nComp+1)*nSample );
 
 for i =1:nComp
-    for j = 1:nClass
+    for j = 1:nSample
     
         % adjust the ith randomly about its mean value
-        ZComp(i,(i-1)*nClass+j) = ZMean(i) + 2*randn(1,1)*ZStd(i);
+        dlZComp(i,(i-1)*nSample+j) = dlZMean(i) + 2*randn*dlZStd(i);
         
     end
 end
 
 % generate all the component curves using the decoder
-dlZComp = dlarray( ZComp, 'CB');
 dlXComp = forward( decoder, dlZComp );
 
 % centre about the mean curve (last curve) common to all classes
-dlXMean = mean( dlXComp(:,end-nClass+1), 2 );
-dlXComp = dlXComp(:,1:end-nClass) - dlXMean;
+dlXMean = mean( dlXComp(:,end-nSample+1), 2 );
+dlXComp = dlXComp(:,1:end-nSample) - dlXMean;
 
 end

@@ -38,10 +38,6 @@ for i = 1:nRuns
         [XTrn, XTst, setup.data.embed.params ] = ...
                     genEmbedding( XTrn, XTst, setup.data.embed );
         setup.data.nFeatures = size( XTrn, 1 );
-    else
-        % flatten the inputs in 'CB' dimensions
-        %XTTrn = reshape( XGTrn, size(XGTrn,1)*size(XGTrn,3), size(XGTrn,2) );
-        %XTTst = reshape( XGTst, size(XGTst,1)*size(XGTst,3), size(XGTst,2) );
     end
     
 
@@ -60,12 +56,12 @@ for i = 1:nRuns
                     trainAAE( XTrn, XNTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
-    dlXTTrn = dlarray( XTTrn, 'CB' );
-    dlXTTst = dlarray( XTTst, 'CB' );
+    dlXTrn = dlarray( XTrn, 'CB' );
+    dlXTst = dlarray( XTst, 'CB' );
 
     % generate encodings
-    dlZTrn = getEncoding( dlnetEnc, dlXTTrn, setup.aae );
-    dlZTst = getEncoding( dlnetEnc, dlXTTst, setup.aae );
+    dlZTrn = getEncoding( dlnetEnc, dlXTrn, setup.aae );
+    dlZTst = getEncoding( dlnetEnc, dlXTst, setup.aae );
 
     % convert back to numeric arrays
     ZTrn = double(extractdata( dlZTrn ));
@@ -109,22 +105,22 @@ for i = 1:nRuns
     drawnow;
 
     % reconstruct the curves and calculate errors
-    dlXGTrnHat = predict( dlnetDec, dlZTrn );
-    dlXGTstHat = predict( dlnetDec, dlZTst );
-    XGTrnHat = double(extractdata( dlXGTrnHat ));
-    XGTstHat = double(extractdata( dlXGTstHat ));
-    if size( XGTrnHat, 3 ) > 1
-        XGTrnHat = permute( XGTrnHat, [1 3 2] );
-        XGTstHat = permute( XGTstHat, [1 3 2] );
+    dlXNTrnHat = predict( dlnetDec, dlZTrn );
+    dlXNTstHat = predict( dlnetDec, dlZTst );
+    XNTrnHat = double(extractdata( dlXNTrnHat ));
+    XNTstHat = double(extractdata( dlXNTstHat ));
+    if size( XNTrnHat, 3 ) > 1
+        XNTrnHat = permute( XNTrnHat, [1 3 2] );
+        XNTstHat = permute( XNTstHat, [1 3 2] );
     end
 
-    errTrn = sqrt( mse( XNTrn, XGTrnHat ) );
+    errTrn = sqrt( mse( XNTrn, XNTrnHat ) );
     disp( ['AE Training Error = ' num2str(errTrn)] );
-    errTst = sqrt( mse( XNTst, XGTstHat ) );
+    errTst = sqrt( mse( XNTst, XNTstHat ) );
     disp( ['AE Testing Error  = ' num2str(errTst)] );
 
     % plot resulting curves
-    XTstHatFd = smooth_basis( setup.data.fda.tSpan, XGTstHat, ...
+    XTstHatFd = smooth_basis( setup.data.fda.tSpan, XNTstHat, ...
                                 setup.data.fda.fdPar );
 
     %subplotFd( ax.ae.pred, XTstHatFd );
