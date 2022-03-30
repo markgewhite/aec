@@ -228,12 +228,12 @@ function [XRaw, Y, setup ] = initJumpACCData( outcome )
         Y = Y + 1;
     end
 
-    setup.derivative = true;
-    setup.resample = 4;
+    setup.derivative = false;
+    setup.resample = 1;
 
     % setup padding
     setup.normalization = 'PAD';
-    setup.padLen = 3000;
+    setup.padLen = 5000;
     setup.padLoc = 'both';
     setup.padValue = 'same';
 

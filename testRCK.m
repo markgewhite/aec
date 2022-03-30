@@ -12,9 +12,9 @@ nRuns = 10;
 nFolds = 10;
 lambdaRange = logspace( -8, -2, 25 );
 dataSource = 'JumpACC';
-outcome = 'PeakPower';
+outcome = 'JumpHeight';
 
-nKernels = 10000;
+nKernels = 2000;
 nMetrics = 4;
 sampleRatio = 0.05;
 
