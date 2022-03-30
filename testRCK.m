@@ -8,18 +8,42 @@ clear;
 nCodes = 4;
 nPts = 501; % 101 with padding to 1500 ms
 doPadding = false;
-nRuns = 10;
+nRuns = 1;
 nFolds = 10;
 lambdaRange = logspace( -8, -2, 25 );
 dataSource = 'JumpACC';
-outcome = 'JumpHeight';
+outcome = 'PeakPower';
+metrics = {'PPV', 'MPV', 'MIPV', 'LSPV' };
 
-nKernels = 2000;
+nKernels = 10000;
 nMetrics = 4;
 sampleRatio = 0.05;
 
+legacy = true;
+legacySetup.nKernels = nKernels;
+legacySetup.candidateStart = 4;
+legacySetup.nCandidates = 5;
+legacySetup.isInterdependent = false;
+legacySetup.smooth = false;
+legacySetup.method = 'Standard';
+
+if legacy
+    switch legacySetup.method
+        case 'Standard'
+            nMetrics = 2;
+            metrics = {'PPV', 'MAX'};
+        case 'PPV'
+            nMetrics = 1;
+            metrics = {'PPV'}; 
+        case 'Multi'
+            nMetrics = 4;
+            metrics = {'PPV', 'MPV', 'MIPV', 'LSPV' };
+    end
+end
+
+
 % prepare data
-[X, ~, ~, Y, setup.data ] = initializeData( dataSource, nCodes, ...
+[X, XN, ~, Y, setup.data ] = initializeData( dataSource, nCodes, ...
                                             nPts, outcome ); 
 nObs = length( Y );
 
@@ -28,8 +52,14 @@ lossVal = zeros( nRuns, nFolds );
 for i = 1:nRuns
 
     rng( 'shuffle' );
-    parameters = fitKernels( X, nKernels, nMetrics, sampleRatio );   
-    [ XT, nTrunc ] = rocketTransform( X, parameters );
+    if legacy
+        parameters = generateKernels( nPts, legacySetup );   
+        XT = applyKernels( XN, parameters, legacySetup.method );
+        nTrunc = 0;
+    else
+        parameters = fitKernels( X, nKernels, nMetrics, sampleRatio );   
+        [ XT, nTrunc ] = rocketTransform( X, parameters );
+    end
     
     if i==1
         % initialise beta now knowing how many coefficients
@@ -110,7 +140,6 @@ disp(['Overall Test Loss  = ' num2str( mean(lossVal,'all'), '%.3f' ) ...
 % beta plots
 figure;
 palette = lines(7);
-metrics = {'PPV', 'MPV', 'MIPV', 'LSPV' };
 
 kID = 0 : nMetrics : nFeatures-nMetrics-1;
 for m = 1:nMetrics

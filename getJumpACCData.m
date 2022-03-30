@@ -26,15 +26,18 @@ load( fullfile( datapath, 'jumpACCData.mat' ), ...
       'accSignal', 'withArms', 'outcomes' );
 
 % extract the relevant data
-X = accSignal{1,2}; % lower back sensor for jumps with/without arm swing
+X = accSignal{1,1}; % lower back sensor for jumps without arm swing
+%X = accSignal{1,2}; % lower back sensor for jumps with/without arm swing
 
 switch outcome
     case 'JumpType'
         Y = withArms; % jump class (with/without arm swing)
     case 'JumpHeight'
-        Y = outcomes.all.jumpHeight;
+        Y = outcomes.noarms.jumpHeight;
+        %Y = outcomes.all.jumpHeight;
     case 'PeakPower'
-        Y = outcomes.all.peakPower;
+        Y = outcomes.noarms.peakPower;
+        %Y = outcomes.all.peakPower;
     otherwise
         error('Unrecognised outcome variable.');
 end
