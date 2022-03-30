@@ -14,7 +14,7 @@ lambdaRange = logspace( -8, -2, 25 );
 dataSource = 'JumpACC';
 outcome = 'PeakPower';
 
-nKernels = 2000;
+nKernels = 10000;
 nMetrics = 4;
 sampleRatio = 0.05;
 
@@ -80,8 +80,8 @@ for i = 1:nRuns
 
     if any(strcmpi( outcome, {'JumpHeight', 'PeakPower'} ))
         % convert to RMSE
-        lossTrn = sqrt( lossTrn );
-        lossVal = sqrt( lossVal );
+        lossTrn(i,:) = sqrt( lossTrn(i,:) );
+        lossVal(i,:) = sqrt( lossVal(i,:) );
     end
 
     fprintf('\n');

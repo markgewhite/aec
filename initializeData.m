@@ -23,76 +23,47 @@ function [ X, XN, XFd, Y, setup ] = initializeData( source, nCodes, nPts, outcom
 % get data
 switch source
     case 'Synthetic'
-        [XRaw, Y, XLen, setup] = initSyntheticData;
+        [XRaw, Y, setup] = initSyntheticData;
 
     case 'JumpVGRF'
-        [XRaw, Y, XLen, setup] = initJumpVGRFData;
+        [XRaw, Y, setup] = initJumpVGRFData;
 
     case 'JumpACC'
-        [XRaw, Y, XLen, setup] = initJumpACCData( outcome );
+        [XRaw, Y, setup] = initJumpACCData( outcome );
 
     case 'MSFT'
-        [XRaw, Y, XLen, setup] = initMSFTData;
+        [XRaw, Y, setup] = initMSFTData;
 
     otherwise
         error('Unrecognised data source.');
 end
 setup.source = source;
 
-
-% smooth the raw data
-tSpanRaw = 1:setup.maxLen;
-tSpanResampled = linspace( 1, setup.maxLen, ...
-                           fix(setup.maxLen/setup.resample)+1 );
-
-rawBasisFd = create_bspline_basis( [1 setup.maxLen], ...
-                                   setup.fda.nBasis, ...
-                                   setup.fda.basisOrder );
-rawFdPar = fdPar( rawBasisFd, ...
-                  setup.fda.penaltyOrder, ...
-                  setup.fda.lambda );
-
-% smooth
-XFd = smooth_basis( tSpanRaw, XRaw, rawFdPar );
-% resample
-XRaw = eval_fd( tSpanResampled, XFd );
-% adjust lengths
-XLen = ceil( size( XRaw, 1 )*XLen/setup.maxLen );
-setup.maxLen = size( XRaw, 1 );
-
+% create smooth functions for the data
+[XFd, XLen] = smoothRawData( XRaw, setup );
 
 % re-create cell array of time series after smoothing
-nObs = size( XRaw, 2 );
-X = cell( nObs, 1 );
-switch setup.padLoc
-    case 'left'
-        for i = 1:nObs
-            X{i} = squeeze(XRaw( setup.maxLen-XLen(i)+1:end, i, : ));
-        end
-    case 'right'
-        for i = 1:nObs
-            X{i} = squeeze(XRaw( 1:XLen(i), i, : ));
-        end
-    case 'both'
-        for i = 1:nObs
-            adjLen = fix( (setup.maxLen-XLen(i))/2 );
-            X{i} = squeeze(XRaw( adjLen+1:end-adjLen, i, : ));
-        end
+% resampling, as required
+tSpanResampled = linspace( 1, setup.padLen, ...
+                              fix(setup.padLen/setup.resample)+1 );
+
+XEval = eval_fd( tSpanResampled, XFd );
+
+if setup.derivative
+    % include the first derivative as further channels
+    DXEval = eval_fd( tSpanResampled, XFd, 1 );
+    XEval = cat( 3, XEval, DXEval );
 end
 
+% adjust lengths
+XLen = ceil( size( XEval, 1 )*XLen/setup.padLen );
+setup.padLen = max( XLen );
+
+% recreate the cell time series
+X = extractXSeries( XEval, XLen, setup.padLen, setup.padLoc );
 
 % prepare normalized data of fixed length
-switch setup.normalization
-
-    case 'LTN' % time normalization
-        XN = timeNormalize( X, nPts );
-    case 'PAD' % padding
-        XN = padData( X, setup.maxLen, setup.padValue, setup.padLoc );
-        XN = timeNormalize( XN, nPts );
-    otherwise
-        error('Unrecognized normalization method.');
-
-end
+XN = normalizeXSeries( X, nPts, setup );
 
 
 % functional data analysis parameters
@@ -122,8 +93,71 @@ setup.embed.retainThreshold = 0.5; % percentage
 end
 
 
+function [XFd, XLen] = smoothRawData( X, setup )
 
-function [XRaw, Y, XLen, setup ] = initSyntheticData
+    % find the series lengths (capped at padLen)
+    XLen = min( cellfun( @length, X ), setup.padLen );
+
+    % pad the series for smoothing
+    X = padData( X, setup.padLen, setup.padValue, setup.padLoc );
+    
+    % create a basis for smoothing with a knot at each point
+    basisFd = create_bspline_basis( [1 setup.padLen], ...
+                                       setup.fda.nBasis, ...
+                                       setup.fda.basisOrder );
+    % setup the smoothing parameters
+    fdParams = fdPar( basisFd, ...
+                      setup.fda.penaltyOrder, ...
+                      setup.fda.lambda );
+
+    % create the smooth functions
+    XFd = smooth_basis( 1:setup.padLen, X, fdParams );
+
+end
+
+
+function XCell = extractXSeries( X, XLen, maxLen, padLoc )
+
+    nObs = length( XLen );
+    XCell = cell( nObs, 1 );
+    switch padLoc
+        case 'left'
+            for i = 1:nObs
+                XCell{i} = squeeze(X( maxLen-XLen(i)+1:end, i, : ));
+            end
+        case 'right'
+            for i = 1:nObs
+                XCell{i} = squeeze(X( 1:XLen(i), i, : ));
+            end
+        case 'both'
+            for i = 1:nObs
+                adjLen = fix( (maxLen-XLen(i))/2 );
+                XCell{i} = squeeze(X( adjLen+1:end-adjLen, i, : ));
+            end
+    end
+
+end
+
+
+function XN = normalizeXSeries( X, nPts, setup )
+
+    switch setup.normalization
+    
+        case 'LTN' % time normalization
+            XN = timeNormalize( X, nPts );
+        case 'PAD' % padding
+            XN = padData( X, setup.padLen, setup.padValue, setup.padLoc );
+            XN = timeNormalize( XN, nPts );
+        otherwise
+            error('Unrecognized normalization method.');
+    
+    end
+
+end
+
+
+
+function [XRaw, Y, setup ] = initSyntheticData
 
     N = 200;
     classSizes = [ N N N ];
@@ -139,7 +173,7 @@ function [XRaw, Y, XLen, setup ] = initSyntheticData
     XRaw = genSyntheticData( classSizes, 1, setup.synth );
     Y = [ repelem(1,N) repelem(2,N) repelem(3,N) ]';
 
-    setup.maxLen = 33;
+    setup.padLen = 33;
     XLen = ones( 3*N, 1 )*maxLen;
     setup.resample = 1;
 
@@ -156,29 +190,19 @@ end
 
 
 
-function [XRaw, Y, XLen, setup ] = initJumpVGRFData
+function [XRaw, Y, setup ] = initJumpVGRFData
 
     [ XRaw, Y ] = getJumpGRFData;
     Y = Y + 1;
 
-    % get raw lengths
-    XLen = cellfun( @length, XRaw );
-    setup.maxLen = max( XLen );
     setup.resample = 10;
+    setup.derivative = false;
 
     % setup padding
-    XLenLimit = 1500;
     setup.normalization = 'PAD';
-    setup.padLen = min( setup.maxLen, XLenLimit );
+    setup.padLen = 1500;
     setup.padLoc = 'left';
     setup.padValue = 1;
-
-    % initially pad the series for smoothing
-    XRaw = padData( XRaw, setup.padLen, setup.padValue, setup.padLoc );
-
-    % revise the lengths taking into the limit
-    XLen = min( XLen, XLenLimit);
-    setup.maxLen = max( XLen );
 
     setup.tStart = -setup.padLen+1;
     setup.tEnd = 0;
@@ -197,31 +221,21 @@ function [XRaw, Y, XLen, setup ] = initJumpVGRFData
 end
 
 
-function [XRaw, Y, XLen, setup ] = initJumpACCData( outcome )
+function [XRaw, Y, setup ] = initJumpACCData( outcome )
 
     [ XRaw, Y ] = getJumpACCData( outcome );
     if strcmpi( outcome, 'JumpType' )
         Y = Y + 1;
     end
 
-    % get raw lengths
-    XLen = cellfun( @length, XRaw );
-    setup.maxLen = max( XLen );
+    setup.derivative = true;
     setup.resample = 4;
 
     % setup padding
-    XLenLimit = 3000;
     setup.normalization = 'PAD';
-    setup.padLen = min( setup.maxLen, XLenLimit );
+    setup.padLen = 3000;
     setup.padLoc = 'both';
     setup.padValue = 'same';
-
-    % initially pad the series for smoothing
-    XRaw = padData( XRaw, setup.padLen, setup.padValue, setup.padLoc );
-
-    % revise the lengths taking into the limit
-    XLen = min( XLen, XLenLimit);
-    setup.maxLen = max( XLen );
 
     setup.tStart = -setup.padLen+1;
     setup.tEnd = 0;
@@ -239,20 +253,16 @@ function [XRaw, Y, XLen, setup ] = initJumpACCData( outcome )
 
 end
 
-function [XRaw, Y, XLen, setup ] = initMSFTData
+function [XRaw, Y, setup ] = initMSFTData
 
     [ XRaw, Y ] = getMFTData;
 
-    XLen = cellfun( @length, XRaw );
-    setup.maxLen = max( XLen );
     setup.resample = 1;
+    setup.derivative = false;
 
     setup.normalization = 'LTN';
-    setup.padLen = maxLen;
+    setup.padLen = max( cellfun(@length, XRaw) );
     setup.padLoc = 'both';
-
-    % initially pad the series for smoothing
-    XRaw = padData( XRaw, padLen, 'same', setup.padLoc ); 
 
     setup.tStart = 1;
     setup.tEnd = setup.padLen;
