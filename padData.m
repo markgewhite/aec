@@ -46,8 +46,8 @@ for i = 1:nObs
     trialLen = min( [ size(X{i}, 1), padLen] );
 
     if sameValue
-        xStart = X{i}(1);
-        xEnd = X{i}(end);
+        xStart = X{i}(1,:);
+        xEnd = X{i}(end,:);
     else
         xStart = padValue;
         xEnd = padValue;
@@ -56,19 +56,19 @@ for i = 1:nObs
     switch padLoc
         case 'left' 
             % insert padding at the beginning
-            padLeft = ones( padLen-trialLen, nDim )*xStart;
+            padLeft = ones( padLen-trialLen, 1 )*xStart;
             padRight = [];
 
         case 'right'
             % insert padding at the end
             padLeft = [];
-            padRight = ones( padLen-trialLen, nDim )*xEnd;
+            padRight = ones( padLen-trialLen, 1 )*xEnd;
 
         case 'both'
             % insert padding at both ends, roughly evenly
             startLen = fix( (padLen-trialLen)/2 );
-            padLeft = ones( startLen, nDim )*xStart;
-            padRight = ones( padLen-trialLen-startLen, nDim )*xEnd;
+            padLeft = ones( startLen, 1 )*xStart;
+            padRight = ones( padLen-trialLen-startLen, 1 )*xEnd;
 
         case 'symmetric'
             % insert padding at both ends as mirror image of opposite end

@@ -31,12 +31,14 @@ for i = 1:nObs
     if iscell( X )
         x = X{i};
     else
-        x = X(:,i);
+        x = X( :, i,: );
     end
     % define current time series
     tSpan0 = linspace( 0, 1, size(x,1) );
     % interpolate to fit the standard timescale
-    XN( :, i ,: ) = interp1( tSpan0, x, tSpan1, 'spline', 'extrap' ); 
+    for j = 1:nDim
+        XN( :, i, j ) = interp1( tSpan0, x(:,j), tSpan1, 'spline', 'extrap' ); 
+    end
 end
 
 end
