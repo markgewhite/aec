@@ -4,6 +4,9 @@
 % Initialise the data setup
 %
 % Parameters:
+%           source : char array identifier of the data source
+%           nCodes : number of latent codes (to be stored)
+%           nPts   : number of resampled points for time normalisation
 %           
 % Outputs:
 %           X     : data as cell array, variable length (fine)
@@ -15,8 +18,7 @@
 % ************************************************************************
 
 
-function [ X, XN, XFd, Y, setup ] = initializeData( source, nCodes, ...
-                                            nPts, nPtsFine )
+function [ X, XN, XFd, Y, setup ] = initializeData( source, nCodes, nPts )
 
 % get data
 switch source
@@ -25,6 +27,9 @@ switch source
 
     case 'JumpVGRF'
         [XRaw, Y, XLen, setup] = initJumpVGRFData;
+
+    case 'JumpACC'
+        [XRaw, Y, XLen, setup] = initJumpACCData;
 
     case 'MSFT'
         [XRaw, Y, XLen, setup] = initMSFTData;
@@ -99,13 +104,11 @@ setup.fda.fdPar = fdPar( setup.fda.basisFd, ...
                          setup.fda.lambda );
 
 setup.fda.tSpan = linspace( setup.tStart, setup.tEnd, nPts );
-setup.fda.tFine = linspace( setup.tStart, setup.tEnd, nPtsFine );
 
 
 % data generation parameters
 setup.zDim = nCodes;
 setup.xDim = length( setup.fda.tSpan );
-setup.xDimFine = length( setup.fda.tFine );
 
 % data embedding parameters
 setup.embedding = false;
@@ -193,6 +196,46 @@ function [XRaw, Y, XLen, setup ] = initJumpVGRFData
 
 end
 
+
+function [XRaw, Y, XLen, setup ] = initJumpACCData
+
+    [ XRaw, Y ] = getJumpACCData;
+    Y = Y + 1;
+
+    % get raw lengths
+    XLen = cellfun( @length, XRaw );
+    setup.maxLen = max( XLen );
+    setup.resample = 4;
+
+    % setup padding
+    XLenLimit = 3000;
+    setup.normalization = 'PAD';
+    setup.padLen = min( setup.maxLen, XLenLimit );
+    setup.padLoc = 'both';
+    setup.padValue = 'same';
+
+    % initially pad the series for smoothing
+    XRaw = padData( XRaw, setup.padLen, setup.padValue, setup.padLoc );
+
+    % revise the lengths taking into the limit
+    XLen = min( XLen, XLenLimit);
+    setup.maxLen = max( XLen );
+
+    setup.tStart = -setup.padLen+1;
+    setup.tEnd = 0;
+
+    setup.fda.basisOrder = 4;
+    setup.fda.penaltyOrder = 2;
+    setup.fda.lambda = 1E2; % 1E2
+    setup.fda.nBasis = fix( setup.padLen/10 )+setup.fda.penaltyOrder;
+
+    setup.nDraw = 1;
+    setup.cLabels = categorical( 0:2 );
+    setup.cDim = length( setup.cLabels );
+    setup.nChannels = 1;
+
+
+end
 
 function [XRaw, Y, XLen, setup ] = initMSFTData
 

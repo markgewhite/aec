@@ -49,7 +49,7 @@ setup.nDraw = config.nDraw;
 
 setup.postTraining = true; % preTraining is set during training
 setup.variational = false;
-setup.adversarial = false;
+setup.adversarial = true;
 setup.unimodal = false;
 setup.wasserstein = false;
 setup.l2regularization = false;

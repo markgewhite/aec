@@ -6,20 +6,19 @@
 %
 % Output:
 %       curveSet: extracted VGRF data structure
-%       IDSet: associated identifiers
 %       typeSet: jump type
 %
 % ************************************************************************
 
 
-function [ X, A, S ] =  getJumpGRFData
+function [ X, A ] =  getJumpGRFData
 
 if ismac
     rootpath = '/Users/markgewhite/Google Drive/';
 else 
     rootpath = 'C:\Users\m.g.e.white\My Drive\';
 end
-dataFolder = 'Academia/Postdoc/Datasets/';
+dataFolder = 'Academia/Postdoc/Datasets/Jumps';
 datapath = [ rootpath dataFolder ];
 
 % load data from file
@@ -32,41 +31,25 @@ subjectExclusions = find( ismember( sDataID, ...
             [ 14, 39, 68, 86, 87, 11, 22, 28, 40, 43, 82, 88, 95, 97, ...
               100, 121, 156, 163, 196 ] ) );
 
-% specific jumps that should be excluded
-jumpExclusions = [3703 3113 2107 2116 0503 0507 6010 1109];
+% exclude specific jumps with excessive double movements
+jumpExclusions = [  6104, 6114, 6116, ...
+                    9404, 9411, 9413, 9416, ...
+                    0101, 0103, 0106, 0111, 0114 ];
 
-nSubjects = length( sDataID );
+% set the options for jump detection
+options.tFreq = 1; % time intervals per second
+options.initial = 1; % initial padding value
+options.threshold1 = 0.08; % fraction of BW for first detection
+options.threshold2 = 0.025; % fraction of BW for sustained low threshold
+options.prctileLimit = 90; % no outliers are beyond this limit
 
-nTotal = sum( nJumpsPerSubject );
-
-X = cell( nTotal, 1 );
-A = zeros( nTotal, 1 );
-S = zeros( nTotal, 1 );
-k = 0;
-
-for i = 1:nSubjects
-    for j = 1:nJumpsPerSubject(i)
-        
-        jump = jumpOrder( sJumpID==sDataID(i), j );
-        jumpID = sDataID(i)*100+j;
-        
-        if jump{1}(1) == 'V' ...
-                && ~ismember( i, subjectExclusions ) ...
-                && ~ismember( jumpID, jumpExclusions )
-            
-            k = k+1;
-            X{ k } = grf.raw{i,j}( 1:grf.takeoff(i,j) ) ...
-                               / bwall(i,j);
-
-            S( k ) = i;
-            A( k ) = (length(jump{1}) == 2);
-        end
-        
-    end
-end
-
-X = X(1:k);
-S = S(1:k);
-A = A(1:k);
+[ rawDataSet, ~, typeSet ] =  extractVGRFData( ... 
+                                    grf, bwall, nJumpsPerSubject, ...
+                                    sDataID, sJumpID, jumpOrder, ...
+                                    subjectExclusions, jumpExclusions, ...
+                                    options );
+% extract the relevant data
+X = rawDataSet{2}; % jumps with and without arm swing
+A = typeSet{2}; % jump class (with/without arm swing)
 
 end

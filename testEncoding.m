@@ -10,7 +10,6 @@ rng( 0 );
 nCodes = 4;
 nRuns = 100;
 nPts = 101; % 21 for JumpVGRF
-nPtsFine = 101; % 201 for JumpVGRF
 dataSource = 'JumpVGRF';
 
 errAE = zeros( nRuns, 1 );
@@ -21,8 +20,7 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    [X, XN, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, ...
-                                               nPts, nPtsFine ); 
+    [X, XN, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
 
     % partitioning
     cvPart = cvpartition( Y, 'Holdout', 0.5 );
