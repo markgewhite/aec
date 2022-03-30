@@ -10,16 +10,17 @@ nPts = 501; % 101 with padding to 1500 ms
 doPadding = false;
 nRuns = 10;
 nFolds = 10;
-lambdaRange = logspace( -4, 2, 25 );
+lambdaRange = logspace( -8, -2, 25 );
 dataSource = 'JumpACC';
-method = 'PPV';
-algorithm = 'MiniRocket';
+outcome = 'PeakPower';
+
 nKernels = 2000;
 nMetrics = 4;
 sampleRatio = 0.05;
 
 % prepare data
-[X, ~, ~, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
+[X, ~, ~, Y, setup.data ] = initializeData( dataSource, nCodes, ...
+                                            nPts, outcome ); 
 nObs = length( Y );
 
 lossTrn = zeros( nRuns, nFolds );
@@ -44,14 +45,20 @@ for i = 1:nRuns
     for j = 1:nFolds
     
         % partitioning
-        cvPart = cvpartition( Y, 'Holdout', 0.5 );
+        cvPart = cvpartition( length(Y), 'Holdout', 0.5 );
         XTTrn = XT( :, training(cvPart) )';
         XTVal = XT( :, test(cvPart)  )';
         YTrn = Y( training(cvPart) );
         YVal = Y( test(cvPart)  );
         
-        % classify
-        mdl = fitclinear( XTTrn, YTrn, 'Lambda', lambdaRange );
+        switch outcome
+            case 'JumpType'
+                % classify
+                mdl = fitclinear( XTTrn, YTrn, 'Lambda', lambdaRange );
+            case {'JumpHeight', 'PeakPower'}
+                % regression
+                mdl = fitrlinear( XTTrn, YTrn, 'Lambda', lambdaRange );
+        end
 
         % find the best lambda for the training set
         % using the highest lambda if there is a tie
@@ -70,6 +77,13 @@ for i = 1:nRuns
         beta( i, j, : ) = mdl.Beta( :, best );
 
     end
+
+    if any(strcmpi( outcome, {'JumpHeight', 'PeakPower'} ))
+        % convert to RMSE
+        lossTrn = sqrt( lossTrn );
+        lossVal = sqrt( lossVal );
+    end
+
     fprintf('\n');
 
     disp(['Train Loss       = ' num2str( mean(lossTrn(i,:)), '%.3f' ) ...

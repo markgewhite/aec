@@ -5,13 +5,13 @@
 % Parameters:
 %
 % Output:
-%       curveSet: extracted VGRF data structure
-%       typeSet: jump type
+%       X: extracted accelerometer time series
+%       Y: outcome variable
 %
 % ************************************************************************
 
 
-function [ X, A ] =  getJumpACCData
+function [ X, Y ] =  getJumpACCData( outcome )
 
 if ismac
     rootpath = '/Users/markgewhite/Google Drive/';
@@ -27,6 +27,16 @@ load( fullfile( datapath, 'jumpACCData.mat' ), ...
 
 % extract the relevant data
 X = accSignal{1,2}; % lower back sensor for jumps with/without arm swing
-A = withArms; % jump class (with/without arm swing)
+
+switch outcome
+    case 'JumpType'
+        Y = withArms; % jump class (with/without arm swing)
+    case 'JumpHeight'
+        Y = outcomes.all.jumpHeight;
+    case 'PeakPower'
+        Y = outcomes.all.peakPower;
+    otherwise
+        error('Unrecognised outcome variable.');
+end
 
 end

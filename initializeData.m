@@ -18,7 +18,7 @@
 % ************************************************************************
 
 
-function [ X, XN, XFd, Y, setup ] = initializeData( source, nCodes, nPts )
+function [ X, XN, XFd, Y, setup ] = initializeData( source, nCodes, nPts, outcome )
 
 % get data
 switch source
@@ -29,7 +29,7 @@ switch source
         [XRaw, Y, XLen, setup] = initJumpVGRFData;
 
     case 'JumpACC'
-        [XRaw, Y, XLen, setup] = initJumpACCData;
+        [XRaw, Y, XLen, setup] = initJumpACCData( outcome );
 
     case 'MSFT'
         [XRaw, Y, XLen, setup] = initMSFTData;
@@ -197,10 +197,12 @@ function [XRaw, Y, XLen, setup ] = initJumpVGRFData
 end
 
 
-function [XRaw, Y, XLen, setup ] = initJumpACCData
+function [XRaw, Y, XLen, setup ] = initJumpACCData( outcome )
 
-    [ XRaw, Y ] = getJumpACCData;
-    Y = Y + 1;
+    [ XRaw, Y ] = getJumpACCData( outcome );
+    if strcmpi( outcome, 'JumpType' )
+        Y = Y + 1;
+    end
 
     % get raw lengths
     XLen = cellfun( @length, XRaw );
