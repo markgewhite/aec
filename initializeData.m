@@ -44,7 +44,7 @@ setup.source = source;
 
 % re-create cell array of time series after smoothing
 % resampling, as required
-tSpanResampled = linspace( 1, setup.padLen, ...
+tSpanResampled = linspace( setup.tSpan(1), setup.tSpan(end), ...
                               fix(setup.padLen/setup.resample)+1 );
 
 XEval = eval_fd( tSpanResampled, XFd );
@@ -68,13 +68,13 @@ XN = normalizeXSeries( X, nPts, setup );
 
 % functional data analysis parameters
 setup.fda.basisFd = create_bspline_basis( ...
-                        [ setup.tStart, setup.tEnd ], ...
+                        [ setup.tSpan(1), setup.tSpan(end) ], ...
                           setup.fda.nBasis, setup.fda.basisOrder);
 setup.fda.fdPar = fdPar( setup.fda.basisFd, ...
                          setup.fda.penaltyOrder, ...
                          setup.fda.lambda );
 
-setup.fda.tSpan = linspace( setup.tStart, setup.tEnd, nPts );
+setup.fda.tSpan = linspace( setup.tSpan(1), setup.tSpan(end), nPts );
 
 
 % data generation parameters
@@ -102,7 +102,7 @@ function [XFd, XLen] = smoothRawData( X, setup )
     X = padData( X, setup.padLen, setup.padValue, setup.padLoc );
     
     % create a basis for smoothing with a knot at each point
-    basisFd = create_bspline_basis( [1 setup.padLen], ...
+    basisFd = create_bspline_basis( [setup.tSpan(1) setup.tSpan(end)], ...
                                        setup.fda.nBasis, ...
                                        setup.fda.basisOrder );
     % setup the smoothing parameters
@@ -111,7 +111,7 @@ function [XFd, XLen] = smoothRawData( X, setup )
                       setup.fda.lambda );
 
     % create the smooth functions
-    XFd = smooth_basis( 1:setup.padLen, X, fdParams );
+    XFd = smooth_basis( setup.tSpan, X, fdParams );
 
 end
 
@@ -200,12 +200,11 @@ function [XRaw, Y, setup ] = initJumpVGRFData
 
     % setup padding
     setup.normalization = 'PAD';
-    setup.padLen = 1500;
+    setup.padLen = 1501;
     setup.padLoc = 'left';
     setup.padValue = 1;
 
-    setup.tStart = -setup.padLen+1;
-    setup.tEnd = 0;
+    setup.tSpan= -setup.padLen+1:0;
 
     setup.fda.basisOrder = 4;
     setup.fda.penaltyOrder = 2;
@@ -234,12 +233,12 @@ function [XRaw, Y, setup ] = initJumpACCData( outcome )
 
     % setup padding
     setup.normalization = 'PAD';
-    setup.padLen = 5000;
+    setup.padLen = 5001;
     setup.padLoc = 'both';
     setup.padValue = 'same';
 
-    setup.tStart = -setup.padLen+1;
-    setup.tEnd = 0;
+    tStep = 1/250;
+    setup.tSpan = 0:tStep:(setup.padLen-1)*tStep;
 
     setup.fda.basisOrder = 4;
     setup.fda.penaltyOrder = 2;
@@ -265,8 +264,8 @@ function [XRaw, Y, setup ] = initMSFTData
     setup.padLen = max( cellfun(@length, XRaw) );
     setup.padLoc = 'both';
 
-    setup.tStart = 1;
-    setup.tEnd = setup.padLen;
+    tStep = 1/40;
+    setup.tSpan = 0:tStep:(setup.padLen-1)*tStep;
 
     setup.fda.basisOrder = 4;
     setup.fda.penaltyOrder = 2;

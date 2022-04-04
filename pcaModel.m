@@ -2,62 +2,105 @@ classdef pcaModel < representationModel
     % Class defining a PCA model
 
     properties
-        tSpan     double  % timespan vector for FDA
-        basisFd      % functional data basis
-        fdParams     % functional data parameters
-        varProp   double  % explained variance
+        meanFd                % mean curve
+        compFd                % functional principal components
+        varProp       double  % explained variance
+        basisFd               % functional basis
+        tSpan         double  % time span
+        nKnots        double  % number of knots
+        lambda        double  % roughness penalty
+        penaltyOrder  double  % roughness penalty order
     end
 
     methods
 
-        function obj = pcaModel( nameValueArgs )
+        function obj = pcaModel( fdParameters, penaltyOrder, superArgs )
             % Initialize the model
             arguments
-                nameValueArgs.?representationModel
-                nameValueArgs.tSpan    double {mustBeVector}
-                nameValueArgs.basisFd
-                nameValueArgs.fdParams
+                fdParameters  % functional data parameters object
+                penaltyOrder  % roughness penalty order 
+                superArgs.?representationModel
             end
 
-            f = nameValueArgs.nFeatures;
+            argsCell = namedargs2cell(superArgs);
+            obj = obj@representationModel( argsCell{:} );
 
-            obj = obj@representationModel( 'nFeatures', f );
+            obj.meanFd = [];
+            obj.compFd = [];
+            obj.varProp = [];
 
-            obj.tSpan = nameValueArgs.tSpan;
-            obj.basisFd = nameValueArgs.basisFd;
-            obj.fdParams = nameValueArgs.fdParams;
+            obj.basisFd = getbasis( fdParameters );
+            obj.tSpan = getbasispar( obj.basisFd );
+            obj.nKnots = getnbasis( obj.basisFd );
+            obj.lambda = getlambda( fdParameters );
+            obj.penaltyOrder = penaltyOrder;
 
         end
 
 
         function obj = train( obj, XFd )
             % Run FPCA for the encoder
+            arguments
+                obj
+                XFd {mustBeValidBasis(obj, XFd)}  
+            end
+
             pcaStruct = pca_fd( XFd, obj.nFeatures );
-            obj.encoder = pcaStruct.fdhatfd;
-            obj.decoder = pcaStruct.meanfd;
-            obj.varProp = pcaStruct.varProp;
+
+            obj.meanFd = pcaStruct.meanfd;
+            obj.compFd = pcaStruct.harmfd;
+            obj.varProp = pcaStruct.varprop;
 
         end
 
         function Z = encode( obj, XFd )
             % Encode features Z from X using the model
-            nRows = size( X, 2 );
+            arguments
+                obj
+                XFd {mustBeValidBasis(obj, XFd)}  
+            end
+
+            Z = pca_fd_score( XFd, obj.meanFd, obj.compFd, ...
+                              obj.nFeatures, true );
 
         end
 
-        function XHat = reconstruct( obj, Z )
-            % Reconstruct X from Z using the model - placeholder
-            zi = 1:obj.nFeatures;
-            xi = linspace( 1, obj.nFeatures, obj.nInputs );
-            coding = interp1( zi, Z', xi, 'linear' );
-            XHat = obj.decoder + coding;
-        end
+        function XHatFd = reconstruct( obj, Z )
+            % Reconstruct X from Z using the model
+            arguments
+                obj
+                Z    double  % latent codes  
+            end
+            
+            % create a fine-grained time span from the existing basis
+            tFine = linspace( obj.tSpan(1), obj.tSpan(end), ...
+                              (length(obj.tSpan)-1)*10+1 );
+        
+            % create the set of points from the mean for each curve
+            nRows = size( Z, 1 );
+            XPts = repmat( eval_fd( tFine, obj.meanFd ), 1, nRows );
+        
+            % linearly combine the components, points-wise
+            HPts = eval_fd( tFine, obj.compFd );
+            for k = 1:obj.nChannels
+                for j = 1:obj.nFeatures        
+                    for i = 1:nRows
+                        XPts(:,i,k) = XPts(:,i,k) + Z(i,j,k)*HPts(:,j,k);
+                    end
+                end
+            end
+        
+            % create the functional data object
+            % (ought to be a better way than providing additional parameters)
+            XFdPar = fdPar( obj.basisFd, obj.penaltyOrder, obj.lambda );
+            XHatFd = smooth_basis( tFine, XPts, XFdPar );
 
-        function err = loss( obj, X, XHat )
-            % Compute the  - placeholder
-            err = mse( X, XHat );
         end
 
 
     end
+
 end
+
+
+
