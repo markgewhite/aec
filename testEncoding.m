@@ -131,17 +131,18 @@ for i = 1:nRuns
     disp('Running PCA ... ');
     XTrnFd = smooth_basis( setup.data.fda.tSpan, XNTrn, setup.data.fda.fdPar );
     XTstFd = smooth_basis( setup.data.fda.tSpan, XNTst, setup.data.fda.fdPar );
-    pcaXTrnFd = pca_fd( XTrnFd, nCodes );
 
-    % generate predictions and calculate errors
-    ZTrnPCA = pcaXTrnFd.harmscr;
-    ZTstPCA = pca_fd_score( XTstFd, ...
-                          pcaXTrnFd.meanfd, ...
-                          pcaXTrnFd.harmfd, ...
-                          nCodes, true );
+    % setup the PCA baseline model
+    baselineModel = pcaModel( setup.data.fda.fdPar, nFeatures = nCodes );
+    baselineModel = train( baselineModel, XTrnFd );
+
+    % generate latent codes 
+    ZTrnPCA = encode( baselineModel, XTrnFd );
+    ZTstPCA = encode( baselineModel, XTstFd );
     
-    XTrnFdPCA = pcaXTrnFd.meanfd + pcaXTrnFd.fdhatfd;
-    XTstFdPCA = reconstructFd( pcaXTrnFd, ZTstPCA, setup.data.fda );
+    % reconstruct the curves from those codes
+    XTrnFdPCA = reconstruct( baselineModel, ZTrnPCA );
+    XTstFdPCA = reconstruct( baselineModel, ZTstPCA );
 
     XTrnHatPCA = eval_fd( setup.data.fda.tSpan, XTrnFdPCA );
     XTstHatPCA = eval_fd( setup.data.fda.tSpan, XTstFdPCA );

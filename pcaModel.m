@@ -9,90 +9,89 @@ classdef pcaModel < representationModel
         tSpan         double  % time span
         nKnots        double  % number of knots
         lambda        double  % roughness penalty
-        penaltyOrder  double  % roughness penalty order
+        penaltyOrder          % linear differential operator
     end
 
     methods
 
-        function obj = pcaModel( fdParameters, penaltyOrder, superArgs )
+        function self = pcaModel( fdParameters, superArgs )
             % Initialize the model
             arguments
-                fdParameters  % functional data parameters object
-                penaltyOrder  % roughness penalty order 
+                fdParameters  % functional data parameters selfect
                 superArgs.?representationModel
             end
 
             argsCell = namedargs2cell(superArgs);
-            obj = obj@representationModel( argsCell{:} );
+            self = self@representationModel( argsCell{:} );
 
-            obj.meanFd = [];
-            obj.compFd = [];
-            obj.varProp = [];
+            self.meanFd = [];
+            self.compFd = [];
+            self.varProp = [];
 
-            obj.basisFd = getbasis( fdParameters );
-            obj.tSpan = getbasispar( obj.basisFd );
-            obj.nKnots = getnbasis( obj.basisFd );
-            obj.lambda = getlambda( fdParameters );
-            obj.penaltyOrder = penaltyOrder;
+            self.basisFd = getbasis( fdParameters );
+            self.tSpan = getbasispar( self.basisFd );
+            self.nKnots = getnbasis( self.basisFd );
+            self.lambda = getlambda( fdParameters );
+            self.penaltyOrder = getLfd( fdParameters );
 
         end
 
 
-        function obj = train( obj, XFd )
+        function self = train( self, XFd )
             % Run FPCA for the encoder
             arguments
-                obj
-                XFd {mustBeValidBasis(obj, XFd)}  
+                self
+                XFd {mustBeValidBasis(self, XFd)}  
             end
 
-            pcaStruct = pca_fd( XFd, obj.nFeatures );
+            pcaStruct = pca_fd( XFd, self.ZDim );
 
-            obj.meanFd = pcaStruct.meanfd;
-            obj.compFd = pcaStruct.harmfd;
-            obj.varProp = pcaStruct.varprop;
+            self.meanFd = pcaStruct.meanfd;
+            self.compFd = pcaStruct.harmfd;
+            self.varProp = pcaStruct.varprop;
 
         end
 
-        function Z = encode( obj, XFd )
+        function Z = encode( self, XFd )
             % Encode features Z from X using the model
             arguments
-                obj
-                XFd {mustBeValidBasis(obj, XFd)}  
+                self
+                XFd {mustBeValidBasis(self, XFd)}  
             end
 
-            Z = pca_fd_score( XFd, obj.meanFd, obj.compFd, ...
-                              obj.nFeatures, true );
+            Z = pca_fd_score( XFd, self.meanFd, self.compFd, ...
+                              self.ZDim, true );
 
         end
 
-        function XHatFd = reconstruct( obj, Z )
+        function XHatFd = reconstruct( self, Z )
             % Reconstruct X from Z using the model
             arguments
-                obj
+                self
                 Z    double  % latent codes  
             end
             
             % create a fine-grained time span from the existing basis
-            tFine = linspace( obj.tSpan(1), obj.tSpan(end), ...
-                              (length(obj.tSpan)-1)*10+1 );
+            tFine = linspace( self.tSpan(1), self.tSpan(end), ...
+                              (length(self.tSpan)-1)*10+1 );
         
             % create the set of points from the mean for each curve
             nRows = size( Z, 1 );
-            XPts = repmat( eval_fd( tFine, obj.meanFd ), 1, nRows );
+            XPts = repmat( eval_fd( tFine, self.meanFd ), 1, nRows );
         
             % linearly combine the components, points-wise
-            HPts = eval_fd( tFine, obj.compFd );
-            for k = 1:obj.nChannels
-                for j = 1:obj.nFeatures        
+            HPts = eval_fd( tFine, self.compFd );
+            for k = 1:self.XChannels
+                for j = 1:self.ZDim        
                     for i = 1:nRows
                         XPts(:,i,k) = XPts(:,i,k) + Z(i,j,k)*HPts(:,j,k);
                     end
                 end
             end
         
-            % create the functional data object
+            % create the functional data selfect
             % (ought to be a better way than providing additional parameters)
-            XFdPar = fdPar( obj.basisFd, obj.penaltyOrder, obj.lambda );
+            XFdPar = fdPar( self.basisFd, self.penaltyOrder, self.lambda );
             XHatFd = smooth_basis( tFine, XPts, XFdPar );
 
         end

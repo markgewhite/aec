@@ -2,22 +2,22 @@ classdef representationModel
     % Super class encompassing dimensional reduction models
 
     properties
-        nInputs    % X dimension (number of points)
-        nFeatures  % Z dimension (number of features)
-        nChannels  % number of channels in X
+        XDim       % X dimension (number of points)
+        ZDim       % Z dimension (number of features)
+        XChannels  % number of channels in X
     end
 
     methods
         function obj = representationModel( args )
             % Initialize the model
             arguments
-                args.nInputs    single {mustBeInteger, mustBePositive} = 10
-                args.nFeatures  single {mustBeInteger, mustBePositive} = 1
-                args.nChannels  single {mustBeInteger, mustBePositive} = 1
+                args.XDim    single {mustBeInteger, mustBePositive} = 10
+                args.ZDim  single {mustBeInteger, mustBePositive} = 1
+                args.XChannels  single {mustBeInteger, mustBePositive} = 1
             end
-            obj.nInputs = args.nInputs;
-            obj.nFeatures = args.nFeatures;
-            obj.nChannels = args.nChannels;
+            obj.XDim = args.XDim;
+            obj.ZDim = args.ZDim;
+            obj.XChannels = args.XChannels;
         end
 
         function obj = train( obj, X )
@@ -32,7 +32,7 @@ classdef representationModel
             % Reconstruct X from Z using the model - placeholder
         end
 
-        function err = loss( obj, X, XHat )
+        function err = reconLoss( obj, X, XHat )
             % Compute the  - placeholder
             err = mse( X, XHat );
         end
