@@ -47,7 +47,7 @@ classdef trainer
                     {mustBeInteger, mustBePositive} = 5; 
                 args.updateFreq     double ...
                     {mustBeInteger, mustBePositive} = 50;
-                args.learningRates  double ...
+                args.initLearningRates  double ...
                     {mustBePositive} = 0.001;
                 args.lrFreq         double ...
                     {mustBeInteger, mustBePositive} = 250;
@@ -82,8 +82,8 @@ classdef trainer
             self.modelNames = fieldnames( self.networks );
 
             nModels = length( self.modelNames );
-            if length( args.learningRates ) > 1
-                if length( arg.learningRates ) == nModels
+            if length( args.initLearningRates ) > 1
+                if length( args.initLearningRates ) == nModels
                     netSpecific = true;
                 else
                     eid = 'Trainer:LearningRateMisMatch';
@@ -97,9 +97,9 @@ classdef trainer
             for i = 1:nModels
                 networkName = self.modelNames{i};
                 if netSpecific
-                    self.learningRates.(networkName) = args.learningRates(i);
+                    self.learningRates.(networkName) = args.initLearningRates(i);
                 else
-                    self.learningRates.(networkName) = args.learningRates;
+                    self.learningRates.(networkName) = args.initLearningRates;
                 end
                 switch self.optimizer.name
                     case 'ADAM'
@@ -254,46 +254,46 @@ classdef trainer
 
                 end
             
-                end
-
-                % update progress on screen
-                if mod( epoch, self.updateFreq )==0
-                    meanLoss = mean(lossTrn( j-nIter+1:j, : ));
-                    fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f', ...
-                        epoch, meanLoss );
-                    if self.preTraining
-                        fprintf('\n');
-                    else
-                        fprintf(' : %1.3f\n', lossVal(v));
-                    end
-            
-                    dlZTrn = encode( model, dlXTTrn );
-                    ZTrn = double(extractdata( dlZTrn ));
-                    for c = 1:self.XChannels
-                        plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
-                                        self.fda.tSpan, self.fda.fdPar );
-                    end
-                    plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
-                    drawnow;
-                end
-            
-                if mod( epoch, self.lrFreq )==0
-                    % update learning rates
-                    for m = 1:nModels
-                        if any(strcmp( net, {'encoder','decoder'} )) ...
-                            && not(self.postTraining || self.preTraining)
-                            % skip training for the AE
-                            continue
-                        end
-                        self.learnRates.(self.modelName{i}) = ...
-                            self.learnRates.(self.modelName{i})*self.lrFactor;
-                    end
-                end
-
             end
 
-           
+            % update progress on screen
+            if mod( epoch, self.updateFreq )==0
+                meanLoss = mean(lossTrn( j-nIter+1:j, : ));
+                fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f', ...
+                    epoch, meanLoss );
+                if self.preTraining
+                    fprintf('\n');
+                else
+                    fprintf(' : %1.3f\n', lossVal(v));
+                end
+        
+                dlZTrn = encode( model, dlXTTrn );
+                ZTrn = double(extractdata( dlZTrn ));
+                for c = 1:self.XChannels
+                    plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
+                                    self.fda.tSpan, self.fda.fdPar );
+                end
+                plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
+                drawnow;
+            end
+        
+            if mod( epoch, self.lrFreq )==0
+                % update learning rates
+                for m = 1:nModels
+                    if any(strcmp( net, {'encoder','decoder'} )) ...
+                        && not(self.postTraining || self.preTraining)
+                        % skip training for the AE
+                        continue
+                    end
+                    self.learnRates.(self.modelName{i}) = ...
+                        self.learnRates.(self.modelName{i})*self.lrFactor;
+                end
+            end
+
         end
+
+           
+    end
 
 
     methods (Static)

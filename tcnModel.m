@@ -1,5 +1,5 @@
 % ************************************************************************
-% Class: fcModel
+% Class: tcnModel
 %
 % Subclass defining a temporal convolutional autoencoder model
 %
