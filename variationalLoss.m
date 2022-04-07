@@ -7,7 +7,7 @@
 %
 % ************************************************************************
 
-classdef variationalLoss < lossFcn
+classdef variationalLoss < lossFunction
 
     properties
 
@@ -19,12 +19,13 @@ classdef variationalLoss < lossFcn
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                superArgs.?lossFcn
+                superArgs.?lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFcn( name, superArgsCell{:}, ...
-                                 type = 'Regularization' );
+            self = self@lossFunction( name, superArgsCell{:}, ...
+                                 type = 'Regularization', ...
+                                 input = 'ZMu-ZLogVar' );
 
         end
 

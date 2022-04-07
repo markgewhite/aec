@@ -5,12 +5,12 @@
 %
 % ************************************************************************
 
-classdef adversarialLoss < lossFcn
+classdef adversarialLoss < lossFunction
 
     properties
-        discriminator         % dlnetwork object
+        net                   % dlnetwork object
         initLearningRate      % initial learning rate
-        type                  % type of target distribution
+        distribution          % type of target distribution
     end
 
     methods
@@ -19,9 +19,9 @@ classdef adversarialLoss < lossFcn
             % Initialize the loss function
             arguments
                 name            char {mustBeText}
-                superArgs.?lossFcn
-                args.type       char ...
-                    {mustBeMember( args.type, ...
+                superArgs.?lossFunction
+                args.distribution  char ...
+                    {mustBeMember( args.distribution, ...
                                     {'Gaussian', ...
                                      'Categorical'} )} = 'Gaussian'
                 args.ZDim       double ...
@@ -41,8 +41,9 @@ classdef adversarialLoss < lossFcn
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFcn( name, superArgsCell{:}, ...
-                                 type = 'Regularization' );
+            self = self@lossFunction( name, superArgsCell{:}, ...
+                                 type = 'Regularization', ...
+                                 input = 'Z-ZHat' );
             self.initLearningRate = args.initLearningRate;
 
             % create the input layer
@@ -66,7 +67,9 @@ classdef adversarialLoss < lossFcn
                             ];
             
             lgraph = layerGraph( layers );
-            self.discriminator = dlnetwork( lgraph );
+            self.net = dlnetwork( lgraph );
+
+            self.hasNetwork = true;
 
 
         end
@@ -75,40 +78,34 @@ classdef adversarialLoss < lossFcn
 
     methods (Static)
 
-        function [ loss, state ] = calcLoss( self, dlZFake )
+        function [ loss, state ] = calcLoss( net, dlZFake )
             % Calculate the adversarial loss
             arguments
-                self
+                net
                 dlZFake  dlarray  % generated distribution
             end
 
-            if self.doCalcLoss
+            [ ZDim, batchSize ] = size( dlZFake );
 
-                [ ZDim, batchSize ] = size( dlZFake );
-
-                % generate a target distribution
-                switch self.type
-                    case 'Gaussian'
-                        dlZReal = dlarray( randn( ZDim, batchSize ), 'CB' );
-                    case 'Categorical'
-                        dlZReal = dlarray( randi( ZDim, batchSize ), 'CB' );
-                end
-
-                % predict authenticity from real Z using the discriminator
-                dlDReal = forward( self.discriminator, dlZReal );
-                
-                % predict authenticity from fake Z
-                [ dlDFake, state ] = forward( self.discriminator, dlZFake );
-                
-                % discriminator loss
-                loss(1) = 0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
-                % generator loss
-                loss(2) = mean( log(dlDFake + eps) );
-            
-            else
-                loss = [0 0];
-                state = [];
+            % generate a target distribution
+            switch self.distribution
+                case 'Gaussian'
+                    dlZReal = dlarray( randn( ZDim, batchSize ), 'CB' );
+                case 'Categorical'
+                    dlZReal = dlarray( randi( ZDim, batchSize ), 'CB' );
             end
+
+            % predict authenticity from real Z using the discriminator
+            dlDReal = forward( net, dlZReal );
+            
+            % predict authenticity from fake Z
+            [ dlDFake, state ] = forward( net.net, dlZFake );
+            
+            % discriminator loss
+            loss(1) = 0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
+            % generator loss
+            loss(2) = mean( log(dlDFake + eps) );
+
     
         end
 

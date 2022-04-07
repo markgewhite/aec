@@ -5,7 +5,7 @@
 %
 % ************************************************************************
 
-classdef reconstructionLoss < lossFcn
+classdef reconstructionLoss < lossFunction
 
     properties
 
@@ -17,12 +17,13 @@ classdef reconstructionLoss < lossFcn
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                superArgs.?lossFcn
+                superArgs.?lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFcn( name, superArgsCell{:}, ...
-                                 type = 'Reconstruction' );
+            self = self@lossFunction( name, superArgsCell{:}, ...
+                                 type = 'Reconstruction', ...
+                                 input = 'X-XHat' );
 
         end
 
@@ -30,7 +31,7 @@ classdef reconstructionLoss < lossFcn
 
     methods (Static)
 
-    function loss = calcLoss( self, X, XHat )
+    function loss = calcLoss( X, XHat )
         % Calculate the reconstruction loss
         if self.doCalcLoss
             loss = mse( X, XHat );

@@ -15,7 +15,7 @@ function plotLatentComp( ax, decoder, Z, c, tSpan, fdPar )
 nComp = size( Z, 1);
 nPlots = min( nComp, length(ax) );
 
-zScores = linspace( -2, 2, 3 );
+zScores = linspace( -2, 2, 11 );
 
 % find the mean latent scores for centring 
 Zmean = repmat( mean( Z, 2 ), 1, length(zScores) );

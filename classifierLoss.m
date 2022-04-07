@@ -5,14 +5,13 @@
 %
 % ************************************************************************
 
-classdef classifierLoss < lossFcn
+classdef classifierLoss < lossFunction
 
     properties
-        classifier         % dlnetwork object
+        net                % dlnetwork object
         initLearningRate   % initial learning rate
         CDim               % number of possible classes
-        type               % type of classifier model
-        isNetwork          % flag indicating if network defined
+        modelType          % type of classifier model
     end
 
     methods
@@ -21,9 +20,9 @@ classdef classifierLoss < lossFcn
             % Initialize the loss function
             arguments
                 name            char {mustBeText}
-                superArgs.?lossFcn
-                args.type       char ...
-                    {mustBeMember( args.type, ...
+                superArgs.?lossFunction
+                args.modelType  char ...
+                    {mustBeMember( args.modelType, ...
                                     {'Network', ...
                                      'Fisher', ...
                                      'SVM'} )} = 'Network'
@@ -46,14 +45,15 @@ classdef classifierLoss < lossFcn
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFcn( name, superArgsCell{:}, ...
-                                 type = 'Classification' );
+            self = self@lossFunction( name, superArgsCell{:}, ...
+                                 type = 'Classification', ...
+                                 input = 'Z-Y' );
             self.CDim = args.CDim;
             self.type = args.type;
 
             switch args.type
                 case 'Network'
-                    self.isNetwork = true;
+                    self.hasNetwork = true;
                     self.initLearningRate = args.initLearningRate;
 
                     % create the input layer
@@ -77,12 +77,12 @@ classdef classifierLoss < lossFcn
                                     ];
                     
                     lgraph = layerGraph( layers );
-                    self.classifier = dlnetwork( lgraph );
+                    self.net = dlnetwork( lgraph );
 
                 otherwise
                     % not a network, will use a fixed model
-                    self.classifier = [];
-                    self.isNetwork = false;
+                    self.net = [];
+                    self.hasNetwork = false;
                     self.initLearningRate = 0;
 
             end
@@ -104,12 +104,12 @@ classdef classifierLoss < lossFcn
 
             if self.doCalcLoss
 
-                if self.isNetwork                    
+                if self.hasNetwork                    
                     [ loss, state ] = ...
-                        networkLoss( self.classifier, dlZGen, dlC );
+                        networkLoss( self.net, dlZGen, dlC );
                 else
 
-                    loss = nonNetworkLoss( self.type, dlZGen, dlC );
+                    loss = nonNetworkLoss( self.modelType, dlZGen, dlC );
                     state = [];
 
                 end
@@ -143,14 +143,14 @@ classdef classifierLoss < lossFcn
         end
 
 
-        function loss = nonNetworkLoss( model, dlZGen, dlC )
+        function loss = nonNetworkLoss( modelType, dlZGen, dlC )
 
             % convert to double for models which don't take dlarrays
             ZGen = double(extractdata( dlZGen ))';
             C = double(extractdata( dlC ));
             
             % fit the appropriate model
-            switch model
+            switch modelType
                 case 'Fisher'
                     model = fitcdiscr( ZGen, C );
                 case 'SVM'

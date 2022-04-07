@@ -8,7 +8,7 @@
 %
 % ************************************************************************
 
-classdef wassersteinLoss < lossFcn
+classdef wassersteinLoss < lossFunction
 
     properties
         kernel     % type of kernel to use
@@ -22,7 +22,7 @@ classdef wassersteinLoss < lossFcn
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                superArgs.?lossFcn
+                superArgs.?lossFunction
                 args.kernel       char ...
                     {mustBeMember( args.kernel, {'RBF', 'IMQ'} )} = 'IMQ'
                 args.scale        double = 2
@@ -32,8 +32,9 @@ classdef wassersteinLoss < lossFcn
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFcn( name, superArgsCell{:}, ...
-                                 type = 'Regularization' );
+            self = self@lossFunction( name, superArgsCell{:}, ...
+                                 type = 'Regularization', ...
+                                 input = 'Z-ZHat' );
             self.kernel = args.kernel;
             self.scale = args.scale;
             self.baseType = args.baseType;
