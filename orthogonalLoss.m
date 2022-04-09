@@ -25,7 +25,8 @@ classdef orthogonalLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'Z' );
+                                 input = 'Z', ...
+                                 lossNets = {'encoder'} );
 
         end
 

@@ -90,7 +90,6 @@ classdef fcModel < aeModel
             lgraphDec = layerGraph( layersDec );
             self.nets.decoder = dlnetwork( lgraphDec );
             
-            
         end
 
     end

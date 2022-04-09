@@ -34,7 +34,8 @@ classdef wassersteinLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'Z-ZHat' );
+                                 input = 'Z-ZHat', ...
+                                 lossNets = {'encoder'} );
             self.kernel = args.kernel;
             self.scale = args.scale;
             self.baseType = args.baseType;
@@ -45,27 +46,27 @@ classdef wassersteinLoss < lossFunction
 
     methods (Static)
 
-        function loss = calcLoss( self, dlZP, dlZQ )
+        function loss = calcLoss( this, dlZP, dlZQ )
             % Calculate the MMD loss
             arguments
-                self
+                this
                 dlZP  dlarray  % real distribution
                 dlZQ  dlarray  % generated distribution
             end
 
-            if self.doCalcLoss
+            if this.doCalcLoss
 
                 % switch to non-dlarrays for faster processing
                 % do I need to do this?
                 ZQ = double(extractdata( dlZQ ) )';
                 ZP = double(extractdata( dlZP ) )';
    
-                switch self.kernel
+                switch this.kernel
                     case 'RBF'
                         loss = mmdLossRBF( ZP, ZQ );
                     case 'IMQ'
                         loss = mmdLossIMQ( ZP, ZQ, ...
-                                        self.scale, self.baseType );
+                                        this.scale, this.baseType );
                 end
             else
                 loss = 0;

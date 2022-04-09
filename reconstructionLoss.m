@@ -23,7 +23,8 @@ classdef reconstructionLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Reconstruction', ...
-                                 input = 'X-XHat' );
+                                 input = 'X-XHat', ...
+                                 lossNets = {'encoder','decoder'} );
 
         end
 

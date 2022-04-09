@@ -25,7 +25,8 @@ classdef variationalLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'ZMu-ZLogVar' );
+                                 input = 'ZMu-ZLogVar', ...
+                                 lossNets = {'encoder'} );
 
         end
 
@@ -33,9 +34,9 @@ classdef variationalLoss < lossFunction
 
     methods (Static)
 
-        function loss = calcLoss( self, ZMu, ZLogVar )
+        function loss = calcLoss( this, ZMu, ZLogVar )
             % Calculate the KL divergence
-            if self.doCalcLoss
+            if this.doCalcLoss
                 
                 loss = 0.5*sum( exp(ZLogVar) + ZMu.^2 - 1 - ZLogVar );
     

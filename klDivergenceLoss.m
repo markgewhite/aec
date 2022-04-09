@@ -23,7 +23,8 @@ classdef klDivergenceLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'Z' );
+                                 input = 'Z', ...
+                                 lossNets = {'encoder'} );
 
         end
 
@@ -31,9 +32,9 @@ classdef klDivergenceLoss < lossFunction
 
     methods (Static)
 
-        function loss = calcLoss( self, Z )
+        function loss = calcLoss( this, Z )
             % Calculate the KL divergence
-            if self.doCalcLoss
+            if this.doCalcLoss
     
                 ZSigma = std( Z );
                 ZMu = mean( Z );

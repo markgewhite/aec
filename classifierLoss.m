@@ -78,12 +78,14 @@ classdef classifierLoss < lossFunction
                     
                     lgraph = layerGraph( layers );
                     self.net = dlnetwork( lgraph );
+                    self.lossNets = {'encoder', name};
 
                 otherwise
                     % not a network, will use a fixed model
                     self.net = [];
                     self.hasNetwork = false;
                     self.initLearningRate = 0;
+
 
             end
 
@@ -94,22 +96,22 @@ classdef classifierLoss < lossFunction
 
     methods (Static)
 
-        function [ loss, state ] = calcLoss( self, dlZGen, dlC )
+        function [ loss, state ] = calcLoss( this, dlZGen, dlC )
             % Calculate the classifier loss
             arguments
-                self
+                this
                 dlZGen  dlarray  % generated latent distribtion
                 dlC     dlarray  % actual distribution
             end
 
-            if self.doCalcLoss
+            if this.doCalcLoss
 
-                if self.hasNetwork                    
+                if this.hasNetwork                    
                     [ loss, state ] = ...
-                        networkLoss( self.net, dlZGen, dlC );
+                        networkLoss( this.net, dlZGen, dlC );
                 else
 
-                    loss = nonNetworkLoss( self.modelType, dlZGen, dlC );
+                    loss = nonNetworkLoss( this.modelType, dlZGen, dlC );
                     state = [];
 
                 end

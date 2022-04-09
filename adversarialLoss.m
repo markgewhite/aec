@@ -41,9 +41,13 @@ classdef adversarialLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
+            netAssignments = {{'encoder'},{name}};
+
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'Z-ZHat' );
+                                 input = 'Z-ZHat', ...
+                                 lossNets = netAssignments );
+            
             self.initLearningRate = args.initLearningRate;
 
             % create the input layer
@@ -71,24 +75,23 @@ classdef adversarialLoss < lossFunction
 
             self.hasNetwork = true;
 
-
         end
 
     end
 
     methods (Static)
 
-        function [ loss, state ] = calcLoss( net, dlZFake )
+        function [ loss, state ] = calcLoss( this, dlZFake )
             % Calculate the adversarial loss
             arguments
-                net
+                this     adversarialLoss
                 dlZFake  dlarray  % generated distribution
             end
 
             [ ZDim, batchSize ] = size( dlZFake );
 
             % generate a target distribution
-            switch self.distribution
+            switch this.distribution
                 case 'Gaussian'
                     dlZReal = dlarray( randn( ZDim, batchSize ), 'CB' );
                 case 'Categorical'
@@ -96,10 +99,10 @@ classdef adversarialLoss < lossFunction
             end
 
             % predict authenticity from real Z using the discriminator
-            dlDReal = forward( net, dlZReal );
+            dlDReal = forward( this.net, dlZReal );
             
             % predict authenticity from fake Z
-            [ dlDFake, state ] = forward( net.net, dlZFake );
+            [ dlDFake, state ] = forward( this.net, dlZFake );
             
             % discriminator loss
             loss(1) = 0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
