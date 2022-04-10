@@ -12,14 +12,18 @@ classdef fcModel < aeModel
         nFC           % number of nodes for widest layer
         fcFactor      % log2 scaling factor subsequent layers
         scale         % leaky ReLu scale factor
-        dropout       % dropout rate
+        inputDropout  % input dropout rate
+        dropout       % hidden layer dropout rate
 
     end
 
     methods
 
-        function self = fcModel( superArgs, args )
+        function self = fcModel( lossFcns, superArgs, args )
             % Initialize the model
+            arguments (Repeating)
+                lossFcns     lossFunction
+            end
             arguments
                 superArgs.?aeModel
                 args.nHidden    double ...
@@ -30,26 +34,29 @@ classdef fcModel < aeModel
                     {mustBeInteger, mustBePositive} = 2
                 args.scale      double ...
                     {mustBeInRange(args.scale, 0, 1)} = 0.2
+                args.inputDropout   double ...
+                    {mustBeInRange(args.inputDropout, 0, 1)} = 0.2
                 args.dropout    double ...
-                    {mustBeInRange(args.dropout, 0, 1)} = 0.1
+                    {mustBeInRange(args.dropout, 0, 1)} = 0.05
             end
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@aeModel( superArgsCell{:} );
+            self = self@aeModel( lossFcns{:}, superArgsCell{:} );
 
             % store this class's properties
             self.nHidden = args.nHidden;
             self.nFC = args.nFC;
             self.fcFactor = args.fcFactor;
             self.scale = args.scale;
-            self.dropout0 = args.dropout;
+            self.inputDropout = args.inputDropout;
+            self.dropout = args.dropout;
 
             % define the encoder network
             layersEnc = [ featureInputLayer( self.XDim, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 ) 
-                          dropoutLayer( self.dropout, 'Name', 'drop0' ) ];
+                          dropoutLayer( self.inputDropout, 'Name', 'drop0' ) ];
             
             for i = 1:self.nHidden
                 nNodes = fix( self.nFC*2^(self.fcFactor*(1-i)) );
@@ -67,13 +74,13 @@ classdef fcModel < aeModel
                   fullyConnectedLayer( self.ZDim, 'Name', 'out' ) ];
             
             lgraphEnc = layerGraph( layersEnc );
-            self.nets.encoder = dlnetwork( lgraphEnc );
+            encoder = dlnetwork( lgraphEnc );
 
 
             % define the decoder network          
             layersDec = featureInputLayer( self.ZDim, 'Name', 'in' );
             
-            for i = 1:paramDec.nHidden
+            for i = 1:self.nHidden
                 nNodes = fix( self.nFC*2^(self.fcFactor*(-self.nHidden+i)) );
                 layersDec = [ layersDec; ...
                     fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
@@ -88,7 +95,11 @@ classdef fcModel < aeModel
                           reshapeLayer( [self.XDim self.XChannels], 'Name', 'out' ) ];
             
             lgraphDec = layerGraph( layersDec );
-            self.nets.decoder = dlnetwork( lgraphDec );
+            decoder = dlnetwork( lgraphDec );
+
+            % store the networks
+            self.nets = [ self.nets {encoder, decoder } ];
+            self.netNames = [ self.netNames {'encoder', 'decoder'} ];
             
         end
 

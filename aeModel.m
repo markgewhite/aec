@@ -8,11 +8,13 @@
 classdef aeModel < representationModel
 
     properties
-        nets         % networks defined in this model (structure)
-        netNames     % names of the networks (for convenience)
-        lossFcns     % array of loss functions
-        lossFcnTbl   % table loss function details
-        isVAE        % flag indicating if variational autoencoder
+        nets           % networks defined in this model (structure)
+        netNames       % names of the networks (for convenience)
+        isVAE          % flag indicating if variational autoencoder
+        lossFcns       % array of loss functions
+        lossFcnNames   % names of the loss functions
+        lossFcnWeights % weights to be applied to the loss function
+        lossFcnTbl     % convenient table summarising loss function details
     end
 
     methods
@@ -20,11 +22,12 @@ classdef aeModel < representationModel
         function self = aeModel( lossFcns, superArgs, args )
             % Initialize the model
             arguments (Repeating)
-                lossFcns     lossFunction   
+                lossFcns     lossFunction
             end
             arguments
                 superArgs.?representationModel
-                args.isVAE  logical = false
+                args.isVAE    logical = false
+                args.weights  double {mustBeNumeric,mustBeVector} = 1
             end
 
             % set the superclass's properties
@@ -32,20 +35,13 @@ classdef aeModel < representationModel
             self = self@representationModel( superArgsCell{:} );
 
             % placeholders for subclasses to define
-            self.nets.encoder = [];
-            self.nets.decoder = [];
-            self.netNames = {'encoder','decoder'};
+            self.nets = [];
+            self.netNames = [];
             self.isVAE = args.isVAE;
 
-            % copy any networks associated with the loss functions
-            % into this object for later training 
-            self = addLossFcns( self, lossFcns );
-
-            % store the loss functions' details 
-            % and relevant details for easier access when training
-            self.lossFcnTbl = self.lossInfoTbl;
-            self.lossFcnTbl.types = categorical( self.lossFcnTbl.types );
-            self.lossFcnTbl.inputs = categorical( self.lossFcnTbl.inputs );
+            % copy over the loss functions associated
+            % and any networks with them for later training 
+            self = addLossFcns( self, lossFcns{:}, weights = args.weights );
 
             % check a reconstruction loss is present
             if ~any( self.lossFcnTbl.types=='Reconstruction' )
@@ -59,7 +55,7 @@ classdef aeModel < representationModel
         end
 
 
-        function self = addNetwork( self, newFcns )
+        function self = addLossFcnNetworks( self, newFcns )
             % Add one or more networks to the model
             arguments
                 self
@@ -67,29 +63,65 @@ classdef aeModel < representationModel
             end
 
             nFcns = length( newFcns );
+            k = length( self.nets );
             for i = 1:nFcns
-                if newFcns{i}.hasNetwork
-                    name = newFcns{i}.name;
+                thisLossFcn = newFcns{i};
+                if thisLossFcn.hasNetwork
+                    k = k+1;
                     % add the network object
-                    self.nets.(name) = newFcns{i}.net;
+                    self.nets{k} = thisLossFcn.net;
                     % record its name
-                    self.netNames = [ self.netNames name ];
+                    self.netNames = [ self.netNames thisLossFcn.name ];
                 end
             end
 
         end
 
 
-        function self = addLossFcns( self, newFcns )
+        function self = addLossFcns( self, newFcns, args )
             % Add one or more loss function objects to the model
             arguments
                 self
-                newFcns
+            end
+            arguments (Repeating)
+                newFcns   lossFunction
+            end
+            arguments
+                args.weights double {mustBeNumeric,mustBeVector} = 1
+            end
+       
+            nFcns = length( newFcns );
+
+            % check the weights
+            if args.weights==1
+                % default is to assign a weight of 1 to all functions
+                w = ones( nFcns, 1 );
+            elseif length( args.weights ) ~= nFcns
+                % weights don't correspond to the functions
+                eid = 'aeModel:WeightsMismatch';
+                msg = 'Number of assigned weights does not match number of functions';
+                throwAsCaller( MException(eid,msg) );
+            else
+                w = args.weights;
+            end
+            self.lossFcnWeights = [ self.lossFcnWeights w ];
+
+            % update the names list
+            self.lossFcnNames = [ self.lossFcnNames getFcnNames(newFcns) ];
+            % add to the loss functions
+            nExistingFcns = length( self.lossFcns );
+            for i = 1:length( newFcns )
+                self.lossFcns{ nExistingFcns+i } = newFcns{i};
             end
 
-            % add loss function objects and update the info table
-            self = addToLossFcnObjs( self, newFcns );
-            self = addToLossFcnTbl( self, newFcns );
+            % add networks, if required
+            self = addLossFcnNetworks( self, newFcns );
+
+            % store the loss functions' details 
+            % and relevant details for easier access when training
+            self = self.setLossInfoTbl;
+            self.lossFcnTbl.types = categorical( self.lossFcnTbl.types );
+            self.lossFcnTbl.inputs = categorical( self.lossFcnTbl.inputs );
 
         end
 
@@ -101,66 +133,45 @@ classdef aeModel < representationModel
 
     methods (Access = protected)
 
-        function self = addToLossFcnObjs( self, newFcns )
-            % Add one or more loss function objects to the model
-            arguments
-                self
-                newFcns
-            end
-
-            newNames = self.getFcnNames( newFcns );
-            % add to loss functions structure
-            for i = 1:length( newNames )
-                self.lossFcns.(newNames(i)) = newFcns{i};
-            end
-
-        end
-
-
-        function self = addToLossFcnTbl( self, newFcns )
-            % Add one or more loss functions to the model
-            arguments
-                self
-                newFcns
-            end
-
-            % update the info table
-            newFcnTbl = self.lossInfoTbl( newFcns );
-            self.lossFcnTbl = [ self.lossFcnTbl; newFcnTbl ];
-            self.lossFcnTbl.types = categorical( self.lossFcnTbl.types );
-            self.lossFcnTbl.inputs = categorical( self.lossFcnTbl.inputs );
-
-        end
-
-
-        function T = lossInfoTbl( self )
-            arguments
-                self
-            end
-
-            theseLossFcns = self.lossFcns;
-
-            % update the info table
-            nFcns = length( theseLossFcns );
+        function self = setLossInfoTbl( self )
+            % Update the info table
+            
+            nFcns = length( self.lossFcns );
             names = strings( nFcns, 1 );
             types = strings( nFcns, 1 );
             inputs = strings( nFcns, 1 );
+            weights = zeros( nFcns, 1 );
+            nLosses = zeros( nFcns, 1 );
+            lossNets = strings( nFcns, 1 );
             hasState = false( nFcns, 1 );
             doCalcLoss = false( nFcns, 1 );
             useLoss = false( nFcns, 1 );
+
             for i = 1:nFcns
                 
-                names(i) = theseLossFcns.name;
-                types(i) = theseLossFcns.type;
-                inputs(i) = theseLossFcns.input;
-                hasState(i) = theseLossFcns.hasNetwork;
-                doCalcLoss(i) = theseLossFcns.doCalcLoss;
-                useLoss(i) = theseLossFcns.useLoss;
+                thisLossFcn = self.lossFcns{i};
+                names(i) = thisLossFcn.name;
+                types(i) = thisLossFcn.type;
+                inputs(i) = thisLossFcn.input;
+                weights(i) = self.lossFcnWeights(i);
+                nLosses(i) = thisLossFcn.nLoss;
+                hasState(i) = thisLossFcn.hasNetwork;
+                doCalcLoss(i) = thisLossFcn.doCalcLoss;
+                useLoss(i) = thisLossFcn.useLoss;
+
+                nNets = length(thisLossFcn.lossNets);
+                for j = 1:nNets
+                    lossNets(i) = strcat( lossNets(i), ...
+                                          thisLossFcn.lossNets(j) ) ;
+                    if j<nNets
+                        lossNets(i) = strcat( lossNets(i), "; " );
+                    end
+                end
 
             end
 
-            T = table( names, types, inputs, ...
-                        hasState, doCalcLoss, useLoss );
+            self.lossFcnTbl = table( names, types, inputs, weights, ...
+                    nLosses, lossNets, hasState, doCalcLoss, useLoss );
 
         end
 
@@ -193,19 +204,6 @@ classdef aeModel < representationModel
 
 
         end
-
-        function names = getFcnNames( self, lossFcns )
-
-            % how to call a routine without self being required??
-
-            nFcns = length( lossFcns );
-            names = strings( nFcns, 1 );
-            for i = 1:nFcns
-                names(i) = lossFcns.name;
-            end
-
-        end
-
 
 
         function [grad, state, loss] = gradients( self, ...
@@ -439,11 +437,17 @@ classdef aeModel < representationModel
     
     end
 
-
-
-
-
 end
 
+
+function names = getFcnNames( lossFcns )
+
+    nFcns = length( lossFcns );
+    names = strings( nFcns, 1 );
+    for i = 1:nFcns
+        names(i) = lossFcns{i}.name;
+    end
+
+end
 
 

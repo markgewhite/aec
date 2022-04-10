@@ -9,41 +9,52 @@ classdef tcnModel < aeModel
 
     properties
         nHidden       % number of hidden layers
+        nFilters      % number of filters aka kernels
+        filterSize    % length of the filters
         scale         % leaky ReLu scale factor
-        dropout0      % initial dropout rate
-        dropout1      % dropout rate
+        inputDropout  % initial dropout rate
+        dropout       % dropout rate
         pooling       % pooling operator
+        useSkips      % whether to include short circuit paths
 
     end
 
     methods
 
-        function self = tcnModel( superArgs, args )
+        function self = tcnModel( lossFcns, superArgs, args )
             % Initialize the model
+            arguments (Repeating)
+                lossFcns     lossFunction
+            end
             arguments
                 superArgs.?aeModel
-                args.nHidden    double ...
+                args.nHidden       double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.scale      double ...
+                args.nFilters      double ...
+                    {mustBeInteger, mustBePositive} = 16
+                args.filterSize    double ...
+                    {mustBeInteger, mustBePositive} = 5
+                args.scale         double ...
                     {mustBeInRange(args.scale, 0, 1)} = 0.2
-                args.dropout0    double ...
-                    {mustBeInRange(args.dropout0, 0, 1)} = 0.1
-                args.dropout1    double ...
-                    {mustBeInRange(args.dropout1, 0, 1)} = 0.1
-                args.pooling     char ...
+                args.inputDropout  double ...
+                    {mustBeInRange(args.inputDropout, 0, 1)} = 0.1
+                args.dropout       double ...
+                    {mustBeInRange(args.dropout, 0, 1)} = 0.1
+                args.pooling       char ...
                     {mustBeMember(args.pooling, ...
                       {'GlobalMax', 'GlobalAvg', 'None'} )} = 'GlobalMax'
+                args.useSkips      logical = true
             end
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@aeModel( superArgsCell{:} );
+            self = self@aeModel( lossFcns{:}, superArgsCell{:} );
 
             % store this class's properties
             self.nHidden = args.nHidden;
             self.scale = args.scale;
-            self.dropout0 = args.dropout0;
-            self.dropout1 = args.dropout1;
+            self.inputDropout = args.inputDropout;
+            self.dropout = args.dropout;
             self.pooling = args.pooling;
 
 
@@ -53,7 +64,7 @@ classdef tcnModel < aeModel
             layersEnc = [ sequenceInputLayer( self.XDim, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 )
-                          dropoutLayer( self.dropout0, ...
+                          dropoutLayer( self.inputDropout, ...
                                         'Name', 'drop0' ) ];
             lgraphEnc = layerGraph( layersEnc );
             lastLayer = 'drop0';
@@ -62,7 +73,7 @@ classdef tcnModel < aeModel
             for i = 1:self.nHidden
                 dilations = [ 2^(i*2-2) 2^(i*2-1) ];
                 [lgraphEnc, lastLayer] = addResidualBlock( lgraphEnc, i, ...
-                                                    dilations, lastLayer, self );
+                                                    dilations, lastLayer, args );
             end
             
             % add the output layers
@@ -86,7 +97,7 @@ classdef tcnModel < aeModel
                                        lastLayer, poolingLayer );
 
 
-            self.nets.encoder = dlnetwork( lgraphEnc );
+            encoder = dlnetwork( lgraphEnc );
 
 
             % define the decoder network
@@ -103,7 +114,7 @@ classdef tcnModel < aeModel
                 dilations = [ 2^(2*(self.nHidden-i)+1) ...
                                 2^(2*(self.nHidden-i)) ];
                 [lgraphDec, lastLayer] = addResidualBlock( lgraphDec, i, ...
-                                                    dilations, lastLayer, self );
+                                                    dilations, lastLayer, args );
             end
             
             % add the output layers
@@ -122,7 +133,7 @@ classdef tcnModel < aeModel
             outLayers = [ outLayers; 
                           fullyConnectedLayer( self.XDim*self.XChannels, 'Name', 'fcout' ) ];
             
-            if paramDec.outX(2) > 1
+            if self.XChannels > 1
                 outLayers = [ outLayers; 
                           reshapeLayer( [self.XDim self.XChannels], 'Name', 'reshape' ) ];
             end
@@ -131,11 +142,82 @@ classdef tcnModel < aeModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, poolingLayer );
             
-            self.nets.decoder = dlnetwork( lgraphDec );
+            decoder = dlnetwork( lgraphDec );
+
+            % store the networks
+            self.nets = [ self.nets {encoder, decoder } ];
+            self.netNames = [ self.netNames {'encoder', 'decoder'} ];
 
         end
 
     end
+
+end
+
+
+function [ lgraph, lastLayer ] = addResidualBlock( ...
+                                  lgraph, i, dilations, lastLayer, params )
+
+    i1 = i*2-1;
+    i2 = i1+1;
+
+    % define residual block
+    block = [   convolution1dLayer( params.filterSize, ...
+                                    params.nFilters, ...
+                                    'DilationFactor', dilations(1), ...
+                                    'Padding', 'causal', ...
+                                    'Name', ['conv' num2str(i1)] )
+                layerNormalizationLayer( 'Name', ['lnorm' num2str(i1)] )
+                leakyReluLayer( params.scale, ...
+                                'Name', ['relu' num2str(i1)] )
+                spatialDropoutLayer( params.dropout, ...
+                                     'Name', ['drop' num2str(i1)] )
+                convolution1dLayer( params.filterSize, ...
+                                    params.nFilters, ...
+                                    'DilationFactor', dilations(2), ...
+                                    'Padding', 'causal', ...
+                                    'Name', ['conv' num2str(i2)] )
+                layerNormalizationLayer( 'Name', ['lnorm' num2str(i2)] )
+                ];
+
+    if params.useSkips
+        block = [ block; 
+                  additionLayer( 2, 'Name', ['add' num2str(i)] ) ];
+    end
+
+    block = [ block;
+                leakyReluLayer( params.scale, ...
+                                'Name', ['relu' num2str(i2)] )
+                spatialDropoutLayer( params.dropout, ...
+                                     'Name', ['drop' num2str(i2)] )
+                ];
+
+    % connect layers at the front
+    lgraph = addLayers( lgraph, block );
+    lgraph = connectLayers( lgraph, ...
+                            lastLayer, ['conv' num2str(i1)] );
+    
+    if params.useSkips
+        % include a short circuit ('skip')
+
+        if i == 1
+            % include convolution in first skip connection
+            skipLayer = convolution1dLayer( 1, params.nFilters, ...
+                                            'Name', 'convSkip' );
+            lgraph = addLayers( lgraph, skipLayer );
+            lgraph = connectLayers( lgraph, ...
+                                       lastLayer, 'convSkip' );
+            lgraph = connectLayers( lgraph, ...
+                               'convSkip', ['add' num2str(i) '/in2'] );
+        else
+            % connect the skip
+            lgraph = connectLayers( lgraph, ...
+                               lastLayer, ['add' num2str(i) '/in2'] );
+        end
+
+    end
+
+    lastLayer = ['drop' num2str(i2)];
 
 end
             
