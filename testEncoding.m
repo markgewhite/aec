@@ -47,11 +47,21 @@ for i = 1:nRuns
     % ----- autoencoder -----
 
     % initalise autoencoder setup
-    setup.aae = initializeAE( setup.data );
+    reconLoss = reconstructionLoss( 'recon' );
+    advLoss = adversarialLoss( 'discriminator' );
+    testModel = tcnModel( reconLoss, ...
+                          XDim = setup.data.xDim, ...
+                          XChannels = setup.data.nChannels, ...
+                          ZDim = setup.data.zDim );
 
     % train the autoencoder
-    [dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
-                    trainAAE( XTrn, XNTrn, YTrn, setup.aae, ax );
+    myTrainer = trainer( testModel, ...
+                         setup.data.padValue, setup.data.padLoc );
+
+    testModel = myTrainer.train( testModel, XTrn, XNTrn, YTrn );
+
+    %[dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
+    %                trainAAE( XTrn, XNTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
     dlXTrn = dlarray( XTrn, 'CB' );

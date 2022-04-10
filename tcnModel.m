@@ -5,7 +5,7 @@
 %
 % ************************************************************************
 
-classdef tcnModel < aeModel
+classdef tcnModel < autoencoderModel
 
     properties
         nHidden       % number of hidden layers
@@ -27,7 +27,7 @@ classdef tcnModel < aeModel
                 lossFcns     lossFunction
             end
             arguments
-                superArgs.?aeModel
+                superArgs.?autoencoderModel
                 args.nHidden       double ...
                     {mustBeInteger, mustBePositive} = 2
                 args.nFilters      double ...
@@ -48,7 +48,7 @@ classdef tcnModel < aeModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@aeModel( lossFcns{:}, superArgsCell{:} );
+            self = self@autoencoderModel( lossFcns{:}, superArgsCell{:} );
 
             % store this class's properties
             self.nHidden = args.nHidden;
@@ -61,7 +61,7 @@ classdef tcnModel < aeModel
             % define the encoder network
             % --------------------------
             % define input layers
-            layersEnc = [ sequenceInputLayer( self.XDim, 'Name', 'in', ...
+            layersEnc = [ sequenceInputLayer( self.XChannels, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 )
                           dropoutLayer( self.inputDropout, ...
@@ -97,7 +97,7 @@ classdef tcnModel < aeModel
                                        lastLayer, poolingLayer );
 
 
-            encoder = dlnetwork( lgraphEnc );
+            self.nets.encoder = dlnetwork( lgraphEnc );
 
 
             % define the decoder network
@@ -142,11 +142,7 @@ classdef tcnModel < aeModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, poolingLayer );
             
-            decoder = dlnetwork( lgraphDec );
-
-            % store the networks
-            self.nets = [ self.nets {encoder, decoder } ];
-            self.netNames = [ self.netNames {'encoder', 'decoder'} ];
+            self.nets.decoder = dlnetwork( lgraphDec );
 
         end
 

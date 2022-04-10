@@ -1,11 +1,11 @@
 % ************************************************************************
-% Class: aeModel
+% Class: autoencoderModel
 %
 % Subclass defining the framework for an autoencoder model
 %
 % ************************************************************************
 
-classdef aeModel < representationModel
+classdef autoencoderModel < representationModel
 
     properties
         nets           % networks defined in this model (structure)
@@ -19,10 +19,10 @@ classdef aeModel < representationModel
 
     methods
 
-        function self = aeModel( lossFcns, superArgs, args )
+        function self = autoencoderModel( lossFcns, superArgs, args )
             % Initialize the model
             arguments (Repeating)
-                lossFcns     lossFunction
+                lossFcns      lossFunction
             end
             arguments
                 superArgs.?representationModel
@@ -35,8 +35,9 @@ classdef aeModel < representationModel
             self = self@representationModel( superArgsCell{:} );
 
             % placeholders for subclasses to define
-            self.nets = [];
-            self.netNames = [];
+            self.nets.encoder = [];
+            self.nets.decoder = [];
+            self.netNames = {'encoder', 'decoder'};
             self.isVAE = args.isVAE;
 
             % copy over the loss functions associated
@@ -69,9 +70,9 @@ classdef aeModel < representationModel
                 if thisLossFcn.hasNetwork
                     k = k+1;
                     % add the network object
-                    self.nets{k} = thisLossFcn.net;
+                    self.nets.(thisLossFcn.name) = thisLossFcn;
                     % record its name
-                    self.netNames = [ self.netNames thisLossFcn.name ];
+                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
                 end
             end
 
@@ -109,9 +110,8 @@ classdef aeModel < representationModel
             % update the names list
             self.lossFcnNames = [ self.lossFcnNames getFcnNames(newFcns) ];
             % add to the loss functions
-            nExistingFcns = length( self.lossFcns );
             for i = 1:length( newFcns )
-                self.lossFcns{ nExistingFcns+i } = newFcns{i};
+                self.lossFcns.(newFcns{i}.name) = newFcns{i};
             end
 
             % add networks, if required
@@ -136,26 +136,26 @@ classdef aeModel < representationModel
         function self = setLossInfoTbl( self )
             % Update the info table
             
-            nFcns = length( self.lossFcns );
+            nFcns = length( self.lossFcnNames );
             names = strings( nFcns, 1 );
             types = strings( nFcns, 1 );
             inputs = strings( nFcns, 1 );
             weights = zeros( nFcns, 1 );
             nLosses = zeros( nFcns, 1 );
             lossNets = strings( nFcns, 1 );
-            hasState = false( nFcns, 1 );
+            hasNetwork = false( nFcns, 1 );
             doCalcLoss = false( nFcns, 1 );
             useLoss = false( nFcns, 1 );
 
             for i = 1:nFcns
                 
-                thisLossFcn = self.lossFcns{i};
+                thisLossFcn = self.lossFcns.(self.lossFcnNames(i));
                 names(i) = thisLossFcn.name;
                 types(i) = thisLossFcn.type;
                 inputs(i) = thisLossFcn.input;
                 weights(i) = self.lossFcnWeights(i);
                 nLosses(i) = thisLossFcn.nLoss;
-                hasState(i) = thisLossFcn.hasNetwork;
+                hasNetwork(i) = thisLossFcn.hasNetwork;
                 doCalcLoss(i) = thisLossFcn.doCalcLoss;
                 useLoss(i) = thisLossFcn.useLoss;
 
@@ -171,7 +171,7 @@ classdef aeModel < representationModel
             end
 
             self.lossFcnTbl = table( names, types, inputs, weights, ...
-                    nLosses, lossNets, hasState, doCalcLoss, useLoss );
+                    nLosses, lossNets, hasNetwork, doCalcLoss, useLoss );
 
         end
 
@@ -205,21 +205,48 @@ classdef aeModel < representationModel
 
         end
 
+        function net = getNetwork( self, name )
+            arguments
+                self
+                name         string ...
+                    {mustBeNetName( self, name )}
+            end
+            
+            net = self.nets.(name);
+            if isa( net, 'lossFunction' )
+                net = self.lossFcns.(name).net;
+            end
 
-        function [grad, state, loss] = gradients( self, ...
+        end
+
+
+        function isValid = mustBeNetName( self, name )
+            arguments
+                self
+                name
+            end
+
+            isValid = ismember( name, self.names );
+
+        end
+
+
+
+        function [grad, state, loss] = gradients( thisEncoder, ...
+                                                  thisDecoder, ...
+                                                  self, ...
                                                   dlXIn, dlXOut, ... 
                                                   dlY, ...
                                                   doTrainAE )
             arguments
                 self
+                thisEncoder  dlnetwork
+                thisDecoder  dlnetwork
                 dlXIn        dlarray  % input to the encoder
                 dlXOut       dlarray  % output target for the decoder
                 dlY          dlarray  % auxiliary outcome variable
                 doTrainAE    logical  % whether to train the AE
             end
-
-            thisEncoder = self.nets.encoder;
-            thisDecoder = self.nets.decoder;
 
             if self.isVAE
                 % duplicate X & C to reflect mulitple draws of VAE
@@ -260,37 +287,30 @@ classdef aeModel < representationModel
             
             % compute the active loss functions in turn
             % and assign to networks
-
-            % initialize the loss accumulator by network
-            lossAccum = table2struct( table( ...
-                    'Size', [1, length(self.netNames)], ...
-                    'VariableNames', self.netNames, ...
-                    'VariableTypes', ...
-                            repmat("double", [1, length(self.netNames)]) ));
             
             nFcns = size( activeFcns, 1 );
-            nLoss = sum( activeFcns.nLoss );
+            nLoss = sum( activeFcns.nLosses );
             loss = zeros( nLoss, 1 );
-            j = 1;
+            idx = 1;
             for i = 1:nFcns
                
                 % identify the loss function
                 thisName = activeFcns.names(i);
                 % take the model's copy of the loss function object
-                thisLossFcn = self.lossFcns.name;
+                thisLossFcn = self.lossFcns.(thisName);
 
                 % assign indices for the number of losses returned
-                lossIdx = j:j+thisLossFcn.nLoss(i)-1;
-                j = j + thisLossFcn.nLoss;
+                lossIdx = idx:idx+thisLossFcn.nLoss-1;
+                idx = idx + thisLossFcn.nLoss;
 
                 % select the input variables
-                switch thisLossFcn.inputs
+                switch thisLossFcn.input
                     case 'X-XHat'
                         dlV = { dlXOut, dlXGen };
                     case 'XC'
-                        dlV = dlXC;
+                        dlV = { dlXC };
                     case 'Z'
-                        dlV = dlZGen;
+                        dlV = { dlZGen };
                     case 'Z-ZHat'
                         dlV = { dlZGen, dlZReal };
                     case 'ZMu-ZLogVar'
@@ -306,24 +326,31 @@ classdef aeModel < representationModel
                     % call the loss function with the network object
                     if thisLossFcn.hasState
                         % and store the network state too
-                        [ loss( lossIdx ), state.(thisName) ] = ...
-                            thisLossFcn.doCalcLoss( ...
-                                self.nets.(thisName), dlV{:} );
+                        [ thisLossFcn, thisLoss, state.(thisName) ] = ...
+                            thisLossFcn.calcLoss( dlV{:} );
                     else
-                        loss( lossIdx ) = thisLossFcn.calcLoss( ...
-                                self.nets.(thisName), dlV{:} );
+                        thisLoss = thisLossFcn.calcLoss( dlV{:} );
                     end
                 else
                     % call the loss function straightforwardly
-                    loss( lossIdx ) = thisLossFcn.calcLoss( dlV{:} );
+                    thisLoss = thisLossFcn.calcLoss( dlV{:} );
                 end
+                loss( lossIdx ) = thisLoss;
 
                 % assign loss to loss accumulator for associated network(s)
                 for j = 1:length( lossIdx )
                     for k = 1:length( thisLossFcn.lossNets(j,:) )
-                        netName = thisLossFcn.lossNets(i,j);
-                        lossAccum.(netName) = ...
-                            lossAccum.(netName) + loss( lossIdx(j) );
+                        netName = thisLossFcn.lossNets(j,k);
+                        if exist( 'lossAccum', 'var' )
+                            if isfield( lossAccum, netName )
+                                lossAccum.(netName) = ...
+                                    lossAccum.(netName) + thisLoss(j);
+                            else
+                                lossAccum.(netName) = thisLoss(j);
+                            end
+                        else
+                            lossAccum.(netName) = thisLoss(j);
+                        end
                     end
                 end
 
@@ -332,9 +359,9 @@ classdef aeModel < representationModel
         % compute the gradients for each network
         for i = 1:length(self.netNames)
 
-            thisName = self.netNames(i);
+            thisName = self.netNames{i};
             thisNetwork = self.nets.(thisName);
-            grad.(thisName) = dlgradient( thisNetwork, ...
+            grad.(thisName) = dlgradient( lossAccum.(thisName), ...
                                           thisNetwork.Learnables, ...
                                           'RetainData', true );
             

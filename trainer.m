@@ -2,8 +2,7 @@ classdef trainer
     % Class defining a model trainer
 
     properties
-        networks       % networks for training
-        modelNames     % names of those networks
+        nNetworks      % number of networks for ease of reference
         optimizer      % name of the optimizer to use
         nEpochs        % maximum number of epochs for training
         nEpochsPreTrn  % number of epochs for pretraining
@@ -27,11 +26,11 @@ classdef trainer
 
     methods
 
-        function self = trainer( networks, padValue, padLoc, args )
+        function self = trainer( thisModel, padValue, padLoc, args )
             % Initialize the model
             arguments
-                networks            struct
-                padValue
+                thisModel           autoencoderModel
+                padValue            double
                 padLoc              char ...
                     {mustBeMember(padLoc, ...
                       {'left', 'right', 'both', 'symmetric'} )}
@@ -52,7 +51,7 @@ classdef trainer
                 args.lrFreq         double ...
                     {mustBeInteger, mustBePositive} = 250;
                 args.lrFactor       double ...
-                    {mustBeInteger, mustBePositive} = 0.5;
+                    {mustBeNumeric, mustBePositive} = 0.5;
                 args.valPatience    double ...
                     {mustBeInteger, mustBePositive} = 25;
                 args.postTraining   logical = true;
@@ -77,13 +76,11 @@ classdef trainer
             self.padValue = padValue;
             self.padLoc = padLoc;
 
-            % initialize the optimizer's variables
-            self.networks = networks;
-            self.modelNames = fieldnames( self.networks );
+            self.nNetworks = length( thisModel.netNames );
 
-            nModels = length( self.modelNames );
+            % initialize the optimizer's variables
             if length( args.initLearningRates ) > 1
-                if length( args.initLearningRates ) == nModels
+                if length( args.initLearningRates ) == self.nNetworks
                     netSpecific = true;
                 else
                     eid = 'Trainer:LearningRateMisMatch';
@@ -94,8 +91,8 @@ classdef trainer
                 netSpecific = false;
             end
             
-            for i = 1:nModels
-                networkName = self.modelNames{i};
+            for i = 1:self.nNetworks
+                networkName = thisModel.netNames{i};
                 if netSpecific
                     self.learningRates.(networkName) = args.initLearningRates(i);
                 else
@@ -113,13 +110,13 @@ classdef trainer
         end
 
 
-        function model = train( self, model, X, XN, Y )
+        function thisModel = train( self, thisModel, X, XN, Y )
             arguments
                 self
-                model    aeModel
-                X        double
-                XN       double
-                Y        
+                thisModel    autoencoderModel
+                X            cell
+                XN           double
+                Y            
             end
 
             % re-partition the data to create training and validation sets
@@ -149,9 +146,7 @@ classdef trainer
             end
 
             % setup the loop
-            nIter = floor( size(XNTrn,2)/self.batchSize );
-            nModels = length( self.modelNames );
-            
+            nIter = floor( size(XNTrn,2)/self.batchSize );           
             j = 0;
             v = 0;
             vp = self.valPatience;
@@ -163,6 +158,7 @@ classdef trainer
                 
                 % Pre-training
                 self.preTraining = (epoch<=self.nEpochsPreTrn);
+                doTrainAE = (self.postTraining || self.preTraining);
             
                 if iscell( X )
                     % reset whilst preserving the order
@@ -185,28 +181,30 @@ classdef trainer
                     
                     % evaluate the model gradients 
                     [ grad, state, lossTrn(j,:) ] = ...
-                                      dlfeval(  @modelGradients, ...
-                                                models, ...
+                                      dlfeval(  @thisModel.gradients, ...
+                                                thisModel, ...
+                                                thisModel.nets.encoder, ...
+                                                thisModel.nets.decoder, ...
                                                 dlXTTrn, ...
                                                 dlXNTrn, ...
                                                 dlYTrn, ...
-                                                trainer );
+                                                doTrainAE );
 
                     % update the network parameters
-                    for m = 1:nModels
+                    for m = 1:self.nNetworks
 
-                        net = self.networks.(self.modelNames{i});
-                        opt = self.optimizer.(self.modelNames{i});
+                        thisNetwork = thisModel.nets{i};
+                        thisOptimizer = self.optimizers.(thisModel.netNames{i});
 
                         try
-                            net.State = state.enc;
+                            thisNetwork.State = state.enc;
                         catch
                             lossTrn = NaN;
                             constraint = 2;
                             return
                         end
 
-                        if any(strcmp( net, {'encoder','decoder'} )) ...
+                        if any(strcmp( thisNetwork, {'encoder','decoder'} )) ...
                             && not(self.postTraining || self.preTraining)
                             % skip training for the AE
                             continue
@@ -215,24 +213,28 @@ classdef trainer
                         % update the network parameters
                         switch self.optimizer
                             case 'ADAM'         
-                                [ net, opt.avgG, opt.avgGS ] = ...
-                                        adamupdate( net, ...
+                                [ thisNetwork, ...
+                                  thisOptimizer.avgG, ...
+                                  thisOptimizer.avgGS ] = ...
+                                        adamupdate( thisNetwork, ...
                                                     grad, ...
-                                                    opt.avgG, ...
-                                                    opt.avgGS, ...
+                                                    thisOptimizer.avgG, ...
+                                                    thisOptimizer.avgGS, ...
                                                     j, ...
                                                     self.learnRate, ...
                                                     self.beta1, ...
                                                     self.beta2 );
                             case 'SGD'
-                                [ net, opt.vel ] = sgdmupdate( net, ...
-                                            grad, ...
-                                            opt.vel, ...
-                                            self.dec.learnRate );
+                                [ thisNetwork, ...
+                                  thisOptimizer.vel ] = ...
+                                    sgdmupdate( thisNetwork, ...
+                                                grad, ...
+                                                thisOptimizer.vel, ...
+                                                self.dec.learnRate );
                         end
                         
-                        self.networks.(self.modelNames{i}) = net;
-                        self.optimizer.(self.modelNames{i}) = opt;
+                        thisModel.nets{i} = thisNetwork;
+                        self.optimizer.(self.modelNames{i}) = thisOptimizer;
                     
                     end
 
@@ -243,7 +245,7 @@ classdef trainer
                     
                     % run a validation check
                     v = v + 1;
-                    lossVal( v ) = validationCheck( model, ...
+                    lossVal( v ) = validationCheck( thisModel, ...
                                                 dlXVal, dlYVal, cLabels );
                     if v > 2*vp-1
                         if mean(lossVal(v-2*vp+1:v-vp)) < mean(lossVal(v-vp+1:v))
@@ -267,7 +269,7 @@ classdef trainer
                     fprintf(' : %1.3f\n', lossVal(v));
                 end
         
-                dlZTrn = encode( model, dlXTTrn );
+                dlZTrn = encode( thisModel, dlXTTrn );
                 ZTrn = double(extractdata( dlZTrn ));
                 for c = 1:self.XChannels
                     plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
@@ -280,7 +282,7 @@ classdef trainer
             if mod( epoch, self.lrFreq )==0
                 % update learning rates
                 for m = 1:nModels
-                    if any(strcmp( net, {'encoder','decoder'} )) ...
+                    if any(strcmp( thisNetwork, {'encoder','decoder'} )) ...
                         && not(self.postTraining || self.preTraining)
                         % skip training for the AE
                         continue
@@ -296,109 +298,102 @@ classdef trainer
     end
 
 
-    methods (Static)
+end
 
-        function [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart )
+function [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart )
 
-            if iscell( X )
-                % X is a cell array containing sequences of variable length
-                XTrn = X( training(cvPart) );
+    if iscell( X )
+        % X is a cell array containing sequences of variable length
+        XTrn = X( training(cvPart) );
 
-            else
-                % X is a numeric array
-                XTrn = X( :, training(cvPart) );
-
-            end
-
-            % create time normalisation set
-            XNTrn = XN( :, training(cvPart), : );
-
-            % create the outcome variable set
-            YTrn = Y( training(cvPart) );
-
-        end
-
-
-        function [ dlXVal, dlYVal ] = createValData( X, Y, cvPart, padValue, padLoc )
-
-            if iscell( X )
-                % X is a cell array containing sequences of variable length
-                XVal = preprocMiniBatch( X( test(cvPart) ), [], [], ...
-                                         padValue, ...
-                                         padLoc );
-                dlXVal = dlarray( XVal, 'CTB' );
-
-            else
-                % X is a numeric array
-                XVal = X( :, test(cvPart) );
-                dlXVal = dlarray( XVal, 'CB' );
-
-            end
-
-            dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
-
-        end
-
-
-        function [ dsTrn, XNfmt ] = createDataStore( XTrn, XNTrn, YTrn )
-
-            % create the datastore for the input X
-            if iscell( XTrn )           
-                % sort them in ascending order of length
-                XLen = cellfun( @length, XTrn );
-                [ ~, orderIdx ] = sort( XLen, 'descend' );
-            
-                XTrn = XTrn( orderIdx );
-                dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 1, ...
-                                         'OutputType', 'same' );
-            
-            else
-                dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
-            
-            end
-            
-            % create the datastore for the time-normalised output X
-            dsXNTrn = arrayDatastore( XNTrn, 'IterationDimension', 2 );
-            if size( XNTrn, 3 ) > 1
-                XNfmt = 'SSCB';
-            else
-                XNfmt = 'CB';
-            end
-            
-            % create the datastore for the labels/outcomes
-            dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
-            
-            % combine them
-            dsTrn = combine( dsXTrn, dsXNTrn, dsYTrn );
-                       
-        end
-
-
-        function lossVal = validationCheck( model, dlXVal, dlYVal, cLabels )
-
-            dlZVal = encode( model, dlXVal );
-            switch self.valType
-                case 'Network'
-                    dlYHatVal = predict( dlnetCls, dlZVal );
-                    dlYHatVal = double( ...
-                        onehotdecode( dlYHatVal, single(cLabels), 1 ))' - 1;
-                    lossVal(v) = sum( dlYHatVal~=dlYVal )/length(dlYVal);
-    
-                case 'Fisher'
-                    ZVal = double(extractdata( dlZVal ));
-                    YVal = double(extractdata( dlYVal ));
-                    model = fitcdiscr( ZVal', YVal );
-                    lossVal(v) = loss( model, ZVal', YVal );
-            end
-    
-
-        end
-
-
+    else
+        % X is a numeric array
+        XTrn = X( :, training(cvPart) );
 
     end
 
+    % create time normalisation set
+    XNTrn = XN( :, training(cvPart), : );
+
+    % create the outcome variable set
+    YTrn = Y( training(cvPart) );
+
 end
 
+
+function [ dlXVal, dlYVal ] = createValData( X, Y, cvPart, padValue, padLoc )
+
+    if iscell( X )
+        % X is a cell array containing sequences of variable length
+        XVal = preprocMiniBatch( X( test(cvPart) ), [], [], ...
+                                 padValue, ...
+                                 padLoc );
+        dlXVal = dlarray( XVal, 'CTB' );
+
+    else
+        % X is a numeric array
+        XVal = X( :, test(cvPart) );
+        dlXVal = dlarray( XVal, 'CB' );
+
+    end
+
+    dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
+
+end
+
+
+function [ dsTrn, XNfmt ] = createDatastore( XTrn, XNTrn, YTrn )
+
+    % create the datastore for the input X
+    if iscell( XTrn )           
+        % sort them in ascending order of length
+        XLen = cellfun( @length, XTrn );
+        [ ~, orderIdx ] = sort( XLen, 'descend' );
+    
+        XTrn = XTrn( orderIdx );
+        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 1, ...
+                                 'OutputType', 'same' );
+    
+    else
+        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
+    
+    end
+    
+    % create the datastore for the time-normalised output X
+    dsXNTrn = arrayDatastore( XNTrn, 'IterationDimension', 2 );
+    if size( XNTrn, 3 ) > 1
+        XNfmt = 'SSCB';
+    else
+        XNfmt = 'CB';
+    end
+    
+    % create the datastore for the labels/outcomes
+    dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
+    
+    % combine them
+    dsTrn = combine( dsXTrn, dsXNTrn, dsYTrn );
+               
+end
+
+
+function lossVal = validationCheck( model, dlXVal, dlYVal, cLabels )
+
+    dlZVal = encode( model, dlXVal );
+    switch self.valType
+        case 'Network'
+            dlYHatVal = predict( dlnetCls, dlZVal );
+            dlYHatVal = double( ...
+                onehotdecode( dlYHatVal, single(cLabels), 1 ))' - 1;
+            lossVal(v) = sum( dlYHatVal~=dlYVal )/length(dlYVal);
+
+        case 'Fisher'
+            ZVal = double(extractdata( dlZVal ));
+            YVal = double(extractdata( dlYVal ));
+            model = fitcdiscr( ZVal', YVal );
+            lossVal(v) = loss( model, ZVal', YVal );
+    end
+
+
+end
 
 

@@ -5,7 +5,7 @@
 %
 % ************************************************************************
 
-classdef lossFunction
+classdef lossFunction < handle
 
     properties
         name        % name of the function
@@ -14,6 +14,7 @@ classdef lossFunction
         nLoss       % number of losses calculated
         lossNets    % names of networks assigned the losses
         hasNetwork  % flag indicating network defined
+        hasState    % flag if network has a state to be carried forward
         doCalcLoss  % flag whether to compute the specified loss
         useLoss     % flag whether to include loss in overall calculation
     end
@@ -23,7 +24,7 @@ classdef lossFunction
         function self = lossFunction( name, args )
             % Initialize the loss function manager
             arguments
-                name             char {mustBeText}
+                name             string {mustBeText}
                 args.type        char {mustBeMember( args.type, ...
                                             {'Reconstruction', ...
                                              'Regularization', ...
@@ -38,6 +39,8 @@ classdef lossFunction
                 args.nLoss       double ...
                     {mustBeInteger,mustBePositive} = 1
                 args.lossNets    string {mustBeText} = {'encoder'}
+                args.hasNetwork  logical = false
+                args.hasState     logical = false
                 args.doCalcLoss  logical = true
                 args.useLoss     logical = true
             end
@@ -49,7 +52,8 @@ classdef lossFunction
             self.lossNets = args.lossNets;
             self.doCalcLoss = args.doCalcLoss;
             self.useLoss = args.useLoss;
-            self.hasNetwork = false;
+            self.hasNetwork = args.hasNetwork;
+            self.hasState = args.hasState;
 
         end
 

@@ -5,7 +5,7 @@
 %
 % ************************************************************************
 
-classdef fcModel < aeModel
+classdef fcModel < autoencoderModel
 
     properties
         nHidden       % number of hidden layers
@@ -25,7 +25,7 @@ classdef fcModel < aeModel
                 lossFcns     lossFunction
             end
             arguments
-                superArgs.?aeModel
+                superArgs.?autoencoderModel
                 args.nHidden    double ...
                     {mustBeInteger, mustBePositive} = 2
                 args.nFC        double ...
@@ -42,7 +42,7 @@ classdef fcModel < aeModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@aeModel( lossFcns{:}, superArgsCell{:} );
+            self = self@autoencoderModel( lossFcns{:}, superArgsCell{:} );
 
             % store this class's properties
             self.nHidden = args.nHidden;
@@ -74,7 +74,7 @@ classdef fcModel < aeModel
                   fullyConnectedLayer( self.ZDim, 'Name', 'out' ) ];
             
             lgraphEnc = layerGraph( layersEnc );
-            encoder = dlnetwork( lgraphEnc );
+            self.nets.encoder = dlnetwork( lgraphEnc );
 
 
             % define the decoder network          
@@ -95,11 +95,7 @@ classdef fcModel < aeModel
                           reshapeLayer( [self.XDim self.XChannels], 'Name', 'out' ) ];
             
             lgraphDec = layerGraph( layersDec );
-            decoder = dlnetwork( lgraphDec );
-
-            % store the networks
-            self.nets = [ self.nets {encoder, decoder } ];
-            self.netNames = [ self.netNames {'encoder', 'decoder'} ];
+            self.nets.decoder = dlnetwork( lgraphDec );
             
         end
 

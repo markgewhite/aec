@@ -41,13 +41,17 @@ classdef adversarialLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = {{'encoder'},{name}};
+            netAssignments = {{'encoder'};{name}};
 
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'Z-ZHat', ...
-                                 lossNets = netAssignments );
+                                 input = 'Z', ...
+                                 nLoss = 2, ...
+                                 lossNets = netAssignments, ...
+                                 hasNetwork = true, ...
+                                 hasState = true );
             
+            self.distribution = args.distribution;
             self.initLearningRate = args.initLearningRate;
 
             % create the input layer
@@ -73,25 +77,20 @@ classdef adversarialLoss < lossFunction
             lgraph = layerGraph( layers );
             self.net = dlnetwork( lgraph );
 
-            self.hasNetwork = true;
-
         end
 
-    end
 
-    methods (Static)
-
-        function [ loss, state ] = calcLoss( this, dlZFake )
+        function [ self, loss, state ] = calcLoss( self, dlZFake )
             % Calculate the adversarial loss
             arguments
-                this     adversarialLoss
+                self     adversarialLoss
                 dlZFake  dlarray  % generated distribution
             end
 
             [ ZDim, batchSize ] = size( dlZFake );
 
             % generate a target distribution
-            switch this.distribution
+            switch self.distribution
                 case 'Gaussian'
                     dlZReal = dlarray( randn( ZDim, batchSize ), 'CB' );
                 case 'Categorical'
@@ -99,10 +98,10 @@ classdef adversarialLoss < lossFunction
             end
 
             % predict authenticity from real Z using the discriminator
-            dlDReal = forward( this.net, dlZReal );
+            dlDReal = forward( self.net, dlZReal );
             
             % predict authenticity from fake Z
-            [ dlDFake, state ] = forward( this.net, dlZFake );
+            [ dlDFake, state ] = forward( self.net, dlZFake );
             
             % discriminator loss
             loss(1) = 0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );

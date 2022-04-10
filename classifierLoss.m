@@ -47,13 +47,12 @@ classdef classifierLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Classification', ...
-                                 input = 'Z-Y' );
+                                 input = 'Z-Y'  );
             self.CDim = args.CDim;
             self.type = args.type;
 
             switch args.type
                 case 'Network'
-                    self.hasNetwork = true;
                     self.initLearningRate = args.initLearningRate;
 
                     % create the input layer
@@ -78,12 +77,14 @@ classdef classifierLoss < lossFunction
                     
                     lgraph = layerGraph( layers );
                     self.net = dlnetwork( lgraph );
+                    
                     self.lossNets = {'encoder', name};
+                    self.hasNetwork = true;
+                    self.hasState = true;
 
                 otherwise
                     % not a network, will use a fixed model
                     self.net = [];
-                    self.hasNetwork = false;
                     self.initLearningRate = 0;
 
 

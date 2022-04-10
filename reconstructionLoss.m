@@ -24,7 +24,7 @@ classdef reconstructionLoss < lossFunction
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Reconstruction', ...
                                  input = 'X-XHat', ...
-                                 lossNets = {'encoder','decoder'} );
+                                 lossNets = {'encoder', 'decoder'} );
 
         end
 
@@ -34,11 +34,7 @@ classdef reconstructionLoss < lossFunction
 
     function loss = calcLoss( X, XHat )
         % Calculate the reconstruction loss
-        if self.doCalcLoss
-            loss = mse( X, XHat );
-        else
-            loss = 0;
-        end
+        loss = mean( (X-XHat).^2, 'all' );
 
     end
 
