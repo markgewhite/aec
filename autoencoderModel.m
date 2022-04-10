@@ -232,16 +232,14 @@ classdef autoencoderModel < representationModel
 
 
 
-        function [grad, state, loss] = gradients( thisEncoder, ...
-                                                  thisDecoder, ...
-                                                  self, ...
+        function [grad, state, loss] = gradients( self, ...
+                                                  nets, ...
                                                   dlXIn, dlXOut, ... 
                                                   dlY, ...
                                                   doTrainAE )
             arguments
                 self
-                thisEncoder  dlnetwork
-                thisDecoder  dlnetwork
+                nets         struct   % networks, made explicit for tracing
                 dlXIn        dlarray  % input to the encoder
                 dlXOut       dlarray  % output target for the decoder
                 dlY          dlarray  % auxiliary outcome variable
@@ -258,14 +256,14 @@ classdef autoencoderModel < representationModel
                 % autoencoder training
             
                 % generate latent encodings
-                [ dlZGen, state.encoder ] = forward( thisEncoder, dlXIn);
+                [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn);
     
                 % reconstruct curves from latent codes
-                [ dlXGen, state.decoder ] = forward( thisDecoder, dlZGen );
+                [ dlXGen, state.decoder ] = forward( nets.decoder, dlZGen );
                 
             else
                 % no autoencoder training
-                dlZGen = predict( thisEncoder, dlXIn );
+                dlZGen = predict( nets.encoder, dlXIn );
             
             end
 
@@ -360,7 +358,7 @@ classdef autoencoderModel < representationModel
         for i = 1:length(self.netNames)
 
             thisName = self.netNames{i};
-            thisNetwork = self.nets.(thisName);
+            thisNetwork = nets.(thisName);
             grad.(thisName) = dlgradient( lossAccum.(thisName), ...
                                           thisNetwork.Learnables, ...
                                           'RetainData', true );
