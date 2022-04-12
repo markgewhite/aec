@@ -384,11 +384,11 @@ function [grad, state, loss] = gradients( nets, ...
     nLoss = sum( activeFcns.nLosses );
     loss = zeros( nLoss, 1 );
     idx = 1;
+    lossAccum = [];
     for i = 1:nFcns
        
         % identify the loss function
         thisName = activeFcns.names(i);
-        % take the model's copy of the loss function object
         thisLossFcn = lossFcns.(thisName);
 
         % assign indices for the number of losses returned
@@ -416,12 +416,13 @@ function [grad, state, loss] = gradients( nets, ...
         %  of the relevant network object)
         if thisLossFcn.hasNetwork
             % call the loss function with the network object
+            thisNetwork = nets.(thisName);
             if thisLossFcn.hasState
                 % and store the network state too
                 [ thisLossFcn, thisLoss, state.(thisName) ] = ...
-                                    thisLossFcn.calcLoss( dlV{:} );
+                        thisLossFcn.calcLoss( thisNetwork, dlV{:} );
             else
-                thisLoss = thisLossFcn.calcLoss( dlV{:} );
+                thisLoss = thisLossFcn.calcLoss( thisNetwork, dlV{:} );
             end
         else
             % call the loss function straightforwardly
@@ -429,22 +430,8 @@ function [grad, state, loss] = gradients( nets, ...
         end
         loss( lossIdx ) = thisLoss;
 
-        % assign loss to loss accumulator for associated network(s)
-        for j = 1:length( lossIdx )
-            for k = 1:length( thisLossFcn.lossNets(j,:) )
-                netName = thisLossFcn.lossNets(j,k);
-                if exist( 'lossAccum', 'var' )
-                    if isfield( lossAccum, netName )
-                        lossAccum.(netName) = ...
-                                    lossAccum.(netName) + thisLoss(j);
-                    else
-                        lossAccum.(netName) = thisLoss(j);
-                    end
-                else
-                    lossAccum.(netName) = thisLoss(j);
-                end
-            end
-        end
+        lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx );
+
 
     end
 
@@ -461,6 +448,39 @@ for i = 1:length(netNames)
 end
 
 end
+
+
+function lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx )
+    % Assign loss to loss accumulator for associated network(s)
+
+    for j = 1:length( lossIdx )
+
+        for k = 1:length( thisLossFcn.lossNets(j,:) )
+
+            netAssignments = string(thisLossFcn.lossNets{j,k});
+
+                for l = 1:length(netAssignments)
+
+                    netName = netAssignments(l);
+                    if exist( 'lossAccum', 'var' )
+                        if isfield( lossAccum, netName )
+                            lossAccum.(netName) = ...
+                                        lossAccum.(netName) + thisLoss(j);
+                        else
+                            lossAccum.(netName) = thisLoss(j);
+                        end
+                    else
+                        lossAccum.(netName) = thisLoss(j);
+                    end
+                    
+                end
+
+        end
+    end
+
+
+end
+
 
 
 function [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart )

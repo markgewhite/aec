@@ -38,7 +38,7 @@ classdef lossFunction < handle
                                              'Y'} )}
                 args.nLoss       double ...
                     {mustBeInteger,mustBePositive} = 1
-                args.lossNets    string {mustBeText} = {'encoder'}
+                args.lossNets    = {'encoder'}
                 args.hasNetwork  logical = false
                 args.hasState     logical = false
                 args.doCalcLoss  logical = true
@@ -56,6 +56,12 @@ classdef lossFunction < handle
             self.hasState = args.hasState;
 
         end
+
+    end
+
+    methods (Abstract)
+
+        loss = calcLoss( self, X )
 
     end
 

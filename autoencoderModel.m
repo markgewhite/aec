@@ -57,29 +57,6 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function self = addLossFcnNetworks( self, newFcns )
-            % Add one or more networks to the model
-            arguments
-                self
-                newFcns
-            end
-
-            nFcns = length( newFcns );
-            k = length( self.nets );
-            for i = 1:nFcns
-                thisLossFcn = newFcns{i};
-                if thisLossFcn.hasNetwork
-                    k = k+1;
-                    % add the network object
-                    self.nets.(thisLossFcn.name) = thisLossFcn;
-                    % record its name
-                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
-                end
-            end
-
-        end
-
-
         function self = addLossFcns( self, newFcns, args )
             % Add one or more loss function objects to the model
             arguments
@@ -127,7 +104,27 @@ classdef autoencoderModel < representationModel
         end
 
 
+        function self = addLossFcnNetworks( self, newFcns )
+            % Add one or more networks to the model
+            arguments
+                self
+                newFcns
+            end
 
+            nFcns = length( newFcns );
+            k = length( self.nets );
+            for i = 1:nFcns
+                thisLossFcn = newFcns{i};
+                if thisLossFcn.hasNetwork
+                    k = k+1;
+                    % add the network object
+                    self.nets.(thisLossFcn.name) = thisLossFcn.initNetwork;
+                    % record its name
+                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
+                end
+            end
+
+        end
 
     end
 
@@ -162,8 +159,12 @@ classdef autoencoderModel < representationModel
 
                 nNets = length(thisLossFcn.lossNets);
                 for j = 1:nNets
-                    lossNets(i) = strcat( lossNets(i), ...
-                                          thisLossFcn.lossNets(j) ) ;
+                    if length(string( thisLossFcn.lossNets{j} ))==1
+                        assignments = thisLossFcn.lossNets{j};
+                    else
+                        assignments = strjoin( thisLossFcn.lossNets{j,:}, '+' );
+                    end
+                    lossNets(i) = strcat( lossNets(i), assignments ) ;
                     if j<nNets
                         lossNets(i) = strcat( lossNets(i), "; " );
                     end

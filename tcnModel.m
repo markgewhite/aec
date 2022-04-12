@@ -57,9 +57,16 @@ classdef tcnModel < autoencoderModel
             self.dropout = args.dropout;
             self.pooling = args.pooling;
 
+            % initialize the networks
+            self = initEncoder( self, args );
+            self = initDecoder( self, args );
 
-            % define the encoder network
-            % --------------------------
+        end
+
+
+        function self = initEncoder( self, args )
+            % Initialize the encoder network
+            
             % define input layers
             layersEnc = [ sequenceInputLayer( self.XChannels, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
@@ -95,13 +102,16 @@ classdef tcnModel < autoencoderModel
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...
                                        lastLayer, poolingLayer );
-
-
+        
+        
             self.nets.encoder = dlnetwork( lgraphEnc );
+            
+        end
 
 
-            % define the decoder network
-            % --------------------------
+        function self = initDecoder( self, args )
+            % Initialize the decoder network
+
             % define input layers
             layersDec = [ featureInputLayer( self.ZDim, 'Name', 'in' )
                           projectAndReshapeLayer( [self.XDim 1 self.XChannels ], ...
@@ -145,6 +155,7 @@ classdef tcnModel < autoencoderModel
             self.nets.decoder = dlnetwork( lgraphDec );
 
         end
+
 
     end
 
@@ -216,5 +227,5 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
     lastLayer = ['drop' num2str(i2)];
 
 end
-            
-            
+
+

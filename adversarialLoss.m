@@ -8,9 +8,14 @@
 classdef adversarialLoss < lossFunction
 
     properties
-        net                   % dlnetwork object
-        initLearningRate      % initial learning rate
-        distribution          % type of target distribution
+        ZDim                % latent codes dimension size  
+        nHidden             % number of hidden layers
+        nFC                 % number of fully connected nodes at widest
+        fcFactor            % node ratio specifying the power 2 index
+        scale               % leaky Relu scale
+        dropout             % dropout rate
+        initLearningRate    % initial learning rate
+        distribution        % type of target distribution
     end
 
     methods
@@ -41,7 +46,7 @@ classdef adversarialLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = {{'encoder'};{name}};
+            netAssignments = {{'encoder'}; string({'decoder',name})};
 
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
@@ -50,21 +55,37 @@ classdef adversarialLoss < lossFunction
                                  lossNets = netAssignments, ...
                                  hasNetwork = true, ...
                                  hasState = true );
+
+            self.ZDim = args.ZDim;
+            self.nHidden = args.nHidden;
+            self.nFC = args.nFC;
+            self.fcFactor = args.fcFactor;
+            self.scale = args.scale;
+            self.dropout = args.dropout;
             
             self.distribution = args.distribution;
             self.initLearningRate = args.initLearningRate;
 
+        end
+
+
+        function net = initNetwork( self )
+            % Generate an initialized network
+            arguments
+                self
+            end
+
             % create the input layer
-            layers = featureInputLayer( args.ZDim, 'Name', 'in' );
+            layers = featureInputLayer( self.ZDim, 'Name', 'in' );
             
             % create the hidden layers
-            for i = 1:args.nHidden
-                nNodes = fix( args.nFC*2^(args.fcFactor*(1-i)) );
+            for i = 1:self.nHidden
+                nNodes = fix( self.nFC*2^(self.fcFactor*(1-i)) );
                 layers = [ layers; ...
                     fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                     batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( args.scale, 'Name', ['relu' num2str(i)] )
-                    dropoutLayer( args.dropout, 'Name', ['drop' num2str(i)] )
+                    leakyReluLayer( self.scale, 'Name', ['relu' num2str(i)] )
+                    dropoutLayer( self.dropout, 'Name', ['drop' num2str(i)] )
                     ]; %#ok<AGROW> 
             end
             
@@ -75,38 +96,45 @@ classdef adversarialLoss < lossFunction
                             ];
             
             lgraph = layerGraph( layers );
-            self.net = dlnetwork( lgraph );
+            net = dlnetwork( lgraph );
+
 
         end
 
 
-        function [ self, loss, state ] = calcLoss( self, dlZFake )
+        function [ self, loss, state ] = calcLoss( self, net, dlZFake )
             % Calculate the adversarial loss
             arguments
                 self     adversarialLoss
+                net      dlnetwork
                 dlZFake  dlarray  % generated distribution
             end
 
-            [ ZDim, batchSize ] = size( dlZFake );
+            [ ZSize, batchSize ] = size( dlZFake );
+            if ZSize ~= self.ZDim
+                eid = 'adversarilLoss:IncorrectZ';
+                msg = 'Input array has the wrong number of latent codes.';
+                throwAsCaller( MException(eid,msg) );
+            end 
 
             % generate a target distribution
             switch self.distribution
                 case 'Gaussian'
-                    dlZReal = dlarray( randn( ZDim, batchSize ), 'CB' );
+                    dlZReal = dlarray( randn( ZSize, batchSize ), 'CB' );
                 case 'Categorical'
-                    dlZReal = dlarray( randi( ZDim, batchSize ), 'CB' );
+                    dlZReal = dlarray( randi( ZSize, batchSize ), 'CB' );
             end
 
             % predict authenticity from real Z using the discriminator
-            dlDReal = forward( self.net, dlZReal );
+            dlDReal = forward( net, dlZReal );
             
             % predict authenticity from fake Z
-            [ dlDFake, state ] = forward( self.net, dlZFake );
+            [ dlDFake, state ] = forward( net, dlZFake );
             
             % discriminator loss
-            loss(1) = 0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
+            loss(1) = -0.5*mean( log(dlDReal + eps) + log(1 - dlDFake + eps) );
             % generator loss
-            loss(2) = mean( log(dlDFake + eps) );
+            loss(2) = -mean( log(dlDFake + eps) );
 
     
         end
