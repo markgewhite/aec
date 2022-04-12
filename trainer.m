@@ -3,7 +3,7 @@ classdef trainer
 
     properties
         nNetworks      % number of networks for ease of reference
-        optimizer      % name of the optimizer to use
+        optimizer      % optimizer to use, plus its variable structures
         nEpochs        % maximum number of epochs for training
         nEpochsPreTrn  % number of epochs for pretraining
         batchSize      % minibatch size
@@ -22,11 +22,12 @@ classdef trainer
 
         padValue       % TEMPORARY: pad value
         padLoc         % TEMPORARY: pad location
+        cLabels        % TEMPORARY: category labels
     end
 
     methods
 
-        function self = trainer( thisModel, padValue, padLoc, args )
+        function self = trainer( thisModel, padValue, padLoc, cLabels, args )
             % Initialize the model
             arguments
                 thisModel           autoencoderModel
@@ -34,8 +35,13 @@ classdef trainer
                 padLoc              char ...
                     {mustBeMember(padLoc, ...
                       {'left', 'right', 'both', 'symmetric'} )}
+                cLabels             categorical
                 args.optimizer      char ...
                     {mustBeMember(args.optimizer, {'ADAM', 'SGD'} )} = 'ADAM'
+                args.beta1          double ...
+                    {mustBeNumeric, mustBePositive} = 0.9;
+                args.beta2          double ...
+                    {mustBeNumeric, mustBePositive} = 0.999;
                 args.nEpochs        double ...
                     {mustBeInteger, mustBePositive} = 2000;
                 args.nEpochsPreTrn  double ...
@@ -56,7 +62,9 @@ classdef trainer
                     {mustBeInteger, mustBePositive} = 25;
                 args.postTraining   logical = true;
                 args.valType        char ...
-                    {mustBeMember(args.valType, {'Network', 'Fisher'} )} = 'Fisher'
+                    {mustBeMember(args.valType, ...
+                        {'Reconstruction', 'Network', 'Fisher'} )} ...
+                            = 'Reconstruction'
 
             end
 
@@ -72,9 +80,11 @@ classdef trainer
 
             self.preTraining = true;
             self.postTraining = args.postTraining;
+            self.valType = args.valType;
 
             self.padValue = padValue;
             self.padLoc = padLoc;
+            self.cLabels = cLabels;
 
             self.nNetworks = length( thisModel.netNames );
 
@@ -102,6 +112,8 @@ classdef trainer
                     case 'ADAM'
                         self.optimizer.(networkName).avgG = []; 
                         self.optimizer.(networkName).avgGS = [];
+                        self.optimizer.(networkName).beta1 = args.beta1;
+                        self.optimizer.(networkName).beta2 = args.beta2;
                     case 'SGD'
                         self.optimizer.(networkName).vel = [];
                 end
@@ -151,7 +163,7 @@ classdef trainer
             v = 0;
             vp = self.valPatience;
             
-            lossTrn = zeros( nIter*self.nEpochs, 10 );
+            lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
             lossVal = zeros( ceil(nIter*self.nEpochs/self.valFreq), 1 );
             
             for epoch = 1:self.nEpochs
@@ -181,59 +193,64 @@ classdef trainer
                     
                     % evaluate the model gradients 
                     [ grad, state, lossTrn(j,:) ] = ...
-                                      dlfeval(  @thisModel.gradients, ...
-                                                thisModel, ...
+                                      dlfeval(  @gradients, ...
                                                 thisModel.nets, ...
+                                                thisModel.lossFcns, ...
+                                                thisModel.lossFcnTbl, ...
                                                 dlXTTrn, ...
                                                 dlXNTrn, ...
                                                 dlYTrn, ...
-                                                doTrainAE );
+                                                doTrainAE, ...
+                                                thisModel.isVAE );
 
                     % update the network parameters
                     for m = 1:self.nNetworks
 
-                        thisNetwork = thisModel.nets{i};
-                        thisOptimizer = self.optimizers.(thisModel.netNames{i});
+                        thisName = thisModel.netNames{m};
+                        thisNetwork = thisModel.nets.(thisName);
+                        thisOptimizer = self.optimizer.(thisName);
+                        thisGradient = grad.(thisName);
+                        thisLearningRate = self.learningRates.(thisName);
+
 
                         try
-                            thisNetwork.State = state.enc;
+                            thisNetwork.State = state.(thisName);
                         catch
-                            lossTrn = NaN;
                             constraint = 2;
                             return
                         end
 
-                        if any(strcmp( thisNetwork, {'encoder','decoder'} )) ...
+                        if any(strcmp( thisName, {'encoder','decoder'} )) ...
                             && not(self.postTraining || self.preTraining)
                             % skip training for the AE
                             continue
                         end
 
                         % update the network parameters
-                        switch self.optimizer
+                        switch self.optimizer.name
                             case 'ADAM'         
                                 [ thisNetwork, ...
                                   thisOptimizer.avgG, ...
                                   thisOptimizer.avgGS ] = ...
                                         adamupdate( thisNetwork, ...
-                                                    grad, ...
+                                                    thisGradient, ...
                                                     thisOptimizer.avgG, ...
                                                     thisOptimizer.avgGS, ...
                                                     j, ...
-                                                    self.learnRate, ...
-                                                    self.beta1, ...
-                                                    self.beta2 );
+                                                    thisLearningRate, ...
+                                                    thisOptimizer.beta1, ...
+                                                    thisOptimizer.beta2 );
                             case 'SGD'
                                 [ thisNetwork, ...
                                   thisOptimizer.vel ] = ...
                                     sgdmupdate( thisNetwork, ...
-                                                grad, ...
+                                                thisGradient, ...
                                                 thisOptimizer.vel, ...
-                                                self.dec.learnRate );
+                                                thisLearningRate );
                         end
                         
-                        thisModel.nets{i} = thisNetwork;
-                        self.optimizer.(self.modelNames{i}) = thisOptimizer;
+                        thisModel.nets.(thisName) = thisNetwork;
+                        self.optimizer.(thisName) = thisOptimizer;
                     
                     end
 
@@ -244,8 +261,8 @@ classdef trainer
                     
                     % run a validation check
                     v = v + 1;
-                    lossVal( v ) = validationCheck( thisModel, ...
-                                                dlXVal, dlYVal, cLabels );
+                    lossVal( v ) = validationCheck( thisModel, self.valType, ...
+                                                        dlXVal, dlYVal );
                     if v > 2*vp-1
                         if mean(lossVal(v-2*vp+1:v-vp)) < mean(lossVal(v-vp+1:v))
                             % no longer improving - stop training
@@ -255,40 +272,43 @@ classdef trainer
 
                 end
             
-            end
+                % update progress on screen
+                if mod( epoch, self.updateFreq )==0
+                    meanLoss = mean(lossTrn( j-nIter+1:j, : ));
 
-            % update progress on screen
-            if mod( epoch, self.updateFreq )==0
-                meanLoss = mean(lossTrn( j-nIter+1:j, : ));
-                fprintf('Loss (%4d) = %6.3f  %1.3f  %1.3f %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f  %1.3f', ...
-                    epoch, meanLoss );
-                if self.preTraining
-                    fprintf('\n');
-                else
-                    fprintf(' : %1.3f\n', lossVal(v));
-                end
-        
-                dlZTrn = encode( thisModel, dlXTTrn );
-                ZTrn = double(extractdata( dlZTrn ));
-                for c = 1:self.XChannels
-                    plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
-                                    self.fda.tSpan, self.fda.fdPar );
-                end
-                plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
-                drawnow;
-            end
-        
-            if mod( epoch, self.lrFreq )==0
-                % update learning rates
-                for m = 1:nModels
-                    if any(strcmp( thisNetwork, {'encoder','decoder'} )) ...
-                        && not(self.postTraining || self.preTraining)
-                        % skip training for the AE
-                        continue
+                    fprintf('Loss (%4d) = ', epoch);
+                    for k = 1:thisModel.nLoss
+                        fprintf(' %6.3f', meanLoss(k) );
                     end
-                    self.learnRates.(self.modelName{i}) = ...
-                        self.learnRates.(self.modelName{i})*self.lrFactor;
+                    if self.preTraining
+                        fprintf('\n');
+                    else
+                        fprintf(' : %1.3f\n', lossVal(v));
+                    end
+            
+                    dlZTrn = thisModel.encode( thisModel, dlXTTrn );
+                    %ZTrn = double(extractdata( dlZTrn ));
+                    %for c = 1:self.XChannels
+                    %    plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
+                    %                    self.fda.tSpan, self.fda.fdPar );
+                    %end
+                    %plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
+                    %drawnow;
                 end
+            
+                if mod( epoch, self.lrFreq )==0
+                    % update learning rates
+                    for m = 1:nModels
+                        if any(strcmp( thisNetwork, {'encoder','decoder'} )) ...
+                            && not(self.postTraining || self.preTraining)
+                            % skip training for the AE
+                            continue
+                        end
+                        self.learnRates.(self.modelName{i}) = ...
+                            self.learnRates.(self.modelName{i})*self.lrFactor;
+                    end
+                end
+
             end
 
         end
@@ -298,6 +318,150 @@ classdef trainer
 
 
 end
+
+
+function [grad, state, loss] = gradients( nets, ...
+                                          lossFcns, ...
+                                          lossFcnInfo, ...
+                                          dlXIn, dlXOut, ... 
+                                          dlY, ...
+                                          doTrainAE, ...
+                                          isVAE )
+    % Compute the model gradients
+    % (Model object not supplied so nets can be traced)
+    arguments
+        nets         struct   % networks, made explicit for tracing
+        lossFcns     struct   % loss functions
+        lossFcnInfo  table    % supporting info on loss functions
+        dlXIn        dlarray  % input to the encoder
+        dlXOut       dlarray  % output target for the decoder
+        dlY          dlarray  % auxiliary outcome variable
+        doTrainAE    logical  % whether to train the AE
+        isVAE        logical  % if variational autoencoder
+    end
+
+    if isVAE
+        % duplicate X & C to reflect mulitple draws of VAE
+        dlXOut = repmat( dlXOut, 1, thisEncoder.nDraws );
+        dlY = repmat( dlY, thisEncoder.nDraws, 1 );
+    end
+    
+    if doTrainAE
+        % autoencoder training
+    
+        % generate latent encodings
+        [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn);
+
+        % reconstruct curves from latent codes
+        [ dlXGen, state.decoder ] = forward( nets.decoder, dlZGen );
+        
+    else
+        % no autoencoder training
+        dlZGen = predict( nets.encoder, dlXIn );
+    
+    end
+
+
+    % select the active loss functions
+    activeFcns = lossFcnInfo( lossFcnInfo.doCalcLoss, : );
+
+    if any( activeFcns.types=='Component' )
+        % compute the AE components
+        if isVAE
+            dlXC = latentComponents( nets.decoder, dlZGen, ...
+                                        dlZMean = self.dlZMeans, ...
+                                        dlZLogVar = self.dlZLogVars );
+        else
+            dlXC = latentComponents( nets.decoder, dlZGen );
+        end
+    end
+
+    
+    % compute the active loss functions in turn
+    % and assign to networks
+    
+    nFcns = size( activeFcns, 1 );
+    nLoss = sum( activeFcns.nLosses );
+    loss = zeros( nLoss, 1 );
+    idx = 1;
+    for i = 1:nFcns
+       
+        % identify the loss function
+        thisName = activeFcns.names(i);
+        % take the model's copy of the loss function object
+        thisLossFcn = lossFcns.(thisName);
+
+        % assign indices for the number of losses returned
+        lossIdx = idx:idx+thisLossFcn.nLoss-1;
+        idx = idx + thisLossFcn.nLoss;
+
+        % select the input variables
+        switch thisLossFcn.input
+            case 'X-XHat'
+                dlV = { dlXOut, dlXGen };
+            case 'XC'
+                dlV = { dlXC };
+            case 'Z'
+                dlV = { dlZGen };
+            case 'Z-ZHat'
+                dlV = { dlZGen, dlZReal };
+            case 'ZMu-ZLogVar'
+                dlV = { dlZMu, dlLogVar };
+            case 'Y'
+                dlV = dlY;
+        end
+
+        % calculate the loss
+        % (make sure to use the model's copy 
+        %  of the relevant network object)
+        if thisLossFcn.hasNetwork
+            % call the loss function with the network object
+            if thisLossFcn.hasState
+                % and store the network state too
+                [ thisLossFcn, thisLoss, state.(thisName) ] = ...
+                                    thisLossFcn.calcLoss( dlV{:} );
+            else
+                thisLoss = thisLossFcn.calcLoss( dlV{:} );
+            end
+        else
+            % call the loss function straightforwardly
+            thisLoss = thisLossFcn.calcLoss( dlV{:} );
+        end
+        loss( lossIdx ) = thisLoss;
+
+        % assign loss to loss accumulator for associated network(s)
+        for j = 1:length( lossIdx )
+            for k = 1:length( thisLossFcn.lossNets(j,:) )
+                netName = thisLossFcn.lossNets(j,k);
+                if exist( 'lossAccum', 'var' )
+                    if isfield( lossAccum, netName )
+                        lossAccum.(netName) = ...
+                                    lossAccum.(netName) + thisLoss(j);
+                    else
+                        lossAccum.(netName) = thisLoss(j);
+                    end
+                else
+                    lossAccum.(netName) = thisLoss(j);
+                end
+            end
+        end
+
+    end
+
+% compute the gradients for each network
+netNames = fieldnames( nets );
+for i = 1:length(netNames)
+
+    thisName = netNames{i};
+    thisNetwork = nets.(thisName);
+    grad.(thisName) = dlgradient( lossAccum.(thisName), ...
+                                  thisNetwork.Learnables, ...
+                                  'RetainData', true );
+    
+end
+
+end
+
 
 function [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart )
 
@@ -375,21 +539,25 @@ function [ dsTrn, XNfmt ] = createDatastore( XTrn, XNTrn, YTrn )
 end
 
 
-function lossVal = validationCheck( model, dlXVal, dlYVal, cLabels )
+function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
 
-    dlZVal = encode( model, dlXVal );
-    switch self.valType
+    dlZVal = thisModel.encode( thisModel, dlXVal );
+    switch valType
+        case 'Reconstruction'
+            dlXValHat = thisModel.reconstruct( thisModel, dlZVal );
+            lossVal = thisModel.getReconLoss( thisModel, dlXVal, dlXValHat );
+
         case 'Network'
-            dlYHatVal = predict( dlnetCls, dlZVal );
+            dlYHatVal = predict( thisModel.nets.classifier, dlZVal );
             dlYHatVal = double( ...
-                onehotdecode( dlYHatVal, single(cLabels), 1 ))' - 1;
-            lossVal(v) = sum( dlYHatVal~=dlYVal )/length(dlYVal);
+                onehotdecode( dlYHatVal, single(thisModel.cLabels), 1 ))' - 1;
+            lossVal = sum( dlYHatVal~=dlYVal )/length(dlYVal);
 
         case 'Fisher'
             ZVal = double(extractdata( dlZVal ));
             YVal = double(extractdata( dlYVal ));
-            model = fitcdiscr( ZVal', YVal );
-            lossVal(v) = loss( model, ZVal', YVal );
+            classifier = fitcdiscr( ZVal', YVal );
+            lossVal = loss( classifier, ZVal', YVal );
     end
 
 

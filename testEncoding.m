@@ -56,7 +56,9 @@ for i = 1:nRuns
 
     % train the autoencoder
     myTrainer = trainer( testModel, ...
-                         setup.data.padValue, setup.data.padLoc );
+                         setup.data.padValue, setup.data.padLoc, ...
+                         setup.data.cLabels, ...
+                         updateFreq=5 );
 
     testModel = myTrainer.train( testModel, XTrn, XNTrn, YTrn );
 

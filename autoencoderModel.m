@@ -15,6 +15,7 @@ classdef autoencoderModel < representationModel
         lossFcnNames   % names of the loss functions
         lossFcnWeights % weights to be applied to the loss function
         lossFcnTbl     % convenient table summarising loss function details
+        nLoss          % number of computed losses
     end
 
     methods
@@ -51,7 +52,7 @@ classdef autoencoderModel < representationModel
                 throwAsCaller( MException(eid,msg) );
             end 
 
-
+            self.nLoss = sum( self.lossFcnTbl.nLosses );
 
         end
 
@@ -190,10 +191,10 @@ classdef autoencoderModel < representationModel
 
         end
 
-        function Z = encode( self, X )
+        function Z = encode( self, dlX )
             % Encode features Z from X using the model
 
-            Z = predict( self.nets.encoder, X );
+            Z = predict( self.nets.encoder, dlX );
 
         end
 
@@ -208,14 +209,27 @@ classdef autoencoderModel < representationModel
         function net = getNetwork( self, name )
             arguments
                 self
-                name         string ...
-                    {mustBeNetName( self, name )}
+                name         string {mustBeNetName( self, name )}
             end
             
             net = self.nets.(name);
             if isa( net, 'lossFunction' )
                 net = self.lossFcns.(name).net;
             end
+
+        end
+
+
+        function loss = getReconLoss( self, dlX, dlXHat )
+            % Calculate the reconstruction loss
+            arguments
+                self
+                dlX     dlarray
+                dlXHat  dlarray
+            end
+            
+            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
+            loss = self.lossFcns.(name).calcLoss( dlX, dlXHat );
 
         end
 
@@ -231,157 +245,21 @@ classdef autoencoderModel < representationModel
         end
 
 
-
-        function [grad, state, loss] = gradients( self, ...
-                                                  nets, ...
-                                                  dlXIn, dlXOut, ... 
-                                                  dlY, ...
-                                                  doTrainAE )
-            arguments
-                self
-                nets         struct   % networks, made explicit for tracing
-                dlXIn        dlarray  % input to the encoder
-                dlXOut       dlarray  % output target for the decoder
-                dlY          dlarray  % auxiliary outcome variable
-                doTrainAE    logical  % whether to train the AE
-            end
-
-            if self.isVAE
-                % duplicate X & C to reflect mulitple draws of VAE
-                dlXOut = repmat( dlXOut, 1, thisEncoder.nDraws );
-                dlY = repmat( dlY, thisEncoder.nDraws, 1 );
-            end
-            
-            if doTrainAE
-                % autoencoder training
-            
-                % generate latent encodings
-                [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn);
-    
-                % reconstruct curves from latent codes
-                [ dlXGen, state.decoder ] = forward( nets.decoder, dlZGen );
-                
-            else
-                % no autoencoder training
-                dlZGen = predict( nets.encoder, dlXIn );
-            
-            end
-
-
-            % select the active loss functions
-            activeFcns = self.lossFcnTbl( self.lossFcnTbl.doCalcLoss, : );
-
-            if any( activeFcns.types=='Component' )
-                % compute the AE components
-                if self.isVAE
-                    dlXC = latentComponents( self, dlZGen, ...
-                                    dlZMean = self.dlZMeans, ...
-                                    dlZLogVar = self.dlZLogVars );
-                else
-                    dlXC = latentComponents( self, dlZGen );
-                end
-            end
-
-            
-            % compute the active loss functions in turn
-            % and assign to networks
-            
-            nFcns = size( activeFcns, 1 );
-            nLoss = sum( activeFcns.nLosses );
-            loss = zeros( nLoss, 1 );
-            idx = 1;
-            for i = 1:nFcns
-               
-                % identify the loss function
-                thisName = activeFcns.names(i);
-                % take the model's copy of the loss function object
-                thisLossFcn = self.lossFcns.(thisName);
-
-                % assign indices for the number of losses returned
-                lossIdx = idx:idx+thisLossFcn.nLoss-1;
-                idx = idx + thisLossFcn.nLoss;
-
-                % select the input variables
-                switch thisLossFcn.input
-                    case 'X-XHat'
-                        dlV = { dlXOut, dlXGen };
-                    case 'XC'
-                        dlV = { dlXC };
-                    case 'Z'
-                        dlV = { dlZGen };
-                    case 'Z-ZHat'
-                        dlV = { dlZGen, dlZReal };
-                    case 'ZMu-ZLogVar'
-                        dlV = { dlZMu, dlLogVar };
-                    case 'Y'
-                        dlV = dlY;
-                end
-
-                % calculate the loss
-                % (make sure to use the model's copy 
-                %  of the relevant network object)
-                if thisLossFcn.hasNetwork
-                    % call the loss function with the network object
-                    if thisLossFcn.hasState
-                        % and store the network state too
-                        [ thisLossFcn, thisLoss, state.(thisName) ] = ...
-                            thisLossFcn.calcLoss( dlV{:} );
-                    else
-                        thisLoss = thisLossFcn.calcLoss( dlV{:} );
-                    end
-                else
-                    % call the loss function straightforwardly
-                    thisLoss = thisLossFcn.calcLoss( dlV{:} );
-                end
-                loss( lossIdx ) = thisLoss;
-
-                % assign loss to loss accumulator for associated network(s)
-                for j = 1:length( lossIdx )
-                    for k = 1:length( thisLossFcn.lossNets(j,:) )
-                        netName = thisLossFcn.lossNets(j,k);
-                        if exist( 'lossAccum', 'var' )
-                            if isfield( lossAccum, netName )
-                                lossAccum.(netName) = ...
-                                    lossAccum.(netName) + thisLoss(j);
-                            else
-                                lossAccum.(netName) = thisLoss(j);
-                            end
-                        else
-                            lossAccum.(netName) = thisLoss(j);
-                        end
-                    end
-                end
-
-            end
-
-        % compute the gradients for each network
-        for i = 1:length(self.netNames)
-
-            thisName = self.netNames{i};
-            thisNetwork = nets.(thisName);
-            grad.(thisName) = dlgradient( lossAccum.(thisName), ...
-                                          thisNetwork.Learnables, ...
-                                          'RetainData', true );
-            
-        end
-
-        end
-
-
-        function dlXC = latentComponents( self, dlZ, args )
+        function dlXC = latentComponents( decoder, dlZ, args )
             % Calculate the funtional components from the latent codes
             % using the decoder network. For each component, the relevant 
             % code is varied randomly about the mean. This is more 
             % efficient than calculating two components at strict
             % 2SD separation from the mean.
             arguments
-                self
+                decoder         dlnetwork
                 dlZ             dlarray
                 args.nSample    double {mustBeInteger,mustBePositive} = 10
                 args.dlZMean    dlarray = []
                 args.dlZLogVar  dlarray = []
             end
 
+            ZDim = size( dlZ, 2 );
             if isempty( args.dlZMean ) || isempty( args.dlZLogVar )
                 % compute the mean and SD across the batch
                 dlZMean = mean( dlZ, 2 );
@@ -394,9 +272,9 @@ classdef autoencoderModel < representationModel
             
             % initialise the components' Z codes at the mean
             % include an extra one that will be preserved
-            dlZC = repmat( dlZMean, 1, self.ZDim*nSample+1 );
+            dlZC = repmat( dlZMean, 1, ZDim*nSample+1 );
             
-            for i =1:self.ZDim
+            for i =1:ZDim
                 for j = 1:nSample
                 
                     % vary ith component randomly about its mean
@@ -406,7 +284,7 @@ classdef autoencoderModel < representationModel
             end
             
             % generate all the component curves using the decoder
-            dlXC = forward( self.nets.decoder, dlZC );
+            dlXC = forward( decoder, dlZC );
             
             % centre about the mean curve (last curve)
             dlXC = dlXC(:,1:end-1) - dlXC(:,end);
