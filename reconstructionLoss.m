@@ -33,6 +33,7 @@ classdef reconstructionLoss < lossFunction
     methods (Static)
 
     function loss = calcLoss( X, XHat )
+        
         % Calculate the reconstruction loss
         loss = mean( (X-XHat).^2, 'all' );
 

@@ -298,14 +298,15 @@ classdef trainer
             
                 if mod( epoch, self.lrFreq )==0
                     % update learning rates
-                    for m = 1:nModels
-                        if any(strcmp( thisNetwork, {'encoder','decoder'} )) ...
+                    for m = 1:self.nNetworks
+                        thisName = thisModel.netNames{m};
+                        if any(strcmp( thisName, {'encoder','decoder'} )) ...
                             && not(self.postTraining || self.preTraining)
                             % skip training for the AE
                             continue
                         end
-                        self.learnRates.(self.modelName{i}) = ...
-                            self.learnRates.(self.modelName{i})*self.lrFactor;
+                        self.learningRates.(thisName) = ...
+                            self.learningRates.(thisName)*self.lrFactor;
                     end
                 end
 
@@ -340,17 +341,24 @@ function [grad, state, loss] = gradients( nets, ...
         isVAE        logical  % if variational autoencoder
     end
 
-    if isVAE
-        % duplicate X & C to reflect mulitple draws of VAE
-        dlXOut = repmat( dlXOut, 1, thisEncoder.nDraws );
-        dlY = repmat( dlY, thisEncoder.nDraws, 1 );
-    end
-    
+   
     if doTrainAE
         % autoencoder training
     
-        % generate latent encodings
-        [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn);
+        if isVAE
+            % generate latent encodings
+            [ dlZGen, state.encoder, dlZMu, dlLogVar ] = ...
+                forward( nets.encoder, dlXIn);
+
+            % duplicate X & C to reflect mulitple draws of VAE
+            dlXOut = repmat( dlXOut, 1, nets.encoder.nDraws );
+            dlY = repmat( dlY, 1, nets.encoder.nDraws );
+        
+        else
+            % generate latent encodings
+            [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn);
+
+        end
 
         % reconstruct curves from latent codes
         [ dlXGen, state.decoder ] = forward( nets.decoder, dlZGen );

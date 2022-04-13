@@ -44,6 +44,9 @@ classdef tcnModel < autoencoderModel
                     {mustBeMember(args.pooling, ...
                       {'GlobalMax', 'GlobalAvg', 'None'} )} = 'GlobalMax'
                 args.useSkips      logical = true
+                args.isVAE         logical = false
+                args.nVAEDraws     double ...
+                    {mustBeInteger, mustBePositive} = 1
             end
 
             % set the superclass's properties
@@ -56,6 +59,7 @@ classdef tcnModel < autoencoderModel
             self.inputDropout = args.inputDropout;
             self.dropout = args.dropout;
             self.pooling = args.pooling;
+            self.isVAE = args.isVAE;
 
             % initialize the networks
             self = initEncoder( self, args );
@@ -97,15 +101,21 @@ classdef tcnModel < autoencoderModel
             end
             
             outLayers = [ outLayers;
-                          fullyConnectedLayer( self.ZDim, 'Name', 'out' ) ];
+                          fullyConnectedLayer( self.ZDim*(args.isVAE+1), ...
+                                               'Name', 'out' ) ];
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...
                                        lastLayer, poolingLayer );
         
         
-            self.nets.encoder = dlnetwork( lgraphEnc );
-            
+            if args.isVAE
+                self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
+                                                  nDraws = args.nVAEDraws );
+            else
+                self.nets.encoder = dlnetwork( lgraphEnc );
+            end
+
         end
 
 

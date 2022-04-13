@@ -32,19 +32,17 @@ classdef klDivergenceLoss < lossFunction
 
     methods (Static)
 
-        function loss = calcLoss( this, Z )
+        function loss = calcLoss( dlZ )
             % Calculate the KL divergence
-            if this.doCalcLoss
-    
-                ZSigma = std( Z );
-                ZMu = mean( Z );
-                
-                loss = 0.5*sum( ZSigma.^2 + ZMu.^2 - 1 - log(ZSigma.^2) );
-    
-            else
-                loss = 0;
+            arguments
+                dlZ   dlarray
             end
-    
+
+            dlZSigma = std( dlZ );
+            dlZMu = mean( dlZ );
+            
+            loss = 0.5*sum( dlZSigma.^2 + dlZMu.^2 - 1 - log(dlZSigma.^2) );
+
         end
 
     end

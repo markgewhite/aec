@@ -5,10 +5,9 @@
 %
 % ************************************************************************
 
-classdef vaeNetwork < handle
+classdef dlnetworkVAE < dlnetwork
 
     properties
-        encoder    % dlnetwork 
         nDraws     % number of draws from the distribution per row
         useMean    % flag whether to use mean output in predictions
         dlMeans    % last forward-output of means
@@ -17,21 +16,24 @@ classdef vaeNetwork < handle
 
     methods
 
-        function self = vaeNetwork( net, args )
+        function self = dlnetworkVAE( lgraph, args, superArgs )
             % Initialize the variational autoencoder
             arguments
-                net           dlnetwork
+                lgraph
                 args.nDraws   double {mustBeInteger,mustBePositive} = 1
                 args.useMean  logical = true
+                superArgs.?dlnetwork
             end
 
-            self.encoder = net;
+            superArgsCell = namedargs2cell( superArgs );
+           
+            self = self@dlnetwork( lgraph, superArgsCell{:} );
             self.nDraws = args.nDraws;
             self.useMean = args.useMean;
 
         end
 
-        function [dlZ, state] = forward( self, dlX )
+        function [dlZ, state, dlMean, dlLogVars ] = forward( self, dlX, superArgs )
             % Override the forward dlnetwork function
             % to perform the reparameterization trick
             % returning mean and log variance for loss calculation
@@ -41,15 +43,19 @@ classdef vaeNetwork < handle
             arguments (Repeating)
                 dlX     dlarray
             end
-            
-            [ dlEncOutput, state ] = forward( self.encoder, dlX );
+            arguments
+                superArgs.?dlnetwork 
+            end
 
-            [ dlZ, self.dlMean, self.dlLogVars ] = ...
-                        reparameterize( dlEncOutput, self.nDraws );
+            superArgsCell = namedargs2cell( superArgs );
+
+            [ dlEncOutput, state ] = forward@dlnetwork( self, dlX{:}, superArgsCell{:} );
+
+            [ dlZ, dlMean, dlLogVars ] = reparameterize( dlEncOutput, self.nDraws );
 
         end
 
-        function dlZ = predict( self, dlX )
+        function dlZ = predict( self, dlX, superArgs )
             % Override the predict dlnetwork function
             % to perform the reparameterization trick
             arguments
@@ -58,10 +64,15 @@ classdef vaeNetwork < handle
             arguments (Repeating)
                 dlX     dlarray
             end
-            
-            dlEncOutput = predict( self.encoder, dlX );
+            arguments
+                superArgs.?dlnetwork 
+            end
 
-            [ dlZ, dlMean ] = reparameterize( dlEncOutput, self.nDraws );
+            superArgsCell = namedargs2cell( superArgs );
+            
+            dlEncOutput = predict@dlnetwork( self, dlX{:}, superArgsCell{:} );
+
+            [ dlZ, dlMean ] = reparameterize( dlEncOutput, 1 );
 
             if self.useMean
                 dlZ = dlMean;
