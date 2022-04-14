@@ -67,7 +67,7 @@ setup.mmd.baseType = 'Normal';
 setup.fda = config.fda;
 
 % specify the network initialisation functions
-setup.autoencoderFcn = @aeTCNDesign;
+setup.autoencoderFcn = @aeFCDesign;
 setup.discriminatorFcn = @aeDiscriminatorDesign;
 setup.classifierFcn = @aeClassifierDesign;
 

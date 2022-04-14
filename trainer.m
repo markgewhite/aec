@@ -55,7 +55,7 @@ classdef trainer
                 args.initLearningRates  double ...
                     {mustBePositive} = 0.001;
                 args.lrFreq         double ...
-                    {mustBeInteger, mustBePositive} = 250;
+                    {mustBeInteger, mustBePositive} = 150;
                 args.lrFactor       double ...
                     {mustBeNumeric, mustBePositive} = 0.5;
                 args.valPatience    double ...
@@ -76,6 +76,7 @@ classdef trainer
             self.valFreq = args.valFreq;
             self.updateFreq = args.updateFreq;
             self.lrFreq = args.lrFreq;
+            self.lrFactor = args.lrFactor;
             self.valPatience = args.valPatience;
 
             self.preTraining = true;
@@ -126,7 +127,7 @@ classdef trainer
             arguments
                 self
                 thisModel    autoencoderModel
-                X            cell
+                X            
                 XN           double
                 Y            
             end
@@ -352,7 +353,7 @@ function [grad, state, loss] = gradients( nets, ...
 
             % duplicate X & C to reflect mulitple draws of VAE
             dlXOut = repmat( dlXOut, 1, nets.encoder.nDraws );
-            dlY = repmat( dlY, 1, nets.encoder.nDraws );
+            dlY = repmat( dlY, nets.encoder.nDraws, 1 );
         
         else
             % generate latent encodings
@@ -440,8 +441,9 @@ function [grad, state, loss] = gradients( nets, ...
         end
         loss( lossIdx ) = thisLoss;
 
-        lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx );
-
+        if thisLossFcn.useLoss
+            lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx );
+        end
 
     end
 

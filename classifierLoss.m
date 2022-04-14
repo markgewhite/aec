@@ -9,14 +9,15 @@ classdef classifierLoss < lossFunction
 
     properties
         ZDim                % latent codes dimension size
-        CDim               % number of possible classes
+        CDim                % number of possible classes
         nHidden             % number of hidden layers
         nFC                 % number of fully connected nodes at widest
         fcFactor            % node ratio specifying the power 2 index
         scale               % leaky Relu scale
         dropout             % dropout rate
-        initLearningRate   % initial learning rate
-        modelType          % type of classifier model
+        initLearningRate    % initial learning rate
+        modelType           % type of classifier model
+        CLabels             % categorical labels
     end
 
     methods
@@ -78,6 +79,8 @@ classdef classifierLoss < lossFunction
 
             end
 
+            self.CLabels = categorical( 1:self.CDim );
+
         end
 
 
@@ -129,10 +132,10 @@ classdef classifierLoss < lossFunction
             end
 
             if self.hasNetwork                    
-                [ loss, state ] = networkLoss( net, dlZGen, dlC );
+                [ loss, state ] = self.networkLoss( net, dlZGen, dlC );
             
             else
-                loss = nonNetworkLoss( self.modelType, dlZGen, dlC );
+                loss = self.nonNetworkLoss( self.modelType, dlZGen, dlC );
                 state = [];
 
             end
@@ -145,14 +148,14 @@ classdef classifierLoss < lossFunction
 
     methods (Access = protected)
 
-        function [ loss, state ] = networkLoss( model, dlZGen, dlC )
+        function [ loss, state ] = networkLoss( self, net, dlZGen, dlC )
 
             % get the network's predicted class
-            [ dlCGen, state ] = forward( model, dlZGen );
+            [ dlCGen, state ] = forward( net, dlZGen );
 
             % hotcode the actual class 
             dlCActual = dlarray( ...
-                onehotencode( self.cLabels(dlC+1), 1 ), 'CB' );
+                onehotencode( self.CLabels(dlC), 1 ), 'CB' );
             
             % compute the cross entropy (classifier) loss
             loss = crossentropy( dlCGen, dlCActual, ...
@@ -161,14 +164,14 @@ classdef classifierLoss < lossFunction
         end
 
 
-        function loss = nonNetworkLoss( modelType, dlZGen, dlC )
+        function loss = nonNetworkLoss( self, dlZGen, dlC )
 
             % convert to double for models which don't take dlarrays
             ZGen = double(extractdata( dlZGen ))';
             C = double(extractdata( dlC ));
             
             % fit the appropriate model
-            switch modelType
+            switch self.modelType
                 case 'Fisher'
                     model = fitcdiscr( ZGen, C );
                 case 'SVM'

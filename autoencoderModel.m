@@ -182,16 +182,6 @@ classdef autoencoderModel < representationModel
 
     methods (Static)
 
-        function vae = makeVAE( net )
-            % Convert an encoder into a variational encoder
-            arguments
-                net  dlnetwork
-            end
-
-            vae = vaeNetwork( net );
-
-        end
-
         function Z = encode( self, dlX )
             % Encode features Z from X using the model
 
