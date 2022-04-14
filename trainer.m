@@ -417,6 +417,8 @@ function [grad, state, loss] = gradients( nets, ...
                 dlV = { dlZMu, dlLogVar };
             case 'Y'
                 dlV = dlY;
+            case 'Z-Y'
+                dlV = { dlZGen, dlY };
         end
 
         % calculate the loss

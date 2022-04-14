@@ -8,9 +8,14 @@
 classdef classifierLoss < lossFunction
 
     properties
-        net                % dlnetwork object
-        initLearningRate   % initial learning rate
+        ZDim                % latent codes dimension size
         CDim               % number of possible classes
+        nHidden             % number of hidden layers
+        nFC                 % number of fully connected nodes at widest
+        fcFactor            % node ratio specifying the power 2 index
+        scale               % leaky Relu scale
+        dropout             % dropout rate
+        initLearningRate   % initial learning rate
         modelType          % type of classifier model
     end
 
@@ -45,83 +50,93 @@ classdef classifierLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFunction( name, superArgsCell{:}, ...
-                                 type = 'Classification', ...
-                                 input = 'Z-Y'  );
-            self.CDim = args.CDim;
-            self.type = args.type;
+            netAssignments = {'encoder', name};
 
-            switch args.type
+            self = self@lossFunction( name, superArgsCell{:}, ...
+                                 type = 'Auxiliary', ...
+                                 input = 'Z-Y', ...
+                                 lossNets = netAssignments, ...
+                                 hasNetwork = true, ...
+                                 hasState = true );
+
+            self.ZDim = args.ZDim;
+            self.CDim = args.CDim;
+            self.nHidden = args.nHidden;
+            self.nFC = args.nFC;
+            self.fcFactor = args.fcFactor;
+            self.scale = args.scale;
+            self.dropout = args.dropout;
+            self.modelType = args.modelType;
+
+            switch args.modelType
                 case 'Network'
                     self.initLearningRate = args.initLearningRate;
 
-                    % create the input layer
-                    layers = featureInputLayer( args.ZDim, 'Name', 'in' );
-                    
-                    % create the hidden layers
-                    for i = 1:args.nHidden
-                        nNodes = fix( args.nFC*2^(args.fcFactor*(1-i)) );
-                        layers = [ layers; ...
-                            fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
-                            batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                            leakyReluLayer( args.scale, 'Name', ['relu' num2str(i)] )
-                            dropoutLayer( args.dropout, 'Name', ['drop' num2str(i)] )
-                            ]; %#ok<AGROW> 
-                    end
-                    
-                    % create final layers
-                    layers = [ layers; ...    
-                                    fullyConnectedLayer( args.CDim, 'Name', 'fcout' )
-                                    sigmoidLayer( 'Name', 'out' )
-                                    ];
-                    
-                    lgraph = layerGraph( layers );
-                    self.net = dlnetwork( lgraph );
-                    
-                    self.lossNets = {'encoder', name};
-                    self.hasNetwork = true;
-                    self.hasState = true;
-
                 otherwise
                     % not a network, will use a fixed model
-                    self.net = [];
                     self.initLearningRate = 0;
 
-
             end
-
 
         end
 
-    end
 
-    methods (Static)
+        function net = initNetwork( self )
+            % Generate an initialized network
+            arguments
+                self
+            end
 
-        function [ loss, state ] = calcLoss( this, dlZGen, dlC )
+            if ~strcmp( self.modelType, 'Network' )
+                eid = 'classifierLoss:NotNetwork';
+                msg = 'This classifier function does not use a network.';
+                throwAsCaller( MException(eid,msg) );
+            end 
+
+            % create the input layer
+            layers = featureInputLayer( self.ZDim, 'Name', 'in' );
+            
+            % create the hidden layers
+            for i = 1:self.nHidden
+                nNodes = fix( self.nFC*2^(self.fcFactor*(1-i)) );
+                layers = [ layers; ...
+                    fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
+                    batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                    leakyReluLayer( self.scale, 'Name', ['relu' num2str(i)] )
+                    dropoutLayer( self.dropout, 'Name', ['drop' num2str(i)] )
+                    ]; %#ok<AGROW> 
+            end
+            
+            % create final layers
+            layers = [ layers; ...    
+                            fullyConnectedLayer( self.CDim, 'Name', 'fcout' )
+                            sigmoidLayer( 'Name', 'out' )
+                            ];
+            
+            lgraph = layerGraph( layers );
+            net = dlnetwork( lgraph );
+            
+        end
+
+
+        function [ self, loss, state ] = calcLoss(  self, net, dlZGen, dlC )
             % Calculate the classifier loss
             arguments
-                this
-                dlZGen  dlarray  % generated latent distribtion
-                dlC     dlarray  % actual distribution
+                self     classifierLoss
+                net      dlnetwork
+                dlZGen   dlarray  % generated latent distribtion
+                dlC      dlarray  % actual distribution
             end
 
-            if this.doCalcLoss
-
-                if this.hasNetwork                    
-                    [ loss, state ] = ...
-                        networkLoss( this.net, dlZGen, dlC );
-                else
-
-                    loss = nonNetworkLoss( this.modelType, dlZGen, dlC );
-                    state = [];
-
-                end
-
+            if self.hasNetwork                    
+                [ loss, state ] = networkLoss( net, dlZGen, dlC );
+            
             else
-
-                loss = 0;
+                loss = nonNetworkLoss( self.modelType, dlZGen, dlC );
                 state = [];
+
             end
+
     
         end
 

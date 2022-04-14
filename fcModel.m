@@ -38,6 +38,9 @@ classdef fcModel < autoencoderModel
                     {mustBeInRange(args.inputDropout, 0, 1)} = 0.2
                 args.dropout    double ...
                     {mustBeInRange(args.dropout, 0, 1)} = 0.05
+                args.isVAE         logical = false
+                args.nVAEDraws     double ...
+                    {mustBeInteger, mustBePositive} = 1
             end
 
             % set the superclass's properties
@@ -51,8 +54,18 @@ classdef fcModel < autoencoderModel
             self.scale = args.scale;
             self.inputDropout = args.inputDropout;
             self.dropout = args.dropout;
+            self.isVAE = args.isVAE;
 
-            % define the encoder network
+            % initialize the networks
+            self = initEncoder( self, args.nVAEDraws );
+            self = initDecoder( self );
+            
+        end
+
+
+        function self = initEncoder( self, nVAEDraws )
+            % Initialize the encoder network
+
             layersEnc = [ featureInputLayer( self.XDim, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 ) 
@@ -71,13 +84,24 @@ classdef fcModel < autoencoderModel
             end
             
             layersEnc = [ layersEnc; ...
-                  fullyConnectedLayer( self.ZDim, 'Name', 'out' ) ];
+                  fullyConnectedLayer( self.ZDim*(self.isVAE+1), ...
+                                       'Name', 'out' ) ];
             
             lgraphEnc = layerGraph( layersEnc );
-            self.nets.encoder = dlnetwork( lgraphEnc );
+
+            if self.isVAE
+                self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
+                                                  nDraws = nVAEDraws );
+            else
+                self.nets.encoder = dlnetwork( lgraphEnc );
+            end
+
+        end
 
 
-            % define the decoder network          
+        function self = initDecoder( self )
+            % Initialize the decoder network
+
             layersDec = featureInputLayer( self.ZDim, 'Name', 'in' );
             
             for i = 1:self.nHidden
@@ -95,9 +119,11 @@ classdef fcModel < autoencoderModel
                           reshapeLayer( [self.XDim self.XChannels], 'Name', 'out' ) ];
             
             lgraphDec = layerGraph( layersDec );
+
             self.nets.decoder = dlnetwork( lgraphDec );
-            
+
         end
+
 
     end
 
