@@ -115,8 +115,14 @@ classdef fcModel < autoencoderModel
             end
 
             layersDec = [ layersDec; ...
-                          fullyConnectedLayer( self.XDim*self.XChannels, 'Name', 'fcout' )
-                          reshapeLayer( [self.XDim self.XChannels], 'Name', 'out' ) ];
+                          fullyConnectedLayer( self.XDim*self.XChannels, ...
+                                               'Name', 'fcout' ) ];
+
+            if self.XChannels > 1
+                layersDec = [ layersDec; 
+                                reshapeLayer( [self.XDim self.XChannels], ...
+                                              'Name', 'reshape' ) ];
+            end
             
             lgraphDec = layerGraph( layersDec );
 

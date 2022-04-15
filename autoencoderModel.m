@@ -250,7 +250,8 @@ classdef autoencoderModel < representationModel
                 args.dlZLogVar  dlarray = []
             end
 
-            ZDim = size( dlZ, 2 );
+            nSample = args.nSample;
+            ZDim = size( dlZ, 1 );
             if isempty( args.dlZMean ) || isempty( args.dlZLogVar )
                 % compute the mean and SD across the batch
                 dlZMean = mean( dlZ, 2 );
@@ -264,26 +265,39 @@ classdef autoencoderModel < representationModel
             % initialise the components' Z codes at the mean
             % include an extra one that will be preserved
             dlZC = repmat( dlZMean, 1, ZDim*nSample+1 );
+
+            % convert to double to greatly speed up processing
+            % (tracing is not an issue)
+            ZC = double(extractdata( dlZC ));
+            ZMean = double(extractdata( dlZMean ));
+            ZStd = double(extractdata( dlZStd ));
             
-            for i =1:ZDim
-                for j = 1:nSample
-                
+            for j = 1:nSample
+                offset = 2*randn;
+                for i =1:ZDim
                     % vary ith component randomly about its mean
-                    dlZC(i,(i-1)*nSample+j) = dlZMean(i) + 2*randn*dlZStd(i);
-                    
+                    ZC(i,(i-1)*nSample+j) = ZMean(i) + offset*ZStd(i);
                 end
             end
-            
+
+            % convert back
+            dlZC = dlarray( ZC, 'CB' );
+           
             % generate all the component curves using the decoder
             dlXC = forward( decoder, dlZC );
-            
+
             % centre about the mean curve (last curve)
-            dlXC = dlXC(:,1:end-1) - dlXC(:,end);
+            XDim = size( dlXC );
+            if length( XDim )==2
+                dlXC = dlXC( :, 1:end-1 ) - dlXC( :, end );
+            else
+                dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );
+            end
             
         end
             
 
-        function plotLatentComp( ax, self, Z, c, tSpan, fdPar )
+        function plotLatentComp( self, Z, c, tSpan, fdPar )
             % Plot characteristic curves of the latent codings which are similar
             % in conception to the functional principal components
             
