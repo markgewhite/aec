@@ -155,7 +155,7 @@ classdef trainer
                 mbqTrn = minibatchqueue( dsTrn,...
                                   'MiniBatchSize', self.batchSize, ...
                                   'PartialMiniBatch', 'discard', ...
-                                  'MiniBatchFormat', {'CB', XNfmt, 'CB'} );
+                                  'MiniBatchFormat', {'CB', XNfmt, 'BC'} );
             end
 
             % setup the loop
@@ -353,7 +353,7 @@ function [grad, state, loss] = gradients( nets, ...
 
             % duplicate X & C to reflect mulitple draws of VAE
             dlXOut = repmat( dlXOut, 1, nets.encoder.nDraws );
-            dlY = repmat( dlY, nets.encoder.nDraws, 1 );
+            dlY = repmat( dlY, 1, nets.encoder.nDraws );
         
         else
             % generate latent encodings
