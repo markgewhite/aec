@@ -20,29 +20,18 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    [X, XN, XFd, Y, setup.data ] = initializeData( dataSource, nCodes, nPts ); 
+    myData = jumpGRFDataset;
 
     % partitioning
-    cvPart = cvpartition( Y, 'Holdout', 0.5 );
-    XTrn = splitData( X, training(cvPart) );
-    XTst = splitData( X, test(cvPart) );
-    XNTrn = splitData( XN, training(cvPart) );
-    XNTst = splitData( XN, test(cvPart) );
-    YTrn = Y( training(cvPart) );
-    YTst = Y( test(cvPart)  );
+    cvPart = cvpartition( myData.nObs, 'Holdout', 0.5 );
 
-    if setup.data.embedding
-        % generate embedding with transform
-        [XTrn, XTst, setup.data.embed.params ] = ...
-                    genEmbedding( XTrn, XTst, setup.data.embed );
-        setup.data.nFeatures = size( XTrn, 1 );
-    end
-    
+    myTrnData = myData.partition( training(cvPart) );
+    myTstData = myData.partition( test(cvPart) );
 
     disp('Generated and partitioned data.');
 
     % initialise plots
-    ax = initializePlots( nCodes, setup.data.nChannels );
+    % ax = initializePlots( nCodes, setup.data.nChannels );
 
     % ----- autoencoder -----
 
@@ -58,29 +47,22 @@ for i = 1:nRuns
 
 
     testModel1 = fcModel( reconLoss, orthLoss, varimaxLoss, ...
-                          XDim = setup.data.xDim, ...
-                          XChannels = setup.data.nChannels, ...
-                          ZDim = setup.data.zDim );
+                          XDim = myTrnData.XDim, ...
+                          XChannels = myTrnData.XChannels, ...
+                          ZDim = 4 );
 
     testModel2 = tcnModel( reconLoss, clsLoss, ...
-                          XDim = setup.data.xDim, ...
-                          XChannels = setup.data.nChannels, ...
-                          ZDim = setup.data.zDim );
+                          XDim = myTrnData.XDim, ...
+                          XChannels = myTrnData.XChannels, ...
+                          ZDim = 4 );
+
 
     % train the autoencoder
-    myTrainer1 = trainer( testModel1, ...
-                         setup.data.padValue, setup.data.padLoc, ...
-                         setup.data.cLabels, ...
-                         updateFreq=5 );
+    testModel1 = testModel1.initTrainer( updateFreq = 5 );
+    testModel1 = testModel1.initOptimizer; 
 
-    myTrainer2 = trainer( testModel2, ...
-                         setup.data.padValue, setup.data.padLoc, ...
-                         setup.data.cLabels, ...
-                         updateFreq=5 );
+    testModel1 = train( testModel1, myTrnData );
 
-    testModel1 = myTrainer1.train( testModel1, XNTrn, XNTrn, YTrn );
-
-    testModel2 = myTrainer2.train( testModel2, XTrn, XNTrn, YTrn );
 
     %[dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
     %                trainAAE( XTrn, XNTrn, YTrn, setup.aae, ax );

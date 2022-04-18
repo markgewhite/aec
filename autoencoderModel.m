@@ -16,11 +16,20 @@ classdef autoencoderModel < representationModel
         lossFcnWeights % weights to be applied to the loss function
         lossFcnTbl     % convenient table summarising loss function details
         nLoss          % number of computed losses
+        isInitialized  % flag indicating if fully initialized
+
+        trainer        % trainer object holding training parameters
+        optimizer      % optimizer object
+
+        dataset        % dataset
+
     end
 
     methods
 
-        function self = autoencoderModel( lossFcns, superArgs, args )
+        function self = autoencoderModel( lossFcns, ...
+                                          superArgs, ...
+                                          args )
             % Initialize the model
             arguments (Repeating)
                 lossFcns      lossFunction
@@ -53,6 +62,9 @@ classdef autoencoderModel < representationModel
             end 
 
             self.nLoss = sum( self.lossFcnTbl.nLosses );
+
+            % indicate that further initialization is required
+            self.isInitialized = false;
 
         end
 
@@ -123,6 +135,76 @@ classdef autoencoderModel < representationModel
                     self.netNames = [ string(self.netNames) thisLossFcn.name ];
                 end
             end
+
+        end
+
+
+        function self = initTrainer( self, args )
+            arguments
+                self
+                args.?modelTrainer
+            end
+
+            % set the trainer's properties
+            argsCell = namedargs2cell( args );
+            self.trainer = modelTrainer( argsCell{:} );
+
+            % confirm if initialization is complete
+            self.isInitialized = ~isempty(self.optimizer);
+
+        end
+        
+
+        function self = initOptimizer( self, args )
+            arguments
+                self
+                args.?modelOptimizer
+            end
+
+            % set the trainer's properties
+            argsCell = namedargs2cell( args );
+            self.optimizer = modelOptimizer( argsCell{:} );
+
+            % confirm if initialization is complete
+            self.isInitialized = ~isempty(self.trainer);
+
+        end
+
+
+        function [ self, lossTrn, lossVal ] = train( self, thisDataset )
+            % Train the autoencoder model
+            arguments
+                self          autoencoderModel
+                thisDataset   modelDataset
+            end
+
+            if ~self.isInitialized
+                eid = 'Autoencoder:NotInitialized';
+                msg = 'The trainer, optimizer or dataset parameters have not been set.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            % re-partition the data to create training and validation sets
+            cvPart = cvpartition( thisDataset.nObs, 'Holdout', 0.25 );
+            
+            thisTrnSet = thisDataset.partition( training(cvPart) );
+            thisValSet = thisDataset.partition( test(cvPart) );
+            
+            % setup the minibatch queues
+            mbqTrn = thisDataset.getMiniBatchQueue( thisTrnSet, ...
+                                            self.trainer.batchSize );
+            mbqVal = thisDataset.getMiniBatchQueue( thisValSet, ...
+                                            thisValSet.nObs );
+
+            % run the training loop
+            [ self, self.optimizer, lossTrn, lossVal ] = ...
+                            self.trainer.runTraining( ...
+                                                self, ...
+                                                thisModel, ...
+                                                thisOptimizer, ...
+                                                mbqTrn, ...
+                                                mbqVal );
+
 
         end
 
@@ -207,6 +289,16 @@ classdef autoencoderModel < representationModel
             if isa( net, 'lossFunction' )
                 net = self.lossFcns.(name).net;
             end
+
+        end
+
+        
+        function names = getNetworkNames( self )
+            arguments
+                self
+            end
+            
+            names = fieldnames( self.nets );
 
         end
 
@@ -357,5 +449,86 @@ function names = getFcnNames( lossFcns )
     end
 
 end
+
+
+
+
+function [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart )
+
+    if iscell( X )
+        % X is a cell array containing sequences of variable length
+        XTrn = X( training(cvPart) );
+
+    else
+        % X is a numeric array
+        XTrn = X( :, training(cvPart) );
+
+    end
+
+    % create time normalisation set
+    XNTrn = XN( :, training(cvPart), : );
+
+    % create the outcome variable set
+    YTrn = Y( training(cvPart) );
+
+end
+
+
+function [ dlXVal, dlYVal ] = createValData( X, Y, cvPart, padValue, padLoc )
+
+    if iscell( X )
+        % X is a cell array containing sequences of variable length
+        XVal = preprocMiniBatch( X( test(cvPart) ), [], [], ...
+                                 padValue, ...
+                                 padLoc );
+        dlXVal = dlarray( XVal, 'CTB' );
+
+    else
+        % X is a numeric array
+        XVal = X( :, test(cvPart) );
+        dlXVal = dlarray( XVal, 'CB' );
+
+    end
+
+    dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
+
+end
+
+
+function [ dsTrn, XNfmt ] = createDatastore( XTrn, XNTrn, YTrn )
+
+    % create the datastore for the input X
+    if iscell( XTrn )           
+        % sort them in ascending order of length
+        XLen = cellfun( @length, XTrn );
+        [ ~, orderIdx ] = sort( XLen, 'descend' );
+    
+        XTrn = XTrn( orderIdx );
+        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 1, ...
+                                 'OutputType', 'same' );
+    
+    else
+        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
+    
+    end
+    
+    % create the datastore for the time-normalised output X
+    dsXNTrn = arrayDatastore( XNTrn, 'IterationDimension', 2 );
+    if size( XNTrn, 3 ) > 1
+        XNfmt = 'SSCB';
+    else
+        XNfmt = 'CB';
+    end
+    
+    % create the datastore for the labels/outcomes
+    dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
+    
+    % combine them
+    dsTrn = combine( dsXTrn, dsXNTrn, dsYTrn );
+               
+end
+
+
+
 
 

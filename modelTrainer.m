@@ -1,9 +1,7 @@
-classdef trainer 
+classdef modelTrainer 
     % Class defining a model trainer
 
     properties
-        nNetworks      % number of networks for ease of reference
-        optimizer      % optimizer to use, plus its variable structures
         nEpochs        % maximum number of epochs for training
         nEpochsPreTrn  % number of epochs for pretraining
         batchSize      % minibatch size
@@ -19,29 +17,13 @@ classdef trainer
 
         preTraining    % flag to indicate AE training
         postTraining   % flag to indicate whether to continue training
-
-        padValue       % TEMPORARY: pad value
-        padLoc         % TEMPORARY: pad location
-        cLabels        % TEMPORARY: category labels
     end
 
     methods
 
-        function self = trainer( thisModel, padValue, padLoc, cLabels, args )
+        function self = modelTrainer( args )
             % Initialize the model
             arguments
-                thisModel           autoencoderModel
-                padValue            double
-                padLoc              char ...
-                    {mustBeMember(padLoc, ...
-                      {'left', 'right', 'both', 'symmetric'} )}
-                cLabels             categorical
-                args.optimizer      char ...
-                    {mustBeMember(args.optimizer, {'ADAM', 'SGD'} )} = 'ADAM'
-                args.beta1          double ...
-                    {mustBeNumeric, mustBePositive} = 0.9;
-                args.beta2          double ...
-                    {mustBeNumeric, mustBePositive} = 0.999;
                 args.nEpochs        double ...
                     {mustBeInteger, mustBePositive} = 2000;
                 args.nEpochsPreTrn  double ...
@@ -52,12 +34,8 @@ classdef trainer
                     {mustBeInteger, mustBePositive} = 5; 
                 args.updateFreq     double ...
                     {mustBeInteger, mustBePositive} = 50;
-                args.initLearningRates  double ...
-                    {mustBePositive} = 0.001;
                 args.lrFreq         double ...
                     {mustBeInteger, mustBePositive} = 150;
-                args.lrFactor       double ...
-                    {mustBeNumeric, mustBePositive} = 0.5;
                 args.valPatience    double ...
                     {mustBeInteger, mustBePositive} = 25;
                 args.postTraining   logical = true;
@@ -69,102 +47,50 @@ classdef trainer
             end
 
             % initialize the training parameters
-            self.optimizer.name = args.optimizer;
             self.nEpochs = args.nEpochs;
             self.nEpochsPreTrn = args.nEpochsPreTrn;
             self.batchSize = args.batchSize;
             self.valFreq = args.valFreq;
             self.updateFreq = args.updateFreq;
             self.lrFreq = args.lrFreq;
-            self.lrFactor = args.lrFactor;
             self.valPatience = args.valPatience;
 
             self.preTraining = true;
             self.postTraining = args.postTraining;
             self.valType = args.valType;
 
-            self.padValue = padValue;
-            self.padLoc = padLoc;
-            self.cLabels = cLabels;
-
-            self.nNetworks = length( thisModel.netNames );
-
-            % initialize the optimizer's variables
-            if length( args.initLearningRates ) > 1
-                if length( args.initLearningRates ) == self.nNetworks
-                    netSpecific = true;
-                else
-                    eid = 'Trainer:LearningRateMisMatch';
-                    msg = 'The number of learning rates does not match the number of networks.';
-                    throwAsCaller( MException(eid,msg) );
-                end
-            else
-                netSpecific = false;
-            end
-            
-            for i = 1:self.nNetworks
-                networkName = thisModel.netNames{i};
-                if netSpecific
-                    self.learningRates.(networkName) = args.initLearningRates(i);
-                else
-                    self.learningRates.(networkName) = args.initLearningRates;
-                end
-                switch self.optimizer.name
-                    case 'ADAM'
-                        self.optimizer.(networkName).avgG = []; 
-                        self.optimizer.(networkName).avgGS = [];
-                        self.optimizer.(networkName).beta1 = args.beta1;
-                        self.optimizer.(networkName).beta2 = args.beta2;
-                    case 'SGD'
-                        self.optimizer.(networkName).vel = [];
-                end
-            end
 
         end
 
+    end
 
-        function thisModel = train( self, thisModel, X, XN, Y )
+    methods (Static)
+        
+        function [ thisModel, thisOptimizer, ...
+                   lossTrn, lossVal ] = runTraining( ...
+                                                self, ...
+                                                thisModel, ...
+                                                thisOptimizer, ...
+                                                trnBatches, ...
+                                                valBatch )
+            % Run the training loop for the model
             arguments
-                self
-                thisModel    autoencoderModel
-                X            
-                XN           double
-                Y            
+                self            modelTrainer
+                thisModel       autoencoderModel
+                thisOptimizer   modelOptimizer
+                trnBatches      datastore
+                valBatch        datastore
             end
 
-            % re-partition the data to create training and validation sets
-            cvPart = cvpartition( Y, 'Holdout', 0.25 );
-            
-            [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart );
-            [ dlXVal, dlYVal ] = createValData( X, Y, cvPart, ...
-                                          self.padValue, self.padLoc );
-
-            % create the mini-batch queue for batch processing
-            [ dsTrn, XNfmt ] = createDatastore( XTrn, XNTrn, YTrn );
-
-            % setup the minibatch queues
-            if iscell( X )
-                preproc = @( X, XN, Y ) preprocMiniBatch( X, XN, Y, ...
-                                          self.padValue, self.padLoc );
-                mbqTrn = minibatchqueue(  dsTrn,...
-                                  'MiniBatchSize', self.batchSize, ...
-                                  'PartialMiniBatch', 'return', ...
-                                  'MiniBatchFcn', preproc, ...
-                                  'MiniBatchFormat', {'CTB', XNfmt, 'CB'} );
-            else
-                mbqTrn = minibatchqueue( dsTrn,...
-                                  'MiniBatchSize', self.batchSize, ...
-                                  'PartialMiniBatch', 'discard', ...
-                                  'MiniBatchFormat', {'CB', XNfmt, 'BC'} );
-            end
-
-            % setup the loop
-            nIter = floor( size(XNTrn,2)/self.batchSize );           
+            nIter = floor( size(XNTrn,2)/thisModel.trainer.batchSize );           
             j = 0;
             v = 0;
             vp = self.valPatience;
+
+            % get the validation data (one-time only)
+            [dlXVal, ~, dlYVal] = next( valBatch ); 
             
-            lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
+            lossTrn = zeros( nIter*self.nEpochs, self.nLoss );
             lossVal = zeros( ceil(nIter*self.nEpochs/self.valFreq), 1 );
             
             for epoch = 1:self.nEpochs
@@ -175,10 +101,10 @@ classdef trainer
             
                 if iscell( X )
                     % reset whilst preserving the order
-                    reset( mbqTrn );
+                    reset( trnBatches );
                 else
                     % reset with a shuffled order
-                    shuffle( mbqTrn );
+                    shuffle( trnBatches );
                 end
             
                 % loop over mini-batches
@@ -187,13 +113,13 @@ classdef trainer
                     j = j + 1;
                     
                     % read mini-batch of data
-                    [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
+                    [ dlXTTrn, dlXNTrn, dlYTrn ] = next( batches );
                     if size( XNTrn, 3 ) > 1
                         dlXNTrn = dlarray( squeeze(dlXNTrn), 'SCB' );
                     end
                     
                     % evaluate the model gradients 
-                    [ grad, state, lossTrn(j,:) ] = ...
+                    [ grads, states, lossTrn(j,:) ] = ...
                                       dlfeval(  @gradients, ...
                                                 thisModel.nets, ...
                                                 thisModel.lossFcns, ...
@@ -201,70 +127,39 @@ classdef trainer
                                                 dlXTTrn, ...
                                                 dlXNTrn, ...
                                                 dlYTrn, ...
-                                                @thisModel.latentComponents, ...
+                                                thisModel.latentComponents, ...
                                                 doTrainAE, ...
                                                 thisModel.isVAE );
 
-                    % update the network parameters
-                    for m = 1:self.nNetworks
-
+                    % store revised network state
+                    for m = 1:self.nNets
                         thisName = thisModel.netNames{m};
-                        thisNetwork = thisModel.nets.(thisName);
-                        thisOptimizer = self.optimizer.(thisName);
-                        thisGradient = grad.(thisName);
-                        thisLearningRate = self.learningRates.(thisName);
-
-
                         try
-                            thisNetwork.State = state.(thisName);
+                            thisModel.nets.(thisName).State = states.(thisName);
                         catch
                             constraint = 2;
                             return
                         end
-
-                        if any(strcmp( thisName, {'encoder','decoder'} )) ...
-                            && not(self.postTraining || self.preTraining)
-                            % skip training for the AE
-                            continue
-                        end
-
-                        % update the network parameters
-                        switch self.optimizer.name
-                            case 'ADAM'         
-                                [ thisNetwork, ...
-                                  thisOptimizer.avgG, ...
-                                  thisOptimizer.avgGS ] = ...
-                                        adamupdate( thisNetwork, ...
-                                                    thisGradient, ...
-                                                    thisOptimizer.avgG, ...
-                                                    thisOptimizer.avgGS, ...
-                                                    j, ...
-                                                    thisLearningRate, ...
-                                                    thisOptimizer.beta1, ...
-                                                    thisOptimizer.beta2 );
-                            case 'SGD'
-                                [ thisNetwork, ...
-                                  thisOptimizer.vel ] = ...
-                                    sgdmupdate( thisNetwork, ...
-                                                thisGradient, ...
-                                                thisOptimizer.vel, ...
-                                                thisLearningRate );
-                        end
-                        
-                        thisModel.nets.(thisName) = thisNetwork;
-                        self.optimizer.(thisName) = thisOptimizer;
-                    
                     end
+
+                    % update network parameters
+                    [ thisOptimizer, thisModel.nets ] = ...
+                        self.optimizer.updateNets( self.nets, ...
+                                                   grads, ...
+                                                   j, ...
+                                                   doTrainAE );
 
                 end
                
 
-                if ~self.preTraining && mod( epoch, self.valFreq )==0
+                if ~self.preTraining ...
+                        && mod( epoch, self.valFreq )==0
                     
                     % run a validation check
                     v = v + 1;
-                    lossVal( v ) = validationCheck( thisModel, self.valType, ...
-                                                        dlXVal, dlYVal );
+                    lossVal( v ) = validationCheck( self, ...
+                                                    self.valType, ...
+                                                    dlXVal, dlYVal );
                     if v > 2*vp-1
                         if mean(lossVal(v-2*vp+1:v-vp)) < mean(lossVal(v-vp+1:v))
                             % no longer improving - stop training
@@ -279,7 +174,7 @@ classdef trainer
                     meanLoss = mean(lossTrn( j-nIter+1:j, : ));
 
                     fprintf('Loss (%4d) = ', epoch);
-                    for k = 1:thisModel.nLoss
+                    for k = 1:self.nLoss
                         fprintf(' %6.3f', meanLoss(k) );
                     end
                     if self.preTraining
@@ -288,7 +183,7 @@ classdef trainer
                         fprintf(' : %1.3f\n', lossVal(v));
                     end
             
-                    dlZTrn = thisModel.encode( thisModel, dlXTTrn );
+                    dlZTrn = thisModel.encode( dlXTTrn );
                     %ZTrn = double(extractdata( dlZTrn ));
                     %for c = 1:self.XChannels
                     %    plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
@@ -300,21 +195,15 @@ classdef trainer
             
                 if mod( epoch, self.lrFreq )==0
                     % update learning rates
-                    for m = 1:self.nNetworks
-                        thisName = thisModel.netNames{m};
-                        if any(strcmp( thisName, {'encoder','decoder'} )) ...
-                            && not(self.postTraining || self.preTraining)
-                            % skip training for the AE
-                            continue
-                        end
-                        self.learningRates.(thisName) = ...
-                            self.learningRates.(thisName)*self.lrFactor;
-                    end
+                    thisOptimizer = ...
+                        thisOptimizer.updateLearningRates( doTrainAE );
                 end
 
             end
 
+
         end
+
 
            
     end
@@ -456,17 +345,17 @@ function [grad, state, loss] = gradients( nets, ...
 
     end
 
-% compute the gradients for each network
-netNames = fieldnames( nets );
-for i = 1:length(netNames)
-
-    thisName = netNames{i};
-    thisNetwork = nets.(thisName);
-    grad.(thisName) = dlgradient( lossAccum.(thisName), ...
-                                  thisNetwork.Learnables, ...
-                                  'RetainData', true );
+    % compute the gradients for each network
+    netNames = fieldnames( nets );
+    for i = 1:length(netNames)
     
-end
+        thisName = netNames{i};
+        thisNetwork = nets.(thisName);
+        grad.(thisName) = dlgradient( lossAccum.(thisName), ...
+                                      thisNetwork.Learnables, ...
+                                      'RetainData', true );
+        
+    end
 
 end
 
@@ -503,82 +392,6 @@ function lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx )
 end
 
 
-function [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart )
-
-    if iscell( X )
-        % X is a cell array containing sequences of variable length
-        XTrn = X( training(cvPart) );
-
-    else
-        % X is a numeric array
-        XTrn = X( :, training(cvPart) );
-
-    end
-
-    % create time normalisation set
-    XNTrn = XN( :, training(cvPart), : );
-
-    % create the outcome variable set
-    YTrn = Y( training(cvPart) );
-
-end
-
-
-function [ dlXVal, dlYVal ] = createValData( X, Y, cvPart, padValue, padLoc )
-
-    if iscell( X )
-        % X is a cell array containing sequences of variable length
-        XVal = preprocMiniBatch( X( test(cvPart) ), [], [], ...
-                                 padValue, ...
-                                 padLoc );
-        dlXVal = dlarray( XVal, 'CTB' );
-
-    else
-        % X is a numeric array
-        XVal = X( :, test(cvPart) );
-        dlXVal = dlarray( XVal, 'CB' );
-
-    end
-
-    dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
-
-end
-
-
-function [ dsTrn, XNfmt ] = createDatastore( XTrn, XNTrn, YTrn )
-
-    % create the datastore for the input X
-    if iscell( XTrn )           
-        % sort them in ascending order of length
-        XLen = cellfun( @length, XTrn );
-        [ ~, orderIdx ] = sort( XLen, 'descend' );
-    
-        XTrn = XTrn( orderIdx );
-        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 1, ...
-                                 'OutputType', 'same' );
-    
-    else
-        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
-    
-    end
-    
-    % create the datastore for the time-normalised output X
-    dsXNTrn = arrayDatastore( XNTrn, 'IterationDimension', 2 );
-    if size( XNTrn, 3 ) > 1
-        XNfmt = 'SSCB';
-    else
-        XNfmt = 'CB';
-    end
-    
-    % create the datastore for the labels/outcomes
-    dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
-    
-    % combine them
-    dsTrn = combine( dsXTrn, dsXNTrn, dsYTrn );
-               
-end
-
-
 function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
 
     dlZVal = thisModel.encode( thisModel, dlXVal );
@@ -602,5 +415,4 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
 
 
 end
-
 
