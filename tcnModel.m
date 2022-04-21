@@ -153,11 +153,11 @@ classdef tcnModel < autoencoderModel
             end
             
             outLayers = [ outLayers; 
-                          fullyConnectedLayer( self.XDim*self.XChannels, 'Name', 'fcout' ) ];
+                          fullyConnectedLayer( self.XOutDim*self.XChannels, 'Name', 'fcout' ) ];
             
             if self.XChannels > 1
                 outLayers = [ outLayers; 
-                          reshapeLayer( [self.XDim self.XChannels], 'Name', 'reshape' ) ];
+                          reshapeLayer( [self.XOutDim self.XChannels], 'Name', 'reshape' ) ];
             end
             
             lgraphDec = addLayers( lgraphDec, outLayers );

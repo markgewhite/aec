@@ -2,20 +2,23 @@ classdef modelDataset
     % Class defining a model trainer
 
     properties
-        XRaw            % original, raw time series data
-        X               % processed input data (variable length)
-        XN              % time-normalized data, the target output
+        XInputRaw       % original, raw time series data
+        XInput          % processed input data (variable length)
+        XTarget         % target output
         Y               % outcome variable
-        XDim            % X input size (array of time series lengths)
-        XNDim           % normalized X output size (time series length)
-        XChannels       % number of X channels
+        XInputLen       % X input size (array of time series lengths)
+        XInputDim       % number of X input dimensions
+        XTargetDim      % normalized X output size (time series length)
+        XInputChannels  % number of X input channels
+        XOutputChannels % number of X ouput channels (differs only if derivative)
         YDim            % number of categories
         YLabels         % Y labels
         nObs            % number of observations
 
         normalization   % type of normalization for output
         normalizedPts   % standardized number of points for normalization
-        normalizeInput  % whether to also normalize the input
+        normalizeInput  % whether input should be time-normalized too
+
         padding         % structure specifying padding setup
         fda             % functional data analysis settings
         resampleRate    % downsampling rate
@@ -30,33 +33,34 @@ classdef modelDataset
 
     methods
 
-        function self = modelDataset( XRaw, Y, args )
+        function self = modelDataset( XInputRaw, Y, args )
             % Create and preprocess the data.
             % The calling function will be a data loader or
             % a function partitioning the data.
             arguments
-                XRaw
+                XInputRaw               cell
                 Y
-                args.purpose        char ...
+                args.XTargetRaw         cell = []
+                args.purpose            char ...
                     {mustBeMember( args.purpose, ...
                     {'Creation', 'ForSubset'} )} = 'Creation'
-                args.normalization  char ...
+                args.normalization      char ...
                     {mustBeMember( args.normalization, ...
                     {'PAD', 'LTN'} )} = 'LTN'
-                args.normalizedPts  double ...
+                args.normalizedPts      double ...
                     {mustBeNumeric, mustBePositive, mustBeInteger} = 101
-                args.normalizeInput logical = false;
-                args.padding        struct ...
+                args.normalizeInput     logical = false;
+                args.padding            struct ...
                     {mustBeValidPadding}
-                args.fda            struct ...
+                args.fda                struct ...
                     {mustBeValidFdParams}
-                args.resampleRate   double ...
+                args.resampleRate       double ...
                     {mustBeNumeric} = 1
-                args.hasDerivative  logical = false
+                args.hasDerivative      logical = false
 
             end
 
-            self.XRaw = XRaw;
+            self.XInputRaw = XInputRaw;
             self.Y = Y;
             
             if strcmp( args.purpose, 'ForSubset' )
@@ -72,44 +76,11 @@ classdef modelDataset
             self.resampleRate = args.resampleRate;
             self.hasDerivative = args.hasDerivative;
 
-            % create smooth functions for the data
-            [XFd, self.XDim] = smoothRawData( XRaw, ...
-                                            self.padding, self.fda );
+            % prepare the input data
+            self = processXSeries( self, XInputRaw );
 
-            % re-create cell array of time series after smoothing
-            % resampling, as required
-            tSpanResampled = linspace( ...
-                self.fda.tSpan(1), self.fda.tSpan(end), ...
-                fix( self.padding.length/self.resampleRate )+1 );
-            
-            XEval = eval_fd( tSpanResampled, XFd );
-            
-            if self.hasDerivative
-                % include the first derivative as further channels
-                DXEval = eval_fd( tSpanResampled, XFd, 1 );
-                XEval = cat( 3, XEval, DXEval );
-            end
-
-            self.nObs = size( XEval, 2 );
-            self.XChannels = size( XEval, 3 );
-            
-            % adjust lengths
-            self.XDim = ceil( size( XEval, 1 )*self.XDim/self.padding.length );
-            self.padding.length = max( self.XDim );
-            
-            % recreate the cell time series
-            self.X = extractXSeries( XEval, self.XDim, ...
-                            self.padding.length, self.padding.location );
-            
-            % prepare normalized data of fixed length
-            self.XN = normalizeXSeries( self.X, self.normalizedPts, ...
-                                        self.normalization, self.padding );
-            self.XNDim = size( self.XN, 1 );
-
-            if self.normalizeInput
-                % also apply it to the input
-                self.X = self.XN;
-            end
+            % prepare the target data
+            self = prepareXTarget( self, args.XTargetRaw );
 
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
@@ -140,7 +111,7 @@ classdef modelDataset
                 idx         logical 
             end
 
-            subXRaw = split( self.XRaw, idx );
+            subXRaw = split( self.XInputRaw, idx );
             subY = self.Y( idx );
 
             thisSubset = modelDataset( subXRaw, subY, ...
@@ -148,17 +119,22 @@ classdef modelDataset
 
             thisSubset.normalization = self.normalization;
             thisSubset.normalizedPts = self.normalizedPts;
+            thisSubset.normalizeInput = self.normalizeInput;
+
             thisSubset.padding = self.padding;
             thisSubset.fda = self.fda;
             thisSubset.resampleRate = self.resampleRate;
             thisSubset.hasDerivative = self.hasDerivative;
 
-            thisSubset.X = split( self.X, idx );
-            thisSubset.XN = split( self.XN, idx );
-            thisSubset.XDim = self.XDim( idx );
+            thisSubset.XInput = split( self.XInput, idx );
+            thisSubset.XTarget = split( self.XTarget, idx );
+            thisSubset.XInputLen = self.XInputLen( idx );
 
-            thisSubset.XNDim = self.XNDim;
-            thisSubset.XChannels = self.XChannels;
+            thisSubset.XInputDim = self.XInputDim;
+            thisSubset.XTargetDim = self.XTargetDim;
+            thisSubset.XInputChannels = self.XInputChannels;
+            thisSubset.XOutputChannels = self.XOutputChannels;
+
             thisSubset.YDim = self.YDim;
             thisSubset.YLabels = self.YLabels;
             thisSubset.nObs = sum( idx );
@@ -172,8 +148,117 @@ classdef modelDataset
                 self    modelDataset
             end
 
-            isFixed = strcmp( self.normalization, 'LTN' );
+            isFixed = self.normalizeInput;
             
+        end
+        
+    end
+
+
+    methods (Access = private)    
+        
+
+        function self = processXSeries( self, XInputRaw )
+            % Prepare the input data by smoothing, re-sampling
+            % adding the 1st derivative as a separate channel
+            % XInputRaw and XInput are cell arrays
+            arguments
+                self        modelDataset
+                XInputRaw   cell
+            end
+
+            % create smooth functions for the data
+            [XFd, self.XInputLen] = smoothRawData( ...
+                                XInputRaw, self.padding, self.fda  );
+
+            % resample, as required
+            tSpanResampled = linspace( ...
+                self.fda.tSpan(1), self.fda.tSpan(end), ...
+                fix( self.padding.length/self.resampleRate )+1 );            
+            
+            XEval = eval_fd( tSpanResampled, XFd );
+            
+            self.XOutputChannels = size( XEval, 3 );
+
+            if self.hasDerivative
+                % include the first derivative as further channels
+                DXEval = eval_fd( tSpanResampled, XFd, 1 );
+                XEval = cat( 3, XEval, DXEval );
+            end
+
+            self.nObs = size( XEval, 2 );
+            self.XInputChannels = size( XEval, 3 );
+
+            % adjust lengths for the re-sampling
+            self.XInputLen = ceil( size( XEval, 1 )*self.XInputLen ...
+                                        / self.padding.length );
+            self.padding.length = max( self.XInputLen );
+            
+            % recreate the cell time series
+            self.XInput = extractXSeries( XEval, ...
+                                          self.XInputLen, ...
+                                          self.padding.length, ...
+                                          self.padding.location );
+
+            if self.normalizeInput
+                % use time-normalization method to set a fixed length
+                self.XInput = normalizeXSeries( self.XInput, ...
+                                                self.normalizedPts, ...
+                                                self.normalization, ...
+                                                self.padding );
+                self.XInputDim = size(self.XInput, 1);
+
+            else
+                % has variable length input
+                self.XInputDim = 1;
+            end
+
+        end
+
+
+        function self = prepareXTarget( self, XTargetRaw )
+            % Prepare the target data based on input data
+            % or a specified cell array
+            arguments
+                self                modelDataset
+                XTargetRaw          cell
+            end
+
+            if isempty( XTargetRaw )
+                % no new target dataset, use the same data as input
+                
+                if self.hasDerivative
+                    % remove derivative channels
+                    targetX = cellfun( @(X) X(:,1:self.XOutputChannels), ...
+                                       self.XInput , ...
+                                       'UniformOutput', false);
+                else
+                    targetX = self.XInput;
+                end
+
+                if self.normalizeInput
+                    % re-use the time-normalized input
+                    self.XTarget = targetX;
+                else
+                    % prepare normalized data of fixed length
+                    self.XTarget = normalizeXSeries( targetX, ...
+                                                     self.normalizedPts, ...
+                                                     self.normalization, ...
+                                                     self.padding );
+                end
+
+            else
+                % new dataset requires processing
+                targetX = processXSeries( self, XTargetRaw );
+                % and time-normalized
+                self.XTarget = normalizeXSeries( targetX, ...
+                                                 self.normalizedPts, ...
+                                                 self.normalization, ...
+                                                 self.padding );
+            end
+
+            self.XTargetDim = size( self.XTarget, 1 );
+
         end
 
     end
@@ -192,11 +277,18 @@ classdef modelDataset
                     {'return', 'discard'} )} = 'return'
             end
 
-            [ ds, XNfmt ] = createDatastore( self.X, self.XN, self.Y );
+            [ ds, XNfmt ] = createDatastore( self.XInput, self.XTarget, self.Y );
 
             % setup the minibatch queues
-            if iscell( self.X )
-                
+            if self.isFixedLength
+                % no preprocessing required
+
+                mbq = minibatchqueue( ds,...
+                                  'MiniBatchSize', batchSize, ...
+                                  'PartialMiniBatch', args.partialBatch, ...
+                                  'MiniBatchFormat', {'CB', XNfmt, 'BC'} );
+            
+            else
                 % setup the minibatch preprocessing function
                 preproc = @( X, XN, Y ) preprocMiniBatch( X, XN, Y, ...
                               self.padding.value, ...
@@ -207,13 +299,6 @@ classdef modelDataset
                                   'PartialMiniBatch', args.partialBatch, ...
                                   'MiniBatchFcn', preproc, ...
                                   'MiniBatchFormat', {'CTB', XNfmt, 'CB'} );
-            else
-                % no preprocessing required
-
-                mbq = minibatchqueue( ds,...
-                                  'MiniBatchSize', batchSize, ...
-                                  'PartialMiniBatch', args.partialBatch, ...
-                                  'MiniBatchFormat', {'CB', XNfmt, 'BC'} );
 
             end
 

@@ -8,6 +8,7 @@
 classdef autoencoderModel < representationModel
 
     properties
+        XOutDim        % output dimension (may differ from XDim)
         nets           % networks defined in this model (structure)
         netNames       % names of the networks (for convenience)
         nNets          % number of networks
@@ -37,6 +38,7 @@ classdef autoencoderModel < representationModel
             end
             arguments
                 superArgs.?representationModel
+                args.XOutDim        double = 0
                 args.hasSeqInput    logical = false
                 args.isVAE          logical = false
                 args.weights        double ...
@@ -54,6 +56,10 @@ classdef autoencoderModel < representationModel
             self.nNets = 2;
             self.isVAE = args.isVAE;
             self.hasSeqInput = args.hasSeqInput;
+
+            if args.XOutDim == 0
+                self.XOutDim = self.XDim;
+            end
 
             % copy over the loss functions associated
             % and any networks with them for later training 

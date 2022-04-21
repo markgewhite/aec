@@ -20,7 +20,9 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    myData = jumpGRFDataset( normalization = 'PAD', normalizeInput = true );
+    myData = jumpGRFDataset( normalization = 'PAD', ...
+                             normalizeInput = true, ...
+                             derivative = true );
 
     % partitioning
     cvPart = cvpartition( myData.nObs, 'Holdout', 0.5 );
@@ -42,20 +44,25 @@ for i = 1:nRuns
     clsLoss = classifierLoss( 'jumpType' );
     mmdLoss = wassersteinLoss( 'mmd_discriminator', ...
                                 kernel = 'IMQ', useLoss = true );
-    orthLoss = componentLoss( 'orth', nSample=100, criterion='Orthogonality' );
+    orthLoss = componentLoss( 'orth', nSample=10, criterion='Orthogonality' );
     varimaxLoss = componentLoss( 'varimax', nSample=20, criterion='Varimax' );
 
 
-    testModel1 = fcModel( reconLoss, orthLoss, varimaxLoss, ...
-                          XDim = myTrnData.XNDim, ...
-                          XChannels = myTrnData.XChannels, ...
-                          ZDim = 8 );
+    %testModel1 = fcModel( reconLoss, orthLoss, varimaxLoss, ...
+    %                      XDim = myTrnData.XInputDim, ...
+    %                      XChannels = myTrnData.XInputChannels, ...
+    %                      ZDim = 4 );
+
+    testModel = tcnModel( reconLoss, orthLoss, varimaxLoss, ...
+                          XDim = myTrnData.XTargetDim, ...
+                          XChannels = myTrnData.XInputChannels, ...
+                          ZDim = 4 );
 
     % train the autoencoder
-    testModel1 = testModel1.initTrainer( updateFreq = 5 );
-    testModel1 = testModel1.initOptimizer; 
+    testModel = testModel.initTrainer( updateFreq = 5 );
+    testModel = testModel.initOptimizer; 
 
-    testModel1 = train( testModel1, myTrnData );
+    testModel = train( testModel, myTrnData );
 
 
     %[dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
