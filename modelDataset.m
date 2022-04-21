@@ -6,15 +6,16 @@ classdef modelDataset
         X               % processed input data (variable length)
         XN              % time-normalized data, the target output
         Y               % outcome variable
-        XLen            % array holding lengths of each time series
-        XDim            % X input size (time series length)
+        XDim            % X input size (array of time series lengths)
+        XNDim           % normalized X output size (time series length)
         XChannels       % number of X channels
         YDim            % number of categories
         YLabels         % Y labels
         nObs            % number of observations
 
-        normalization   % type of normalization
+        normalization   % type of normalization for output
         normalizedPts   % standardized number of points for normalization
+        normalizeInput  % whether to also normalize the input
         padding         % structure specifying padding setup
         fda             % functional data analysis settings
         resampleRate    % downsampling rate
@@ -44,6 +45,7 @@ classdef modelDataset
                     {'PAD', 'LTN'} )} = 'LTN'
                 args.normalizedPts  double ...
                     {mustBeNumeric, mustBePositive, mustBeInteger} = 101
+                args.normalizeInput logical = false;
                 args.padding        struct ...
                     {mustBeValidPadding}
                 args.fda            struct ...
@@ -64,13 +66,14 @@ classdef modelDataset
 
             self.normalization = args.normalization;
             self.normalizedPts = args.normalizedPts;
+            self.normalizeInput = args.normalizeInput;
             self.padding = args.padding;
             self.fda = args.fda;
             self.resampleRate = args.resampleRate;
             self.hasDerivative = args.hasDerivative;
 
             % create smooth functions for the data
-            [XFd, self.XLen] = smoothRawData( XRaw, ...
+            [XFd, self.XDim] = smoothRawData( XRaw, ...
                                             self.padding, self.fda );
 
             % re-create cell array of time series after smoothing
@@ -91,17 +94,22 @@ classdef modelDataset
             self.XChannels = size( XEval, 3 );
             
             % adjust lengths
-            self.XLen = ceil( size( XEval, 1 )*self.XLen/self.padding.length );
-            self.padding.length = max( self.XLen );
+            self.XDim = ceil( size( XEval, 1 )*self.XDim/self.padding.length );
+            self.padding.length = max( self.XDim );
             
             % recreate the cell time series
-            self.X = extractXSeries( XEval, self.XLen, ...
+            self.X = extractXSeries( XEval, self.XDim, ...
                             self.padding.length, self.padding.location );
             
             % prepare normalized data of fixed length
             self.XN = normalizeXSeries( self.X, self.normalizedPts, ...
                                         self.normalization, self.padding );
-            self.XDim = size( self.XN, 1 );
+            self.XNDim = size( self.XN, 1 );
+
+            if self.normalizeInput
+                % also apply it to the input
+                self.X = self.XN;
+            end
 
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
@@ -147,10 +155,25 @@ classdef modelDataset
 
             thisSubset.X = split( self.X, idx );
             thisSubset.XN = split( self.XN, idx );
-            thisSubset.XLen = self.XLen( idx );
+            thisSubset.XDim = self.XDim( idx );
 
+            thisSubset.XNDim = self.XNDim;
+            thisSubset.XChannels = self.XChannels;
+            thisSubset.YDim = self.YDim;
+            thisSubset.YLabels = self.YLabels;
             thisSubset.nObs = sum( idx );
 
+        end
+
+
+        function isFixed = isFixedLength( self )
+            % return whether data is time-normalized
+            arguments
+                self    modelDataset
+            end
+
+            isFixed = strcmp( self.normalization, 'LTN' );
+            
         end
 
     end
@@ -195,6 +218,7 @@ classdef modelDataset
             end
 
         end
+
 
     end
 

@@ -51,7 +51,9 @@ classdef tcnModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( lossFcns{:}, superArgsCell{:} );
+            self = self@autoencoderModel( lossFcns{:}, ...
+                                          superArgsCell{:}, ...
+                                          hasSeqInput = true );
 
             % store this class's properties
             self.nHidden = args.nHidden;

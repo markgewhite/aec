@@ -20,7 +20,7 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    myData = jumpGRFDataset;
+    myData = jumpGRFDataset( normalization = 'PAD', normalizeInput = true );
 
     % partitioning
     cvPart = cvpartition( myData.nObs, 'Holdout', 0.5 );
@@ -47,15 +47,9 @@ for i = 1:nRuns
 
 
     testModel1 = fcModel( reconLoss, orthLoss, varimaxLoss, ...
-                          XDim = myTrnData.XDim, ...
+                          XDim = myTrnData.XNDim, ...
                           XChannels = myTrnData.XChannels, ...
-                          ZDim = 4 );
-
-    testModel2 = tcnModel( reconLoss, clsLoss, ...
-                          XDim = myTrnData.XDim, ...
-                          XChannels = myTrnData.XChannels, ...
-                          ZDim = 4 );
-
+                          ZDim = 8 );
 
     % train the autoencoder
     testModel1 = testModel1.initTrainer( updateFreq = 5 );

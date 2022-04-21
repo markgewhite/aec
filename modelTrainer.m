@@ -8,12 +8,10 @@ classdef modelTrainer
 
         valFreq        % validation frequency in epochs
         updateFreq     % update frequency in epochs
+        lrFreq         % learning rate update frequency
+
         valPatience    % validation patience in valFreq units
         valType        % validation function name
-
-        learningRates  % learning rates for all networks
-        lrFreq         % learning rate update frequency
-        lrFactor       % learning rate reduction factor
 
         preTraining    % flag to indicate AE training
         postTraining   % flag to indicate whether to continue training
@@ -50,47 +48,52 @@ classdef modelTrainer
             self.nEpochs = args.nEpochs;
             self.nEpochsPreTrn = args.nEpochsPreTrn;
             self.batchSize = args.batchSize;
+
             self.valFreq = args.valFreq;
             self.updateFreq = args.updateFreq;
             self.lrFreq = args.lrFreq;
+
             self.valPatience = args.valPatience;
+            self.valType = args.valType;
 
             self.preTraining = true;
             self.postTraining = args.postTraining;
-            self.valType = args.valType;
-
 
         end
 
-    end
-
-    methods (Static)
         
         function [ thisModel, thisOptimizer, ...
                    lossTrn, lossVal ] = runTraining( ...
                                                 self, ...
                                                 thisModel, ...
-                                                thisOptimizer, ...
-                                                trnBatches, ...
-                                                valBatch )
+                                                thisTrnData, ...
+                                                thisValData )
             % Run the training loop for the model
             arguments
                 self            modelTrainer
                 thisModel       autoencoderModel
-                thisOptimizer   modelOptimizer
-                trnBatches      datastore
-                valBatch        datastore
+                thisTrnData     modelDataset
+                thisValData     modelDataset
             end
 
-            nIter = floor( size(XNTrn,2)/thisModel.trainer.batchSize );           
+            
+            % setup the minibatch queues
+            mbqTrn = thisTrnData.getMiniBatchQueue( thisTrnData, ...
+                                                self.batchSize );
+
+            mbqVal = thisValData.getMiniBatchQueue( thisValData, ...
+                                                thisValData.nObs );
+
+            % initialize counters
+            nIter = iterationsPerEpoch( mbqTrn );           
             j = 0;
             v = 0;
             vp = self.valPatience;
 
             % get the validation data (one-time only)
-            [dlXVal, ~, dlYVal] = next( valBatch ); 
+            [dlXVal, ~, dlYVal] = next( mbqVal ); 
             
-            lossTrn = zeros( nIter*self.nEpochs, self.nLoss );
+            lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
             lossVal = zeros( ceil(nIter*self.nEpochs/self.valFreq), 1 );
             
             for epoch = 1:self.nEpochs
@@ -99,12 +102,12 @@ classdef modelTrainer
                 self.preTraining = (epoch<=self.nEpochsPreTrn);
                 doTrainAE = (self.postTraining || self.preTraining);
             
-                if iscell( X )
-                    % reset whilst preserving the order
-                    reset( trnBatches );
-                else
+                if thisTrnData.isFixedLength
                     % reset with a shuffled order
-                    shuffle( trnBatches );
+                    shuffle( mbqTrn );
+                else
+                    % reset whilst preserving the order
+                    reset( mbqTrn );
                 end
             
                 % loop over mini-batches
@@ -113,8 +116,8 @@ classdef modelTrainer
                     j = j + 1;
                     
                     % read mini-batch of data
-                    [ dlXTTrn, dlXNTrn, dlYTrn ] = next( batches );
-                    if size( XNTrn, 3 ) > 1
+                    [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
+                    if size( dlXNTrn, 3 ) > 1
                         dlXNTrn = dlarray( squeeze(dlXNTrn), 'SCB' );
                     end
                     
@@ -127,12 +130,12 @@ classdef modelTrainer
                                                 dlXTTrn, ...
                                                 dlXNTrn, ...
                                                 dlYTrn, ...
-                                                thisModel.latentComponents, ...
+                                                @thisModel.latentComponents, ...
                                                 doTrainAE, ...
                                                 thisModel.isVAE );
 
                     % store revised network state
-                    for m = 1:self.nNets
+                    for m = 1:thisModel.nNets
                         thisName = thisModel.netNames{m};
                         try
                             thisModel.nets.(thisName).State = states.(thisName);
@@ -144,10 +147,10 @@ classdef modelTrainer
 
                     % update network parameters
                     [ thisOptimizer, thisModel.nets ] = ...
-                        self.optimizer.updateNets( self.nets, ...
-                                                   grads, ...
-                                                   j, ...
-                                                   doTrainAE );
+                        thisModel.optimizer.updateNets( thisModel.nets, ...
+                                                        grads, ...
+                                                        j, ...
+                                                        doTrainAE );
 
                 end
                
@@ -157,7 +160,7 @@ classdef modelTrainer
                     
                     % run a validation check
                     v = v + 1;
-                    lossVal( v ) = validationCheck( self, ...
+                    lossVal( v ) = validationCheck( thisModel, ...
                                                     self.valType, ...
                                                     dlXVal, dlYVal );
                     if v > 2*vp-1
@@ -174,7 +177,7 @@ classdef modelTrainer
                     meanLoss = mean(lossTrn( j-nIter+1:j, : ));
 
                     fprintf('Loss (%4d) = ', epoch);
-                    for k = 1:self.nLoss
+                    for k = 1:thisModel.nLoss
                         fprintf(' %6.3f', meanLoss(k) );
                     end
                     if self.preTraining
@@ -183,7 +186,7 @@ classdef modelTrainer
                         fprintf(' : %1.3f\n', lossVal(v));
                     end
             
-                    dlZTrn = thisModel.encode( dlXTTrn );
+                    dlZTrn = thisModel.encode( thisModel, dlXTTrn );
                     %ZTrn = double(extractdata( dlZTrn ));
                     %for c = 1:self.XChannels
                     %    plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
@@ -249,7 +252,7 @@ function [grad, state, loss] = gradients( nets, ...
         
         else
             % generate latent encodings
-            [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn);
+            [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn );
 
         end
 
@@ -416,3 +419,15 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
 
 end
 
+
+function i = iterationsPerEpoch( mbq )
+    % Count the number of iterations per epoch
+
+    reset( mbq );
+    i = 0;
+    while hasdata( mbq )
+        next( mbq );
+        i = i+1;
+    end
+
+end

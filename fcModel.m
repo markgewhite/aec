@@ -45,7 +45,9 @@ classdef fcModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( lossFcns{:}, superArgsCell{:} );
+            self = self@autoencoderModel( lossFcns{:}, ...
+                                          superArgsCell{:}, ...
+                                          hasSeqInput = false );
 
             % store this class's properties
             self.nHidden = args.nHidden;

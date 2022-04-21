@@ -10,6 +10,7 @@ classdef autoencoderModel < representationModel
     properties
         nets           % networks defined in this model (structure)
         netNames       % names of the networks (for convenience)
+        nNets          % number of networks
         isVAE          % flag indicating if variational autoencoder
         lossFcns       % array of loss functions
         lossFcnNames   % names of the loss functions
@@ -17,11 +18,11 @@ classdef autoencoderModel < representationModel
         lossFcnTbl     % convenient table summarising loss function details
         nLoss          % number of computed losses
         isInitialized  % flag indicating if fully initialized
+        hasSeqInput    % supports variable-length input
 
         trainer        % trainer object holding training parameters
         optimizer      % optimizer object
 
-        dataset        % dataset
 
     end
 
@@ -36,8 +37,10 @@ classdef autoencoderModel < representationModel
             end
             arguments
                 superArgs.?representationModel
-                args.isVAE    logical = false
-                args.weights  double {mustBeNumeric,mustBeVector} = 1
+                args.hasSeqInput    logical = false
+                args.isVAE          logical = false
+                args.weights        double ...
+                                    {mustBeNumeric,mustBeVector} = 1
             end
 
             % set the superclass's properties
@@ -48,7 +51,9 @@ classdef autoencoderModel < representationModel
             self.nets.encoder = [];
             self.nets.decoder = [];
             self.netNames = {'encoder', 'decoder'};
+            self.nNets = 2;
             self.isVAE = args.isVAE;
+            self.hasSeqInput = args.hasSeqInput;
 
             % copy over the loss functions associated
             % and any networks with them for later training 
@@ -133,8 +138,11 @@ classdef autoencoderModel < representationModel
                     self.nets.(thisLossFcn.name) = thisLossFcn.initNetwork;
                     % record its name
                     self.netNames = [ string(self.netNames) thisLossFcn.name ];
+                    % increment the counter
+                    self.nNets = self.nNets + 1;
                 end
             end
+
 
         end
 
@@ -163,7 +171,7 @@ classdef autoencoderModel < representationModel
 
             % set the trainer's properties
             argsCell = namedargs2cell( args );
-            self.optimizer = modelOptimizer( argsCell{:} );
+            self.optimizer = modelOptimizer( self.netNames, argsCell{:} );
 
             % confirm if initialization is complete
             self.isInitialized = ~isempty(self.trainer);
@@ -184,26 +192,28 @@ classdef autoencoderModel < representationModel
                 throwAsCaller( MException(eid,msg) );
             end
 
+            % check dataset is suitable
+            if thisDataset.isFixedLength == self.hasSeqInput
+                eid = 'aeModel:DatasetNotSuitable';
+                if thisDataset.isFixedLength
+                    msg = 'The dataset should have variable length for the model.';
+                else
+                    msg = 'The dataset should have fixed length for the model.';
+                end
+                throwAsCaller( MException(eid,msg) );
+            end
+
             % re-partition the data to create training and validation sets
             cvPart = cvpartition( thisDataset.nObs, 'Holdout', 0.25 );
             
             thisTrnSet = thisDataset.partition( training(cvPart) );
             thisValSet = thisDataset.partition( test(cvPart) );
-            
-            % setup the minibatch queues
-            mbqTrn = thisDataset.getMiniBatchQueue( thisTrnSet, ...
-                                            self.trainer.batchSize );
-            mbqVal = thisDataset.getMiniBatchQueue( thisValSet, ...
-                                            thisValSet.nObs );
 
             % run the training loop
             [ self, self.optimizer, lossTrn, lossVal ] = ...
-                            self.trainer.runTraining( ...
-                                                self, ...
-                                                thisModel, ...
-                                                thisOptimizer, ...
-                                                mbqTrn, ...
-                                                mbqVal );
+                            self.trainer.runTraining( self, ...
+                                                      thisTrnSet, ...
+                                                      thisValSet );
 
 
         end
