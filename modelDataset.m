@@ -9,8 +9,7 @@ classdef modelDataset
         XInputLen       % X input size (array of time series lengths)
         XInputDim       % number of X input dimensions
         XTargetDim      % normalized X output size (time series length)
-        XInputChannels  % number of X input channels
-        XOutputChannels % number of X ouput channels (differs only if derivative)
+        XChannels       % number of X input channels
         YDim            % number of categories
         YLabels         % Y labels
         nObs            % number of observations
@@ -22,7 +21,6 @@ classdef modelDataset
         padding         % structure specifying padding setup
         fda             % functional data analysis settings
         resampleRate    % downsampling rate
-        hasDerivative   % if the data includes first derivative
     end
     properties (Dependent)
         Z               % latent codes from the model
@@ -56,7 +54,6 @@ classdef modelDataset
                     {mustBeValidFdParams}
                 args.resampleRate       double ...
                     {mustBeNumeric} = 1
-                args.hasDerivative      logical = false
 
             end
 
@@ -74,7 +71,6 @@ classdef modelDataset
             self.padding = args.padding;
             self.fda = args.fda;
             self.resampleRate = args.resampleRate;
-            self.hasDerivative = args.hasDerivative;
 
             % prepare the input data
             self = processXSeries( self, XInputRaw );
@@ -124,7 +120,6 @@ classdef modelDataset
             thisSubset.padding = self.padding;
             thisSubset.fda = self.fda;
             thisSubset.resampleRate = self.resampleRate;
-            thisSubset.hasDerivative = self.hasDerivative;
 
             thisSubset.XInput = split( self.XInput, idx );
             thisSubset.XTarget = split( self.XTarget, idx );
@@ -132,8 +127,7 @@ classdef modelDataset
 
             thisSubset.XInputDim = self.XInputDim;
             thisSubset.XTargetDim = self.XTargetDim;
-            thisSubset.XInputChannels = self.XInputChannels;
-            thisSubset.XOutputChannels = self.XOutputChannels;
+            thisSubset.XChannels = self.XChannels;
 
             thisSubset.YDim = self.YDim;
             thisSubset.YLabels = self.YLabels;
@@ -177,17 +171,9 @@ classdef modelDataset
                 fix( self.padding.length/self.resampleRate )+1 );            
             
             XEval = eval_fd( tSpanResampled, XFd );
-            
-            self.XOutputChannels = size( XEval, 3 );
-
-            if self.hasDerivative
-                % include the first derivative as further channels
-                DXEval = eval_fd( tSpanResampled, XFd, 1 );
-                XEval = cat( 3, XEval, DXEval );
-            end
 
             self.nObs = size( XEval, 2 );
-            self.XInputChannels = size( XEval, 3 );
+            self.XChannels = size( XEval, 3 );
 
             % adjust lengths for the re-sampling
             self.XInputLen = ceil( size( XEval, 1 )*self.XInputLen ...
@@ -226,22 +212,13 @@ classdef modelDataset
 
             if isempty( XTargetRaw )
                 % no new target dataset, use the same data as input
-                
-                if self.hasDerivative
-                    % remove derivative channels
-                    targetX = cellfun( @(X) X(:,1:self.XOutputChannels), ...
-                                       self.XInput , ...
-                                       'UniformOutput', false);
-                else
-                    targetX = self.XInput;
-                end
 
                 if self.normalizeInput
                     % re-use the time-normalized input
-                    self.XTarget = targetX;
+                    self.XTarget = self.XInput;
                 else
                     % prepare normalized data of fixed length
-                    self.XTarget = normalizeXSeries( targetX, ...
+                    self.XTarget = normalizeXSeries( self.XInput, ...
                                                      self.normalizedPts, ...
                                                      self.normalization, ...
                                                      self.padding );
