@@ -15,13 +15,19 @@ classdef modelTrainer
 
         preTraining    % flag to indicate AE training
         postTraining   % flag to indicate whether to continue training
+
+        showPlots      % flag whether to show plots
+        axes           % plot axes structure
     end
 
     methods
 
-        function self = modelTrainer( args )
+        function self = modelTrainer( lossFcnTbl, XChannels, ZDim, args )
             % Initialize the model
             arguments
+                lossFcnTbl          table
+                XChannels           double
+                ZDim                double
                 args.nEpochs        double ...
                     {mustBeInteger, mustBePositive} = 2000;
                 args.nEpochsPreTrn  double ...
@@ -41,6 +47,7 @@ classdef modelTrainer
                     {mustBeMember(args.valType, ...
                         {'Reconstruction', 'Network', 'Fisher'} )} ...
                             = 'Reconstruction'
+                args.showPlots      logical = false
 
             end
 
@@ -58,6 +65,12 @@ classdef modelTrainer
 
             self.preTraining = true;
             self.postTraining = args.postTraining;
+
+            self.showPlots = args.showPlots;
+
+            if self.showPlots
+                self.axes = initializePlots( lossFcnTbl, XChannels, ZDim );
+            end
 
         end
 
@@ -186,14 +199,21 @@ classdef modelTrainer
                         fprintf(' : %1.3f\n', lossVal(v));
                     end
             
+                    % compute the AE components
                     dlZTrn = thisModel.encode( thisModel, dlXTTrn );
-                    %ZTrn = double(extractdata( dlZTrn ));
-                    %for c = 1:self.XChannels
-                    %    plotLatentComp( ax.ae.comp(:,c), dlnetDec, ZTrn, c, ...
-                    %                    self.fda.tSpan, self.fda.fdPar );
-                    %end
+                    dlXC = thisModel.latentComponents( ...
+                                    thisModel.nets.decoder, ...
+                                    dlZTrn, ...
+                                    sampling = 'Fixed' );
+
+
+                    for c = 1:thisModel.XChannels
+                        thisModel.plotLatentComp( self.axes.comp(:,c), ...
+                                        dlXC, c, ...
+                                        thisTrnData.fda );
+                    end
                     %plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
-                    %drawnow;
+                    drawnow;
                 end
             
                 if mod( epoch, self.lrFreq )==0
@@ -207,8 +227,6 @@ classdef modelTrainer
 
         end
 
-
-           
     end
 
 
@@ -431,3 +449,31 @@ function i = iterationsPerEpoch( mbq )
     end
 
 end
+
+
+
+function axes = initializePlots( lossFcnTbl, XChannels, ZDim )
+    % Setup plots for tracking progress
+   
+    nAxes = size( lossFcnTbl, 1 );
+    [ rows, cols ] = sqdim( nAxes );
+    
+    % setup figure for plotting loss functions
+    figure(1);
+    for i = 1:nAxes
+        axes.loss.(lossFcnTbl.names(i)) = subplot( rows, cols, i );
+    end
+
+    if any( lossFcnTbl.types=='Component' )
+        % setup the components figure too
+        figure(2);
+        axes.comp = gobjects( ZDim, XChannels );
+        
+        for j = 1:XChannels
+            for i = 1:ZDim
+                axes.comp(i,j) = subplot( XChannels, ZDim, (j-1)*ZDim + i );
+            end
+        end
+    end
+end
+

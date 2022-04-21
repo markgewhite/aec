@@ -31,9 +31,6 @@ for i = 1:nRuns
 
     disp('Generated and partitioned data.');
 
-    % initialise plots
-    % ax = initializePlots( nCodes, setup.data.nChannels );
-
     % ----- autoencoder -----
 
     % initalise autoencoder setup
@@ -58,14 +55,11 @@ for i = 1:nRuns
     %                      ZDim = 4 );
 
     % train the autoencoder
-    testModel = testModel.initTrainer( updateFreq = 5 );
+    testModel = testModel.initTrainer( updateFreq = 5, ...
+                                       showPlots = true );
     testModel = testModel.initOptimizer; 
 
     testModel = train( testModel, myTrnData );
-
-
-    %[dlnetEnc, dlnetDec, dlnetDis, dlnetCls] = ...
-    %                trainAAE( XTrn, XNTrn, YTrn, setup.aae, ax );
 
     % switch to DL array format
     dlXTrn = dlarray( XTrn, 'CB' );

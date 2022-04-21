@@ -161,7 +161,10 @@ classdef autoencoderModel < representationModel
 
             % set the trainer's properties
             argsCell = namedargs2cell( args );
-            self.trainer = modelTrainer( argsCell{:} );
+            self.trainer = modelTrainer( self.lossFcnTbl, ...
+                                         self.XChannels, ...
+                                         self.ZDim, ...
+                                         argsCell{:} );
 
             % confirm if initialization is complete
             self.isInitialized = ~isempty(self.optimizer);
@@ -353,12 +356,22 @@ classdef autoencoderModel < representationModel
             arguments
                 decoder         dlnetwork
                 dlZ             dlarray
+                args.sampling   char ...
+                    {mustBeMember(args.sampling, ...
+                        {'Random', 'Fixed'} )} = 'Random'
                 args.nSample    double {mustBeInteger,mustBePositive} = 10
                 args.dlZMean    dlarray = []
                 args.dlZLogVar  dlarray = []
             end
 
-            nSample = args.nSample;
+            % setup sampling number based on strategy
+            switch args.sampling
+                case 'Random'
+                    nSample = args.nSample;
+                case 'Fixed'
+                    nSample = 2;
+            end
+
             ZDim = size( dlZ, 1 );
             if isempty( args.dlZMean ) || isempty( args.dlZLogVar )
                 % compute the mean and SD across the batch
@@ -381,11 +394,19 @@ classdef autoencoderModel < representationModel
             ZStd = double(extractdata( dlZStd ));
             
             for j = 1:nSample
-                offset = 2*randn;
+                
+                switch args.sampling
+                    case 'Random'
+                        offset = 2*rand;
+                    case 'Fixed'
+                        offset = 4*j-6;
+                end
+
                 for i =1:ZDim
                     % vary ith component randomly about its mean
                     ZC(i,(i-1)*nSample+j) = ZMean(i) + offset*ZStd(i);
                 end
+
             end
 
             % convert back
@@ -405,41 +426,27 @@ classdef autoencoderModel < representationModel
         end
             
 
-        function plotLatentComp( self, Z, c, tSpan, fdPar )
+        function plotLatentComp( ax, dlXC, c, fda )
             % Plot characteristic curves of the latent codings which are similar
             % in conception to the functional principal components
+            arguments
+                ax          
+                dlXC        dlarray
+                c           double
+                fda         struct
+            end
             
-            zScores = linspace( -2, 2, 3 );
-            
-            % find the mean latent scores for centring 
-            ZMean = repmat( mean( Z, 2 ), 1, length(zScores) );
-            
-            nPlots = min( self.ZDim, length(ax) );           
+            XC = double( extractdata( dlXC ) );
+            if size(XC,3) > 1
+                % select the requested channel
+                XC = squeeze( XC(:,c,:) );
+            end
+
+            nPlots = length(ax);           
             for i = 1:nPlots
-                
-                % initialise component codes at their mean values
-                ZC = ZMean;
-            
-                % vary code i about its mean in a standardised way
-                Zsd = std( Z(i,:) );
-                for j = 1:length(zScores)
-                    ZC(i,j) = ZMean(i,1) + zScores(j)*Zsd;
-                end
-                
-                % duplicate for each class
-                dlZC = dlarray( ZC, 'CB' );
-            
-                % generate the curves using the decoder
-                dlXC = reconstruct( self, dlZC );
-                XC = double( extractdata( dlXC ) );
-            
-                if size(XC,3) > 1
-                    % select the requested channel
-                    XC = squeeze( XC(:,c,:) );
-                end
-                
-                % convert into smooth function
-                XCFd = smooth_basis( tSpan, XC, fdPar );
+
+               % convert into smooth function
+                XCFd = smooth_basis( fda.tSpan, XC, fda.fdPar );
             
                 % plot the curves
                 subplotFd( ax(i), XCFd );
