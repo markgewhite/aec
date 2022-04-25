@@ -22,10 +22,7 @@ classdef modelDataset
         fda             % functional data analysis settings
         resampleRate    % downsampling rate
 
-        datasetName     % dataset name
-        channelLabels   % channel names
-        timeLabel       % x axis name
-        channelLimits   % y axis limits
+        info            % dataset information (used for plotting)
     end
     properties (Dependent)
         Z               % latent codes from the model
@@ -60,7 +57,7 @@ classdef modelDataset
                 args.resampleRate       double ...
                     {mustBeNumeric} = 1
                 args.datasetName        string
-                args.timeLabel           string = "Time"
+                args.timeLabel          string = "Time"
                 args.channelLabels      string
                 args.channelLimits      double
             end
@@ -80,10 +77,10 @@ classdef modelDataset
             self.fda = args.fda;
             self.resampleRate = args.resampleRate;
 
-            self.datasetName = args.datasetName;
-            self.channelLabels = args.channelLabels;
-            self.timeLabel = args.timeLabel;
-            self.channelLimits = args.channelLimits;
+            self.info.datasetName = args.datasetName;
+            self.info.channelLabels = args.channelLabels;
+            self.info.timeLabel = args.timeLabel;
+            self.info.channelLimits = args.channelLimits;
 
             % prepare the input data
             self = processXSeries( self, XInputRaw );
@@ -146,10 +143,7 @@ classdef modelDataset
             thisSubset.YLabels = self.YLabels;
             thisSubset.nObs = sum( idx );
 
-            thisSubset.datasetName = self.datasetName;
-            thisSubset.channelLabels = self.channelLabels;
-            thisSubset.timeLabel = self.timeLabel;
-            thisSubset.channelLimits = self.channelLimits;
+            thisSubset.info = self.info;
 
         end
 

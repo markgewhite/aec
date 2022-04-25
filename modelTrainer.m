@@ -13,6 +13,10 @@ classdef modelTrainer
         valPatience    % validation patience in valFreq units
         valType        % validation function name
 
+        nLossFcns      % number of loss functions
+        lossTrn        % record of training losses
+        lossVal        % record of validation losses
+
         preTraining    % flag to indicate AE training
         postTraining   % flag to indicate whether to continue training
 
@@ -63,6 +67,10 @@ classdef modelTrainer
             self.valPatience = args.valPatience;
             self.valType = args.valType;
 
+            self.nLossFcns = size( lossFcnTbl,1 );
+            self.lossTrn = [];
+            self.lossVal = [];
+
             self.preTraining = true;
             self.postTraining = args.postTraining;
 
@@ -75,8 +83,7 @@ classdef modelTrainer
         end
 
         
-        function [ thisModel, thisOptimizer, ...
-                   lossTrn, lossVal ] = runTraining( ...
+        function [ thisModel, thisOptimizer ] = runTraining( ...
                                                 self, ...
                                                 thisModel, ...
                                                 thisTrnData, ...
@@ -106,8 +113,8 @@ classdef modelTrainer
             % get the validation data (one-time only)
             [dlXVal, ~, dlYVal] = next( mbqVal ); 
             
-            lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
-            lossVal = zeros( ceil(nIter*self.nEpochs/self.valFreq), 1 );
+            self.lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
+            self.lossVal = zeros( ceil(nIter*self.nEpochs/self.valFreq), 1 );
             
             for epoch = 1:self.nEpochs
                 
@@ -135,7 +142,7 @@ classdef modelTrainer
                     end
                     
                     % evaluate the model gradients 
-                    [ grads, states, lossTrn(j,:) ] = ...
+                    [ grads, states, self.lossTrn(j,:) ] = ...
                                       dlfeval(  @gradients, ...
                                                 thisModel.nets, ...
                                                 thisModel.lossFcns, ...
@@ -165,6 +172,9 @@ classdef modelTrainer
                                                         j, ...
                                                         doTrainAE );
 
+                    % update loss plots
+
+
                 end
                
 
@@ -173,11 +183,12 @@ classdef modelTrainer
                     
                     % run a validation check
                     v = v + 1;
-                    lossVal( v ) = validationCheck( thisModel, ...
+                    self.lossVal( v ) = validationCheck( thisModel, ...
                                                     self.valType, ...
                                                     dlXVal, dlYVal );
                     if v > 2*vp-1
-                        if mean(lossVal(v-2*vp+1:v-vp)) < mean(lossVal(v-vp+1:v))
+                        if mean(self.lossVal(v-2*vp+1:v-vp)) ...
+                                < mean(self.lossVal(v-vp+1:v))
                             % no longer improving - stop training
                             break
                         end
@@ -187,42 +198,22 @@ classdef modelTrainer
             
                 % update progress on screen
                 if mod( epoch, self.updateFreq )==0
-                    meanLoss = mean(lossTrn( j-nIter+1:j, : ));
-
-                    fprintf('Loss (%4d) = ', epoch);
-                    for k = 1:thisModel.nLoss
-                        fprintf(' %6.3f', meanLoss(k) );
-                    end
                     if self.preTraining
-                        fprintf('\n');
+                        % exclude validation
+                        reportProgress( self.axes, ...
+                                    thisModel, thisTrnData, ...
+                                    dlXTTrn, ...
+                                    self.lossTrn( j-nIter+1:j, : ), ...
+                                    epoch );
                     else
-                        fprintf(' : %1.3f\n', lossVal(v));
+                        % include validation
+                        reportProgress( self.axes, ...
+                                    thisModel, thisTrnData, ...
+                                    dlXTTrn, ...
+                                    self.lossTrn( j-nIter+1:j, : ), ...
+                                    epoch, ...
+                                    lossVal = self.lossVal( v ) );
                     end
-            
-                    % compute the AE components
-                    nComp = 8;
-                    dlZTrn = thisModel.encode( thisModel, dlXTTrn );
-                    dlXC = thisModel.latentComponents( ...
-                                    thisModel.nets.decoder, ...
-                                    dlZTrn, ...
-                                    sampling = 'Fixed', ...
-                                    nSample = nComp, ...
-                                    centre = false );
-
-                    % plot them on specified axes
-                    thisModel.plotLatentComp( self.axes.comp, ...
-                                  dlXC, ...
-                                  thisTrnData.fda, ...
-                                  nComp, ...
-                                  type = 'Smoothed', ...
-                                  shading = true, ...
-                                  plotTitle = thisTrnData.datasetName, ...
-                                  xAxisLabel = thisTrnData.timeLabel, ...
-                                  yAxisLabel = thisTrnData.channelLabels, ...
-                                  yAxisLimits = thisTrnData.channelLimits );
-
-                    %plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
-                    drawnow;
                 end
             
                 if mod( epoch, self.lrFreq )==0
@@ -473,8 +464,13 @@ function axes = initializePlots( lossFcnTbl, XChannels, ZDim )
         axes.loss.(lossFcnTbl.names(i)) = subplot( rows, cols, i );
     end
 
-    % setup the components figure too
+    % setup figure for Z distribution and clustering
     figure(2);
+    axes.ZDistribution = subplot( 1, 2, 1 );
+    axes.ZClustering = subplot( 1, 2, 2 );
+
+    % setup the components figure
+    figure(3);
     axes.comp = gobjects( ZDim, XChannels );
     
     for j = 1:XChannels
@@ -482,6 +478,62 @@ function axes = initializePlots( lossFcnTbl, XChannels, ZDim )
             axes.comp(i,j) = subplot( XChannels, ZDim, (j-1)*ZDim + i );
         end
     end
+
+end
+
+
+function reportProgress( axes, thisModel, thisData, dlXTTrn, lossTrn, epoch, args )
+    % Report progress on training
+    arguments
+        axes
+        thisModel       autoencoderModel
+        thisData        modelDataset
+        dlXTTrn         dlarray
+        lossTrn         double
+        epoch           double
+        args.nLines     double = 8
+        args.lossVal    double = []
+    end
+
+    meanLoss = mean( lossTrn );
+
+    fprintf('Loss (%4d) = ', epoch);
+    for k = 1:thisModel.nLoss
+        fprintf(' %6.3f', meanLoss(k) );
+    end
+    if isempty( args.lossVal )
+        fprintf('\n');
+    else
+        fprintf(' : %1.3f\n', args.lossVal );
+    end
+
+    % compute the AE components
+    dlZTrn = thisModel.encode( thisModel, dlXTTrn );
+    dlXC = thisModel.latentComponents( ...
+                    thisModel.nets.decoder, ...
+                    dlZTrn, ...
+                    sampling = 'Fixed', ...
+                    nSample = args.nLines, ...
+                    centre = false );
+
+    % plot them on specified axes
+    thisModel.plotLatentComp( axes.comp, ...
+                  dlXC, ...
+                  thisData.fda, ...
+                  args.nLines, ...
+                  type = 'Smoothed', ...
+                  shading = true, ...
+                  plotTitle = thisData.info.datasetName, ...
+                  xAxisLabel = thisData.info.timeLabel, ...
+                  yAxisLabel = thisData.info.channelLabels, ...
+                  yAxisLimits = thisData.info.channelLimits );
+
+    % plot the Z distributions
+    thisModel.plotZDist( axes.ZDistribution, dlZTrn );
+
+    drawnow;
+
+
 
 end
 

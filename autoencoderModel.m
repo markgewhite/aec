@@ -219,7 +219,7 @@ classdef autoencoderModel < representationModel
             thisValSet = thisDataset.partition( test(cvPart) );
 
             % run the training loop
-            [ self, self.optimizer, lossTrn, lossVal ] = ...
+            [ self, self.optimizer ] = ...
                             self.trainer.runTraining( self, ...
                                                       thisTrnSet, ...
                                                       thisValSet );
@@ -559,12 +559,9 @@ classdef autoencoderModel < representationModel
                     ylim( axes(c), args.yAxisLimits );
                 end               
 
-                axes(c).TickDir = 'out';
-                axes(c).XAxis.LineWidth = 1;
-                axes(c).YAxis.LineWidth = 1;
                 axes(c).YAxis.TickLabelFormat = '%.1f';
-                axes(c).FontName = 'Arial';
-                axes(c).PlotBoxAspectRatio = [1 1 1];
+
+                finalisePlot( axes(c), square = true );
 
 
             end
@@ -572,6 +569,69 @@ classdef autoencoderModel < representationModel
         
         end
     
+
+        
+        function plotZDist( axis, dlZ, args )
+            % Update the Z distributions plot
+            arguments
+                axis
+                dlZ                 dlarray
+                args.name           string = 'Latent Distribution'
+                args.standardize    logical = false
+                args.pdfLimit       double = 0.05
+            end
+
+            Z = double( extractdata( dlZ ) );
+
+            if args.standardize
+                Z = (Z-mean(Z,2))./std(Z,[],2);
+                xAxisLbl = 'Std Z';
+            else
+                xAxisLbl = 'Z';
+            end
+        
+            nPts = 101;
+            nCodes = size( Z, 1 );
+               
+            hold( axis, 'off');
+            for i = 1:nCodes
+
+                % fit a distribution
+                pdZ = fitdist( Z(i,:)', 'Kernel', 'Kernel', 'epanechnikov' );
+
+                % get extremes
+                Z01 = prctile( Z(i,:), 1 );
+                Z50 = prctile( Z(i,:), 50 );
+                Z99 = prctile( Z(i,:), 99 );
+
+                % go well beyond range
+                ZMin = Z50 - 2*(Z50-Z01);
+                ZMax = Z50 + 2*(Z99-Z50);
+
+                % evaluate the probability density function
+                ZPts = linspace( ZMin, ZMax, nPts );
+                Y = pdf( pdZ, ZPts );
+                Y = Y/sum(Y);
+
+                plot( axis, ZPts, Y, 'LineWidth', 1 );
+                hold( axis, 'on' );
+
+            end
+            
+            hold( axis, 'off');
+            
+            ylim( axis, [0 args.pdfLimit] );
+            
+            title( axis, args.name );
+            xlabel( axis, xAxisLbl );
+            ylabel( axis, 'Q(Z)' );   
+            axis.YAxis.TickLabelFormat = '%.2f';
+            
+            finalisePlot( axis, square = true );
+
+            drawnow;
+            
+            end
     
     
     end
@@ -614,5 +674,22 @@ function obj = plotShadedArea( ax, t, y1, y2, colour, args )
 
 end
 
+
+function finalisePlot( ax, args )
+    arguments
+        ax
+        args.square     logical = false
+    end
+
+    ax.Box = false;
+    ax.TickDir = 'out';
+    ax.XAxis.LineWidth = 1;
+    ax.YAxis.LineWidth = 1;
+    ax.FontName = 'Arial';
+    if args.square
+        ax.PlotBoxAspectRatio = [1 1 1];
+    end
+
+end
 
 
