@@ -21,6 +21,11 @@ classdef modelDataset
         padding         % structure specifying padding setup
         fda             % functional data analysis settings
         resampleRate    % downsampling rate
+
+        datasetName     % dataset name
+        channelLabels   % channel names
+        timeLabel       % x axis name
+        channelLimits   % y axis limits
     end
     properties (Dependent)
         Z               % latent codes from the model
@@ -54,7 +59,10 @@ classdef modelDataset
                     {mustBeValidFdParams}
                 args.resampleRate       double ...
                     {mustBeNumeric} = 1
-
+                args.datasetName        string
+                args.timeLabel           string = "Time"
+                args.channelLabels      string
+                args.channelLimits      double
             end
 
             self.XInputRaw = XInputRaw;
@@ -71,6 +79,11 @@ classdef modelDataset
             self.padding = args.padding;
             self.fda = args.fda;
             self.resampleRate = args.resampleRate;
+
+            self.datasetName = args.datasetName;
+            self.channelLabels = args.channelLabels;
+            self.timeLabel = args.timeLabel;
+            self.channelLimits = args.channelLimits;
 
             % prepare the input data
             self = processXSeries( self, XInputRaw );
@@ -132,6 +145,11 @@ classdef modelDataset
             thisSubset.YDim = self.YDim;
             thisSubset.YLabels = self.YLabels;
             thisSubset.nObs = sum( idx );
+
+            thisSubset.datasetName = self.datasetName;
+            thisSubset.channelLabels = self.channelLabels;
+            thisSubset.timeLabel = self.timeLabel;
+            thisSubset.channelLimits = self.channelLimits;
 
         end
 

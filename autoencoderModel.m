@@ -359,19 +359,14 @@ classdef autoencoderModel < representationModel
                 args.sampling   char ...
                     {mustBeMember(args.sampling, ...
                         {'Random', 'Fixed'} )} = 'Random'
+                args.centre     logical = true
                 args.nSample    double {mustBeInteger,mustBePositive} = 10
+                args.range      double {mustBePositive} = 2.0
                 args.dlZMean    dlarray = []
                 args.dlZLogVar  dlarray = []
             end
 
-            % setup sampling number based on strategy
-            switch args.sampling
-                case 'Random'
-                    nSample = args.nSample;
-                case 'Fixed'
-                    nSample = 2;
-            end
-
+            nSample = args.nSample;
             ZDim = size( dlZ, 1 );
             if isempty( args.dlZMean ) || isempty( args.dlZLogVar )
                 % compute the mean and SD across the batch
@@ -393,13 +388,18 @@ classdef autoencoderModel < representationModel
             ZMean = double(extractdata( dlZMean ));
             ZStd = double(extractdata( dlZStd ));
             
+            if strcmp( args.sampling, 'Fixed' )
+                % define the offset spacing
+                offsets = linspace( -args.range, args.range, nSample );
+            end
+
             for j = 1:nSample
                 
                 switch args.sampling
                     case 'Random'
-                        offset = 2*rand;
+                        offset = args.range*rand;
                     case 'Fixed'
-                        offset = 4*j-6;
+                        offset = offsets(j);
                 end
 
                 for i =1:ZDim
@@ -414,43 +414,159 @@ classdef autoencoderModel < representationModel
            
             % generate all the component curves using the decoder
             dlXC = forward( decoder, dlZC );
-
-            % centre about the mean curve (last curve)
             XDim = size( dlXC );
-            if length( XDim )==2
-                dlXC = dlXC( :, 1:end-1 ) - dlXC( :, end );
-            else
-                dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );
+
+            if args.centre
+                % centre about the mean curve (last curve)
+                if length( XDim )==2
+                    dlXC = dlXC( :, 1:end-1 ) - dlXC( :, end );
+                else
+                    dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );
+                end
             end
-            
+
         end
             
 
-        function plotLatentComp( ax, dlXC, c, fda )
+        function plotLatentComp( axes, dlXC, fda, nSample, args )
             % Plot characteristic curves of the latent codings which are similar
             % in conception to the functional principal components
             arguments
-                ax          
-                dlXC        dlarray
-                c           double
-                fda         struct
+                axes          
+                dlXC                dlarray
+                fda                 struct
+                nSample             double
+                args.type           char ...
+                    {mustBeMember(args.type, ...
+                        {'Smoothed', 'Predicted', 'Both'} )} = 'Smoothed'
+                args.shading        logical = false
+                args.legend         logical = true
+                args.plotTitle      string = "<Dataset>"
+                args.xAxisLabel     string = "Time"
+                args.yAxisLabel     string = "<Channel>"
+                args.yAxisLimits    double
+
             end
             
             XC = double( extractdata( dlXC ) );
-            if size(XC,3) > 1
-                % select the requested channel
-                XC = squeeze( XC(:,c,:) );
-            end
+            % re-order the dimensions for FDA
+            %XC = permute( XC, [1 3 2] );
 
-            nPlots = length(ax);           
-            for i = 1:nPlots
+            % smooth and re-evaluate all curves
+            XCFd = smooth_basis( fda.tSpan, XC, fda.fdPar );
+            XCsmth = eval_fd( fda.tSpan, XCFd );
 
-               % convert into smooth function
-                XCFd = smooth_basis( fda.tSpan, XC, fda.fdPar );
-            
-                % plot the curves
-                subplotFd( ax(i), XCFd );
-            
+            % set the colours from blue and red
+            compColours = [ 0.0000 0.4470 0.7410; ...
+                            0.6350 0.0780 0.1840 ];
+            gray = [ 0.5, 0.5, 0.5 ];
+            black = [ 0, 0 , 0 ];
+            % set positive/negative plot characteristics
+            names = [ "+ve", "-ve" ];
+
+            nPlots = length(axes);
+            j = 0;
+            for c = 1:nPlots
+
+                cla( axes(c) );
+                hold( axes(c), 'on' );
+                k = 1;
+    
+                pltObj = gobjects( 3, 1 );
+                l = 0;
+
+                % plot the gradations
+                for i = 1:nSample
+                    
+                    % next sample
+                    j = j+1;
+
+                    isOuterCurve = (i==1 || i==nSample);
+                    if isOuterCurve
+                        % fill-up shading area
+                        if args.shading
+                            plotShadedArea( axes(c), ...
+                                            fda.tSpan, ...
+                                            XCsmth( :, j ), ...
+                                            XCsmth( :, end ), ...
+                                            compColours(k,:), ...
+                                            name = names(k) );
+                        end
+                        width = 2.0;
+                    
+                    else
+                        width = 1.0;
+                    end
+
+                    % plot gradation curve
+
+                    if any(strcmp( args.type, {'Predicted','Both'} ))
+                        % plot predicted values
+                        plot( axes(c), ...
+                              fda.tSpan, XC( :, j ), ...
+                              Color = gray, ...
+                              LineWidth = 0.5 );
+                    end
+                    if any(strcmp( args.type, {'Smoothed','Both'} ))
+                        % plot smoothed curves
+                        if isOuterCurve
+                            % include in legend
+                            l = l+1;
+                            pltObj(l) = plot( axes(c), ...
+                                              fda.tSpan, XCsmth( :, j ), ...
+                                              Color = compColours(k,:), ...
+                                              LineWidth = width, ...
+                                              DisplayName = names(k));
+                        else
+                            % don't record it for the legend
+                            plot( axes(c), ...
+                                              fda.tSpan, XCsmth( :, j ), ...
+                                              Color = compColours(k,:), ...
+                                              LineWidth = width );
+                        end
+
+                    end
+
+                    if mod( i, nSample/2 )==0
+                        % next colour
+                        k = k+1;
+                    end
+
+                end
+
+                % plot the mean curve
+                l = l+1;
+                pltObj(l) = plot( axes(c), fda.tSpan, XCsmth( :, end ), ...
+                               Color = black, ...
+                               LineWidth = 2, ...
+                               DisplayName = 'Mean' );
+
+                hold( axes(c), 'off' );
+
+                % finalise the plot with formatting, etc
+                if args.legend && c==1
+                    legend( axes(c), pltObj, Location = 'best' );
+                end
+
+                title( axes(c), ['Component ' num2str(c)] );
+                xlabel( axes(c), args.xAxisLabel );
+                if c==1
+                    ylabel( axes(c), args.yAxisLabel );
+                end
+                xlim( axes(c), [fda.tSpan(1) fda.tSpan(end)] );
+
+                if ~isempty( args.yAxisLimits )
+                    ylim( axes(c), args.yAxisLimits );
+                end               
+
+                axes(c).TickDir = 'out';
+                axes(c).XAxis.LineWidth = 1;
+                axes(c).YAxis.LineWidth = 1;
+                axes(c).YAxis.TickLabelFormat = '%.1f';
+                axes(c).FontName = 'Arial';
+                axes(c).PlotBoxAspectRatio = [1 1 1];
+
+
             end
         
         
@@ -474,84 +590,29 @@ function names = getFcnNames( lossFcns )
 end
 
 
-
-
-function [ XTrn, XNTrn, YTrn ] = createTrnData( X, XN, Y, cvPart )
-
-    if iscell( X )
-        % X is a cell array containing sequences of variable length
-        XTrn = X( training(cvPart) );
-
-    else
-        % X is a numeric array
-        XTrn = X( :, training(cvPart) );
-
+function obj = plotShadedArea( ax, t, y1, y2, colour, args )
+    % Plot a shaded area
+    arguments
+        ax          
+        t               double
+        y1              double
+        y2              double
+        colour          double  
+        args.alpha      double = 0.25
+        args.name       char
     end
 
-    % create time normalisation set
-    XNTrn = XN( :, training(cvPart), : );
-
-    % create the outcome variable set
-    YTrn = Y( training(cvPart) );
+    % set the boundary
+    tRev = [ t, fliplr(t) ];
+    yRev = [ y1; flipud(y2) ];
+        
+    % draw shaded region
+    obj = fill( ax, tRev, yRev, colour, ...
+                    'FaceAlpha', args.alpha, ...
+                    'EdgeColor', 'none', ...
+                    'DisplayName', args.name );
 
 end
-
-
-function [ dlXVal, dlYVal ] = createValData( X, Y, cvPart, padValue, padLoc )
-
-    if iscell( X )
-        % X is a cell array containing sequences of variable length
-        XVal = preprocMiniBatch( X( test(cvPart) ), [], [], ...
-                                 padValue, ...
-                                 padLoc );
-        dlXVal = dlarray( XVal, 'CTB' );
-
-    else
-        % X is a numeric array
-        XVal = X( :, test(cvPart) );
-        dlXVal = dlarray( XVal, 'CB' );
-
-    end
-
-    dlYVal = dlarray( Y( test(cvPart)  ), 'CB' );
-
-end
-
-
-function [ dsTrn, XNfmt ] = createDatastore( XTrn, XNTrn, YTrn )
-
-    % create the datastore for the input X
-    if iscell( XTrn )           
-        % sort them in ascending order of length
-        XLen = cellfun( @length, XTrn );
-        [ ~, orderIdx ] = sort( XLen, 'descend' );
-    
-        XTrn = XTrn( orderIdx );
-        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 1, ...
-                                 'OutputType', 'same' );
-    
-    else
-        dsXTrn = arrayDatastore( XTrn, 'IterationDimension', 2 );
-    
-    end
-    
-    % create the datastore for the time-normalised output X
-    dsXNTrn = arrayDatastore( XNTrn, 'IterationDimension', 2 );
-    if size( XNTrn, 3 ) > 1
-        XNfmt = 'SSCB';
-    else
-        XNfmt = 'CB';
-    end
-    
-    % create the datastore for the labels/outcomes
-    dsYTrn = arrayDatastore( YTrn, 'IterationDimension', 1 );   
-    
-    % combine them
-    dsTrn = combine( dsXTrn, dsXNTrn, dsYTrn );
-               
-end
-
-
 
 
 

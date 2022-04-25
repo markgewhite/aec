@@ -200,18 +200,27 @@ classdef modelTrainer
                     end
             
                     % compute the AE components
+                    nComp = 8;
                     dlZTrn = thisModel.encode( thisModel, dlXTTrn );
                     dlXC = thisModel.latentComponents( ...
                                     thisModel.nets.decoder, ...
                                     dlZTrn, ...
-                                    sampling = 'Fixed' );
+                                    sampling = 'Fixed', ...
+                                    nSample = nComp, ...
+                                    centre = false );
 
+                    % plot them on specified axes
+                    thisModel.plotLatentComp( self.axes.comp, ...
+                                  dlXC, ...
+                                  thisTrnData.fda, ...
+                                  nComp, ...
+                                  type = 'Smoothed', ...
+                                  shading = true, ...
+                                  plotTitle = thisTrnData.datasetName, ...
+                                  xAxisLabel = thisTrnData.timeLabel, ...
+                                  yAxisLabel = thisTrnData.channelLabels, ...
+                                  yAxisLimits = thisTrnData.channelLimits );
 
-                    for c = 1:thisModel.XChannels
-                        thisModel.plotLatentComp( self.axes.comp(:,c), ...
-                                        dlXC, c, ...
-                                        thisTrnData.fda );
-                    end
                     %plotZDist( ax.ae.distZTrn, ZTrn, 'AE: Z Train', true );
                     drawnow;
                 end
@@ -464,16 +473,15 @@ function axes = initializePlots( lossFcnTbl, XChannels, ZDim )
         axes.loss.(lossFcnTbl.names(i)) = subplot( rows, cols, i );
     end
 
-    if any( lossFcnTbl.types=='Component' )
-        % setup the components figure too
-        figure(2);
-        axes.comp = gobjects( ZDim, XChannels );
-        
-        for j = 1:XChannels
-            for i = 1:ZDim
-                axes.comp(i,j) = subplot( XChannels, ZDim, (j-1)*ZDim + i );
-            end
+    % setup the components figure too
+    figure(2);
+    axes.comp = gobjects( ZDim, XChannels );
+    
+    for j = 1:XChannels
+        for i = 1:ZDim
+            axes.comp(i,j) = subplot( XChannels, ZDim, (j-1)*ZDim + i );
         end
     end
+
 end
 
