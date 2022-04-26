@@ -22,6 +22,7 @@ classdef modelTrainer
 
         showPlots      % flag whether to show plots
         axes           % plot axes structure
+        lossLines      % animated lines cell array
     end
 
     methods
@@ -77,7 +78,8 @@ classdef modelTrainer
             self.showPlots = args.showPlots;
 
             if self.showPlots
-                self.axes = initializePlots( lossFcnTbl, XChannels, ZDim );
+                [self.axes, self.lossLines] = ...
+                    initializePlots( lossFcnTbl, XChannels, ZDim );
             end
 
         end
@@ -104,14 +106,14 @@ classdef modelTrainer
             mbqVal = thisValData.getMiniBatchQueue( thisValData, ...
                                                 thisValData.nObs );
 
+            % get the validation data (one-time only)
+            [dlXVal, ~, dlYVal] = next( mbqVal ); 
+
             % initialize counters
             nIter = iterationsPerEpoch( mbqTrn );           
             j = 0;
             v = 0;
             vp = self.valPatience;
-
-            % get the validation data (one-time only)
-            [dlXVal, ~, dlYVal] = next( mbqVal ); 
             
             self.lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
             self.lossVal = zeros( ceil(nIter*self.nEpochs/self.valFreq), 1 );
@@ -173,7 +175,7 @@ classdef modelTrainer
                                                         doTrainAE );
 
                     % update loss plots
-
+                    updateLossLines( self.lossLines, j, self.lossTrn(j,:) );
 
                 end
                
@@ -200,18 +202,16 @@ classdef modelTrainer
                 if mod( epoch, self.updateFreq )==0
                     if self.preTraining
                         % exclude validation
-                        reportProgress( self.axes, ...
-                                    thisModel, thisTrnData, ...
-                                    self.lossTrn( j-nIter+1:j, : ), ...
-                                    epoch );
+                        lossValArg = [];
                     else
                         % include validation
-                        reportProgress( self.axes, ...
+                        lossValArg = self.lossVal( v );
+                    end                       
+                    reportProgress( self.axes, ...
                                     thisModel, thisTrnData, ...
                                     self.lossTrn( j-nIter+1:j, : ), ...
                                     epoch, ...
-                                    lossVal = self.lossVal( v ) );
-                    end
+                                    lossVal = lossValArg );
                 end
             
                 if mod( epoch, self.lrFreq )==0
@@ -450,7 +450,7 @@ end
 
 
 
-function axes = initializePlots( lossFcnTbl, XChannels, ZDim )
+function [axes, lossLines] = initializePlots( lossFcnTbl, XChannels, ZDim )
     % Setup plots for tracking progress
    
     nAxes = size( lossFcnTbl, 1 );
@@ -458,19 +458,34 @@ function axes = initializePlots( lossFcnTbl, XChannels, ZDim )
     
     % setup figure for plotting loss functions
     figure(1);
+    clf;
+    nLines = sum( lossFcnTbl.nLosses );
+    lossLines = gobjects( nLines, 1 );
+    colours = lines( nLines );
+    c = 0;
     for i = 1:nAxes
-        axes.loss.(lossFcnTbl.names(i)) = subplot( rows, cols, i );
+        thisName = lossFcnTbl.names(i);
+        axes.loss.(thisName) = subplot( rows, cols, i );
+        for k = 1:lossFcnTbl.nLosses(i)
+            c = c+1;
+            lossLines(c) = animatedline( axes.loss.(thisName), ...
+                                         'Color', colours(c,:) );
+        end
+        title( axes.loss.(thisName), thisName );
+        xlabel( axes.loss.(thisName), 'Iteration' );
     end
 
     % setup figure for Z distribution and clustering
     figure(2);
+    clf;
     axes.ZDistribution = subplot( 1, 2, 1 );
     axes.ZClustering = subplot( 1, 2, 2 );
 
     % setup the components figure
     figure(3);
+    clf;
     axes.comp = gobjects( ZDim, XChannels );
-    
+
     for j = 1:XChannels
         for i = 1:ZDim
             axes.comp(i,j) = subplot( XChannels, ZDim, (j-1)*ZDim + i );
@@ -541,4 +556,21 @@ function reportProgress( axes, thisModel, thisData, ...
 
 
 end
+
+
+function updateLossLines( lossLines, j, newPts )
+    % Update loss animated lines
+    arguments
+        lossLines
+        j               double
+        newPts          double
+    end
+
+    for i = 1:length(lossLines)
+        addpoints( lossLines(i), j, newPts(i) );
+    end
+    drawnow;
+
+end
+
 
