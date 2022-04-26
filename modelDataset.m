@@ -157,6 +157,30 @@ classdef modelDataset
             isFixed = self.normalizeInput;
             
         end
+
+
+
+        function [ dlX, dlY ] = getDlInput( self )
+            % Convert X and Y into dl arrays
+            arguments
+                self        modelDataset
+            end
+            
+            if iscell( self.XInput )
+                X = padData( self.XInput, 'Longest', ...
+                               self.padding.value, self.padding.location );
+                X = permute( X, [ 3 1 2 ] );
+                dlX = dlarray( X, 'CTB' );
+
+            else
+                dlX = dlarray( self.XInput, 'CB' );
+
+            end
+
+            dlY = dlarray( self.Y, 'CB' );
+
+        end
+        
         
     end
 
@@ -249,6 +273,7 @@ classdef modelDataset
             self.XTargetDim = size( self.XTarget, 1 );
 
         end
+
 
     end
 

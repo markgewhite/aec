@@ -44,7 +44,7 @@ for i = 1:nRuns
     varimaxLoss = componentLoss( 'varimax', nSample=20, criterion='Varimax' );
 
 
-    testModel = fcModel( reconLoss, klLoss, ...
+    testModel = fcModel( reconLoss, clsLoss, ...
                           XDim = myTrnData.XInputDim, ...
                           XChannels = myTrnData.XChannels, ...
                           ZDim = 4 );
@@ -55,7 +55,7 @@ for i = 1:nRuns
     %                      ZDim = 4 );
 
     % train the autoencoder
-    testModel = testModel.initTrainer( updateFreq = 5, ...
+    testModel = testModel.initTrainer( updateFreq = 10, ...
                                        showPlots = true );
     testModel = testModel.initOptimizer; 
 
@@ -99,7 +99,7 @@ for i = 1:nRuns
 
     % plot the clusters for test data using the training loadings 
     % from a canonical discriminant analysis
-    ZTrnNse = ZTrn + 1E-6*randn(size(ZTrn)); % to avoid errors
+    %ZTrnNse = ZTrn + 1E-6*randn(size(ZTrn)); % to avoid errors
     ZTrnCanInfo = cda( ZTrn', YTrn );
     ZTstCan = ZTst'*ZTrnCanInfo.loadings;
     if size( ZTstCan, 2 )==1

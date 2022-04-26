@@ -628,10 +628,87 @@ classdef autoencoderModel < representationModel
             axis.YAxis.TickLabelFormat = '%.2f';
             
             finalisePlot( axis, square = true );
-
-            drawnow;
             
+        end
+
+
+        function plotZClusters( axis, dlZ, args )
+            % Plot the latent codes on 2D plane
+            arguments
+                axis
+                dlZ                 dlarray
+                args.dlY            dlarray = []
+                args.type           char ...
+                    {mustBeMember(args.type, ...
+                        {'Canonical', 'TSNE'} )} = 'TSNE'
+                args.name           string = 'Latent Space'
+                args.perplexity     double = 30
+                args.compact        logical = false
+
             end
+
+            if isempty( args.dlY ) && strcmp( args.type, 'Canonical' )
+                eid = 'aeModel:LabelsMissing';
+                msg = 'Canonical discriminant analysis needs labels.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            if ~isempty( args.dlY )
+                Y = double( extractdata( args.dlY ) );
+                classes = unique( Y );
+            else
+                Y = ones( size( dlZ,2), 1 );
+                classes = 1;
+            end
+
+            Z = double( extractdata( dlZ ) );
+
+            switch args.type
+                case 'Canonical'
+                    % canonical discriminant analysis                  
+                    ZCanInfo = cda( Z', Y );
+                    ZT = ZCanInfo.scores;
+                    if size( ZT, 2 )==1
+                        % only one canonical dimension
+                        ZT = [ ZT ZT ];  
+                    end
+
+                case 'TSNE'
+                    % t-distribution stochastic neighbour embedding
+                    perplexity = min( size(dlZ,2), args.perplexity );
+                    ZT = tsne( Z', ...
+                               Perplexity = perplexity, ...
+                               Standardize = true ); 
+                    
+            end
+
+            cla( axis, 'reset' );
+            hold( axis, 'on' );
+            
+            if args.compact
+                dotSize = 5;
+            else
+                dotSize = 10;
+            end
+            
+            % plot true classes (large dots)
+            colours = lines( length(classes) );
+            gscatter( axis, ZT(:,1), ZT(:,2), Y, colours, '.', dotSize );
+            
+            hold( axis, 'off' );
+            
+            if ~args.compact
+                legend( axis, 'Location', 'Best' );
+            end
+
+            title( axis, args.name );
+            axis.TickDir = 'none';
+            axis.XTickLabel = [];
+            axis.YTickLabel = [];
+            finalisePlot( axis, square = true );
+
+
+        end
     
     
     end

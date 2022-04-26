@@ -202,14 +202,12 @@ classdef modelTrainer
                         % exclude validation
                         reportProgress( self.axes, ...
                                     thisModel, thisTrnData, ...
-                                    dlXTTrn, ...
                                     self.lossTrn( j-nIter+1:j, : ), ...
                                     epoch );
                     else
                         % include validation
                         reportProgress( self.axes, ...
                                     thisModel, thisTrnData, ...
-                                    dlXTTrn, ...
                                     self.lossTrn( j-nIter+1:j, : ), ...
                                     epoch, ...
                                     lossVal = self.lossVal( v ) );
@@ -482,13 +480,13 @@ function axes = initializePlots( lossFcnTbl, XChannels, ZDim )
 end
 
 
-function reportProgress( axes, thisModel, thisData, dlXTTrn, lossTrn, epoch, args )
+function reportProgress( axes, thisModel, thisData, ...
+                               lossTrn, epoch, args )
     % Report progress on training
     arguments
         axes
         thisModel       autoencoderModel
         thisData        modelDataset
-        dlXTTrn         dlarray
         lossTrn         double
         epoch           double
         args.nLines     double = 8
@@ -507,11 +505,13 @@ function reportProgress( axes, thisModel, thisData, dlXTTrn, lossTrn, epoch, arg
         fprintf(' : %1.3f\n', args.lossVal );
     end
 
+    [dlX, dlY] = thisData.getDlInput;
+
     % compute the AE components
-    dlZTrn = thisModel.encode( thisModel, dlXTTrn );
+    dlZ = thisModel.encode( thisModel, dlX );
     dlXC = thisModel.latentComponents( ...
                     thisModel.nets.decoder, ...
-                    dlZTrn, ...
+                    dlZ, ...
                     sampling = 'Fixed', ...
                     nSample = args.nLines, ...
                     centre = false );
@@ -529,7 +529,12 @@ function reportProgress( axes, thisModel, thisData, dlXTTrn, lossTrn, epoch, arg
                   yAxisLimits = thisData.info.channelLimits );
 
     % plot the Z distributions
-    thisModel.plotZDist( axes.ZDistribution, dlZTrn );
+    thisModel.plotZDist( axes.ZDistribution, dlZ );
+
+    % plot the Z clusters
+    thisModel.plotZClusters( axes.ZClustering, dlZ, ...
+                             dlY = dlY, ...
+                             type = 'TSNE', perplexity=80 );
 
     drawnow;
 
