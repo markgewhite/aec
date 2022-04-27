@@ -50,7 +50,7 @@ classdef modelTrainer
                 args.postTraining   logical = true;
                 args.valType        char ...
                     {mustBeMember(args.valType, ...
-                        {'Reconstruction', 'Network', 'Fisher'} )} ...
+                        {'Reconstruction', 'AuxNetwork', 'AuxModel'} )} ...
                             = 'Reconstruction'
                 args.showPlots      logical = false
 
@@ -106,6 +106,9 @@ classdef modelTrainer
             mbqVal = thisValData.getMiniBatchQueue( thisValData, ...
                                                 thisValData.nObs );
 
+            % setup whole training set
+            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDlInput;
+
             % get the validation data (one-time only)
             [dlXVal, ~, dlYVal] = next( mbqVal ); 
 
@@ -147,24 +150,16 @@ classdef modelTrainer
                     [ grads, states, self.lossTrn(j,:) ] = ...
                                       dlfeval(  @gradients, ...
                                                 thisModel.nets, ...
-                                                thisModel.lossFcns, ...
-                                                thisModel.lossFcnTbl, ...
+                                                thisModel, ...
                                                 dlXTTrn, ...
                                                 dlXNTrn, ...
                                                 dlYTrn, ...
-                                                @thisModel.latentComponents, ...
-                                                doTrainAE, ...
-                                                thisModel.isVAE );
+                                                doTrainAE );
 
-                    % store revised network state
+                    % store revised network states
                     for m = 1:thisModel.nNets
                         thisName = thisModel.netNames{m};
-                        try
-                            thisModel.nets.(thisName).State = states.(thisName);
-                        catch
-                            constraint = 2;
-                            return
-                        end
+                        thisModel.nets.(thisName).State = states.(thisName);
                     end
 
                     % update network parameters
@@ -177,6 +172,14 @@ classdef modelTrainer
                     % update loss plots
                     updateLossLines( self.lossLines, j, self.lossTrn(j,:) );
 
+                end
+
+                % train the auxiliary model, if required
+                if thisModel.hasAuxModel
+                    dlZTrnAll = thisModel.encode( thisModel, dlXTrnAll );
+                    thisModel.auxModel = trainAuxModel( ...
+                                                thisModel.auxModelType, ...
+                                                dlZTrnAll, dlYTrnAll );
                 end
                
 
@@ -232,48 +235,33 @@ end
 
 
 function [grad, state, loss] = gradients( nets, ...
-                                          lossFcns, ...
-                                          lossFcnInfo, ...
+                                          thisModel, ...
                                           dlXIn, dlXOut, ... 
                                           dlY, ...
-                                          compFcn, ...
-                                          doTrainAE, ...
-                                          isVAE )
+                                          doTrainAE )
     % Compute the model gradients
     % (Model object not supplied so nets can be traced)
     arguments
-        nets         struct   % networks, made explicit for tracing
-        lossFcns     struct   % loss functions
-        lossFcnInfo  table    % supporting info on loss functions
+        nets         struct   % networks, separate for traceability
+        thisModel    autoencoderModel % contains all other relevant info
         dlXIn        dlarray  % input to the encoder
         dlXOut       dlarray  % output target for the decoder
         dlY          dlarray  % auxiliary outcome variable
-        compFcn               % latent components generating function
         doTrainAE    logical  % whether to train the AE
-        isVAE        logical  % if variational autoencoder
     end
 
    
     if doTrainAE
         % autoencoder training
+        [ dlXGen, dlZGen, state, dlZMu, dlZLogVar ] = ...
+                thisModel.forward( nets.encoder, nets.decoder, dlXIn );
     
-        if isVAE
-            % generate latent encodings
-            [ dlZGen, state.encoder, dlZMu, dlLogVar ] = ...
-                forward( nets.encoder, dlXIn);
-
-            % duplicate X & C to reflect mulitple draws of VAE
-            dlXOut = repmat( dlXOut, 1, nets.encoder.nDraws );
-            dlY = repmat( dlY, 1, nets.encoder.nDraws );
-        
-        else
-            % generate latent encodings
-            [ dlZGen, state.encoder ] = forward( nets.encoder, dlXIn );
-
+        if thisModel.isVAE
+            % duplicate X & Y to match VAE's multiple draws
+            nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
+            dlXOut = repmat( dlXOut, 1, nDraws );
+            dlY = repmat( dlY, 1, nDraws );
         end
-
-        % reconstruct curves from latent codes
-        [ dlXGen, state.decoder ] = forward( nets.decoder, dlZGen );
         
     else
         % no autoencoder training
@@ -283,23 +271,21 @@ function [grad, state, loss] = gradients( nets, ...
 
 
     % select the active loss functions
-    activeFcns = lossFcnInfo( lossFcnInfo.doCalcLoss, : );
+    isActive = thisModel.lossFcnTbl.doCalcLoss;
+    activeFcns = thisModel.lossFcnTbl( isActive, : );
 
     compLossFcnIdx = find( activeFcns.types=='Component', 1 );
     if ~isempty( compLossFcnIdx )
         % identify the component loss function
         thisName = activeFcns.names(compLossFcnIdx);
-        thisLossFcn = lossFcns.(thisName);
+        thisLossFcn = thisModel.lossFcns.(thisName);
         % compute the AE components
-        if isVAE
-            dlXC = compFcn( nets.decoder, dlZGen, ...
-                            nSample = thisLossFcn.nSample, ...
-                            dlZMean = dlZMu, ...
-                            dlZLogVar = dlZLogVar );
-        else
-            dlXC = compFcn( nets.decoder, dlZGen, ...
-                            nSample = thisLossFcn.nSample );
-        end
+        dlXC = thisModel.latentComponents( ...
+                                nets.decoder, ...
+                                dlZGen, ...
+                                nSample = thisLossFcn.nSample, ...
+                                dlZMean = dlZMu, ...
+                                dlZLogVar = dlZLogVar );
     end
 
     
@@ -315,7 +301,7 @@ function [grad, state, loss] = gradients( nets, ...
        
         % identify the loss function
         thisName = activeFcns.names(i);
-        thisLossFcn = lossFcns.(thisName);
+        thisLossFcn = thisModel.lossFcns.(thisName);
 
         % assign indices for the number of losses returned
         lossIdx = idx:idx+thisLossFcn.nLoss-1;
@@ -329,12 +315,10 @@ function [grad, state, loss] = gradients( nets, ...
                 dlV = { dlXC };
             case 'Z'
                 dlV = { dlZGen };
-            case 'Z-ZHat'
-                dlV = { dlZGen, dlZReal };
             case 'ZMu-ZLogVar'
-                dlV = { dlZMu, dlLogVar };
-            case 'Y'
-                dlV = dlY;
+                dlV = { dlZMu, dlZLogVar };
+            case 'YHat'
+                dlV = dlYHat;
             case 'Z-Y'
                 dlV = { dlZGen, dlY };
         end
@@ -347,7 +331,7 @@ function [grad, state, loss] = gradients( nets, ...
             thisNetwork = nets.(thisName);
             if thisLossFcn.hasState
                 % and store the network state too
-                [ thisLossFcn, thisLoss, state.(thisName) ] = ...
+                [ thisLoss, state.(thisName) ] = ...
                         thisLossFcn.calcLoss( thisNetwork, dlV{:} );
             else
                 thisLoss = thisLossFcn.calcLoss( thisNetwork, dlV{:} );
@@ -411,7 +395,38 @@ function lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx )
 end
 
 
+function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
+    % Train a non-network auxiliary model
+    arguments
+        modelType   string ...
+            {mustBeMember(modelType, {'Fisher', 'SVM'} )}
+        dlZTrn      dlarray
+        dlYTrn      dlarray
+    end
+    
+    % convert to double for models which don't take dlarrays
+    ZTrn = double(extractdata( dlZTrn ))';
+    YTrn = double(extractdata( dlYTrn ));
+    
+    % fit the appropriate model
+    switch modelType
+        case 'Fisher'
+            model = fitcdiscr( ZTrn, YTrn );
+        case 'SVM'
+            model = fitcecoc( ZTrn, YTrn );
+    end
+
+end
+ 
+
 function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
+    % Validate the model so far
+    arguments
+        thisModel       autoencoderModel
+        valType         string
+        dlXVal          dlarray
+        dlYVal          dlarray
+    end
 
     dlZVal = thisModel.encode( thisModel, dlXVal );
     switch valType
@@ -419,17 +434,16 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
             dlXValHat = thisModel.reconstruct( thisModel, dlZVal );
             lossVal = thisModel.getReconLoss( thisModel, dlXVal, dlXValHat );
 
-        case 'Network'
-            dlYHatVal = predict( thisModel.nets.classifier, dlZVal );
-            dlYHatVal = double( ...
-                onehotdecode( dlYHatVal, single(thisModel.cLabels), 1 ))' - 1;
+        case 'AuxNetwork'
+            dlYHatVal = predict( thisModel.nets.(thisModel.auxNetwork), dlZVal );
+            cLabels = thisModel.lossFcns.(thisModel.auxNetwork).CLabels;
+            dlYHatVal = double( onehotdecode( dlYHatVal, single(cLabels), 1 ));
             lossVal = sum( dlYHatVal~=dlYVal )/length(dlYVal);
 
-        case 'Fisher'
+        case 'AuxModel'
             ZVal = double(extractdata( dlZVal ));
             YVal = double(extractdata( dlYVal ));
-            classifier = fitcdiscr( ZVal', YVal );
-            lossVal = loss( classifier, ZVal', YVal );
+            lossVal = loss( thisModel.auxModel, ZVal', YVal );
     end
 
 

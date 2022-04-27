@@ -53,12 +53,14 @@ classdef classifierLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             netAssignments = {'encoder', name};
 
+            isNet = strcmp( args.modelType, 'Network' );
+
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Auxiliary', ...
                                  input = 'Z-Y', ...
                                  lossNets = netAssignments, ...
-                                 hasNetwork = true, ...
-                                 hasState = true );
+                                 hasNetwork = isNet, ...
+                                 hasState = isNet );
 
             self.ZDim = args.ZDim;
             self.CDim = args.CDim;
@@ -69,14 +71,10 @@ classdef classifierLoss < lossFunction
             self.dropout = args.dropout;
             self.modelType = args.modelType;
 
-            switch args.modelType
-                case 'Network'
-                    self.initLearningRate = args.initLearningRate;
-
-                otherwise
-                    % not a network, will use a fixed model
-                    self.initLearningRate = 0;
-
+            if isNet
+                self.initLearningRate = args.initLearningRate;
+            else
+                self.initLearningRate = 0;
             end
 
             self.CLabels = categorical( 1:self.CDim );
@@ -122,7 +120,7 @@ classdef classifierLoss < lossFunction
         end
 
 
-        function [ self, loss, state ] = calcLoss(  self, net, dlZGen, dlC )
+        function [ loss, state ] = calcLoss(  self, net, dlZGen, dlC )
             % Calculate the classifier loss
             arguments
                 self     classifierLoss

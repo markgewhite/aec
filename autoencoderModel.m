@@ -20,6 +20,10 @@ classdef autoencoderModel < representationModel
         nLoss          % number of computed losses
         isInitialized  % flag indicating if fully initialized
         hasSeqInput    % supports variable-length input
+        auxNetwork     % name of auxiliary dlnetwork
+        hasAuxModel    % whether there is an auxiliary model
+        auxModelType   % type of auxiliary model to use
+        auxModel       % auxiliary model itself
 
         trainer        % trainer object holding training parameters
         optimizer      % optimizer object
@@ -43,6 +47,9 @@ classdef autoencoderModel < representationModel
                 args.isVAE          logical = false
                 args.weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
+                args.auxModel       string ...
+                        {mustBeMember( args.auxModel, ...
+                                {'None', 'Fisher', 'SVM'} )} = 'None'
             end
 
             % set the superclass's properties
@@ -57,6 +64,10 @@ classdef autoencoderModel < representationModel
             self.isVAE = args.isVAE;
             self.hasSeqInput = args.hasSeqInput;
 
+            self.hasAuxModel = ~strcmp( args.auxModel, 'None' );
+            self.auxModelType = args.auxModel;
+            self.auxModel = [];
+
             if args.XOutDim == 0
                 self.XOutDim = self.XDim;
             end
@@ -64,13 +75,6 @@ classdef autoencoderModel < representationModel
             % copy over the loss functions associated
             % and any networks with them for later training 
             self = addLossFcns( self, lossFcns{:}, weights = args.weights );
-
-            % check a reconstruction loss is present
-            if ~any( self.lossFcnTbl.types=='Reconstruction' )
-                eid = 'aeModel:NoReconstructionLoss';
-                msg = 'No reconstruction loss object has been specified.';
-                throwAsCaller( MException(eid,msg) );
-            end 
 
             self.nLoss = sum( self.lossFcnTbl.nLosses );
 
@@ -117,38 +121,31 @@ classdef autoencoderModel < representationModel
 
             % add networks, if required
             self = addLossFcnNetworks( self, newFcns );
-
+          
             % store the loss functions' details 
             % and relevant details for easier access when training
             self = self.setLossInfoTbl;
             self.lossFcnTbl.types = categorical( self.lossFcnTbl.types );
             self.lossFcnTbl.inputs = categorical( self.lossFcnTbl.inputs );
 
-        end
+            % check a reconstruction loss is present
+            if ~any( self.lossFcnTbl.types=='Reconstruction' )
+                eid = 'aeModel:NoReconstructionLoss';
+                msg = 'No reconstruction loss object has been specified.';
+                throwAsCaller( MException(eid,msg) );
+            end 
 
-
-        function self = addLossFcnNetworks( self, newFcns )
-            % Add one or more networks to the model
-            arguments
-                self
-                newFcns
+            % check there is no more than one auxiliary network, if at all
+            auxFcns = self.lossFcnTbl.types=='Auxiliary';
+            if sum( auxFcns ) > 1
+                eid = 'aeModel:MulitpleAuxiliaryFunction';
+                msg = 'There is more than one auxiliary loss function.';
+                throwAsCaller( MException(eid,msg) );
+            elseif sum( auxFcns ) == 1
+                % for convenience identify the auxiliary network
+                auxNet = (self.netNames == self.lossFcnNames(auxFcns));
+                self.auxNetwork = self.netNames( auxNet );
             end
-
-            nFcns = length( newFcns );
-            k = length( self.nets );
-            for i = 1:nFcns
-                thisLossFcn = newFcns{i};
-                if thisLossFcn.hasNetwork
-                    k = k+1;
-                    % add the network object
-                    self.nets.(thisLossFcn.name) = thisLossFcn.initNetwork;
-                    % record its name
-                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
-                    % increment the counter
-                    self.nNets = self.nNets + 1;
-                end
-            end
-
 
         end
 
@@ -188,7 +185,7 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function [ self, lossTrn, lossVal ] = train( self, thisDataset )
+        function self = train( self, thisDataset )
             % Train the autoencoder model
             arguments
                 self          autoencoderModel
@@ -227,10 +224,37 @@ classdef autoencoderModel < representationModel
 
         end
 
+
     end
 
 
     methods (Access = protected)
+
+
+        function self = addLossFcnNetworks( self, newFcns )
+            % Add one or more networks to the model
+            arguments
+                self
+                newFcns
+            end
+
+            nFcns = length( newFcns );
+            k = length( self.nets );
+            for i = 1:nFcns
+                thisLossFcn = newFcns{i};
+                if thisLossFcn.hasNetwork
+                    k = k+1;
+                    % add the network object
+                    self.nets.(thisLossFcn.name) = thisLossFcn.initNetwork;
+                    % record its name
+                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
+                    % increment the counter
+                    self.nNets = self.nNets + 1;
+                end
+            end
+
+
+        end
 
         function self = setLossInfoTbl( self )
             % Update the info table
@@ -258,15 +282,15 @@ classdef autoencoderModel < representationModel
                 doCalcLoss(i) = thisLossFcn.doCalcLoss;
                 useLoss(i) = thisLossFcn.useLoss;
 
-                nNets = length(thisLossFcn.lossNets);
-                for j = 1:nNets
+                nFcnNets = length( thisLossFcn.lossNets );
+                for j = 1:nFcnNets
                     if length(string( thisLossFcn.lossNets{j} ))==1
                         assignments = thisLossFcn.lossNets{j};
                     else
                         assignments = strjoin( thisLossFcn.lossNets{j,:}, '+' );
                     end
                     lossNets(i) = strcat( lossNets(i), assignments ) ;
-                    if j<nNets
+                    if j < nFcnNets
                         lossNets(i) = strcat( lossNets(i), "; " );
                     end
                 end
@@ -285,18 +309,53 @@ classdef autoencoderModel < representationModel
 
         function Z = encode( self, dlX )
             % Encode features Z from X using the model
+            arguments
+                self    autoencoderModel
+                dlX     dlarray
+            end
 
             Z = predict( self.nets.encoder, dlX );
 
         end
 
-        function XHat = reconstruct( self, Z )
+
+        function XHat = reconstruct( self, dlZ )
             % Reconstruct X from Z using the model
+            arguments
+                self    autoencoderModel
+                dlZ     dlarray
+            end
 
-            XHat = predict( self.nets.decoder, Z );
-
+            XHat = predict( self.nets.decoder, dlZ );
 
         end
+
+
+        function YHat = predictAux( self, dlZ )
+            % Make prediction from X or Z using an auxiliary network
+            arguments
+                self            autoencoderModel
+                dlZ             dlarray
+            end
+
+            auxNet = (self.lossFcnTbl.types == 'Auxiliary');
+            if ~any( auxNet )
+                eid = 'aeModel:NoAuxiliaryFunction';
+                msg = 'No auxiliary loss function specified in the model.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            if ~self.lossFcnTbl.hasNetwork( auxNet )
+                eid = 'aeModel:NoAuxiliaryNetwork';
+                msg = 'No auxiliary network specified in the model.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            auxNetName = self.lossFcnTbl.names( auxNet );
+            YHat = predict( self.nets.(auxNetName), dlZ );
+
+        end
+
 
         function net = getNetwork( self, name )
             arguments
@@ -343,6 +402,48 @@ classdef autoencoderModel < representationModel
             end
 
             isValid = ismember( name, self.names );
+
+        end
+
+
+
+
+        function [ dlXHat, dlZ, state, dlZMu, dlZLogVar ] ...
+                                    = forward( encoder, decoder, dlX )
+            % Forward-run the autoencoder networks
+            arguments
+                encoder     dlnetwork
+                decoder     dlnetwork
+                dlX         dlarray
+            end
+
+            % generate latent encodings
+            if isa( encoder, 'dlnetworkVAE' ) 
+                [ dlZ, state.encoder, dlZMu, dlZLogVar ] = ...
+                                         forward( encoder, dlX);
+            
+            else
+                [ dlZ, state.encoder ] = forward( encoder, dlX );
+                dlZMu = mean( dlZ, 2 );
+                dlZLogVar = log( std( dlZ, [], 2 ).^2 );
+    
+            end
+    
+            % reconstruct curves from latent codes
+            [ dlXHat, state.decoder ] = forward( decoder, dlZ );
+
+
+        end
+
+
+        function [ dlYHat, state ] = forwardAux( auxNet, dlZ )
+            % Forward-run the auxiliary network
+            arguments
+                auxNet          dlnetwork
+                dlZ             dlarray
+            end
+
+            [ dlYHat, state] = forward( auxNet, dlZ );
 
         end
 

@@ -102,7 +102,7 @@ classdef adversarialLoss < lossFunction
         end
 
 
-        function [ self, loss, state ] = calcLoss( self, net, dlZFake )
+        function [ loss, state ] = calcLoss( self, net, dlZFake )
             % Calculate the adversarial loss
             arguments
                 self     adversarialLoss
