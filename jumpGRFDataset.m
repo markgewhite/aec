@@ -7,9 +7,12 @@ classdef jumpGRFDataset < modelDataset
 
     methods
 
-        function self = jumpGRFDataset( args )
+        function self = jumpGRFDataset( set, args )
             % Load the countermovement jump GRF dataset
             arguments
+                set        char ...
+                    {mustBeMember( set, ...
+                                   {'Training', 'Testing'} )}
                 args.resample    double ...
                         {mustBeNumeric} = 10
                 args.derivative  logical = false;
@@ -21,8 +24,8 @@ classdef jumpGRFDataset < modelDataset
                 args.normalizeInput logical = false
             end
 
-            [ XRaw, Y ] = jumpGRFDataset.load;
-            Y = Y + 1;
+            [ XRaw, Y ] = jumpGRFDataset.load( set );
+            Y = Y+1;
 
             % setup padding
             pad.length = 1501;
@@ -57,7 +60,7 @@ classdef jumpGRFDataset < modelDataset
 
     methods (Static)
 
-        function [X, Y ] = load
+        function [X, Y ] = load( set )
 
             if ismac
                 rootpath = '/Users/markgewhite/Google Drive/';
@@ -67,16 +70,15 @@ classdef jumpGRFDataset < modelDataset
 
             dataFolder = 'Academia/Postdoc/Datasets/Jumps';
             datapath = [ rootpath dataFolder ];
+            filename = ['jumpGRFData-' set '.mat'];
             
             % load data from file
-            load( fullfile( datapath, 'jumpGRFData.mat' ), ...
+            load( fullfile( datapath, filename ), ...
                   'grf', 'bwall', 'sDataID', 'sJumpID', ...
                   'jumpOrder', 'nJumpsPerSubject' );
             
-            % exclude jumps from subjects in the second data collection
-            subjectExclusions = find( ismember( sDataID, ...
-                        [ 14, 39, 68, 86, 87, 11, 22, 28, 40, 43, 82, 88, 95, 97, ...
-                          100, 121, 156, 163, 196 ] ) );
+            % exclude jumps from specified subject (injury pattern) 
+            subjectExclusions = find( ismember( sDataID, 100 ) );
             
             % exclude specific jumps with excessive double movements
             jumpExclusions = [  6104, 6114, 6116, ...

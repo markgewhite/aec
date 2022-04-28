@@ -20,7 +20,8 @@ for i = 1:nRuns
     disp(['*** Iteration = ' num2str(i) ' ***']);
 
     % prepare data
-    myData = jumpGRFDataset( normalization = 'PAD', ...
+    myData = jumpGRFDataset( 'Testing', ...
+                             normalization = 'PAD', ...
                              normalizeInput = true );
 
     % partitioning

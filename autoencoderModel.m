@@ -33,10 +33,16 @@ classdef autoencoderModel < representationModel
 
     methods
 
-        function self = autoencoderModel( lossFcns, ...
+        function self = autoencoderModel( XDim, ...
+                                          XChannels, ...
+                                          lossFcns, ...
                                           superArgs, ...
                                           args )
             % Initialize the model
+            arguments
+                XDim            double {mustBeInteger, mustBePositive}
+                XChannels       double {mustBeInteger, mustBePositive}
+            end
             arguments (Repeating)
                 lossFcns      lossFunction
             end
@@ -55,6 +61,9 @@ classdef autoencoderModel < representationModel
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
             self = self@representationModel( superArgsCell{:} );
+
+            self.XDim = XDim;
+            self.XChannels = XChannels;
 
             % placeholders for subclasses to define
             self.nets.encoder = [];
@@ -194,7 +203,7 @@ classdef autoencoderModel < representationModel
 
             if ~self.isInitialized
                 eid = 'Autoencoder:NotInitialized';
-                msg = 'The trainer, optimizer or dataset parameters have not been set.';
+                msg = 'The trainer, optimizer or dataset parameters have not all been set.';
                 throwAsCaller( MException(eid,msg) );
             end
 
@@ -307,35 +316,68 @@ classdef autoencoderModel < representationModel
 
     methods (Static)
 
-        function Z = encode( self, dlX )
+        function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model
             arguments
-                self    autoencoderModel
-                dlX     dlarray
+                self            autoencoderModel
+                X
+                arg.convert     logical = false
             end
 
-            Z = predict( self.nets.encoder, dlX );
+            if isa( X, 'modelDataset' )
+                dlX = X.getInput;
+            elseif isa( X, 'dlarray' )
+                dlX = X;
+            else
+                eid = 'Autoencoder:NotValidX';
+                msg = 'The input data should be a modelDataset or a dlarray.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            dlZ = predict( self.nets.encoder, dlX );
+
+            if arg.convert
+                dlZ = double(extractdata( dlZ ));
+            end
 
         end
 
 
-        function XHat = reconstruct( self, dlZ )
+        function dlXHat = reconstruct( self, Z, arg )
             % Reconstruct X from Z using the model
             arguments
-                self    autoencoderModel
-                dlZ     dlarray
+                self            autoencoderModel
+                Z
+                arg.convert     logical = false
             end
 
-            XHat = predict( self.nets.decoder, dlZ );
+            if isa( Z, 'dlarray' )
+                dlZ = Z;
+            else
+                dlZ = dlarray( Z, 'CB' );
+            end
+
+            dlXHat = predict( self.nets.decoder, dlZ );
+
+            if arg.convert
+                dlXHat = double(extractdata( dlXHat ));
+            end
+            
 
         end
 
 
-        function YHat = predictAux( self, dlZ )
+        function YHat = predictAux( self, Z )
             % Make prediction from X or Z using an auxiliary network
             arguments
                 self            autoencoderModel
-                dlZ             dlarray
+                Z
+            end
+
+            if isa( Z, 'dlarray' )
+                dlZ = Z;
+            else
+                dlZ = dlarray( Z, 'CB' );
             end
 
             auxNet = (self.lossFcnTbl.types == 'Auxiliary');
@@ -352,7 +394,9 @@ classdef autoencoderModel < representationModel
             end
 
             auxNetName = self.lossFcnTbl.names( auxNet );
-            YHat = predict( self.nets.(auxNetName), dlZ );
+            dlYHat = predict( self.nets.(auxNetName), dlZ );
+
+            YHat = double(extractdata( dlYHat ));
 
         end
 
@@ -381,16 +425,16 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function loss = getReconLoss( self, dlX, dlXHat )
+        function loss = getReconLoss( self, X, XHat )
             % Calculate the reconstruction loss
             arguments
                 self
-                dlX     dlarray
-                dlXHat  dlarray
+                X     
+                XHat  
             end
             
             name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
-            loss = self.lossFcns.(name).calcLoss( dlX, dlXHat );
+            loss = self.lossFcns.(name).calcLoss( X, XHat );
 
         end
 

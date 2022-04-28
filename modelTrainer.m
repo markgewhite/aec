@@ -103,14 +103,11 @@ classdef modelTrainer
             mbqTrn = thisTrnData.getMiniBatchQueue( thisTrnData, ...
                                                 self.batchSize );
 
-            mbqVal = thisValData.getMiniBatchQueue( thisValData, ...
-                                                thisValData.nObs );
-
             % setup whole training set
-            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDlInput;
+            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getInput;
 
             % get the validation data (one-time only)
-            [dlXVal, ~, dlYVal] = next( mbqVal ); 
+            [ dlXVal, dlYVal ] = thisValData.getInput;
 
             % initialize counters
             nIter = iterationsPerEpoch( mbqTrn );           
@@ -236,7 +233,8 @@ end
 
 function [grad, state, loss] = gradients( nets, ...
                                           thisModel, ...
-                                          dlXIn, dlXOut, ... 
+                                          dlXIn, ...
+                                          dlXOut, ... 
                                           dlY, ...
                                           doTrainAE )
     % Compute the model gradients
@@ -534,7 +532,7 @@ function reportProgress( axes, thisModel, thisData, ...
         fprintf(' : %1.3f\n', args.lossVal );
     end
 
-    [dlX, dlY] = thisData.getDlInput;
+    [dlX, dlY] = thisData.getInput;
 
     % compute the AE components
     dlZ = thisModel.encode( thisModel, dlX );

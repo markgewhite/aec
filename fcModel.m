@@ -19,8 +19,13 @@ classdef fcModel < autoencoderModel
 
     methods
 
-        function self = fcModel( lossFcns, superArgs, args )
+        function self = fcModel( XDim, XChannels, lossFcns, ...
+                                 superArgs, args )
             % Initialize the model
+            arguments
+                XDim            double {mustBeInteger, mustBePositive}
+                XChannels       double {mustBeInteger, mustBePositive}
+            end
             arguments (Repeating)
                 lossFcns     lossFunction
             end
@@ -45,7 +50,9 @@ classdef fcModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( lossFcns{:}, ...
+            self = self@autoencoderModel( XDim, ...
+                                          XChannels, ...
+                                          lossFcns{:}, ...
                                           superArgsCell{:}, ...
                                           hasSeqInput = false );
 

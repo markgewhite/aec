@@ -1,5 +1,5 @@
 classdef modelDataset
-    % Class defining a model trainer
+    % Class defining a dataset
 
     properties
         XInputRaw       % original, raw time series data
@@ -160,24 +160,35 @@ classdef modelDataset
 
 
 
-        function [ dlX, dlY ] = getDlInput( self )
+        function [ X, Y ] = getInput( self, arg )
             % Convert X and Y into dl arrays
             arguments
-                self        modelDataset
+                self            modelDataset
+                arg.dlarray     logical = true
             end
             
             if iscell( self.XInput )
                 X = padData( self.XInput, 'Longest', ...
                                self.padding.value, self.padding.location );
                 X = permute( X, [ 3 1 2 ] );
-                dlX = dlarray( X, 'CTB' );
+                if arg.dlarray
+                    X = dlarray( X, 'CTB' );
+                end
 
             else
-                dlX = dlarray( self.XInput, 'CB' );
+                if arg.dlarray
+                    X = dlarray( self.XInput, 'CB' );
+                else
+                    X = self.XInput;
+                end
 
             end
 
-            dlY = dlarray( self.Y, 'CB' );
+            if arg.dlarray
+                Y = dlarray( self.Y, 'CB' );
+            else
+                Y = self.Y;
+            end
 
         end
         
