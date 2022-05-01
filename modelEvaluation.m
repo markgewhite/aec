@@ -1,4 +1,4 @@
-classdef modelEvaluation
+classdef modelEvaluation < handle
     % Class defining a model evaluation
 
     properties
@@ -14,20 +14,25 @@ classdef modelEvaluation
 
     methods
 
-        function self = modelEvaluation( setup )
-            % Construct a model evaluation object
-            arguments
-                setup           struct
+        function self = modelEvaluation
+            % Construct a model evaluation object (placeholder)
 
+        end
+
+
+        function self = run( self, setup )
+            arguments
+                self            modelEvaluation
+                setup           struct
             end
 
-            % record the setup used
+            % store the specified setup
             self.Setup = setup;
 
             % prepare data
             self.TrainingDataset = setup.data.class( 'Training', ...
                                      normalization = 'PAD', ...
-                                     normalizeInput = true );
+                                     normalizeInput = true ); %#ok<*MCNPN> 
 
             self.TestingDataset = setup.data.class( 'Testing', ...
                                      normalization = 'PAD', ...

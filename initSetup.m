@@ -11,8 +11,8 @@ function setup = initSetup
     %setup.lossFcns.adv.class = @adversarialLoss;
     %setup.lossFcns.adv.name = 'Discriminator';
 
-    setup.lossFcns.cls.class = @classifierLoss;
-    setup.lossFcns.cls.name = 'JumpType';
+    %setup.lossFcns.cls.class = @classifierLoss;
+    %setup.lossFcns.cls.name = 'JumpType';
 
     setup.lossFcns.mmd.class = @wassersteinLoss;
     setup.lossFcns.mmd.name = 'MMDDiscriminator';
