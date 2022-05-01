@@ -29,8 +29,6 @@ classdef adversarialLoss < lossFunction
                     {mustBeMember( args.distribution, ...
                                     {'Gaussian', ...
                                      'Categorical'} )} = 'Gaussian'
-                args.ZDim       double ...
-                            {mustBeInteger, mustBePositive} = 4
                 args.nHidden    double ...
                             {mustBeInteger, mustBePositive} = 2
                 args.nFC        double ...
@@ -56,7 +54,6 @@ classdef adversarialLoss < lossFunction
                                  hasNetwork = true, ...
                                  hasState = true );
 
-            self.ZDim = args.ZDim;
             self.nHidden = args.nHidden;
             self.nFC = args.nFC;
             self.fcFactor = args.fcFactor;
@@ -69,11 +66,14 @@ classdef adversarialLoss < lossFunction
         end
 
 
-        function net = initNetwork( self )
+        function net = initNetwork( self, ZDim )
             % Generate an initialized network
             arguments
                 self
+                ZDim       double {mustBeInteger, mustBePositive}
             end
+
+            self.ZDim = ZDim;
 
             % create the input layer
             layers = featureInputLayer( self.ZDim, 'Name', 'in' );

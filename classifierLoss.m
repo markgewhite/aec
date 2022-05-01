@@ -32,8 +32,6 @@ classdef classifierLoss < lossFunction
                                     {'Network', ...
                                      'Fisher', ...
                                      'SVM'} )} = 'Network'
-                args.ZDim       double ...
-                            {mustBeInteger, mustBePositive} = 4
                 args.CDim       double ...
                             {mustBeInteger, mustBePositive} = 2
                 args.nHidden    double ...
@@ -62,7 +60,6 @@ classdef classifierLoss < lossFunction
                                  hasNetwork = isNet, ...
                                  hasState = isNet );
 
-            self.ZDim = args.ZDim;
             self.CDim = args.CDim;
             self.nHidden = args.nHidden;
             self.nFC = args.nFC;
@@ -82,10 +79,11 @@ classdef classifierLoss < lossFunction
         end
 
 
-        function net = initNetwork( self )
+        function net = initNetwork( self, ZDim )
             % Generate an initialized network
             arguments
                 self
+                ZDim       double {mustBeInteger, mustBePositive}
             end
 
             if ~strcmp( self.modelType, 'Network' )
@@ -93,6 +91,8 @@ classdef classifierLoss < lossFunction
                 msg = 'This classifier function does not use a network.';
                 throwAsCaller( MException(eid,msg) );
             end 
+
+            self.ZDim = ZDim;
 
             % create the input layer
             layers = featureInputLayer( self.ZDim, 'Name', 'in' );

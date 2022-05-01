@@ -8,16 +8,16 @@ function setup = initSetup
     setup.lossFcns.recon.class = @reconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
 
-    %setup.lossFcns.adv.class = @adversarialLoss;
-    %setup.lossFcns.adv.name = 'Discriminator';
+    setup.lossFcns.adv.class = @adversarialLoss;
+    setup.lossFcns.adv.name = 'Discriminator';
 
-    %setup.lossFcns.cls.class = @classifierLoss;
-    %setup.lossFcns.cls.name = 'JumpType';
+    setup.lossFcns.cls.class = @classifierLoss;
+    setup.lossFcns.cls.name = 'JumpType';
 
     setup.lossFcns.mmd.class = @wassersteinLoss;
     setup.lossFcns.mmd.name = 'MMDDiscriminator';
     setup.lossFcns.mmd.args.kernel = 'IMQ';
-    setup.lossFcns.mmd.args.useLoss = true;
+    setup.lossFcns.mmd.args.useLoss = false;
 
     %setup.lossFcns.orth.class = @componentLoss;
     %setup.lossFcns.orth.name = 'Component';
@@ -31,10 +31,10 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
 
     % training
-    setup.trainer.args.updateFreq = 25;
+    setup.trainer.args.updateFreq = 5;
     setup.trainer.args.showPlots = true;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 25;
+    setup.trainer.args.nEpochs = 20;
 
 
 end

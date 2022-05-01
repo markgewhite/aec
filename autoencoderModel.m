@@ -55,7 +55,7 @@ classdef autoencoderModel < representationModel
                                     {mustBeNumeric,mustBeVector} = 1
                 args.auxModel       string ...
                         {mustBeMember( args.auxModel, ...
-                                {'None', 'Fisher', 'SVM'} )} = 'None'
+                                {'Fisher', 'SVM'} )} = 'Fisher'
             end
 
             % set the superclass's properties
@@ -254,7 +254,8 @@ classdef autoencoderModel < representationModel
                 if thisLossFcn.hasNetwork
                     k = k+1;
                     % add the network object
-                    self.nets.(thisLossFcn.name) = thisLossFcn.initNetwork;
+                    self.nets.(thisLossFcn.name) = ...
+                                initNetwork( thisLossFcn, self.ZDim );
                     % record its name
                     self.netNames = [ string(self.netNames) thisLossFcn.name ];
                     % increment the counter

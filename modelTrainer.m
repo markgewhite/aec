@@ -1,4 +1,4 @@
-classdef modelTrainer 
+classdef modelTrainer < handle
     % Class defining a model trainer
 
     properties
@@ -116,7 +116,8 @@ classdef modelTrainer
             vp = self.valPatience;
             
             self.lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
-            self.lossVal = zeros( ceil(nIter*self.nEpochs/self.valFreq), 1 );
+            self.lossVal = zeros( ceil( (self.nEpochs-self.nEpochsPreTrn) ...
+                                        /self.valFreq ), 1 );
             
             for epoch = 1:self.nEpochs
                 
@@ -156,7 +157,9 @@ classdef modelTrainer
                     % store revised network states
                     for m = 1:thisModel.nNets
                         thisName = thisModel.netNames{m};
-                        thisModel.nets.(thisName).State = states.(thisName);
+                        if isfield( states, thisName )
+                            thisModel.nets.(thisName).State = states.(thisName);
+                        end
                     end
 
                     % update network parameters
@@ -347,7 +350,7 @@ function [grad, state, loss] = gradients( nets, ...
     end
 
     % compute the gradients for each network
-    netNames = fieldnames( nets );
+    netNames = fieldnames( lossAccum );
     for i = 1:length(netNames)
     
         thisName = netNames{i};

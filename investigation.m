@@ -10,6 +10,8 @@ classdef investigation
         GridSearch
         BaselineSetup       % structure recording the setup
         Evaluations         % array of evaluation objects
+        TrainingResults     % structure summarising results from evaluations
+        TestingResults      % structure summarising results from evaluations
     end
 
 
@@ -42,6 +44,18 @@ classdef investigation
             initObj( nDimsCell{:} ) = modelEvaluation;
             self.Evaluations = initObj;
 
+            if length( nDimsCell ) > 1
+                allocation = nDimsCell;
+            else
+                allocation = [ nDimsCell,1 ];
+            end
+            self.TrainingResults.LossTrace = cell( allocation{:} );
+            self.TrainingResults.ReconLoss = zeros( allocation{:} );
+            self.TrainingResults.AuxModelLoss = zeros( allocation{:} );
+
+            self.TestingResults = self.TrainingResults;
+            
+
             for i = 1:nEval
 
                 idx = getIndices( i, self.SearchDims );
@@ -56,9 +70,28 @@ classdef investigation
                 end
 
                 % carry out the evaluation
-                idxCell = num2cell( idx );
-                self.Evaluations( idxCell{:} ) = ...
-                        run( self.Evaluations( idxCell{:} ), setup );
+                idxC = num2cell( idx );
+                self.Evaluations( idxC{:} ) = ...
+                        run( self.Evaluations( idxC{:} ), setup );
+
+                % record results
+                thisEvaluation = self.Evaluations( idxC{:} );
+
+                self.TrainingResults.LossTrace{ idxC{:} } = ...
+                    thisEvaluation.Model.trainer.lossTrn;
+                self.TestingResults.LossTrace{ idxC{:} } = ...
+                    thisEvaluation.Model.trainer.lossVal;
+
+                self.TrainingResults.ReconLoss( idxC{:} ) = ...
+                    thisEvaluation.TrainingEvaluation.ReconLoss;
+                self.TestingResults.ReconLoss( idxC{:} ) = ...
+                    thisEvaluation.TestingEvaluation.ReconLoss;
+
+                self.TrainingResults.AuxModelLoss( idxC{:} ) = ...
+                    thisEvaluation.TrainingEvaluation.AuxModelLoss;
+                self.TestingResults.AuxModelLoss( idxC{:} ) = ...
+                    thisEvaluation.TestingEvaluation.AuxModelLoss;
+                
 
             end
             
@@ -112,7 +145,12 @@ function setup = applySetting( setup, parameter, value )
     if contains( remainder, "." )
         setup.(var) = applySetting( setup.(var), remainder, value );
     else
-        setup.(var).(remainder) = value;
+        switch class( value )
+            case {'double', 'string'}
+                setup.(var).(remainder) = value;
+            case 'cell'
+                setup.(var).(remainder) = value{1};
+        end
     end
 
 end

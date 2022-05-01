@@ -89,6 +89,11 @@ classdef modelOptimizer
                     continue
                 end
 
+                if ~isfield( grads, thisName )
+                    % skip as no gradient information
+                    continue
+                end
+
                 thisState = self.states.(thisName);
                 thisLearningRate = self.learningRates.(thisName);
                 % update the network parameters
