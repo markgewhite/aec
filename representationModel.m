@@ -24,6 +24,10 @@ classdef representationModel
             % Train the model - placeholder
         end
 
+    end
+
+    methods (Static)
+
         function Z = encode( obj, X )
             % Encode features Z from X using the model - placeholder
         end
@@ -32,7 +36,7 @@ classdef representationModel
             % Reconstruct X from Z using the model - placeholder
         end
 
-        function err = reconLoss( obj, X, XHat )
+        function err = getReconLoss( obj, X, XHat )
             % Compute the  - placeholder
             err = mse( X, XHat );
         end

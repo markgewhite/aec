@@ -38,11 +38,9 @@ classdef modelEvaluation < handle
                                      normalization = 'PAD', ...
                                      normalizeInput = true );
 
-            if strcmp( setup.model.class, 'pcaModel' )
-                % no initialization required for PCA
-                % train the model
-                
-                % TO DO
+            if isequal( setup.model.class, @pcaModel )
+                % this is a PCA
+                self = initPCAModel( self, setup );
 
             else
                 % this is an autoencoder model of some kind
@@ -66,6 +64,33 @@ classdef modelEvaluation < handle
 
 
     methods (Access = private)
+
+        function self = initPCAModel( self, setup )
+            % Initialize a PCA model
+            arguments
+                self    modelEvaluation
+                setup   struct
+            end
+
+            % limit the arguments to two possible fields
+            if isfield( setup.model.args, 'ZDim' )
+                args.ZDim = setup.model.args.ZDim;
+            end
+            if isfield( setup.model.args, 'auxModel' )
+                args.auxModel = setup.model.args.auxModel;
+            end
+
+            try
+                argsCell = namedargs2cell( args );
+            catch
+                argsCell = {};
+            end
+
+            self.Model = pcaModel( self.TrainingDataset.fda.fdParams, ...
+                                   argsCell{:} ); 
+
+        end
+
 
         function self = initAEModel( self, setup )
             % Initialize an autoencoder model
@@ -124,7 +149,11 @@ classdef modelEvaluation < handle
 
         end
 
+
     end
+
+
+
 
 
     methods (Static, Access = private)
@@ -138,24 +167,19 @@ classdef modelEvaluation < handle
             end
 
             % generate latent encoding using the trained model
-            eval.Z = thisModel.encode( thisModel, ...
-                                       thisDataset, convert = true );
+            eval.Z = thisModel.encode( thisModel, thisDataset );
 
             % reconstruct the curves
-            eval.XHat = thisModel.reconstruct( thisModel, ...
-                                       eval.Z, convert = true );
+            eval.XHat = thisModel.reconstruct( thisModel, eval.Z );
 
             % compute reconstruction loss
             [X, Y] = thisDataset.getInput( dlarray=false );
             eval.ReconLoss = thisModel.getReconLoss( ...
                                        thisModel, X, eval.XHat );
 
-            % compute the auxiliary loss (if applicable)
-            if thisModel.hasAuxModel
-                eval.AuxModelYHat = predict( thisModel.auxModel, eval.Z' );
-                eval.AuxModelLoss = loss( thisModel.auxModel, ...
-                                                eval.Z', Y );
-            end
+            % compute the auxiliary loss
+            eval.AuxModelYHat = predict( thisModel.auxModel, eval.Z );
+            eval.AuxModelLoss = loss( thisModel.auxModel, eval.Z, Y );
 
 
         end

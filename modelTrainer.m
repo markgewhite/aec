@@ -174,13 +174,12 @@ classdef modelTrainer < handle
 
                 end
 
-                % train the auxiliary model, if required
-                if thisModel.hasAuxModel
-                    dlZTrnAll = thisModel.encode( thisModel, dlXTrnAll );
-                    thisModel.auxModel = trainAuxModel( ...
-                                                thisModel.auxModelType, ...
-                                                dlZTrnAll, dlYTrnAll );
-                end
+                % train the auxiliary model
+                dlZTrnAll = thisModel.encode( thisModel, dlXTrnAll, ...
+                                              convert = false );
+                thisModel.auxModel = trainAuxModel( ...
+                                            thisModel.auxModelType, ...
+                                            dlZTrnAll, dlYTrnAll );
                
 
                 if ~self.preTraining ...
@@ -429,7 +428,7 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
         dlYVal          dlarray
     end
 
-    dlZVal = thisModel.encode( thisModel, dlXVal );
+    dlZVal = thisModel.encode( thisModel, dlXVal, convert = false );
     switch valType
         case 'Reconstruction'
             dlXValHat = thisModel.reconstruct( thisModel, dlZVal );
@@ -538,7 +537,7 @@ function reportProgress( axes, thisModel, thisData, ...
     [dlX, dlY] = thisData.getInput;
 
     % compute the AE components
-    dlZ = thisModel.encode( thisModel, dlX );
+    dlZ = thisModel.encode( thisModel, dlX, convert = false );
     dlXC = thisModel.latentComponents( ...
                     thisModel.nets.decoder, ...
                     dlZ, ...

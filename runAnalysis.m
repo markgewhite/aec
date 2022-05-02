@@ -9,7 +9,7 @@ path = pwd;
 %               "lossFcns.cls.args.useLoss" ];
 %values = [ {2:6} {{false, true}} ];
 
-parameters = [ "model.args.auxModel" ];
-values = {["SVM", "Fisher"]};
+parameters = [ "model.class" ];
+values = {{@pcaModel, @fcModel}};
 
 myInvestigation = investigation( name, path, parameters, values, setup );

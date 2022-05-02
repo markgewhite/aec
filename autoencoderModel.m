@@ -21,7 +21,6 @@ classdef autoencoderModel < representationModel
         isInitialized  % flag indicating if fully initialized
         hasSeqInput    % supports variable-length input
         auxNetwork     % name of auxiliary dlnetwork
-        hasAuxModel    % whether there is an auxiliary model
         auxModelType   % type of auxiliary model to use
         auxModel       % auxiliary model itself
 
@@ -73,7 +72,6 @@ classdef autoencoderModel < representationModel
             self.isVAE = args.isVAE;
             self.hasSeqInput = args.hasSeqInput;
 
-            self.hasAuxModel = ~strcmp( args.auxModel, 'None' );
             self.auxModelType = args.auxModel;
             self.auxModel = [];
 
@@ -322,7 +320,7 @@ classdef autoencoderModel < representationModel
             arguments
                 self            autoencoderModel
                 X
-                arg.convert     logical = false
+                arg.convert     logical = true
             end
 
             if isa( X, 'modelDataset' )
@@ -338,7 +336,7 @@ classdef autoencoderModel < representationModel
             dlZ = predict( self.nets.encoder, dlX );
 
             if arg.convert
-                dlZ = double(extractdata( dlZ ));
+                dlZ = double(extractdata( dlZ ))';
             end
 
         end
@@ -349,13 +347,13 @@ classdef autoencoderModel < representationModel
             arguments
                 self            autoencoderModel
                 Z
-                arg.convert     logical = false
+                arg.convert     logical = true
             end
 
             if isa( Z, 'dlarray' )
                 dlZ = Z;
             else
-                dlZ = dlarray( Z, 'CB' );
+                dlZ = dlarray( Z', 'CB' );
             end
 
             dlXHat = predict( self.nets.decoder, dlZ );
@@ -599,7 +597,7 @@ classdef autoencoderModel < representationModel
             %XC = permute( XC, [1 3 2] );
 
             % smooth and re-evaluate all curves
-            XCFd = smooth_basis( fda.tSpan, XC, fda.fdPar );
+            XCFd = smooth_basis( fda.tSpan, XC, fda.fdParams );
             XCsmth = eval_fd( fda.tSpan, XCFd );
 
             % set the colours from blue and red
