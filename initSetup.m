@@ -26,7 +26,8 @@ function setup = initSetup
 
     setup.lossFcns.smooth.class = @smoothnessLoss;
     setup.lossFcns.smooth.name = 'Roughness';
-    setup.lossFcns.smooth.args.useLoss = false;
+    setup.lossFcns.smooth.args.window = 20;
+    setup.lossFcns.smooth.args.useLoss = true;
 
     % model
     setup.model.class = @fcModel;

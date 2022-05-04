@@ -8,15 +8,17 @@
 classdef reconstructionLoss < lossFunction
 
     properties
-
+        window
     end
 
     methods
 
-        function self = reconstructionLoss( name, superArgs )
+        function self = reconstructionLoss( name, args, superArgs )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
+                args.window          double ...
+                    {mustBeInteger,mustBePositive} = 10
                 superArgs.?lossFunction
             end
 
@@ -25,6 +27,8 @@ classdef reconstructionLoss < lossFunction
                                  type = 'Reconstruction', ...
                                  input = 'X-XHat', ...
                                  lossNets = {'encoder', 'decoder'} );
+
+            self.window = args.window;
 
         end
 
