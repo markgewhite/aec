@@ -26,7 +26,7 @@ function setup = initSetup
 
     setup.lossFcns.smooth.class = @smoothnessLoss;
     setup.lossFcns.smooth.name = 'Roughness';
-    setup.lossFcns.smooth.args.window = 20;
+    setup.lossFcns.smooth.args.Lambda = 1E-2;
     setup.lossFcns.smooth.args.useLoss = true;
 
     % model
@@ -36,7 +36,7 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
 
     % training
-    setup.trainer.args.updateFreq = 5;
+    setup.trainer.args.updateFreq = 20;
     setup.trainer.args.valType = 'AuxModel';
     setup.trainer.args.nEpochs = 100;
 

@@ -42,6 +42,8 @@ end
 switch setup.opt.objective
     case 'ReconLoss'
         obj = thisEvaluation.TestingEvaluation.ReconLoss;
+    case 'ReconLossSmoothed'
+        obj = thisEvaluation.TestingEvaluation.ReconLossSmoothed;
     case 'AuxLoss'
         obj = thisEvaluation.TestingEvaluation.AuxModeLoss;
 end

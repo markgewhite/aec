@@ -8,9 +8,9 @@ clear;
 
 % initalise setup
 setup = initSetup;
-setup.opt.objective = 'ReconLoss';
+setup.opt.objective = 'ReconLossSmoothed';
 setup.model.args.ShowPlots = false;
-setup.trainer.args.nEpochs = 50;
+setup.trainer.args.nEpochs = 100;
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'model_args_ZDim', ...
@@ -19,7 +19,11 @@ varDef(1) = optimizableVariable( 'model_args_ZDim', ...
 
 varDef(2) = optimizableVariable( 'lossFcns_smooth_args_window', ...
         [3 41], ...
-        'Type', 'integer', 'Optimize', true );
+        'Type', 'integer', 'Optimize', false );
+
+varDef(4) = optimizableVariable( 'lossFcns_smooth_args_Lambda', ...
+        [1E-5 1E5], ...
+        'Type', 'real', 'Transform', 'log', 'Optimize', true );
 
 
 % setup objective function

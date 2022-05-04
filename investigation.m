@@ -51,6 +51,7 @@ classdef investigation
             end
             self.TrainingResults.LossTrace = cell( allocation{:} );
             self.TrainingResults.ReconLoss = zeros( allocation{:} );
+            self.TrainingResults.ReconLossSmoothed = zeros( allocation{:} );
             self.TrainingResults.AuxModelLoss = zeros( allocation{:} );
 
             self.TestingResults = self.TrainingResults;
@@ -88,6 +89,11 @@ classdef investigation
                     thisEvaluation.TrainingEvaluation.ReconLoss;
                 self.TestingResults.ReconLoss( idxC{:} ) = ...
                     thisEvaluation.TestingEvaluation.ReconLoss;
+
+                self.TrainingResults.ReconLossSmoothed( idxC{:} ) = ...
+                    thisEvaluation.TrainingEvaluation.ReconLossSmoothed;
+                self.TestingResults.ReconLossSmoothed( idxC{:} ) = ...
+                    thisEvaluation.TestingEvaluation.ReconLossSmoothed;
 
                 self.TrainingResults.AuxModelLoss( idxC{:} ) = ...
                     thisEvaluation.TrainingEvaluation.AuxModelLoss;
