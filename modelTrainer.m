@@ -371,6 +371,8 @@ function [grad, state, loss] = gradients( nets, ...
                 dlV = { dlXOut, dlXGen };
             case 'XC'
                 dlV = { dlXC };
+            case 'XHat'
+                dlV = { dlXGen };
             case 'Z'
                 dlV = { dlZGen };
             case 'ZMu-ZLogVar'

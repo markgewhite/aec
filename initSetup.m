@@ -24,6 +24,10 @@ function setup = initSetup
     %setup.lossFcns.orth.args.nSample = 10;
     %setup.lossFcns.orth.args.criterion = 'Orthogonality';
 
+    setup.lossFcns.smooth.class = @smoothnessLoss;
+    setup.lossFcns.smooth.name = 'Roughness';
+    setup.lossFcns.smooth.args.useLoss = false;
+
     % model
     setup.model.class = @fcModel;
     setup.model.args.ZDim = 4;
@@ -31,9 +35,9 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
 
     % training
-    setup.trainer.args.updateFreq = 10;
+    setup.trainer.args.updateFreq = 5;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 10;
+    setup.trainer.args.nEpochs = 100;
 
 
 end
