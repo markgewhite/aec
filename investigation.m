@@ -72,7 +72,7 @@ classdef investigation
                 % carry out the evaluation
                 idxC = num2cell( idx );
                 self.Evaluations( idxC{:} ) = ...
-                        run( self.Evaluations( idxC{:} ), setup );
+                        run( self.Evaluations( idxC{:} ), setup, true );
 
                 % record results
                 thisEvaluation = self.Evaluations( idxC{:} );
@@ -150,26 +150,3 @@ function idx = getIndices( i, dims )
 
 end
 
-
-function setup = applySetting( setup, parameter, value )
-    % Apply the parameter value by recursively moving through structure
-    arguments
-        setup       struct
-        parameter   string
-        value       
-    end
-
-    var = extractBefore( parameter, "." );
-    remainder = extractAfter( parameter, "." );
-    if contains( remainder, "." )
-        setup.(var) = applySetting( setup.(var), remainder, value );
-    else
-        switch class( value )
-            case {'double', 'string'}
-                setup.(var).(remainder) = value;
-            case 'cell'
-                setup.(var).(remainder) = value{1};
-        end
-    end
-
-end

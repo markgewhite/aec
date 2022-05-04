@@ -5,6 +5,7 @@ classdef representationModel
         XDim            % X dimension (number of points)
         ZDim            % Z dimension (number of features)
         XChannels       % number of channels in X
+        ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
         NumCompLines    % number of lines in the component plot
@@ -23,15 +24,19 @@ classdef representationModel
                     {mustBeInteger, mustBePositive} = 1
                 args.NumCompLines   double...
                     {mustBeInteger, mustBePositive} = 8
+                args.ShowPlots      logical = true
             end
 
             self.XDim = args.XDim;
             self.ZDim = args.ZDim;
             self.XChannels = args.XChannels;
             self.NumCompLines = args.NumCompLines;
+            self.ShowPlots = args.ShowPlots;
 
-            [self.Figs, self.Axes] = ...
+            if args.ShowPlots
+                [self.Figs, self.Axes] = ...
                         initializePlots( self.XChannels, self.ZDim );
+            end
 
         end
 

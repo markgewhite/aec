@@ -20,10 +20,11 @@ classdef modelEvaluation < handle
         end
 
 
-        function self = run( self, setup )
+        function self = run( self, setup, verbose )
             arguments
                 self            modelEvaluation
                 setup           struct
+                verbose         logical
             end
 
             % store the specified setup
@@ -40,54 +41,80 @@ classdef modelEvaluation < handle
 
             if isequal( setup.model.class, @pcaModel )
                 % this is a PCA
-                disp('********* PCA Model Evaluation *********');
+                if verbose
+                    disp('********* PCA Model Evaluation *********');
+                end
                 self = initPCAModel( self, setup );
 
             else
                 % this is an autoencoder model of some kind
-                disp('***** Autoencoder Model Evaluation *****');
+                if verbose
+                    disp('***** Autoencoder Model Evaluation *****');
+                end
                 self = initAEModel( self, setup );
 
             end
 
             % display setup
-            disp('Data setup:')
-            disp( setup.data );
-            disp('Model setup:')
-            disp( setup.model.class );
-            disp( setup.model.args );
-            disp('Trainer setup:')
-            disp( setup.trainer.args );
+            if verbose
+                disp('Data setup:')
+                disp( setup.data );
+                disp('Model setup:')
+                disp( setup.model.class );
+                disp( setup.model.args );
+                disp('Trainer setup:')
+                disp( setup.trainer.args );
+            end
 
             % train the model
-            disp('Training the model ...');
+            if verbose
+                disp('Training the model ...');
+            end
             self.Model = train( self.Model, self.TrainingDataset );
-            disp('Training complete');
-            
+            if verbose
+                disp('Training complete');
+            end
+
             % evaluate the trained model
-            disp('Training evaluation:');
             self.TrainingEvaluation = ...
                 modelEvaluation.evaluate( self.Model, self.TrainingDataset );
 
-            disp('Testing evaluation:');
             self.TestingEvaluation = ...
                 modelEvaluation.evaluate( self.Model, self.TestingDataset );
 
-            % plot latent space
-            self.Model.plotZDist( self.TestingEvaluation.Z );
-            self.Model.plotZClusters( self.TestingEvaluation.Z, ...
-                                      Y = self.TestingDataset.Y );
+            if verbose
+                disp('Training evaluation:');
+                disp(['Reconstruction Loss = ' ...
+                    num2str( self.TrainingEvaluation.ReconLoss, '%.3f' )]);
+                disp(['Auxiliary Model Loss = ' ...
+                    num2str( self.TrainingEvaluation.AuxModelLoss, '%.3f' )]);
 
-            % plot the components
-            self.Model.plotLatentComp( ...
-                          self.TestingEvaluation.XC, ...
-                          self.TestingDataset.fda, ...
-                          type = 'Smoothed', ...
-                          shading = true, ...
-                          plotTitle = self.TestingDataset.info.datasetName, ...
-                          xAxisLabel = self.TestingDataset.info.timeLabel, ...
-                          yAxisLabel = self.TestingDataset.info.channelLabels, ...
-                          yAxisLimits = self.TestingDataset.info.channelLimits );
+                disp('Testing evaluation:');
+                disp(['Reconstruction Loss = ' ...
+                    num2str( self.TestingEvaluation.ReconLoss, '%.3f' )]);
+                disp(['Auxiliary Model Loss = ' ...
+                    num2str( self.TestingEvaluation.AuxModelLoss, '%.3f' )]);
+            end
+
+
+            if verbose
+                % plot latent space
+                self.Model.plotZDist( self.TestingEvaluation.Z );
+                self.Model.plotZClusters( self.TestingEvaluation.Z, ...
+                                          Y = self.TestingDataset.Y );
+    
+                % plot the components
+                self.Model.plotLatentComp( ...
+                              self.TestingEvaluation.XC, ...
+                              self.TestingDataset.fda, ...
+                              type = 'Smoothed', ...
+                              shading = true, ...
+                              plotTitle = self.TestingDataset.info.datasetName, ...
+                              xAxisLabel = self.TestingDataset.info.timeLabel, ...
+                              yAxisLabel = self.TestingDataset.info.channelLabels, ...
+                              yAxisLimits = self.TestingDataset.info.channelLimits );
+            end
+
         end
 
 
@@ -274,20 +301,19 @@ classdef modelEvaluation < handle
             % compute reconstruction loss
             [X, Y] = thisDataset.getInput( dlarray=false );
             eval.ReconLoss = thisModel.getReconLoss( X, eval.XHat );
-            disp(['Reconstruction Loss = ' ...
-                            num2str( eval.ReconLoss, '%.3f' )]);
 
             % compute the auxiliary loss
             eval.AuxModelYHat = predict( thisModel.auxModel, eval.Z );
             eval.AuxModelLoss = loss( thisModel.auxModel, eval.Z, Y );
-            disp(['Auxiliary Model Loss = ' ...
-                            num2str( eval.AuxModelLoss, '%.3f' )]);
+
 
             % generate the latent components
             eval.XC = thisModel.latentComponents( ...
                             eval.Z, ...
                             sampling = 'Fixed', ...
                             centre = false );
+
+            
 
 
         end

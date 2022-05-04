@@ -27,14 +27,10 @@ classdef modelTrainer < handle
 
     methods
 
-% CHECK ARGUMENTS %
-
         function self = modelTrainer( lossFcnTbl, args )
             % Initialize the model
             arguments
                 lossFcnTbl          table
-                %XChannels           double
-                %ZDim                double
                 args.nEpochs        double ...
                     {mustBeInteger, mustBePositive} = 2000;
                 args.nEpochsPreTrn  double ...
@@ -171,8 +167,10 @@ classdef modelTrainer < handle
                                                         j, ...
                                                         doTrainAE );
 
-                    % update loss plots
-                    updateLossLines( self.lossLines, j, self.lossTrn(j,:) );
+                    if self.showPlots
+                        % update loss plots
+                        updateLossLines( self.lossLines, j, self.lossTrn(j,:) );
+                    end
 
                 end
 
@@ -203,7 +201,7 @@ classdef modelTrainer < handle
                 end
             
                 % update progress on screen
-                if mod( epoch, self.updateFreq )==0
+                if mod( epoch, self.updateFreq )==0 && self.showPlots
                     if self.preTraining
                         % exclude validation
                         lossValArg = [];
