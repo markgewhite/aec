@@ -29,7 +29,9 @@ classdef pcaModel < representationModel
             end
 
             argsCell = namedargs2cell(superArgs);
-            self = self@representationModel( argsCell{:} );
+            self = self@representationModel( argsCell{:}, ...
+                                             NumCompLines = 2 );
+
 
             self.meanFd = [];
             self.compFd = [];
@@ -84,6 +86,68 @@ classdef pcaModel < representationModel
             end
 
         end
+
+
+        function XC = latentComponents( self, Z, args )
+            % Present the FPCs in form consistent with autoencoder model
+            arguments
+                self            pcaModel
+                Z               double
+                args.sampling   char ...
+                    {mustBeMember(args.sampling, ...
+                        {'Random', 'Fixed'} )} = 'Random'
+                args.nSample    double {mustBeInteger} = 0
+                args.centre     logical = true
+                args.range      double {mustBePositive} = 2.0
+            end
+
+            if args.nSample > 0
+                nSample = args.nSample;
+            else
+                nSample = self.NumCompLines;
+            end
+           
+            if args.centre
+                XCMean = zeros( self.tSpan, 1 );
+            else
+                XCMean = eval_fd( self.tSpan, self.meanFd );
+            end
+
+            XCStd = zeros( length(self.tSpan), self.ZDim );
+            % compute the components
+            for i = 1:self.ZDim
+               XCStd(:,i) = eval_fd( self.tSpan, self.compFd(i) );
+            end
+
+            if strcmp( args.sampling, 'Fixed' )
+                % define the offset spacing
+                offsets = linspace( -args.range, args.range, nSample );
+            end
+
+            if args.centre
+                XC = zeros( length(self.tSpan), self.ZDim*nSample );
+            else
+                XC = zeros( length(self.tSpan), self.ZDim*nSample+1 );
+                XC(:,end) = XCMean;
+            end
+            
+            for j = 1:nSample
+                
+                switch args.sampling
+                    case 'Random'
+                        offset = args.range*rand;
+                    case 'Fixed'
+                        offset = offsets(j);
+                end
+
+                for i =1:self.ZDim
+                    XC(:,(i-1)*nSample+j) = XCMean + offset*XCStd(:,i);
+                end
+
+            end
+
+        end
+
 
     end
 

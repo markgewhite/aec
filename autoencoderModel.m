@@ -59,7 +59,8 @@ classdef autoencoderModel < representationModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@representationModel( superArgsCell{:} );
+            self = self@representationModel( superArgsCell{:}, ...
+                                             NumCompLines = 8 );
 
             self.XDim = XDim;
             self.XChannels = XChannels;
@@ -166,10 +167,9 @@ classdef autoencoderModel < representationModel
             % set the trainer's properties
             argsCell = namedargs2cell( args );
             self.trainer = modelTrainer( self.lossFcnTbl, ...
-                                         self.XChannels, ...
-                                         self.ZDim, ...
                                          argsCell{:} );
-
+                                         %self.XChannels, ...
+                                         %self.ZDim, ...
             % confirm if initialization is complete
             self.isInitialized = ~isempty(self.optimizer);
 
@@ -232,6 +232,100 @@ classdef autoencoderModel < representationModel
         end
 
 
+        function loss = getReconLoss( self, X, XHat )
+            % Calculate the reconstruction loss
+            arguments
+                self
+                X     
+                XHat  
+            end
+            
+            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
+            loss = self.lossFcns.(name).calcLoss( X, XHat );
+
+        end
+
+
+        function dlXC = latentComponents( self, dlZ, args )
+            % Calculate the funtional components from the latent codes
+            % using the decoder network. For each component, the relevant 
+            % code is varied randomly about the mean. This is more 
+            % efficient than calculating two components at strict
+            % 2SD separation from the mean.
+            arguments
+                self            autoencoderModel
+                dlZ             
+                args.sampling   char ...
+                    {mustBeMember(args.sampling, ...
+                        {'Random', 'Fixed'} )} = 'Random'
+                args.centre     logical = true
+                args.nSample    double {mustBeInteger} = 0
+                args.range      double {mustBePositive} = 2.0
+            end
+
+            if args.nSample > 0
+                nSample = args.nSample;
+            else
+                nSample = self.NumCompLines;
+            end
+
+            if ~isa( dlZ, 'dlarray' )
+                dlZ = dlarray( dlZ', 'CB' );
+            end
+
+            ZDim = size( dlZ, 1 );
+            
+            % compute the mean and SD across the batch
+            dlZMean = mean( dlZ, 2 );
+            dlZStd = std( dlZ, [], 2 );
+            
+            % initialise the components' Z codes at the mean
+            % include an extra one that will be preserved
+            dlZC = repmat( dlZMean, 1, ZDim*nSample+1 );
+
+            % convert to double to speed up processing
+            % provided dlZC can trace back to original dlZ
+            ZMean = double(extractdata( dlZMean ));
+            ZStd = double(extractdata( dlZStd ));
+            
+            if strcmp( args.sampling, 'Fixed' )
+                % define the offset spacing
+                offsets = linspace( -args.range, args.range, nSample );
+            end
+
+            for j = 1:nSample
+                
+                switch args.sampling
+                    case 'Random'
+                        offset = args.range*rand;
+                    case 'Fixed'
+                        offset = offsets(j);
+                end
+
+                for i =1:ZDim
+                    % vary ith component randomly about its mean
+                    dlZC(i,(i-1)*nSample+j) = ZMean(i) + offset*ZStd(i);
+                end
+
+            end
+
+            % generate all the component curves using the decoder
+            dlXC = forward( self.nets.decoder, dlZC );
+
+            XDim = size( dlXC );
+
+            if args.centre
+                % centre about the mean curve (last curve)
+                if length( XDim )==2
+                    dlXC = dlXC( :, 1:end-1 ) - dlXC( :, end );
+                else
+                    dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );
+                end
+            end
+
+        end
+    
+    
     end
 
 
@@ -309,6 +403,7 @@ classdef autoencoderModel < representationModel
                     nLosses, lossNets, hasNetwork, doCalcLoss, useLoss );
 
         end
+
 
     end
 
@@ -424,20 +519,6 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function loss = getReconLoss( self, X, XHat )
-            % Calculate the reconstruction loss
-            arguments
-                self
-                X     
-                XHat  
-            end
-            
-            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
-            loss = self.lossFcns.(name).calcLoss( X, XHat );
-
-        end
-
-
         function isValid = mustBeNetName( self, name )
             arguments
                 self
@@ -449,10 +530,7 @@ classdef autoencoderModel < representationModel
         end
 
 
-
-
-        function [ dlXHat, dlZ, state, dlZMu, dlZLogVar ] ...
-                                    = forward( encoder, decoder, dlX )
+        function [ dlXHat, dlZ, state ] = forward( encoder, decoder, dlX )
             % Forward-run the autoencoder networks
             arguments
                 encoder     dlnetwork
@@ -461,20 +539,10 @@ classdef autoencoderModel < representationModel
             end
 
             % generate latent encodings
-            if isa( encoder, 'dlnetworkVAE' ) 
-                [ dlZ, state.encoder, dlZMu, dlZLogVar ] = ...
-                                         forward( encoder, dlX);
-            
-            else
-                [ dlZ, state.encoder ] = forward( encoder, dlX );
-                dlZMu = mean( dlZ, 2 );
-                dlZLogVar = log( std( dlZ, [], 2 ).^2 );
-    
-            end
+            [ dlZ, state.encoder ] = forward( encoder, dlX );
     
             % reconstruct curves from latent codes
             [ dlXHat, state.decoder ] = forward( decoder, dlZ );
-
 
         end
 
@@ -491,371 +559,8 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function dlXC = latentComponents( decoder, dlZ, args )
-            % Calculate the funtional components from the latent codes
-            % using the decoder network. For each component, the relevant 
-            % code is varied randomly about the mean. This is more 
-            % efficient than calculating two components at strict
-            % 2SD separation from the mean.
-            arguments
-                decoder         dlnetwork
-                dlZ             dlarray
-                args.sampling   char ...
-                    {mustBeMember(args.sampling, ...
-                        {'Random', 'Fixed'} )} = 'Random'
-                args.centre     logical = true
-                args.nSample    double {mustBeInteger,mustBePositive} = 10
-                args.range      double {mustBePositive} = 2.0
-                args.dlZMean    dlarray = []
-                args.dlZLogVar  dlarray = []
-            end
-
-            nSample = args.nSample;
-            ZDim = size( dlZ, 1 );
-            if isempty( args.dlZMean ) || isempty( args.dlZLogVar )
-                % compute the mean and SD across the batch
-                dlZMean = mean( dlZ, 2 );
-                dlZStd = std( dlZ, [], 2 );
-            else
-                % use the assigned mean and SD for the batch
-                dlZMean = args.dlZMean;
-                dlZStd = sqrt(exp( args.dlZLogVar ));
-            end
-            
-            % initialise the components' Z codes at the mean
-            % include an extra one that will be preserved
-            dlZC = repmat( dlZMean, 1, ZDim*nSample+1 );
-
-            % convert to double to greatly speed up processing
-            % (tracing is not an issue)
-            ZC = double(extractdata( dlZC ));
-            ZMean = double(extractdata( dlZMean ));
-            ZStd = double(extractdata( dlZStd ));
-            
-            if strcmp( args.sampling, 'Fixed' )
-                % define the offset spacing
-                offsets = linspace( -args.range, args.range, nSample );
-            end
-
-            for j = 1:nSample
-                
-                switch args.sampling
-                    case 'Random'
-                        offset = args.range*rand;
-                    case 'Fixed'
-                        offset = offsets(j);
-                end
-
-                for i =1:ZDim
-                    % vary ith component randomly about its mean
-                    ZC(i,(i-1)*nSample+j) = ZMean(i) + offset*ZStd(i);
-                end
-
-            end
-
-            % convert back
-            dlZC = dlarray( ZC, 'CB' );
-           
-            % generate all the component curves using the decoder
-            dlXC = forward( decoder, dlZC );
-            XDim = size( dlXC );
-
-            if args.centre
-                % centre about the mean curve (last curve)
-                if length( XDim )==2
-                    dlXC = dlXC( :, 1:end-1 ) - dlXC( :, end );
-                else
-                    dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );
-                end
-            end
-
-        end
-            
-
-        function plotLatentComp( axes, dlXC, fda, nSample, args )
-            % Plot characteristic curves of the latent codings which are similar
-            % in conception to the functional principal components
-            arguments
-                axes          
-                dlXC                dlarray
-                fda                 struct
-                nSample             double
-                args.type           char ...
-                    {mustBeMember(args.type, ...
-                        {'Smoothed', 'Predicted', 'Both'} )} = 'Smoothed'
-                args.shading        logical = false
-                args.legend         logical = true
-                args.plotTitle      string = "<Dataset>"
-                args.xAxisLabel     string = "Time"
-                args.yAxisLabel     string = "<Channel>"
-                args.yAxisLimits    double
-
-            end
-            
-            XC = double( extractdata( dlXC ) );
-            % re-order the dimensions for FDA
-            %XC = permute( XC, [1 3 2] );
-
-            % smooth and re-evaluate all curves
-            XCFd = smooth_basis( fda.tSpan, XC, fda.fdParams );
-            XCsmth = eval_fd( fda.tSpan, XCFd );
-
-            % set the colours from blue and red
-            compColours = [ 0.0000 0.4470 0.7410; ...
-                            0.6350 0.0780 0.1840 ];
-            gray = [ 0.5, 0.5, 0.5 ];
-            black = [ 0, 0 , 0 ];
-            % set positive/negative plot characteristics
-            names = [ "+ve", "-ve" ];
-
-            nPlots = length(axes);
-            j = 0;
-            for c = 1:nPlots
-
-                cla( axes(c) );
-                hold( axes(c), 'on' );
-                k = 1;
-    
-                pltObj = gobjects( 3, 1 );
-                l = 0;
-
-                % plot the gradations
-                for i = 1:nSample
-                    
-                    % next sample
-                    j = j+1;
-
-                    isOuterCurve = (i==1 || i==nSample);
-                    if isOuterCurve
-                        % fill-up shading area
-                        if args.shading
-                            plotShadedArea( axes(c), ...
-                                            fda.tSpan, ...
-                                            XCsmth( :, j ), ...
-                                            XCsmth( :, end ), ...
-                                            compColours(k,:), ...
-                                            name = names(k) );
-                        end
-                        width = 2.0;
-                    
-                    else
-                        width = 1.0;
-                    end
-
-                    % plot gradation curve
-
-                    if any(strcmp( args.type, {'Predicted','Both'} ))
-                        % plot predicted values
-                        plot( axes(c), ...
-                              fda.tSpan, XC( :, j ), ...
-                              Color = gray, ...
-                              LineWidth = 0.5 );
-                    end
-                    if any(strcmp( args.type, {'Smoothed','Both'} ))
-                        % plot smoothed curves
-                        if isOuterCurve
-                            % include in legend
-                            l = l+1;
-                            pltObj(l) = plot( axes(c), ...
-                                              fda.tSpan, XCsmth( :, j ), ...
-                                              Color = compColours(k,:), ...
-                                              LineWidth = width, ...
-                                              DisplayName = names(k));
-                        else
-                            % don't record it for the legend
-                            plot( axes(c), ...
-                                              fda.tSpan, XCsmth( :, j ), ...
-                                              Color = compColours(k,:), ...
-                                              LineWidth = width );
-                        end
-
-                    end
-
-                    if mod( i, nSample/2 )==0
-                        % next colour
-                        k = k+1;
-                    end
-
-                end
-
-                % plot the mean curve
-                l = l+1;
-                pltObj(l) = plot( axes(c), fda.tSpan, XCsmth( :, end ), ...
-                               Color = black, ...
-                               LineWidth = 2, ...
-                               DisplayName = 'Mean' );
-
-                hold( axes(c), 'off' );
-
-                % finalise the plot with formatting, etc
-                if args.legend && c==1
-                    legend( axes(c), pltObj, Location = 'best' );
-                end
-
-                title( axes(c), ['Component ' num2str(c)] );
-                xlabel( axes(c), args.xAxisLabel );
-                if c==1
-                    ylabel( axes(c), args.yAxisLabel );
-                end
-                xlim( axes(c), [fda.tSpan(1) fda.tSpan(end)] );
-
-                if ~isempty( args.yAxisLimits )
-                    ylim( axes(c), args.yAxisLimits );
-                end               
-
-                axes(c).YAxis.TickLabelFormat = '%.1f';
-
-                finalisePlot( axes(c), square = true );
-
-
-            end
-        
-        
-        end
-    
-
-        
-        function plotZDist( axis, dlZ, args )
-            % Update the Z distributions plot
-            arguments
-                axis
-                dlZ                 dlarray
-                args.name           string = 'Latent Distribution'
-                args.standardize    logical = false
-                args.pdfLimit       double = 0.05
-            end
-
-            Z = double( extractdata( dlZ ) );
-
-            if args.standardize
-                Z = (Z-mean(Z,2))./std(Z,[],2);
-                xAxisLbl = 'Std Z';
-            else
-                xAxisLbl = 'Z';
-            end
-        
-            nPts = 101;
-            nCodes = size( Z, 1 );
-               
-            hold( axis, 'off');
-            for i = 1:nCodes
-
-                % fit a distribution
-                pdZ = fitdist( Z(i,:)', 'Kernel', 'Kernel', 'epanechnikov' );
-
-                % get extremes
-                Z01 = prctile( Z(i,:), 1 );
-                Z50 = prctile( Z(i,:), 50 );
-                Z99 = prctile( Z(i,:), 99 );
-
-                % go well beyond range
-                ZMin = Z50 - 2*(Z50-Z01);
-                ZMax = Z50 + 2*(Z99-Z50);
-
-                % evaluate the probability density function
-                ZPts = linspace( ZMin, ZMax, nPts );
-                Y = pdf( pdZ, ZPts );
-                Y = Y/sum(Y);
-
-                plot( axis, ZPts, Y, 'LineWidth', 1 );
-                hold( axis, 'on' );
-
-            end
-            
-            hold( axis, 'off');
-            
-            ylim( axis, [0 args.pdfLimit] );
-            
-            title( axis, args.name );
-            xlabel( axis, xAxisLbl );
-            ylabel( axis, 'Q(Z)' );   
-            axis.YAxis.TickLabelFormat = '%.2f';
-            
-            finalisePlot( axis, square = true );
-            
-        end
-
-
-        function plotZClusters( axis, dlZ, args )
-            % Plot the latent codes on 2D plane
-            arguments
-                axis
-                dlZ                 dlarray
-                args.dlY            dlarray = []
-                args.type           char ...
-                    {mustBeMember(args.type, ...
-                        {'Canonical', 'TSNE'} )} = 'TSNE'
-                args.name           string = 'Latent Space'
-                args.perplexity     double = 30
-                args.compact        logical = false
-
-            end
-
-            if isempty( args.dlY ) && strcmp( args.type, 'Canonical' )
-                eid = 'aeModel:LabelsMissing';
-                msg = 'Canonical discriminant analysis needs labels.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            if ~isempty( args.dlY )
-                Y = double( extractdata( args.dlY ) );
-                classes = unique( Y );
-            else
-                Y = ones( size( dlZ,2), 1 );
-                classes = 1;
-            end
-
-            Z = double( extractdata( dlZ ) );
-
-            switch args.type
-                case 'Canonical'
-                    % canonical discriminant analysis                  
-                    ZCanInfo = cda( Z', Y );
-                    ZT = ZCanInfo.scores;
-                    if size( ZT, 2 )==1
-                        % only one canonical dimension
-                        ZT = [ ZT ZT ];  
-                    end
-
-                case 'TSNE'
-                    % t-distribution stochastic neighbour embedding
-                    perplexity = min( size(dlZ,2), args.perplexity );
-                    ZT = tsne( Z', ...
-                               Perplexity = perplexity, ...
-                               Standardize = true ); 
-                    
-            end
-
-            cla( axis, 'reset' );
-            hold( axis, 'on' );
-            
-            if args.compact
-                dotSize = 5;
-            else
-                dotSize = 10;
-            end
-            
-            % plot true classes (large dots)
-            colours = lines( length(classes) );
-            gscatter( axis, ZT(:,1), ZT(:,2), Y, colours, '.', dotSize );
-            
-            hold( axis, 'off' );
-            
-            if ~args.compact
-                legend( axis, 'Location', 'Best' );
-            end
-
-            title( axis, args.name );
-            axis.TickDir = 'none';
-            axis.XTickLabel = [];
-            axis.YTickLabel = [];
-            finalisePlot( axis, square = true );
-
-
-        end
-    
-    
     end
+
 
 end
 
@@ -870,47 +575,5 @@ function names = getFcnNames( lossFcns )
 
 end
 
-
-function obj = plotShadedArea( ax, t, y1, y2, colour, args )
-    % Plot a shaded area
-    arguments
-        ax          
-        t               double
-        y1              double
-        y2              double
-        colour          double  
-        args.alpha      double = 0.25
-        args.name       char
-    end
-
-    % set the boundary
-    tRev = [ t, fliplr(t) ];
-    yRev = [ y1; flipud(y2) ];
-        
-    % draw shaded region
-    obj = fill( ax, tRev, yRev, colour, ...
-                    'FaceAlpha', args.alpha, ...
-                    'EdgeColor', 'none', ...
-                    'DisplayName', args.name );
-
-end
-
-
-function finalisePlot( ax, args )
-    arguments
-        ax
-        args.square     logical = false
-    end
-
-    ax.Box = false;
-    ax.TickDir = 'out';
-    ax.XAxis.LineWidth = 1;
-    ax.YAxis.LineWidth = 1;
-    ax.FontName = 'Arial';
-    if args.square
-        ax.PlotBoxAspectRatio = [1 1 1];
-    end
-
-end
 
 

@@ -14,15 +14,15 @@ function setup = initSetup
     setup.lossFcns.cls.class = @classifierLoss;
     setup.lossFcns.cls.name = 'JumpType';
 
-    setup.lossFcns.mmd.class = @wassersteinLoss;
-    setup.lossFcns.mmd.name = 'MMDDiscriminator';
-    setup.lossFcns.mmd.args.kernel = 'IMQ';
-    setup.lossFcns.mmd.args.useLoss = false;
+    %setup.lossFcns.mmd.class = @wassersteinLoss;
+    %setup.lossFcns.mmd.name = 'MMDDiscriminator';
+    %setup.lossFcns.mmd.args.kernel = 'IMQ';
+    %setup.lossFcns.mmd.args.useLoss = false;
 
-    %setup.lossFcns.orth.class = @componentLoss;
-    %setup.lossFcns.orth.name = 'Component';
-    %setup.lossFcns.orth.args.nSample = 10;
-    %setup.lossFcns.orth.args.criterion = 'Orthogonality';
+    setup.lossFcns.orth.class = @componentLoss;
+    setup.lossFcns.orth.name = 'Component';
+    setup.lossFcns.orth.args.nSample = 10;
+    setup.lossFcns.orth.args.criterion = 'Orthogonality';
 
     % model
     setup.model.class = @fcModel;

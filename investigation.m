@@ -93,14 +93,31 @@ classdef investigation
                     thisEvaluation.TrainingEvaluation.AuxModelLoss;
                 self.TestingResults.AuxModelLoss( idxC{:} ) = ...
                     thisEvaluation.TestingEvaluation.AuxModelLoss;
-                
+
+    
+                % save the plots
+                % in a folder specific to the evaluation
+                folder = strcat( name, '(' );
+                for j = 1:length(idx)
+                    folder = strcat( folder, num2str(idx(j)) );
+                    if j < length(idx)
+                        folder = strcat( folder, ',' );
+                    end
+                end
+                folder = strcat( folder, ')');
+
+                fullpath = fullfile(path, folder);
+
+                if ~isfolder( fullpath )
+                    mkdir( fullpath )
+                end
+
+                thisEvaluation.save( fullpath, name );
+
 
             end
             
 
-            % save the evaluation object
-            % save the plots
-            % in a folder specific to the evaluation
 
         end
 

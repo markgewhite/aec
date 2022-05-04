@@ -21,18 +21,20 @@ classdef modelTrainer < handle
         postTraining   % flag to indicate whether to continue training
 
         showPlots      % flag whether to show plots
-        axes           % plot axes structure
+        lossFig        % figure for the loss lines
         lossLines      % animated lines cell array
     end
 
     methods
 
-        function self = modelTrainer( lossFcnTbl, XChannels, ZDim, args )
+% CHECK ARGUMENTS %
+
+        function self = modelTrainer( lossFcnTbl, args )
             % Initialize the model
             arguments
                 lossFcnTbl          table
-                XChannels           double
-                ZDim                double
+                %XChannels           double
+                %ZDim                double
                 args.nEpochs        double ...
                     {mustBeInteger, mustBePositive} = 2000;
                 args.nEpochsPreTrn  double ...
@@ -78,8 +80,8 @@ classdef modelTrainer < handle
             self.showPlots = args.showPlots;
 
             if self.showPlots
-                [self.axes, self.lossLines] = ...
-                    initializePlots( lossFcnTbl, XChannels, ZDim );
+                [self.lossFig, self.lossLines] = ...
+                                initializeLossPlots( lossFcnTbl );
             end
 
         end
@@ -209,11 +211,11 @@ classdef modelTrainer < handle
                         % include validation
                         lossValArg = self.lossVal( v );
                     end                       
-                    reportProgress( self.axes, ...
-                                    thisModel, thisTrnData, ...
-                                    self.lossTrn( j-nIter+1:j, : ), ...
-                                    epoch, ...
-                                    lossVal = lossValArg );
+                    self.reportProgress( thisModel, ...
+                                         thisTrnData, ...
+                                         self.lossTrn( j-nIter+1:j, : ), ...
+                                         epoch, ...
+                                         lossVal = lossValArg );
                 end
             
                 if mod( epoch, self.lrFreq )==0
@@ -226,6 +228,67 @@ classdef modelTrainer < handle
 
 
         end
+
+
+    end
+
+
+    methods (Static)
+
+        function reportProgress( thisModel, thisData, ...
+                       lossTrn, epoch, args )
+            % Report progress on training
+            arguments
+                thisModel       autoencoderModel
+                thisData        modelDataset
+                lossTrn         double
+                epoch           double
+                args.nLines     double = 8
+                args.lossVal    double = []
+            end
+        
+            meanLoss = mean( lossTrn );
+        
+            fprintf('Loss (%4d) = ', epoch);
+            for k = 1:thisModel.nLoss
+                fprintf(' %6.3f', meanLoss(k) );
+            end
+            if isempty( args.lossVal )
+                fprintf('\n');
+            else
+                fprintf(' : %1.3f\n', args.lossVal );
+            end
+        
+            [dlX, dlY] = thisData.getInput;
+        
+            % compute the AE components
+            dlZ = thisModel.encode( thisModel, dlX, convert = false );
+            dlXC = thisModel.latentComponents( ...
+                            dlZ, ...
+                            sampling = 'Fixed', ...
+                            centre = false );
+        
+            % plot them on specified axes
+            thisModel.plotLatentComp( ...
+                          dlXC, ...
+                          thisData.fda, ...
+                          type = 'Smoothed', ...
+                          shading = true, ...
+                          plotTitle = thisData.info.datasetName, ...
+                          xAxisLabel = thisData.info.timeLabel, ...
+                          yAxisLabel = thisData.info.channelLabels, ...
+                          yAxisLimits = thisData.info.channelLimits );
+        
+            % plot the Z distributions
+            thisModel.plotZDist( dlZ );
+        
+            % plot the Z clusters
+            thisModel.plotZClusters( dlZ, Y = dlY );
+        
+            drawnow;
+              
+        end
+
 
     end
 
@@ -253,7 +316,7 @@ function [grad, state, loss] = gradients( nets, ...
    
     if doTrainAE
         % autoencoder training
-        [ dlXGen, dlZGen, state, dlZMu, dlZLogVar ] = ...
+        [ dlXGen, dlZGen, state ] = ...
                 thisModel.forward( nets.encoder, nets.decoder, dlXIn );
     
         if thisModel.isVAE
@@ -281,11 +344,8 @@ function [grad, state, loss] = gradients( nets, ...
         thisLossFcn = thisModel.lossFcns.(thisName);
         % compute the AE components
         dlXC = thisModel.latentComponents( ...
-                                nets.decoder, ...
                                 dlZGen, ...
-                                nSample = thisLossFcn.nSample, ...
-                                dlZMean = dlZMu, ...
-                                dlZLogVar = dlZLogVar );
+                                nSample = thisLossFcn.nSample );
     end
 
     
@@ -464,14 +524,14 @@ end
 
 
 
-function [axes, lossLines] = initializePlots( lossFcnTbl, XChannels, ZDim )
+function [fig, lossLines] = initializeLossPlots( lossFcnTbl )
     % Setup plots for tracking progress
    
     nAxes = size( lossFcnTbl, 1 );
     [ rows, cols ] = sqdim( nAxes );
     
     % setup figure for plotting loss functions
-    figure(1);
+    fig = figure(3);
     clf;
     nLines = sum( lossFcnTbl.nLosses );
     lossLines = gobjects( nLines, 1 );
@@ -479,95 +539,14 @@ function [axes, lossLines] = initializePlots( lossFcnTbl, XChannels, ZDim )
     c = 0;
     for i = 1:nAxes
         thisName = lossFcnTbl.names(i);
-        axes.loss.(thisName) = subplot( rows, cols, i );
+        axis = subplot( rows, cols, i );
         for k = 1:lossFcnTbl.nLosses(i)
             c = c+1;
-            lossLines(c) = animatedline( axes.loss.(thisName), ...
-                                         'Color', colours(c,:) );
+            lossLines(c) = animatedline( axis, 'Color', colours(c,:) );
         end
-        title( axes.loss.(thisName), thisName );
-        xlabel( axes.loss.(thisName), 'Iteration' );
+        title( axis, thisName );
+        xlabel( axis, 'Iteration' );
     end
-
-    % setup figure for Z distribution and clustering
-    figure(2);
-    clf;
-    axes.ZDistribution = subplot( 1, 2, 1 );
-    axes.ZClustering = subplot( 1, 2, 2 );
-
-    % setup the components figure
-    figure(3);
-    clf;
-    axes.comp = gobjects( ZDim, XChannels );
-
-    for j = 1:XChannels
-        for i = 1:ZDim
-            axes.comp(i,j) = subplot( XChannels, ZDim, (j-1)*ZDim + i );
-        end
-    end
-
-end
-
-
-function reportProgress( axes, thisModel, thisData, ...
-                               lossTrn, epoch, args )
-    % Report progress on training
-    arguments
-        axes
-        thisModel       autoencoderModel
-        thisData        modelDataset
-        lossTrn         double
-        epoch           double
-        args.nLines     double = 8
-        args.lossVal    double = []
-    end
-
-    meanLoss = mean( lossTrn );
-
-    fprintf('Loss (%4d) = ', epoch);
-    for k = 1:thisModel.nLoss
-        fprintf(' %6.3f', meanLoss(k) );
-    end
-    if isempty( args.lossVal )
-        fprintf('\n');
-    else
-        fprintf(' : %1.3f\n', args.lossVal );
-    end
-
-    [dlX, dlY] = thisData.getInput;
-
-    % compute the AE components
-    dlZ = thisModel.encode( thisModel, dlX, convert = false );
-    dlXC = thisModel.latentComponents( ...
-                    thisModel.nets.decoder, ...
-                    dlZ, ...
-                    sampling = 'Fixed', ...
-                    nSample = args.nLines, ...
-                    centre = false );
-
-    % plot them on specified axes
-    thisModel.plotLatentComp( axes.comp, ...
-                  dlXC, ...
-                  thisData.fda, ...
-                  args.nLines, ...
-                  type = 'Smoothed', ...
-                  shading = true, ...
-                  plotTitle = thisData.info.datasetName, ...
-                  xAxisLabel = thisData.info.timeLabel, ...
-                  yAxisLabel = thisData.info.channelLabels, ...
-                  yAxisLimits = thisData.info.channelLimits );
-
-    % plot the Z distributions
-    thisModel.plotZDist( axes.ZDistribution, dlZ );
-
-    % plot the Z clusters
-    thisModel.plotZClusters( axes.ZClustering, dlZ, ...
-                             dlY = dlY, ...
-                             type = 'TSNE', perplexity=80 );
-
-    drawnow;
-
-
 
 end
 
