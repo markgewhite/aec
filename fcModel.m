@@ -19,11 +19,12 @@ classdef fcModel < autoencoderModel
 
     methods
 
-        function self = fcModel( XDim, XChannels, lossFcns, ...
-                                 superArgs, args )
+        function self = fcModel( XDim, XOutputDim, XChannels, ...
+                                   lossFcns, superArgs, args )
             % Initialize the model
             arguments
                 XDim            double {mustBeInteger, mustBePositive}
+                XOutputDim      double {mustBeInteger, mustBePositive}
                 XChannels       double {mustBeInteger, mustBePositive}
             end
             arguments (Repeating)
@@ -43,14 +44,12 @@ classdef fcModel < autoencoderModel
                     {mustBeInRange(args.inputDropout, 0, 1)} = 0.2
                 args.dropout    double ...
                     {mustBeInRange(args.dropout, 0, 1)} = 0.05
-                args.isVAE         logical = false
-                args.nVAEDraws     double ...
-                    {mustBeInteger, mustBePositive} = 1
             end
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
             self = self@autoencoderModel( XDim, ...
+                                          XOutputDim, ...
                                           XChannels, ...
                                           lossFcns{:}, ...
                                           superArgsCell{:}, ...
@@ -63,44 +62,47 @@ classdef fcModel < autoencoderModel
             self.scale = args.scale;
             self.inputDropout = args.inputDropout;
             self.dropout = args.dropout;
-            self.isVAE = args.isVAE;
 
             % initialize the networks
-            self = initEncoder( self, args.nVAEDraws );
+            self = initEncoder( self );
             self = initDecoder( self );
             
         end
 
 
-        function self = initEncoder( self, nVAEDraws )
+        function self = initEncoder( self )
             % Initialize the encoder network
+            arguments
+                self        fcModel
+            end
 
             layersEnc = [ featureInputLayer( self.XDim, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 ) 
                           dropoutLayer( self.inputDropout, 'Name', 'drop0' ) ];
+
+            lgraphEnc = layerGraph( layersEnc );       
+            lastLayer = 'drop0';
             
             for i = 1:self.nHidden
+
                 nNodes = fix( self.nFC*2^(self.fcFactor*(1-i)) );
-                layersEnc = [ layersEnc; ...
-                    fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
-                    batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( self.scale, ...
-                                    'Name', ['relu' num2str(i)] )
-                    dropoutLayer( self.dropout, 'Name', ...
-                                                     ['drop' num2str(i)] )
-                    ]; %#ok<*AGROW> 
+
+                [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
+                                    nNodes, self.scale, self.dropout );
+
             end
             
-            layersEnc = [ layersEnc; ...
-                  fullyConnectedLayer( self.ZDim*(self.isVAE+1), ...
-                                       'Name', 'out' ) ];
+            outLayers = fullyConnectedLayer( self.ZDim*(self.isVAE+1), ...
+                                               'Name', 'out' );
             
-            lgraphEnc = layerGraph( layersEnc );
+            lgraphEnc = addLayers( lgraphEnc, outLayers );
+            lgraphEnc = connectLayers( lgraphEnc, ...
+                                       lastLayer, 'out' );
 
             if self.isVAE
                 self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = nVAEDraws );
+                                                  nDraws = self.nVAEDraws );
             else
                 self.nets.encoder = dlnetwork( lgraphEnc );
             end
@@ -110,30 +112,36 @@ classdef fcModel < autoencoderModel
 
         function self = initDecoder( self )
             % Initialize the decoder network
+            arguments
+                self        fcModel
+            end
 
             layersDec = featureInputLayer( self.ZDim, 'Name', 'in' );
             
+            lgraphDec = layerGraph( layersDec );
+            lastLayer = 'in';
+            
             for i = 1:self.nHidden
+
                 nNodes = fix( self.nFC*2^(self.fcFactor*(-self.nHidden+i)) );
-                layersDec = [ layersDec; ...
-                    fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
-                    batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( self.scale, ...
-                                    'Name', ['relu' num2str(i)] )           
-                    ]; %#ok<*AGROW> 
+
+                [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
+                                    nNodes, self.scale, self.dropout );
+
             end
 
-            layersDec = [ layersDec; ...
-                          fullyConnectedLayer( self.XOutDim*self.XChannels, ...
-                                               'Name', 'fcout' ) ];
+            outLayers = fullyConnectedLayer( self.XOutputDim*self.XChannels, ...
+                                               'Name', 'fcout' );
 
             if self.XChannels > 1
-                layersDec = [ layersDec; 
-                                reshapeLayer( [self.XOutDim self.XChannels], ...
+                outLayers = [ outLayers; 
+                                reshapeLayer( [self.XOutputDim self.XChannels], ...
                                               'Name', 'reshape' ) ];
             end
             
-            lgraphDec = layerGraph( layersDec );
+            lgraphDec = addLayers( lgraphDec, outLayers );
+            lgraphDec = connectLayers( lgraphDec, ...
+                                       lastLayer, 'fcout' );
 
             self.nets.decoder = dlnetwork( lgraphDec );
 
@@ -141,5 +149,29 @@ classdef fcModel < autoencoderModel
 
 
     end
+
+end
+
+
+function [ lgraph, lastLayer ] = addBlock( lgraph, i, lastLayer, ...
+                                           nNodes, scale, dropout )
+
+    % define block
+    block = [   fullyConnectedLayer( nNodes, ...
+                                'Name', ['fc' num2str(i)] )
+                layerNormalizationLayer( 'Name', ...
+                                ['lnorm' num2str(i)] )
+                leakyReluLayer( scale, ...
+                                'Name', ['relu' num2str(i)] )
+                spatialDropoutLayer( dropout, ...
+                                     'Name', ['drop' num2str(i)] )
+                ];
+
+    % connect layers at the front
+    lgraph = addLayers( lgraph, block );
+    lgraph = connectLayers( lgraph, ...
+                            lastLayer, ['fc' num2str(i)] );
+    
+    lastLayer = ['drop' num2str(i)];
 
 end

@@ -12,7 +12,7 @@ function setup = applySetting( setup, parameter, value )
         setup.(var) = applySetting( setup.(var), remainder, value );
     else
         switch class( value )
-            case {'double', 'string'}
+            case {'double', 'string', 'logical'}
                 setup.(var).(remainder) = value;
             case 'cell'
                 setup.(var).(remainder) = value{1};

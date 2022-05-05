@@ -8,11 +8,12 @@
 classdef autoencoderModel < representationModel
 
     properties
-        XOutDim        % output dimension (may differ from XDim)
+        XOutputDim     % output dimension (may differ from XInputDim)
         nets           % networks defined in this model (structure)
         netNames       % names of the networks (for convenience)
         nNets          % number of networks
         isVAE          % flag indicating if variational autoencoder
+        nVAEDraws      % number of draws from encoder output distribution
         lossFcns       % array of loss functions
         lossFcnNames   % names of the loss functions
         lossFcnWeights % weights to be applied to the loss function
@@ -33,6 +34,7 @@ classdef autoencoderModel < representationModel
     methods
 
         function self = autoencoderModel( XDim, ...
+                                          XOutputDim, ...
                                           XChannels, ...
                                           lossFcns, ...
                                           superArgs, ...
@@ -40,6 +42,7 @@ classdef autoencoderModel < representationModel
             % Initialize the model
             arguments
                 XDim            double {mustBeInteger, mustBePositive}
+                XOutputDim      double {mustBeInteger, mustBePositive}
                 XChannels       double {mustBeInteger, mustBePositive}
             end
             arguments (Repeating)
@@ -47,9 +50,10 @@ classdef autoencoderModel < representationModel
             end
             arguments
                 superArgs.?representationModel
-                args.XOutDim        double = 0
                 args.hasSeqInput    logical = false
                 args.isVAE          logical = false
+                args.nVAEDraws      double ...
+                    {mustBeInteger, mustBePositive} = 1
                 args.weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
                 args.auxModel       string ...
@@ -63,6 +67,7 @@ classdef autoencoderModel < representationModel
                                              NumCompLines = 8 );
 
             self.XDim = XDim;
+            self.XOutputDim = XOutputDim;
             self.XChannels = XChannels;
 
             % placeholders for subclasses to define
@@ -71,14 +76,11 @@ classdef autoencoderModel < representationModel
             self.netNames = {'encoder', 'decoder'};
             self.nNets = 2;
             self.isVAE = args.isVAE;
+            self.nVAEDraws = args.nVAEDraws;
             self.hasSeqInput = args.hasSeqInput;
 
             self.auxModelType = args.auxModel;
             self.auxModel = [];
-
-            if args.XOutDim == 0
-                self.XOutDim = self.XDim;
-            end
 
             % copy over the loss functions associated
             % and any networks with them for later training 

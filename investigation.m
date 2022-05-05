@@ -59,6 +59,7 @@ classdef investigation
 
             for i = 1:nEval
 
+                setup = self.BaselineSetup;
                 idx = getIndices( i, self.SearchDims );
 
                 % apply the respective settings
@@ -67,6 +68,10 @@ classdef investigation
                     setup = applySetting( setup, ...
                                           parameters{j}, ...
                                           searchValues{j}(idx(j)) );
+
+                    setup = updateDependencies( setup, ...
+                                               parameters{j}, ...
+                                               searchValues{j}(idx(j)) );
                 
                 end
 
@@ -156,3 +161,30 @@ function idx = getIndices( i, dims )
 
 end
 
+
+function setup = updateDependencies( setup, parameter, value )
+    % Apply additional settings due to dependencies
+    % Assess them programmatically
+    arguments
+        setup       struct
+        parameter   string
+        value       
+    end
+
+    switch parameter
+
+        case 'model.class'
+
+            switch func2str( value{1} )
+
+                case {'fcModel', 'convModel'}
+
+                    dependency = 'data.args.normalizeInput';
+                    reqValue = true;
+                    setup = applySetting( setup, dependency, reqValue );
+
+            end
+
+    end
+
+end

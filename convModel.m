@@ -1,28 +1,26 @@
 % ************************************************************************
-% Class: tcnModel
+% Class: convModel
 %
-% Subclass defining a temporal convolutional autoencoder model
+% Subclass defining a convolutional autoencoder model
 %
 % ************************************************************************
 
-classdef tcnModel < autoencoderModel
+classdef convModel < autoencoderModel
 
     properties
         nHidden       % number of hidden layers
         nFilters      % number of filters aka kernels
         filterSize    % length of the filters
-        dilations     % dilations
+        stride        % filter step size
         scale         % leaky ReLu scale factor
         inputDropout  % initial dropout rate
         dropout       % dropout rate
         pooling       % pooling operator
-        useSkips      % whether to include short circuit paths
-
     end
 
     methods
 
-        function self = tcnModel( XDim, XOutputDim, XChannels, ...
+        function self = convModel( XDim, XOutputDim, XChannels, ...
                                    lossFcns, superArgs, args )
             % Initialize the model
             arguments
@@ -38,11 +36,11 @@ classdef tcnModel < autoencoderModel
                 args.nHidden       double ...
                     {mustBeInteger, mustBePositive} = 2
                 args.nFilters      double ...
-                    {mustBeInteger, mustBePositive} = 16
+                    {mustBeInteger, mustBePositive} = 32
                 args.filterSize    double ...
                     {mustBeInteger, mustBePositive} = 5
-                args.dilationFactor  double ...
-                    {mustBeInteger, mustBePositive} = 2
+                args.stride        double ...
+                    {mustBeInteger, mustBePositive} = 3
                 args.scale         double ...
                     {mustBeInRange(args.scale, 0, 1)} = 0.2
                 args.inputDropout  double ...
@@ -51,8 +49,7 @@ classdef tcnModel < autoencoderModel
                     {mustBeInRange(args.dropout, 0, 1)} = 0.05
                 args.pooling       char ...
                     {mustBeMember(args.pooling, ...
-                      {'GlobalMax', 'GlobalAvg'} )} = 'GlobalMax'
-                args.useSkips      logical = true
+                      {'GlobalMax', 'GlobalAvg', 'None'} )} = 'None'
             end
 
             % set the superclass's properties
@@ -62,27 +59,17 @@ classdef tcnModel < autoencoderModel
                                           XChannels, ...
                                           lossFcns{:}, ...
                                           superArgsCell{:}, ...
-                                          hasSeqInput = true );
-
+                                          hasSeqInput = false );
 
             % store this class's properties
             self.nHidden = args.nHidden;
+            self.nFilters = args.nFilters*2.^(0:self.nHidden-1);
             self.filterSize = args.filterSize;
-
+            self.stride = args.stride;
             self.scale = args.scale;
             self.inputDropout = args.inputDropout;
             self.dropout = args.dropout;
             self.pooling = args.pooling;
-            self.useSkips = args.useSkips;
-
-            if self.useSkips
-                % must use the same number of filters in each block
-                self.nFilters = args.nFilters*ones( self.nHidden, 1 );
-            else
-                % progressively double filters
-                self.nFilters = args.nFilters*2.^(0:self.nHidden-1);
-            end
-            self.dilations = 2.^((0:self.nHidden-1)*args.dilationFactor);
 
             % initialize the networks
             self = initEncoder( self );
@@ -94,25 +81,25 @@ classdef tcnModel < autoencoderModel
         function self = initEncoder( self )
             % Initialize the encoder network
             arguments
-                self        tcnModel
+                self        convModel
             end
-
+            
             % define input layers
-            layersEnc = [ sequenceInputLayer( self.XChannels, 'Name', 'in', ...
-                                   'Normalization', 'zscore', ...
-                                   'Mean', 0, 'StandardDeviation', 1 )
-                          dropoutLayer( self.inputDropout, ...
-                                        'Name', 'drop0' ) ];
+            projectionSize = [ self.XDim 1 1 ];
+            layersEnc = [ featureInputLayer( self.XDim, 'Name', 'in', ...
+                              'Normalization', 'zscore', ...
+                              'Mean', 0, 'StandardDeviation', 1 ) 
+                          dropoutLayer( self.dropout, 'Name', 'drop0' )
+                          reshapeLayer( projectionSize, 'Name', 'proj' ) ];
+
             lgraphEnc = layerGraph( layersEnc );
-            lastLayer = 'drop0';
+            lastLayer = 'proj';
             
             % create hidden layers
             for i = 1:self.nHidden
-                [lgraphEnc, lastLayer] = addResidualBlock( ...
-                    lgraphEnc, i, lastLayer, ...
+                [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
                     self.filterSize, self.nFilters(i), ...
-                    self.dilations(i), ...
-                    self.scale, self.dropout, self.useSkips, false );
+                    self.scale, self.dropout, false );
             end
             
             % add the output layers
@@ -123,6 +110,9 @@ classdef tcnModel < autoencoderModel
                 case 'GlobalAvg'
                     outLayers = globalAveragePooling1dLayer( 'Name', 'avgPool' );
                     poolingLayer = 'avgPool';
+                case 'None'
+                    outLayers = [];
+                    poolingLayer = 'out';
             end
             
             outLayers = [ outLayers;
@@ -147,7 +137,7 @@ classdef tcnModel < autoencoderModel
         function self = initDecoder( self )
             % Initialize the decoder network
             arguments
-                self        tcnModel
+                self        convModel
             end
 
             % define input layers
@@ -160,11 +150,8 @@ classdef tcnModel < autoencoderModel
             
             for i = 1:self.nHidden
                 f = self.nFilters( self.nHidden-i+1 );
-                [lgraphDec, lastLayer] = addResidualBlock( ...
-                    lgraphDec, i, lastLayer, ...
-                    self.filterSize, f, ...
-                    self.dilations(i), ...
-                    self.scale, self.dropout, self.useSkips, true );
+                [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
+                    self.filterSize, f, self.scale, self.dropout, true );
             end
             
             % add the output layers
@@ -175,16 +162,17 @@ classdef tcnModel < autoencoderModel
                 case 'GlobalAvg'
                     outLayers = globalAveragePooling1dLayer( 'Name', 'avgPool' );
                     poolingLayer = 'avgPool';
+                case 'None'
+                    outLayers = [];
+                    poolingLayer = 'fcout';
             end
             
             outLayers = [ outLayers; 
-                          fullyConnectedLayer( self.XOutputDim*self.XChannels, ...
-                                               'Name', 'fcout' ) ];
+                          fullyConnectedLayer( self.XOutputDim*self.XChannels, 'Name', 'fcout' ) ];
             
             if self.XChannels > 1
                 outLayers = [ outLayers; 
-                          reshapeLayer( [self.XOutputDim self.XChannels], ...
-                                        'Name', 'reshape' ) ];
+                          reshapeLayer( [self.XOutputDim self.XChannels], 'Name', 'reshape' ) ];
             end
             
             lgraphDec = addLayers( lgraphDec, outLayers );
@@ -201,13 +189,10 @@ classdef tcnModel < autoencoderModel
 end
 
 
-function [ lgraph, lastLayer ] = addResidualBlock( ...
-                        lgraph, i, lastLayer, ...
-                        filterSize, nFilters, ...
-                        dilation, ...
-                        scale, dropout, skip, transpose )
+function [ lgraph, lastLayer ] = addBlock( lgraph, i, lastLayer, ...
+                        filterSize, nFilters, scale, dropout, transpose )
 
-    % define residual block
+    % define block
     if transpose
         block = transposedConv1dLayer( filterSize, ...
                                        nFilters, ...
@@ -216,21 +201,12 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
     else
         block = convolution1dLayer( filterSize, ...
                                     nFilters, ...
-                                    'DilationFactor', dilation, ...
-                                    'Padding', 'causal', ...
+                                    'Padding', 'same', ...
                                     'Name', ['conv' num2str(i)] );
     end
         
     block = [   block;
                 layerNormalizationLayer( 'Name', ['lnorm' num2str(i)] )
-                ];
-
-    if skip
-        block = [ block; 
-                  additionLayer( 2, 'Name', ['add' num2str(i)] ) ];
-    end
-
-    block = [ block;
                 leakyReluLayer( scale, ...
                                 'Name', ['relu' num2str(i)] )
                 spatialDropoutLayer( dropout, ...
@@ -242,26 +218,6 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
     lgraph = connectLayers( lgraph, ...
                             lastLayer, ['conv' num2str(i)] );
     
-    if skip
-        % include a short circuit ('skip')
-
-        if i == 1
-            % include convolution in first skip connection
-            skipLayer = convolution1dLayer( 1, nFilters, ...
-                                            'Name', 'convSkip' );
-            lgraph = addLayers( lgraph, skipLayer );
-            lgraph = connectLayers( lgraph, ...
-                                       lastLayer, 'convSkip' );
-            lgraph = connectLayers( lgraph, ...
-                               'convSkip', ['add' num2str(i) '/in2'] );
-        else
-            % connect the skip
-            lgraph = connectLayers( lgraph, ...
-                               lastLayer, ['add' num2str(i) '/in2'] );
-        end
-
-    end
-
     lastLayer = ['drop' num2str(i)];
 
 end

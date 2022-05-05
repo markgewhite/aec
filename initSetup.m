@@ -3,6 +3,8 @@ function setup = initSetup
 
     % dataset
     setup.data.class = @jumpGRFDataset;
+    setup.data.args.normalization = 'PAD';
+    setup.data.args.normalizeInput = false;
 
     % loss functions
     setup.lossFcns.recon.class = @reconstructionLoss;
@@ -32,11 +34,11 @@ function setup = initSetup
     % model
     setup.model.class = @fcModel;
     setup.model.args.ZDim = 4;
-    setup.model.args.isVAE = true;
+    setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Fisher';
 
     % training
-    setup.trainer.args.updateFreq = 20;
+    setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
     setup.trainer.args.nEpochs = 100;
 

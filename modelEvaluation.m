@@ -31,13 +31,16 @@ classdef modelEvaluation < handle
             self.Setup = setup;
 
             % prepare data
+            try
+                argsCell = namedargs2cell( setup.data.args );
+            catch
+                argsCell = {};
+            end
             self.TrainingDataset = setup.data.class( 'Training', ...
-                                     normalization = 'PAD', ...
-                                     normalizeInput = true ); %#ok<*MCNPN> 
+                                            argsCell{:} ); %#ok<*MCNPN> 
 
             self.TestingDataset = setup.data.class( 'Testing', ...
-                                     normalization = 'PAD', ...
-                                     normalizeInput = true );
+                                                    argsCell{:} );
 
             if isequal( setup.model.class, @pcaModel )
                 % this is a PCA
@@ -256,6 +259,7 @@ classdef modelEvaluation < handle
             end
             self.Model = setup.model.class( ...
                             self.TrainingDataset.XInputDim, ...
+                            self.TrainingDataset.XTargetDim, ...
                             self.TrainingDataset.XChannels, ...
                             self.LossFcns{:}, ...
                             argsCell{:} );
@@ -309,14 +313,16 @@ classdef modelEvaluation < handle
             eval.XHatSmoothed = eval_fd( thisDataset.fda.tSpan, XHatFd );
 
             % compute reconstruction loss
-            [X, Y] = thisDataset.getInput( dlarray=false );
-            eval.ReconLoss = thisModel.getReconLoss( X, eval.XHat );
+            %[X, Y] = thisDataset.getInput( dlarray=false );
+            eval.ReconLoss = thisModel.getReconLoss( ...
+                thisDataset.XTarget, eval.XHat );
             eval.ReconLossSmoothed = ...
                 thisModel.getReconLoss( eval.XHatSmoothed, eval.XHat );
 
             % compute the auxiliary loss
             eval.AuxModelYHat = predict( thisModel.auxModel, eval.Z );
-            eval.AuxModelLoss = loss( thisModel.auxModel, eval.Z, Y );
+            eval.AuxModelLoss = loss( thisModel.auxModel, ...
+                eval.Z, thisDataset.Y );
 
 
             % generate the latent components
