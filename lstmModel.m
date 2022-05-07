@@ -103,9 +103,6 @@ classdef lstmModel < autoencoderModel
             end
             
             layersEnc = [ layersEnc; ...
-                layerNormalizationLayer( 'Name', 'lnorm' )
-                leakyReluLayer( self.scale, 'Name', 'relu' )
-                spatialDropoutLayer( self.dropout, 'Name', 'drop1' )
                 fullyConnectedLayer( self.ZDim, 'Name', 'out' )
                 ];
 
@@ -141,9 +138,6 @@ classdef lstmModel < autoencoderModel
             end
 
             layersDec = [ layersDec; ...
-                layerNormalizationLayer( 'Name', 'lnorm' )
-                leakyReluLayer( self.scale, 'Name', 'relu' )
-                spatialDropoutLayer( self.dropout, 'Name', 'drop1' )
                 fullyConnectedLayer( self.XChannels, 'Name', 'out' )
                 ];
 
@@ -223,9 +217,9 @@ classdef lstmModel < autoencoderModel
 
             % align sequences correctly
             dlXHat = dlXHat(:,:,1:seqOutputLen);
-            if self.reverseDecoding
-                dlXHat = flip( dlXHat, 3 );
-            end
+            %if self.reverseDecoding
+            %    dlXHat = flip( dlXHat, 3 );
+            %end
             
             % permute to match dlXOut
             % (tracing will be taken care of in recon loss calculation)

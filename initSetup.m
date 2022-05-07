@@ -36,6 +36,7 @@ function setup = initSetup
     setup.model.args.ZDim = 10;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Fisher';
+    setup.model.args.inputDropout = 0.0;
 
     % training
     setup.trainer.args.updateFreq = 10;
