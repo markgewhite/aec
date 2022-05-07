@@ -187,28 +187,34 @@ classdef lstmModel < autoencoderModel
             if self.reverseDecoding
                 dlX = flip( dlX, 3 );
             end
-            seqLen = size( dlX, 3 );
 
-            dlXHat = cast( zeros( size(dlX,1), size(dlX,2), seqLen+1 ), ...
-                           'like', dlX );
+            seqInputLen = size( dlX, 3 );
+            seqOutputLen = self.XOutputDim;
+
+            dlXHat = repmat( dlX, [1 1 2] );
             
             if self.scheduleSampling
                 rate = min( self.trainer.currentEpoch...
                                 *self.samplingRateIncrement, 1 );
-                mask = rand( seqLen, 1 ) < rate;
+                mask = rand( seqOutputLen, 1 ) < rate;
             end
             
-            for i = 1:seqLen
+            for i = 1:seqOutputLen
 
-                if self.scheduleSampling && mask(i) 
-                    % free running: last prediction
-                    dlNextX = dlXHat(:,:,i);
+                if i > 1
+                    if (self.scheduleSampling && mask(i)) ...
+                            || i > seqInputLen
+                        % free running: last prediction
+                        dlNextX = dlXHat(:,:,i-1);
+                    else
+                        % teacher forcing: ground truth
+                        dlNextX = dlX(:,:,i-1);
+                    end
                 else
-                    % teacher forcing: ground truth
-                    dlNextX = dlX(:,:,i);
+                    dlNextX = 0*dlX(:,:,1);
                 end
-            
-                [ dlCS, dlHS, dlXHat(:,:,i+1), state.dec ] = ...
+
+                [ dlCS, dlHS, dlXHat(:,:,i), state.dec ] = ...
                                   forward( decoder, dlNextX, dlHS, dlCS );
                 
                 decoder.State = state.dec;
@@ -216,11 +222,56 @@ classdef lstmModel < autoencoderModel
             end
 
             % align sequences correctly
-            dlXHat = dlXHat(:,:,2:end);
+            dlXHat = dlXHat(:,:,1:seqOutputLen);
             if self.reverseDecoding
                 dlXHat = flip( dlXHat, 3 );
             end
+            
+            % permute to match dlXOut
+            % (tracing will be taken care of in recon loss calculation)
+            dlXHat = double(extractdata( dlXHat ));
+            dlXHat = permute( dlXHat, [3 2 1] );
 
+        end
+
+    end
+
+    methods (Static)
+
+        function dlZ = encode( self, X, arg )
+            % Encode features Z from X using the model
+            % overriding the autoencoder encode method
+            arguments
+                self            autoencoderModel
+                X
+                arg.convert     logical = true
+            end
+
+            if isa( X, 'modelDataset' )
+                dlX = X.getInput;
+            elseif isa( X, 'dlarray' )
+                dlX = X;
+            else
+                eid = 'Autoencoder:NotValidX';
+                msg = 'The input data should be a modelDataset or a dlarray.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            batchSize = size( self.nets.encoder.State.Value{1}, 2 );
+            nObs = size( dlX, 2 );
+            nBatches = fix(nObs/batchSize);
+            dlZ = dlarray( zeros( self.ZDim, nBatches*batchSize ), 'CB' );
+
+            j = 1;
+            for i = 1:nBatches
+                dlZ(:,j:j+batchSize-1) = predict( self.nets.encoder, ...
+                                        dlX(:,j:j+batchSize-1,:) );
+                j = j+batchSize;
+            end
+
+            if arg.convert
+                dlZ = double(extractdata( dlZ ))';
+            end
 
         end
 

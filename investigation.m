@@ -183,6 +183,12 @@ function setup = updateDependencies( setup, parameter, value )
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
 
+                case 'lstmModel'
+
+                    dependency = 'trainer.args.partialBatch';
+                    reqValue = 'discard';
+                    setup = applySetting( setup, dependency, reqValue );
+
             end
 
     end

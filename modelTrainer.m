@@ -6,6 +6,7 @@ classdef modelTrainer < handle
         nEpochsPreTrn  % number of epochs for pretraining
         currentEpoch   % epoch counter
         batchSize      % minibatch size
+        partialBatch   % what to do with an incomplete batch
 
         valFreq        % validation frequency in epochs
         updateFreq     % update frequency in epochs
@@ -38,6 +39,9 @@ classdef modelTrainer < handle
                     {mustBeInteger, mustBePositive} = 10;
                 args.batchSize      double ...
                     {mustBeInteger, mustBePositive} = 40;
+                args.partialBatch   char ...
+                    {mustBeMember(args.partialBatch, ...
+                        {'discard', 'return'} )} = 'discard'
                 args.valFreq        double ...
                     {mustBeInteger, mustBePositive} = 5; 
                 args.updateFreq     double ...
@@ -60,6 +64,7 @@ classdef modelTrainer < handle
             self.nEpochsPreTrn = args.nEpochsPreTrn;
             self.currentEpoch = 0;
             self.batchSize = args.batchSize;
+            self.partialBatch = args.partialBatch;
 
             self.valFreq = args.valFreq;
             self.updateFreq = args.updateFreq;
@@ -101,10 +106,17 @@ classdef modelTrainer < handle
             
             % setup the minibatch queues
             mbqTrn = thisTrnData.getMiniBatchQueue( thisTrnData, ...
-                                                self.batchSize );
+                                        self.batchSize, ...
+                                        partialBatch = self.partialBatch );
 
             % setup whole training set
             [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getInput;
+            if strcmp( self.partialBatch, 'discard' ) 
+                % make dataset a multiple of the batch size
+                nObs = fix(length( dlYTrnAll )/self.batchSize)*self.batchSize;
+                dlYTrnAll = dlYTrnAll( 1:nObs, 1 );
+                dlXTrnAll = dlXTrnAll( :,1:nObs, : );
+            end
 
             % get the validation data (one-time only)
             [ dlXVal, dlYVal ] = thisValData.getInput;
@@ -181,9 +193,11 @@ classdef modelTrainer < handle
                 % train the auxiliary model
                 dlZTrnAll = thisModel.encode( thisModel, dlXTrnAll, ...
                                               convert = false );
+
                 thisModel.auxModel = trainAuxModel( ...
                                             thisModel.auxModelType, ...
-                                            dlZTrnAll, dlYTrnAll );
+                                            dlZTrnAll, ...
+                                            dlYTrnAll );
                
 
                 if ~self.preTraining ...

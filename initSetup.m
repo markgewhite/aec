@@ -33,7 +33,7 @@ function setup = initSetup
 
     % model
     setup.model.class = @fcModel;
-    setup.model.args.ZDim = 4;
+    setup.model.args.ZDim = 10;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Fisher';
 

@@ -303,7 +303,7 @@ classdef modelDataset
                     {mustBeInteger, mustBePositive}
                 args.partialBatch   char ...
                     {mustBeMember( args.partialBatch, ...
-                    {'return', 'discard'} )} = 'return'
+                    {'return', 'discard'} )} = 'discard'
             end
 
             [ ds, XNfmt ] = createDatastore( self.XInput, self.XTarget, self.Y );
