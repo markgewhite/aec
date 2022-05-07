@@ -28,7 +28,6 @@ classdef autoencoderModel < representationModel
         trainer        % trainer object holding training parameters
         optimizer      % optimizer object
 
-
     end
 
     methods
@@ -532,9 +531,10 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function [ dlXHat, dlZ, state ] = forward( encoder, decoder, dlX )
+        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
             % Forward-run the autoencoder networks
             arguments
+                self        autoencoderModel
                 encoder     dlnetwork
                 decoder     dlnetwork
                 dlX         dlarray

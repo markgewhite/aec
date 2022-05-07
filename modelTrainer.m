@@ -4,6 +4,7 @@ classdef modelTrainer < handle
     properties
         nEpochs        % maximum number of epochs for training
         nEpochsPreTrn  % number of epochs for pretraining
+        currentEpoch   % epoch counter
         batchSize      % minibatch size
 
         valFreq        % validation frequency in epochs
@@ -57,6 +58,7 @@ classdef modelTrainer < handle
             % initialize the training parameters
             self.nEpochs = args.nEpochs;
             self.nEpochsPreTrn = args.nEpochsPreTrn;
+            self.currentEpoch = 0;
             self.batchSize = args.batchSize;
 
             self.valFreq = args.valFreq;
@@ -119,6 +121,8 @@ classdef modelTrainer < handle
             
             for epoch = 1:self.nEpochs
                 
+                self.currentEpoch = epoch;
+
                 % Pre-training
                 self.preTraining = (epoch<=self.nEpochsPreTrn);
                 doTrainAE = (self.postTraining || self.preTraining);
@@ -315,7 +319,7 @@ function [grad, state, loss] = gradients( nets, ...
     if doTrainAE
         % autoencoder training
         [ dlXGen, dlZGen, state ] = ...
-                thisModel.forward( nets.encoder, nets.decoder, dlXIn );
+                forward( thisModel, nets.encoder, nets.decoder, dlXIn );
     
         if thisModel.isVAE
             % duplicate X & Y to match VAE's multiple draws
