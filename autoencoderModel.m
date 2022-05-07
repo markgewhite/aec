@@ -325,6 +325,24 @@ classdef autoencoderModel < representationModel
             end
 
         end
+
+
+        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
+            % Forward-run the autoencoder networks
+            arguments
+                self        autoencoderModel
+                encoder     dlnetwork
+                decoder     dlnetwork
+                dlX         dlarray
+            end
+
+            % generate latent encodings
+            [ dlZ, state.encoder ] = forward( encoder, dlX );
+    
+            % reconstruct curves from latent codes
+            [ dlXHat, state.decoder ] = forward( decoder, dlZ );
+
+        end
     
     
     end
@@ -527,24 +545,6 @@ classdef autoencoderModel < representationModel
             end
 
             isValid = ismember( name, self.names );
-
-        end
-
-
-        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
-            % Forward-run the autoencoder networks
-            arguments
-                self        autoencoderModel
-                encoder     dlnetwork
-                decoder     dlnetwork
-                dlX         dlarray
-            end
-
-            % generate latent encodings
-            [ dlZ, state.encoder ] = forward( encoder, dlX );
-    
-            % reconstruct curves from latent codes
-            [ dlXHat, state.decoder ] = forward( decoder, dlZ );
 
         end
 

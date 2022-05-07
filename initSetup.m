@@ -39,7 +39,7 @@ function setup = initSetup
     setup.model.args.inputDropout = 0.0;
 
     % training
-    setup.trainer.args.updateFreq = 10;
+    setup.trainer.args.updateFreq = 1000;
     setup.trainer.args.valType = 'AuxModel';
     setup.trainer.args.nEpochs = 100;
 
