@@ -245,21 +245,21 @@ function [ lgraph, lastLayer ] = addLSTMBlock( lgraph, i, lastLayer, ...
                              'Name', ['lstm' num2str(i)] );
     end
 
-    %block = [   block;
-    %            layerNormalizationLayer( 'Name', ...
-    %                            ['lnorm' num2str(i)] )
-    %            leakyReluLayer( scale, ...
-    %                            'Name', ['relu' num2str(i)] )
-    %            spatialDropoutLayer( dropout, ...
-    %                                 'Name', ['drop' num2str(i)] )
-    %            ];
+    block = [   block;
+                layerNormalizationLayer( 'Name', ...
+                                ['lnorm' num2str(i)] )
+                leakyReluLayer( scale, ...
+                                'Name', ['relu' num2str(i)] )
+                spatialDropoutLayer( dropout, ...
+                                     'Name', ['drop' num2str(i)] )
+                ];
 
     % connect layers at the front
     lgraph = addLayers( lgraph, block );
     lgraph = connectLayers( lgraph, ...
                             lastLayer, ['lstm' num2str(i)] );
     
-    lastLayer = ['lstm' num2str(i)];
+    lastLayer = ['drop' num2str(i)];
 
 end
 

@@ -40,7 +40,7 @@ function setup = initSetup
     setup.model.args.nLSTMHidden = 4;
     setup.model.args.lstmFactor = -1;
     setup.model.args.bidirectional = false;
-    setup.model.args.scale = 1;
+    setup.model.args.scale = 0.2;
 
     % training
     setup.trainer.args.updateFreq = 5;
