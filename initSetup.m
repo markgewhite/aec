@@ -32,14 +32,18 @@ function setup = initSetup
     setup.lossFcns.smooth.args.useLoss = true;
 
     % model
-    setup.model.class = @fcModel;
-    setup.model.args.ZDim = 10;
+    setup.model.class = @lstmfcModel;
+    setup.model.args.ZDim = 4;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Fisher';
     setup.model.args.inputDropout = 0.0;
+    setup.model.args.nLSTMHidden = 4;
+    setup.model.args.lstmFactor = -1;
+    setup.model.args.bidirectional = false;
+    setup.model.args.scale = 1;
 
     % training
-    setup.trainer.args.updateFreq = 1000;
+    setup.trainer.args.updateFreq = 5;
     setup.trainer.args.valType = 'AuxModel';
     setup.trainer.args.nEpochs = 100;
 

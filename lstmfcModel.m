@@ -9,10 +9,12 @@
 classdef lstmfcModel < autoencoderModel
 
     properties
-        nHidden                 % number of hidden layers
-        nFC                     % number of nodes for widest layer
+        nLSTMHidden             % number of LSTM hidden layers
+        nLSTMNodes              % number LSTM nodes
+        lstmFactor              % log2 scaling factor subsequent layers
+        nFCHidden               % number of FC hidden layers
+        nFCNodes                % number of nodes for widest layer
         fcFactor                % log2 scaling factor subsequent layers
-        nLSTMUnits              % number LSTM nodes
         scale                   % leaky ReLu scale factor
         inputDropout            % initial dropout rate
         dropout                 % dropout rate
@@ -34,25 +36,25 @@ classdef lstmfcModel < autoencoderModel
             end
             arguments
                 superArgs.?autoencoderModel
-                args.nHidden    double ...
-                    {mustBeInteger, mustBePositive} = 1
-                args.nFC        double ...
-                    {mustBeInteger, mustBePositive} = 64
-                args.fcFactor   double ...
+                args.nLSTMHidden        double ...
+                    {mustBeInteger, mustBePositive} = 3
+                args.nLSTMNodes         double ...
+                    {mustBeInteger, mustBePositive} = 16
+                args.lstmFactor         double ...
+                    {mustBeInteger} = 0
+                args.nFCHidden          double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.nLSTMUnits       double ...
-                    {mustBeInteger, mustBePositive} = 50
+                args.nFCNodes           double ...
+                    {mustBeInteger, mustBePositive} = 64
+                args.fcFactor           double ...
+                    {mustBeInteger} = 2
                 args.scale              double ...
                     {mustBeInRange(args.scale, 0, 1)} = 0.2
                 args.inputDropout       double ...
                     {mustBeInRange(args.inputDropout, 0, 1)} = 0.10
                 args.dropout            double ...
                     {mustBeInRange(args.dropout, 0, 1)} = 0.05
-                args.reverseDecoding    logical = true
                 args.bidirectional      logical = false
-                args.scheduleSampling   logical = true
-                args.samplingRateIncrement double ...
-                    {mustBePositive} = 0.005
             end
 
             % set the superclass's properties
@@ -67,11 +69,12 @@ classdef lstmfcModel < autoencoderModel
 
 
             % store this class's properties
-            self.nHidden = args.nHidden;
-            self.nFC = args.nFC;
+            self.nLSTMHidden = args.nLSTMHidden;
+            self.nLSTMNodes = args.nLSTMNodes;
+            self.lstmFactor = args.lstmFactor;
+            self.nFCHidden = args.nFCHidden;
+            self.nFCNodes = args.nFCNodes;
             self.fcFactor = args.fcFactor;
-
-            self.nLSTMUnits = args.nLSTMUnits;
 
             self.scale = args.scale;
             self.inputDropout = args.inputDropout;
@@ -102,11 +105,14 @@ classdef lstmfcModel < autoencoderModel
             lgraphEnc = layerGraph( layersEnc );
             lastLayer = 'drop0';
             
-            for i = 1:self.nHidden
+            for i = 1:self.nLSTMHidden
+
+                nNodes = fix( self.nLSTMNodes*2^(self.lstmFactor*(i-1)) );
+                sequenceOutput = (i < self.nLSTMHidden);
 
                 [lgraphEnc, lastLayer] = addLSTMBlock( lgraphEnc, i, lastLayer, ...
-                        self.nLSTMUnits, self.bidirectional, ...
-                        self.scale, self.dropout );
+                        nNodes, self.bidirectional, ...
+                        self.scale, self.dropout, sequenceOutput );
 
             end
             
@@ -116,8 +122,13 @@ classdef lstmfcModel < autoencoderModel
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...
                                        lastLayer, 'out' );
-                   
-            self.nets.encoder = dlnetwork( lgraphEnc );
+
+            if self.isVAE
+                self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
+                                                  nDraws = self.nVAEDraws );
+            else
+                self.nets.encoder = dlnetwork( lgraphEnc );
+            end
 
         end
 
@@ -133,9 +144,9 @@ classdef lstmfcModel < autoencoderModel
             lgraphDec = layerGraph( layersDec );
             lastLayer = 'in';
             
-            for i = 1:self.nHidden
+            for i = 1:self.nFCHidden
 
-                nNodes = fix( self.nFC*2^(self.fcFactor*(-self.nHidden+i)) );
+                nNodes = fix( self.nFCNodes*2^(self.fcFactor*(-self.nFCHidden+i)) );
 
                 [lgraphDec, lastLayer] = addFCBlock( lgraphDec, i, lastLayer, ...
                                     nNodes, self.scale, self.dropout );
@@ -168,6 +179,8 @@ classdef lstmfcModel < autoencoderModel
         function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model
             % overriding the autoencoder encode method
+            % because lstm models must be given the same number 
+            % of observations they were trained with, the batch size
             arguments
                 self            autoencoderModel
                 X
@@ -184,10 +197,11 @@ classdef lstmfcModel < autoencoderModel
                 throwAsCaller( MException(eid,msg) );
             end
 
-            batchSize = size( self.nets.encoder.State.Value{1}, 2 );
             nObs = size( dlX, 2 );
+            dlZ = dlarray( zeros( self.ZDim, nObs ), 'CB' );
+
+            batchSize = size( self.nets.encoder.State.Value{1}, 2 );
             nBatches = fix(nObs/batchSize);
-            dlZ = dlarray( zeros( self.ZDim, nBatches*batchSize ), 'CB' );
 
             j = 1;
             for i = 1:nBatches
@@ -195,6 +209,9 @@ classdef lstmfcModel < autoencoderModel
                                         dlX(:,j:j+batchSize-1,:) );
                 j = j+batchSize;
             end
+
+            dlZ( :, end-batchSize+1:end ) = predict( self.nets.encoder, ...
+                                    dlX( :, end-batchSize+1:end, : ) );
 
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';
@@ -209,34 +226,40 @@ end
 
 
 function [ lgraph, lastLayer ] = addLSTMBlock( lgraph, i, lastLayer, ...
-                               nNodes, bidirectional, scale, dropout )
+                       nNodes, bidirectional, scale, dropout, seqOutput )
 
     % define block
+    if seqOutput
+        outputMode = 'sequence';
+    else
+        outputMode = 'last';
+    end
+
     if bidirectional
         block = bilstmLayer( nNodes, ...
-                            'OutputMode', 'last', ...
+                            'OutputMode', outputMode, ...
                              'Name', ['lstm' num2str(i)] );
     else
         block = lstmLayer( nNodes, ...
-                            'OutputMode', 'last', ...
+                            'OutputMode', outputMode, ...
                              'Name', ['lstm' num2str(i)] );
     end
 
-    block = [   block;
-                layerNormalizationLayer( 'Name', ...
-                                ['lnorm' num2str(i)] )
-                leakyReluLayer( scale, ...
-                                'Name', ['relu' num2str(i)] )
-                spatialDropoutLayer( dropout, ...
-                                     'Name', ['drop' num2str(i)] )
-                ];
+    %block = [   block;
+    %            layerNormalizationLayer( 'Name', ...
+    %                            ['lnorm' num2str(i)] )
+    %            leakyReluLayer( scale, ...
+    %                            'Name', ['relu' num2str(i)] )
+    %            spatialDropoutLayer( dropout, ...
+    %                                 'Name', ['drop' num2str(i)] )
+    %            ];
 
     % connect layers at the front
     lgraph = addLayers( lgraph, block );
     lgraph = connectLayers( lgraph, ...
                             lastLayer, ['lstm' num2str(i)] );
     
-    lastLayer = ['drop' num2str(i)];
+    lastLayer = ['lstm' num2str(i)];
 
 end
 

@@ -109,17 +109,23 @@ classdef modelTrainer < handle
                                         self.batchSize, ...
                                         partialBatch = self.partialBatch );
 
-            % setup whole training set
-            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getInput;
-            if strcmp( self.partialBatch, 'discard' ) 
-                % make dataset a multiple of the batch size
-                nObs = fix(length( dlYTrnAll )/self.batchSize)*self.batchSize;
-                dlYTrnAll = dlYTrnAll( 1:nObs, 1 );
-                dlXTrnAll = dlXTrnAll( :,1:nObs, : );
-            end
-
             % get the validation data (one-time only)
             [ dlXVal, dlYVal ] = thisValData.getInput;
+            
+            % setup whole training set
+            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getInput;
+            %if strcmp( self.partialBatch, 'discard' ) 
+            %    % make dataset a multiple of the batch size
+            %    
+            %    nObs = fix(length( dlYTrnAll )/self.batchSize)*self.batchSize;
+            %    dlYTrnAll = dlYTrnAll( 1:nObs, 1 );
+            %    dlXTrnAll = dlXTrnAll( :,1:nObs, : );
+            %
+            %    nObs = fix(length( dlYVal )/self.batchSize)*self.batchSize;
+            %    dlYVal = dlYVal( 1:nObs, 1 );
+            %    dlXVal = dlXVal( :,1:nObs, : );
+            % 
+            %end
 
             % initialize counters
             nIter = iterationsPerEpoch( mbqTrn );           
