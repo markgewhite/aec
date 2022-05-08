@@ -36,16 +36,11 @@ function setup = initSetup
     setup.model.args.ZDim = 4;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Fisher';
-    setup.model.args.inputDropout = 0.0;
-    setup.model.args.nLSTMHidden = 4;
-    setup.model.args.lstmFactor = -1;
-    setup.model.args.bidirectional = false;
-    setup.model.args.scale = 0.2;
-
+    
     % training
-    setup.trainer.args.updateFreq = 5;
+    setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 100;
+    setup.trainer.args.nEpochs = 20;
 
 
 end

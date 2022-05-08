@@ -38,7 +38,6 @@ classdef jumpGRFDataset < modelDataset
             paramsFd.basisOrder = 4;
             paramsFd.penaltyOrder = 2;
             paramsFd.lambda = 1E5; % 1E2
-            paramsFd.nBasis = fix( pad.length/10 )+paramsFd.penaltyOrder;
          
             % process the data and complete the initialization
             self = self@modelDataset( XRaw, Y, ...

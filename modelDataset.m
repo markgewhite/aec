@@ -3,6 +3,7 @@ classdef modelDataset
 
     properties
         XInputRaw       % original, raw time series data
+        XInputFd        % original data as a functional data object
         XInput          % processed input data (variable length)
         XTarget         % target output
         Y               % outcome variable
@@ -97,6 +98,13 @@ classdef modelDataset
             self.fda.tSpan = linspace( self.fda.tSpan(1), ...
                                        self.fda.tSpan(end), ...
                                        self.normalizedPts );
+
+            tSpan0 = 1:length(self.fda.tSpanResampled);
+            tSpan1 = linspace( 1, length(self.fda.tSpanResampled), ...
+                               self.normalizedPts );
+            self.fda.tSpanResampled = interp1( ...
+                tSpan0, self.fda.tSpanResampled, tSpan1 );
+                
 
             self.fda.nBasis = self.normalizedPts + self.fda.penaltyOrder; 
             
@@ -213,20 +221,29 @@ classdef modelDataset
             end
 
             % create smooth functions for the data
-            [XFd, self.XInputLen] = smoothRawData( ...
+            [self.XInputFd, self.XInputLen] = smoothRawData( ...
                                 XInputRaw, self.padding, self.fda  );
 
             % resample, as required
-            tSpanResampled = linspace( ...
-                self.fda.tSpan(1), self.fda.tSpan(end), ...
-                fix( self.padding.length/self.resampleRate )+1 );            
+            %tSpanResampled = linspace( ...
+            %    self.fda.tSpan(1), self.fda.tSpan(end), ...
+            %    fix( self.padding.length/self.resampleRate )+1 );
+            t = -0.5;
+            self.fda.tSpanResampled = 0;
+            while t > self.fda.tSpan(1)
+                t = t*1.02;
+                self.fda.tSpanResampled = [t self.fda.tSpanResampled];
+            end
+            self.fda.tSpanResampled(1) = self.fda.tSpan(1);
             
-            XEval = eval_fd( tSpanResampled, XFd );
+            XEval = eval_fd( self.fda.tSpanResampled, self.XInputFd );
 
             self.nObs = size( XEval, 2 );
             self.XChannels = size( XEval, 3 );
 
             % adjust lengths for the re-sampling
+            % !! NON-LINEAR ADJUSTMENT: create smooth time function
+            % !! and use it to read-off the revised times
             self.XInputLen = ceil( size( XEval, 1 )*self.XInputLen ...
                                         / self.padding.length );
             self.padding.length = max( self.XInputLen );

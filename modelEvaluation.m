@@ -307,17 +307,26 @@ classdef modelEvaluation < handle
             eval.XHat = thisModel.reconstruct( thisModel, eval.Z );
 
             % smooth the reconstructed curves
-            XHatFd = smooth_basis( thisDataset.fda.tSpan, ...
+            XHatFd = smooth_basis( thisDataset.fda.tSpanResampled, ...
                                    eval.XHat, ...
                                    thisDataset.fda.fdParams );
-            eval.XHatSmoothed = eval_fd( thisDataset.fda.tSpan, XHatFd );
+            eval.XHatSmoothed = eval_fd( thisDataset.fda.tSpanResampled, XHatFd );
 
             % compute reconstruction loss
-            %[X, Y] = thisDataset.getInput( dlarray=false );
             eval.ReconLoss = thisModel.getReconLoss( ...
                 thisDataset.XTarget, eval.XHat );
             eval.ReconLossSmoothed = ...
                 thisModel.getReconLoss( eval.XHatSmoothed, eval.XHat );
+
+            % evaluate the original input, distinct from the target
+            eval.XRegular = eval_fd( thisDataset.fda.tSpan, ...
+                                     thisDataset.XInputFd );
+            eval.XHatRegular = eval_fd( thisDataset.fda.tSpan, XHatFd );
+
+            % compute reconstruction loss for the regularised curves
+            eval.ReconLossRegular = ...
+                thisModel.getReconLoss( eval.XHatRegular, eval.XRegular );
+
 
             % compute the auxiliary loss
             eval.AuxModelYHat = predict( thisModel.auxModel, eval.Z );

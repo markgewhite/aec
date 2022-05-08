@@ -144,7 +144,7 @@ classdef representationModel
             %XC = permute( XC, [1 3 2] );
     
             % smooth and re-evaluate all curves
-            XCFd = smooth_basis( fda.tSpan, XC, fda.fdParams );
+            XCFd = smooth_basis( fda.tSpanResampled, XC, fda.fdParams );
             XCsmth = eval_fd( fda.tSpan, XCFd );
     
             % set the colours from blue and red
