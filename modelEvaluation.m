@@ -61,7 +61,8 @@ classdef modelEvaluation < handle
             % display setup
             if verbose
                 disp('Data setup:')
-                disp( setup.data );
+                disp( setup.data.class );
+                disp( setup.data.args );
                 disp('Model setup:')
                 disp( setup.model.class );
                 disp( setup.model.args );
@@ -91,6 +92,8 @@ classdef modelEvaluation < handle
                     num2str( self.TrainingEvaluation.ReconLoss, '%.3f' )]);
                 disp(['Smoothed Reconstruction Loss = ' ...
                     num2str( self.TrainingEvaluation.ReconLossSmoothed, '%.3f' )]);
+                disp([' Regular Reconstruction Loss = ' ...
+                    num2str( self.TrainingEvaluation.ReconLossRegular, '%.3f' )]);
                 disp(['        Auxiliary Model Loss = ' ...
                     num2str( self.TrainingEvaluation.AuxModelLoss, '%.3f' )]);
 
@@ -99,6 +102,8 @@ classdef modelEvaluation < handle
                     num2str( self.TestingEvaluation.ReconLoss, '%.3f' )]);
                 disp(['Smoothed Reconstruction Loss = ' ...
                     num2str( self.TrainingEvaluation.ReconLossSmoothed, '%.3f' )]);
+                disp([' Regular Reconstruction Loss = ' ...
+                    num2str( self.TestingEvaluation.ReconLossRegular, '%.3f' )]);
                 disp(['        Auxiliary Model Loss = ' ...
                     num2str( self.TestingEvaluation.AuxModelLoss, '%.3f' )]);
             end
@@ -326,6 +331,11 @@ classdef modelEvaluation < handle
             % compute reconstruction loss for the regularised curves
             eval.ReconLossRegular = ...
                 thisModel.getReconLoss( eval.XHatRegular, eval.XRegular );
+
+            tErr = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
+            figure(4);
+            hold on;
+            plot( thisDataset.fda.tSpan, tErr );
 
 
             % compute the auxiliary loss

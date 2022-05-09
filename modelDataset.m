@@ -21,6 +21,7 @@ classdef modelDataset
 
         padding         % structure specifying padding setup
         fda             % functional data analysis settings
+        adaptiveTimeSpan % flag whether to adjust timespan to complexity
         resampleRate    % downsampling rate
 
         info            % dataset information (used for plotting)
@@ -55,6 +56,7 @@ classdef modelDataset
                     {mustBeValidPadding}
                 args.fda                struct ...
                     {mustBeValidFdParams}
+                args.adaptiveTimeSpan   logical = false
                 args.resampleRate       double ...
                     {mustBeNumeric} = 1
                 args.datasetName        string
@@ -76,6 +78,7 @@ classdef modelDataset
             self.normalizeInput = args.normalizeInput;
             self.padding = args.padding;
             self.fda = args.fda;
+            self.adaptiveTimeSpan = args.adaptiveTimeSpan;
             self.resampleRate = args.resampleRate;
 
             self.info.datasetName = args.datasetName;
@@ -225,13 +228,15 @@ classdef modelDataset
                                 XInputRaw, self.padding, self.fda  );
 
             % resample, as required
-            t = -0.5;
-            self.fda.tSpanResampled = 0;
-            while t > self.fda.tSpan(1)
-                t = t*1.02;
-                self.fda.tSpanResampled = [t self.fda.tSpanResampled];
+            if self.adaptiveTimeSpan
+                self.fda.tSpanResampled = calcAdaptiveTimeSpan( ...
+                    self.XInputFd, self.fda.tSpan, ...
+                    self.resampleRate, self.padding.length );
+            else
+                self.fda.tSpanResampled = linspace( ...
+                    self.fda.tSpan(1), self.fda.tSpan(end), ...
+                    fix( self.padding.length/self.resampleRate )+1 );      
             end
-            self.fda.tSpanResampled(1) = self.fda.tSpan(1);
             
             XEval = eval_fd( self.fda.tSpanResampled, self.XInputFd );
 
@@ -378,6 +383,42 @@ function [XFd, XLen] = smoothRawData( X, padding, fda )
 
     % create the smooth functions
     XFd = smooth_basis( fda.tSpan, X, fdParams );
+
+end
+
+
+function tSpanResampled = calcAdaptiveTimeSpan( XFd, tSpan, ...
+                                                resampleRate, padLen )
+
+    % resample the timespan
+    tSpan = linspace( tSpan(1), tSpan(end), fix( padLen/resampleRate )+1 );   
+
+    % evaluate the mean XFd curvature (2nd derivative)
+    D1XEval = mean(max( abs(eval_fd( tSpan, XFd, 1 )), 1E-8 ), 2)';
+    D2XEval = mean(max( abs(eval_fd( tSpan, XFd, 2 )), 1E-8 ), 2)';
+    DXEvalComb = D1XEval/sum(D1XEval) + D2XEval/sum(D2XEval);
+
+    % cumulatively sum the absolute inverse curvatures
+    % inserting zero at the begining to ensure first point will be at 0
+    D2XInt = cumsum( [0 1./DXEvalComb] );
+    D2XInt = D2XInt./max(D2XInt);
+
+    % calculate variance as a function of time
+    XVar = max( var( eval_fd( tSpan, XFd ), [], 2 ), 1E-2 );
+
+    % cumulatively sum the absolute inverse curvatures
+    XVarInt = cumsum( (1./XVar) );
+    XVarInt = XVarInt./max(XVarInt);
+
+
+    % normalize to the tSpan
+    tSpanResampled = tSpan(1) + D2XInt*(tSpan(end)-tSpan(1));
+
+    % reinterpolate to remove the extra point
+    nPts = length(tSpan);
+    tSpanResampled = interp1( 1:nPts+1, ...
+                              tSpanResampled, ...
+                              linspace(1, nPts+1, nPts) );
 
 end
 
