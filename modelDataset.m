@@ -225,9 +225,6 @@ classdef modelDataset
                                 XInputRaw, self.padding, self.fda  );
 
             % resample, as required
-            %tSpanResampled = linspace( ...
-            %    self.fda.tSpan(1), self.fda.tSpan(end), ...
-            %    fix( self.padding.length/self.resampleRate )+1 );
             t = -0.5;
             self.fda.tSpanResampled = 0;
             while t > self.fda.tSpan(1)
@@ -241,9 +238,13 @@ classdef modelDataset
             self.nObs = size( XEval, 2 );
             self.XChannels = size( XEval, 3 );
 
-            % adjust lengths for the re-sampling
-            % !! NON-LINEAR ADJUSTMENT: create smooth time function
-            % !! and use it to read-off the revised times
+            % adjust lengths for non-linear re-sampling
+            self.XInputLen = adjustXLengths( self.XInputLen, ...
+                                             self.fda.tSpan, ...
+                                             self.fda.tSpanResampled, ...
+                                             self.padding.location );
+            
+            % re-scale for resampled length
             self.XInputLen = ceil( size( XEval, 1 )*self.XInputLen ...
                                         / self.padding.length );
             self.padding.length = max( self.XInputLen );
@@ -377,6 +378,25 @@ function [XFd, XLen] = smoothRawData( X, padding, fda )
 
     % create the smooth functions
     XFd = smooth_basis( fda.tSpan, X, fdParams );
+
+end
+
+
+function XLen = adjustXLengths( XLen, tSpan, tSpanResampled, padding )
+
+    for i = 1:length(XLen)
+        switch padding
+
+            case 'left'
+                tEnd = tSpan( length(tSpan)-XLen(i)+1 );
+                XLen(i) = length(tSpan) - find( tEnd < tSpanResampled, 1 );
+
+            case {'right', 'both'}
+                tEnd = tSpan( XLen(i) );
+                XLen(i) = find( tEnd < tSpanResampled, 1 );
+
+        end
+    end
 
 end
 
