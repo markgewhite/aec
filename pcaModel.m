@@ -67,8 +67,8 @@ classdef pcaModel < representationModel
 
             % convert input to a functional data object
             XFd = smooth_basis( thisDataset.fda.tSpan, ...
-                                thisDataset.XTarget, ...
-                                thisDataset.fda.fdParams );
+                                thisDataset.XInput, ...
+                                thisDataset.fda.fdParamsInput );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
 

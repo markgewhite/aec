@@ -312,10 +312,10 @@ classdef modelEvaluation < handle
             eval.XHat = thisModel.reconstruct( thisModel, eval.Z );
 
             % smooth the reconstructed curves
-            XHatFd = smooth_basis( thisDataset.fda.tSpanResampled, ...
+            XHatFd = smooth_basis( thisDataset.fda.tSpanTarget, ...
                                    eval.XHat, ...
-                                   thisDataset.fda.fdParams );
-            eval.XHatSmoothed = eval_fd( thisDataset.fda.tSpanResampled, XHatFd );
+                                   thisDataset.fda.fdParamsTarget );
+            eval.XHatSmoothed = eval_fd( thisDataset.fda.tSpanTarget, XHatFd );
 
             % compute reconstruction loss
             eval.ReconLoss = thisModel.getReconLoss( ...
@@ -324,9 +324,8 @@ classdef modelEvaluation < handle
                 thisModel.getReconLoss( eval.XHatSmoothed, eval.XHat );
 
             % evaluate the original input, distinct from the target
-            eval.XRegular = eval_fd( thisDataset.fda.tSpan, ...
-                                     thisDataset.XInputFd );
-            eval.XHatRegular = eval_fd( thisDataset.fda.tSpan, XHatFd );
+            eval.XRegular = thisDataset.XInputRegular;
+            eval.XHatRegular = eval_fd( thisDataset.fda.tSpanTarget, XHatFd );
 
             % compute reconstruction loss for the regularised curves
             eval.ReconLossRegular = ...
@@ -335,7 +334,7 @@ classdef modelEvaluation < handle
             tErr = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
             figure(4);
             hold on;
-            plot( thisDataset.fda.tSpan, tErr );
+            plot( thisDataset.fda.tSpanTarget, tErr );
 
 
             % compute the auxiliary loss

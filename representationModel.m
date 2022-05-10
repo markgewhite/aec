@@ -145,7 +145,7 @@ classdef representationModel
     
             % smooth and re-evaluate all curves
             tSpanPlot = linspace( fda.tSpan(1), fda.tSpan(end), 101 );
-            XCFd = smooth_basis( fda.tSpanResampled, XC, fda.fdParams );
+            XCFd = smooth_basis( fda.tSpanTarget, XC, fda.fdParamsTarget );
             XCsmth = eval_fd( tSpanPlot, XCFd );
     
             % set the colours from blue and red
@@ -203,7 +203,7 @@ classdef representationModel
                     if any(strcmp( args.type, {'Predicted','Both'} ))
                         % plot predicted values
                         plot( axis, ...
-                              fda.tSpanResampled, XC( :, j ), ...
+                              fda.tSpanAdaptive, XC( :, j ), ...
                               Color = gray, ...
                               LineWidth = 0.5 );
                     end

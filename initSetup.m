@@ -7,7 +7,7 @@ function setup = initSetup
     setup.data.args.normalizeInput = true;
     setup.data.args.normalizedPts = 51;
     setup.data.args.adaptiveTimeSpan = true;
-    setup.data.args.resampleRate = 30;
+    setup.data.args.resampleRate = 10;
 
     % loss functions
     setup.lossFcns.recon.class = @reconstructionLoss;
