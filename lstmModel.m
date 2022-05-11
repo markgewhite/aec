@@ -235,6 +235,7 @@ classdef lstmModel < autoencoderModel
         function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model
             % overriding the autoencoder encode method
+            % which must have inputs in the trained batch size
             arguments
                 self            autoencoderModel
                 X
@@ -254,14 +255,18 @@ classdef lstmModel < autoencoderModel
             batchSize = size( self.nets.encoder.State.Value{1}, 2 );
             nObs = size( dlX, 2 );
             nBatches = fix(nObs/batchSize);
-            dlZ = dlarray( zeros( self.ZDim, nBatches*batchSize ), 'CB' );
+            dlZ = dlarray( zeros( self.ZDim, nObs), 'CB' );
 
             j = 1;
+            % make predictions in batches
             for i = 1:nBatches
                 dlZ(:,j:j+batchSize-1) = predict( self.nets.encoder, ...
-                                        dlX(:,j:j+batchSize-1,:) );
+                                dlX( :, j:j+batchSize-1, :)  );
                 j = j+batchSize;
             end
+            % cover the remainder
+            dlZ( :, end-batchSize+1:end ) = predict( self.nets.encoder, ...
+                                dlX( :, end-batchSize+1:end, : ) );
 
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';

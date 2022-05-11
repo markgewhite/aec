@@ -325,7 +325,7 @@ classdef modelEvaluation < handle
 
             % evaluate the original input, distinct from the target
             eval.XRegular = thisDataset.XInputRegular;
-            eval.XHatRegular = eval_fd( thisDataset.fda.tSpanTarget, XHatFd );
+            eval.XHatRegular = eval_fd( thisDataset.fda.tSpanRegular, XHatFd );
 
             % compute reconstruction loss for the regularised curves
             eval.ReconLossRegular = ...
@@ -334,7 +334,7 @@ classdef modelEvaluation < handle
             tErr = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
             figure(4);
             hold on;
-            plot( thisDataset.fda.tSpanTarget, tErr );
+            plot( thisDataset.fda.tSpanRegular, tErr );
 
 
             % compute the auxiliary loss

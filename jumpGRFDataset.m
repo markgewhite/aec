@@ -21,13 +21,12 @@ classdef jumpGRFDataset < modelDataset
 
             % setup padding
             pad.length = 1501;
-            pad.location = 'left';
+            pad.longest = false;
+            pad.location = 'Left';
             pad.value = 1;
+            pad.same = false;
+            pad.anchoring = 'Right';
 
-            %if ~isfield( superArgs, 'resampleRate' )
-            %    superArgs.resampleRate = 10;
-            %end
-        
             paramsFd.tSpan= -pad.length+1:0;
         
             % setup fda

@@ -25,6 +25,8 @@ classdef modelDataset
 
         fda             % functional data analysis settings
         adaptiveTimeSpan % flag whether to adjust timespan to complexity
+        adaptiveLowerBound % lower limit on point density
+        adaptiveUpperBound % upper limit on point density
         resampleRate    % downsampling rate
 
         info            % dataset information (used for plotting)
@@ -55,6 +57,8 @@ classdef modelDataset
                 args.fda                struct ...
                     {mustBeValidFdParams}
                 args.adaptiveTimeSpan   logical = false
+                args.adaptiveLowerBound double = 1E-8
+                args.adaptiveUpperBound double = 1E-1
                 args.resampleRate       double ...
                     {mustBeNumeric} = 1
                 args.datasetName        string
@@ -77,6 +81,8 @@ classdef modelDataset
             self.padding = args.padding;
             self.fda = args.fda;
             self.adaptiveTimeSpan = args.adaptiveTimeSpan;
+            self.adaptiveLowerBound = args.adaptiveLowerBound;
+            self.adaptiveUpperBound = args.adaptiveUpperBound;
             self.resampleRate = args.resampleRate;
 
             self.info.datasetName = args.datasetName;
@@ -120,6 +126,7 @@ classdef modelDataset
             thisSubset.resampleRate = self.resampleRate;
 
             thisSubset.XInput = split( self.XInput, idx );
+            thisSubset.XInputRegular = split( self.XInputRegular, idx );
             thisSubset.XTarget = split( self.XTarget, idx );
             thisSubset.XInputLen = self.XInputLen( idx );
 
@@ -156,8 +163,10 @@ classdef modelDataset
             end
             
             if iscell( self.XInput )
-                X = padData( self.XInput, 'Longest', ...
-                               self.padding.value, self.padding.location );
+                X = padData( self.XInput, 0, self.padding.value, ...
+                             Longest = true, ...
+                             Same = self.padding.same, ...
+                             Location = self.padding.location );
                 X = permute( X, [ 3 1 2 ] );
                 if arg.dlarray
                     X = dlarray( X, 'CTB' );
@@ -212,21 +221,23 @@ classdef modelDataset
             if self.adaptiveTimeSpan
                 self.fda.tSpanInput = calcAdaptiveTimeSpan( ...
                     XFd, self.fda.tSpan, ...
-                    self.resampleRate, self.padding.length );
+                    self.resampleRate, self.padding.length, ...
+                    self.adaptiveLowerBound, ...
+                    self.adaptiveUpperBound );
             else
                 self.fda.tSpanInput = self.fda.tSpanRegular;    
             end
 
             % process the input with a regularly-spaced time span
-            [ self.XInputRegular, self.XInputDim, self.XInputLen ] = ...
+            [ self.XInputRegular, ~, self.XInputLen ] = ...
                                processXInput( ...
                                             XFd, ...
                                             XLen, ...
                                             self.fda.tSpan, ...
                                             self.fda.tSpanRegular, ...
                                             self.padding, ...
-                                            self.normalizeInput, ...
-                                            self.normalizedPts, ...
+                                            true, ...
+                                            length(self.fda.tSpanRegular), ...
                                             self.normalization );
 
             self.fda.fdParamsRegular = setFDAParameters( ...
@@ -236,14 +247,14 @@ classdef modelDataset
                                             self.fda.lambda );
 
             % process the input with an adaptive time span
-            self.XInput  = processXInput( ...
+            [ self.XInput, self.XInputDim ] = processXInput( ...
                                             XFd, ...
                                             XLen, ...
                                             self.fda.tSpan, ...
                                             self.fda.tSpanInput, ...
                                             self.padding, ...
                                             self.normalizeInput, ...
-                                            self.normalizedPts, ...
+                                            length(self.fda.tSpanInput), ...
                                             self.normalization );
 
             self.fda.fdParamsInput = setFDAParameters( ...
@@ -270,14 +281,17 @@ classdef modelDataset
                 self.fda.tSpanTarget = self.fda.tSpanInput;
                 if self.normalizeInput
                     % re-use the time-normalized input
-                    self.XTarget = self.XInput;
+                    self.XTarget = timeNormalize( self.XInput, ...
+                                                  self.normalizedPts );
 
                 else
                     % prepare normalized data of fixed length
+                    pad = self.padding;
+                    pad.length = max( self.XInputLen );
                     self.XTarget = normalizeXSeries( self.XInput, ...
                                                      self.normalizedPts, ...
                                                      self.normalization, ...
-                                                     self.padding );
+                                                     pad );
                 end
 
                 % adjust the time span in proportion to number of points
@@ -365,7 +379,10 @@ function [XFd, XLen] = smoothRawData( X, padding, fda )
     XLen = min( cellfun( @length, X ), padding.length );
 
     % pad the series for smoothing
-    X = padData( X, padding.length, padding.value, padding.location );
+    X = padData( X, padding.length, padding.value, ...
+                 Same = padding.same, ...
+                 Location = padding.location, ...
+                 Anchoring = padding.anchoring );
     
     % setup the smoothing parameters
     fdParams = setFDAParameters( fda.tSpan, ...
@@ -437,15 +454,20 @@ end
 
 
 function tSpanAdaptive = calcAdaptiveTimeSpan( XFd, tSpan, ...
-                                                resampleRate, padLen )
+                                                resampleRate, padLen, ...
+                                                lowerBound, upperBound )
 
     % resample the timespan
     tSpan = linspace( tSpan(1), tSpan(end), fix( padLen/resampleRate )+1 );   
 
     % evaluate the mean XFd curvature (2nd derivative)
-    D1XEval = mean(max( abs(eval_fd( tSpan, XFd, 1 )), 1E-8 ), 2)';
-    D2XEval = mean(max( abs(eval_fd( tSpan, XFd, 2 )), 1E-8 ), 2)';
-    DXEvalComb = D1XEval/sum(D1XEval) + D2XEval/sum(D2XEval);
+    D1XEval = mean( abs(eval_fd( tSpan, XFd, 1 )), 2)';
+    D2XEval = mean( abs(eval_fd( tSpan, XFd, 2 )), 2)';
+
+    D1XEval = min( max( D1XEval/sum(D1XEval), lowerBound ), upperBound );
+    D2XEval = min( max( D2XEval/sum(D2XEval), lowerBound ), upperBound );
+    
+    DXEvalComb = D1XEval + D2XEval;
 
     % cumulatively sum the absolute inverse curvatures
     % inserting zero at the begining to ensure first point will be at 0
@@ -477,11 +499,11 @@ function XLen = adjustXLengths( XLen, tSpan, tSpanAdaptive, padding )
     for i = 1:length(XLen)
         switch padding
 
-            case 'left'
+            case 'Left'
                 tEnd = tSpan( length(tSpan)-XLen(i)+1 );
                 XLen(i) = length(tSpan) - find( tEnd < tSpanAdaptive, 1 );
 
-            case {'right', 'both'}
+            case {'Right', 'Both'}
                 tEnd = tSpan( XLen(i) );
                 XLen(i) = find( tEnd < tSpanAdaptive, 1 );
 
@@ -496,15 +518,15 @@ function XCell = extractXSeries( X, XLen, maxLen, padLoc )
     nObs = length( XLen );
     XCell = cell( nObs, 1 );
     switch padLoc
-        case 'left'
+        case 'Left'
             for i = 1:nObs
                 XCell{i} = squeeze(X( maxLen-XLen(i)+1:end, i, : ));
             end
-        case 'right'
+        case 'Right'
             for i = 1:nObs
                 XCell{i} = squeeze(X( 1:XLen(i), i, : ));
             end
-        case 'both'
+        case 'Both'
             for i = 1:nObs
                 adjLen = fix( (maxLen-XLen(i))/2 );
                 XCell{i} = squeeze(X( adjLen+1:end-adjLen, i, : ));
@@ -522,7 +544,10 @@ function XN = normalizeXSeries( X, nPts, type, pad )
             XN = timeNormalize( X, nPts );
 
         case 'PAD' % padding
-            XN = padData( X, pad.length, pad.value, pad.location );
+            XN = padData( X, pad.length, pad.value, ...
+                             Same = pad.same, ...
+                             Location = pad.location, ...
+                             Anchoring = pad.anchoring );
             XN = timeNormalize( XN, nPts );
     
     end
@@ -579,7 +604,7 @@ function [ X, XN, Y ] = preprocMiniBatch( XCell, XNCell, YCell, ...
                                           padValue, padLoc )
     % Preprocess a sequence batch for training
 
-    X = padData( XCell, 'Longest', padValue, padLoc );
+    X = padData( XCell, 0, padValue, Longest = true, Location = padLoc  );
     X = permute( X, [ 3 1 2 ] );
     
     if ~isempty( XNCell )
