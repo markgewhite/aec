@@ -2,12 +2,13 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @jumpGRFDataset;
-    setup.data.args.normalization = 'PAD';
-    setup.data.args.normalizeInput = false;
-    setup.data.args.normalizedPts = 51;
-    setup.data.args.adaptiveTimeSpan = true;
-    setup.data.args.resampleRate = 10;
+    setup.data.class = @syntheticDataset;
+    %setup.data.class = @jumpGRFDataset;
+    %setup.data.args.normalization = 'PAD';
+    %setup.data.args.normalizeInput = false;
+    %setup.data.args.normalizedPts = 51;
+    %setup.data.args.adaptiveTimeSpan = true;
+    %setup.data.args.resampleRate = 10;
 
     % loss functions
     setup.lossFcns.recon.class = @reconstructionLoss;
