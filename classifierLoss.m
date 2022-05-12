@@ -33,7 +33,7 @@ classdef classifierLoss < lossFunction
                                      'Fisher', ...
                                      'SVM'} )} = 'Network'
                 args.CDim       double ...
-                            {mustBeInteger, mustBePositive} = 2
+                            {mustBeInteger, mustBePositive} = 1
                 args.nHidden    double ...
                             {mustBeInteger, mustBePositive} = 1
                 args.nFC        double ...
@@ -60,7 +60,6 @@ classdef classifierLoss < lossFunction
                                  hasNetwork = isNet, ...
                                  hasState = isNet );
 
-            self.CDim = args.CDim;
             self.nHidden = args.nHidden;
             self.nFC = args.nFC;
             self.fcFactor = args.fcFactor;
@@ -74,6 +73,7 @@ classdef classifierLoss < lossFunction
                 self.initLearningRate = 0;
             end
 
+            self.CDim = args.CDim;
             self.CLabels = categorical( 1:self.CDim );
 
         end

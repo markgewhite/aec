@@ -4,6 +4,7 @@ classdef representationModel
     properties
         XDim            % X dimension (number of points)
         ZDim            % Z dimension (number of features)
+        CDim            % C dimension (number of classes)
         XChannels       % number of channels in X
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
@@ -20,6 +21,8 @@ classdef representationModel
                     {mustBeInteger, mustBePositive} = 10
                 args.ZDim           double ...
                     {mustBeInteger, mustBePositive} = 1
+                args.CDim           double ...
+                    {mustBeInteger, mustBePositive} = 1
                 args.XChannels      double ...
                     {mustBeInteger, mustBePositive} = 1
                 args.NumCompLines   double...
@@ -29,6 +32,7 @@ classdef representationModel
 
             self.XDim = args.XDim;
             self.ZDim = args.ZDim;
+            self.CDim = args.CDim;
             self.XChannels = args.XChannels;
             self.NumCompLines = args.NumCompLines;
             self.ShowPlots = args.ShowPlots;

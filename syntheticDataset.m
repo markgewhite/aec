@@ -27,11 +27,11 @@ classdef syntheticDataset < modelDataset
                 args.ClassSizes     double ...
                     {mustBeInteger, mustBePositive} = [500 500 500]
                 args.NumPts         double ...
-                    {mustBeInteger, mustBePositive} = 33
+                    {mustBeInteger, mustBePositive} = 17
                 args.Channels       double = 1
-                args.Ratio          double = [ 4 8 16]
-                args.Mu             double = [1 4 8]
-                args.Sigma          double = [1 6 1]
+                args.Ratio          double = [2 4 8]
+                args.Mu             double = [1 2 4]
+                args.Sigma          double = [1 1 1]
                 args.Eta            double = 0.1
                 args.Tau            double = 0
                 args.SharedLevel    double = 3
@@ -56,7 +56,7 @@ classdef syntheticDataset < modelDataset
             % setup fda
             paramsFd.basisOrder = 4;
             paramsFd.penaltyOrder = 2;
-            paramsFd.lambda = 1E-5;
+            paramsFd.lambda = 1E2;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -67,7 +67,7 @@ classdef syntheticDataset < modelDataset
                             datasetName = "Synthetic Data", ...
                             channelLabels = "Y (no units)", ...
                             timeLabel = "Time (no units)", ...
-                            channelLimits = [0 3] );
+                            channelLimits = [-5 5] );
 
             self.ClassSizes = args.ClassSizes;
             self.Ratio = args.Ratio;

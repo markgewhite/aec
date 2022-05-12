@@ -35,6 +35,7 @@ classdef autoencoderModel < representationModel
         function self = autoencoderModel( XDim, ...
                                           XOutputDim, ...
                                           XChannels, ...
+                                          CDim, ...
                                           lossFcns, ...
                                           superArgs, ...
                                           args )
@@ -43,6 +44,7 @@ classdef autoencoderModel < representationModel
                 XDim            double {mustBeInteger, mustBePositive}
                 XOutputDim      double {mustBeInteger, mustBePositive}
                 XChannels       double {mustBeInteger, mustBePositive}
+                CDim            double {mustBeInteger, mustBePositive}
             end
             arguments (Repeating)
                 lossFcns      lossFunction
@@ -68,6 +70,7 @@ classdef autoencoderModel < representationModel
             self.XDim = XDim;
             self.XOutputDim = XOutputDim;
             self.XChannels = XChannels;
+            self.CDim = CDim;
 
             % placeholders for subclasses to define
             self.nets.encoder = [];
@@ -366,7 +369,7 @@ classdef autoencoderModel < representationModel
                     k = k+1;
                     % add the network object
                     self.nets.(thisLossFcn.name) = ...
-                                initNetwork( thisLossFcn, self.ZDim );
+                            initNetwork( thisLossFcn, self.ZDim );
                     % record its name
                     self.netNames = [ string(self.netNames) thisLossFcn.name ];
                     % increment the counter

@@ -59,15 +59,15 @@ classdef pcaModel < representationModel
                 thisDataset     modelDataset
             end
 
-            if ~isequal( self.fdParams, thisDataset.fda.fdParams )
+            if ~isequal( self.fdParams, thisDataset.fda.fdParamsRegular )
                 eid = 'PCAModel:InvalidFDParam';
                 msg = 'The dataset''s FD parameters do not match those of this initialized model.';
                 throwAsCaller( MException(eid,msg) );
             end
 
             % convert input to a functional data object
-            XFd = smooth_basis( thisDataset.fda.tSpan, ...
-                                thisDataset.XInput, ...
+            XFd = smooth_basis( thisDataset.fda.tSpanRegular, ...
+                                thisDataset.XInputRegular, ...
                                 thisDataset.fda.fdParamsInput );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
@@ -163,7 +163,7 @@ classdef pcaModel < representationModel
 
             if isa( data, 'fd' )
                 % validity of the FD object
-                if ~isequal( self.fdParams, thisDataset.fda.fdParams )
+                if ~isequal( self.fdParams, thisDataset.fda.XInputRegular )
                     eid = 'PCAModel:InvalidFDParam';
                     msg = 'The input FD parameters do not match the model''s FD parameters.';
                     throwAsCaller( MException(eid,msg) );

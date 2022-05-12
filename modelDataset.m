@@ -13,13 +13,14 @@ classdef modelDataset
         XInputLen       % lengths of the input series
 
         Y               % outcome variable
-        YDim            % number of categories
+        CDim            % number of categories
         YLabels         % Y labels
         nObs            % number of observations
 
         normalization   % structure for time-normalization 
         normalizedPts   % standardized number of points for normalization
         normalizeInput  % whether input should be time-normalized too
+        matchingOutput  % whether input and target output must match
 
         padding         % structure specifying padding setup
 
@@ -51,7 +52,8 @@ classdef modelDataset
                     {'PAD', 'LTN'} )} = 'LTN'
                 args.normalizedPts      double ...
                     {mustBeNumeric, mustBePositive, mustBeInteger} = 101
-                args.normalizeInput     logical = false;
+                args.normalizeInput     logical = false
+                args.matchingOutput     logical = false
                 args.padding            struct ...
                     {mustBeValidPadding}
                 args.fda                struct ...
@@ -78,6 +80,7 @@ classdef modelDataset
             self.normalization = args.normalization;
             self.normalizedPts = args.normalizedPts;
             self.normalizeInput = args.normalizeInput;
+            self.matchingOutput = args.matchingOutput;
             self.padding = args.padding;
             self.fda = args.fda;
             self.adaptiveTimeSpan = args.adaptiveTimeSpan;
@@ -98,7 +101,7 @@ classdef modelDataset
 
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
-            self.YDim = length( self.YLabels );          
+            self.CDim = length( self.YLabels );          
 
         end
 
@@ -134,7 +137,7 @@ classdef modelDataset
             thisSubset.XTargetDim = self.XTargetDim;
             thisSubset.XChannels = self.XChannels;
 
-            thisSubset.YDim = self.YDim;
+            thisSubset.CDim = self.CDim;
             thisSubset.YLabels = self.YLabels;
             thisSubset.nObs = sum( idx );
 
@@ -280,9 +283,14 @@ classdef modelDataset
 
                 self.fda.tSpanTarget = self.fda.tSpanInput;
                 if self.normalizeInput
-                    % re-use the time-normalized input
-                    self.XTarget = timeNormalize( self.XInput, ...
-                                                  self.normalizedPts );
+                    if self.matchingOutput
+                        % matching input and output
+                        self.XTarget = self.XInputRegular;
+                    else
+                        % time-normalize the input
+                        self.XTarget = timeNormalize( self.XInput, ...
+                                                      self.normalizedPts );
+                    end
 
                 else
                     % prepare normalized data of fixed length
@@ -294,14 +302,17 @@ classdef modelDataset
                                                      pad );
                 end
 
-                % adjust the time span in proportion to number of points
-                tSpan0 = 1:length( self.fda.tSpanInput );
+                if self.matchingOutput
+                    self.fda.tSpanTarget = self.fda.tSpanRegular;
+                else
+                    % adjust the time span in proportion to number of points
+                    tSpan0 = 1:length( self.fda.tSpanInput );
+                    tSpan1 = linspace( 1, length(self.fda.tSpanInput), ...
+                                       self.normalizedPts );
 
-                tSpan1 = linspace( 1, length(self.fda.tSpanInput), ...
-                                   self.normalizedPts );
-
-                self.fda.tSpanTarget= interp1( ...
+                    self.fda.tSpanTarget= interp1( ...
                                 tSpan0, self.fda.tSpanInput, tSpan1 );
+                end
 
 
             else

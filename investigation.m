@@ -189,6 +189,16 @@ function setup = updateDependencies( setup, parameter, value )
                     reqValue = 'discard';
                     setup = applySetting( setup, dependency, reqValue );
 
+                case 'pcaModel'
+
+                    dependency = 'data.args.normalizeInput';
+                    reqValue = true;
+                    setup = applySetting( setup, dependency, reqValue );
+                    
+                    dependency = 'data.args.matchingOutput';
+                    reqValue = true;
+                    setup = applySetting( setup, dependency, reqValue );
+
             end
 
     end

@@ -42,6 +42,11 @@ classdef modelEvaluation < handle
             self.TestingDataset = setup.data.class( 'Testing', ...
                                                     argsCell{:} );
 
+            if isfield( setup.lossFcns, 'cls' )
+                % set the number of classes
+                setup.lossFcns.cls.args.CDim = self.TestingDataset.CDim;
+            end
+
             if isequal( setup.model.class, @pcaModel )
                 % this is a PCA
                 if verbose
@@ -224,7 +229,7 @@ classdef modelEvaluation < handle
                 argsCell = {};
             end
 
-            self.Model = pcaModel( self.TrainingDataset.fda.fdParams, ...
+            self.Model = pcaModel( self.TrainingDataset.fda.fdParamsRegular, ...
                                    argsCell{:} ); 
 
         end
@@ -266,6 +271,7 @@ classdef modelEvaluation < handle
                             self.TrainingDataset.XInputDim, ...
                             self.TrainingDataset.XTargetDim, ...
                             self.TrainingDataset.XChannels, ...
+                            self.TrainingDataset.CDim, ...
                             self.LossFcns{:}, ...
                             argsCell{:} );
 
