@@ -4,12 +4,12 @@ function setup = initSetup
     % dataset
     setup.data.class = @exemplarDataset;
     setup.data.args.Type = 'Gaussian';
-    setup.data.args.ClassSizes = 500;
+    setup.data.args.ClassSizes = [ 500 500 500 ];
     setup.data.args.normalization = 'PAD';
     setup.data.args.normalizeInput = false;
-    setup.data.args.normalizedPts = 51;
+    setup.data.args.normalizedPts = 101;
     setup.data.args.adaptiveTimeSpan = true;
-    %setup.data.args.resampleRate = 10;
+    setup.data.args.resampleRate = 1;
 
     % loss functions
     setup.lossFcns.recon.class = @reconstructionLoss;
@@ -18,8 +18,8 @@ function setup = initSetup
     setup.lossFcns.adv.class = @adversarialLoss;
     setup.lossFcns.adv.name = 'Discriminator';
 
-    setup.lossFcns.cls.class = @classifierLoss;
-    setup.lossFcns.cls.name = 'Classification';
+    %setup.lossFcns.cls.class = @classifierLoss;
+    %setup.lossFcns.cls.name = 'Classification';
 
     %setup.lossFcns.mmd.class = @wassersteinLoss;
     %setup.lossFcns.mmd.name = 'MMDDiscriminator';
@@ -43,7 +43,7 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 20;
+    setup.trainer.args.updateFreq = 25;
     setup.trainer.args.valType = 'AuxModel';
     setup.trainer.args.nEpochs = 200;
     setup.trainer.args.batchSize = 100;

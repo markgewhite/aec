@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'Test';
+name = 'TestAdaptive';
 path = fileparts( which('runAnalysis.m') );
 path = [path '/results/'];
 
@@ -13,6 +13,6 @@ path = [path '/results/'];
 
 parameters = [ "model.class" ];
 %values = {{@fcModel, @lstmfcModel, @lstmModel, @convModel, @tcnModel, @pcaModel}};
-values = {{@fcModel, @pcaModel}};
+values = {{@pcaModel, @fcModel}};
 
 myInvestigation = investigation( name, path, parameters, values, setup );

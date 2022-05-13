@@ -4,6 +4,7 @@ classdef pcaModel < representationModel
     properties
         meanFd                % mean curve
         compFd                % functional principal components
+        ZStd                  % latent score standard deviation (scaling factor)
         varProp       double  % explained variance
         fdParams              % functional data parameters
         basisFd               % functional basis
@@ -76,6 +77,8 @@ classdef pcaModel < representationModel
             self.compFd = pcaStruct.harmfd;
             self.varProp = pcaStruct.varprop;
 
+            self.ZStd = std( pcaStruct.harmscr );
+
             % train the auxiliary model
             Z = pcaStruct.harmscr;
             switch self.auxModelType
@@ -116,7 +119,7 @@ classdef pcaModel < representationModel
             XCStd = zeros( length(self.tSpan), self.ZDim );
             % compute the components
             for i = 1:self.ZDim
-               XCStd(:,i) = eval_fd( self.tSpan, self.compFd(i) );
+               XCStd(:,i) = self.ZStd(i)*eval_fd( self.tSpan, self.compFd(i) );
             end
 
             if strcmp( args.sampling, 'Fixed' )

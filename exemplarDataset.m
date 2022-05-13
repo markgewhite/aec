@@ -22,13 +22,13 @@ classdef exemplarDataset < modelDataset
                        {'Gaussian'} )} = 'Gaussian'
                 args.ClassSizes     double ...
                     {mustBeInteger, mustBePositive} = [500 500 500]
-                args.BetweenClassScale   double = 0.25
-                args.WithinClassScale    double = 0.1
+                args.BetweenClassScale   double = 0.5
+                args.WithinClassScale    double = 0.25
                 args.Noise          double = 0.002
                 superArgs.?modelDataset
             end
 
-            nPts = 101;
+            nPts = 501;
             args.tSpan = linspace( -5, 5, nPts );
 
             switch args.Type
@@ -54,7 +54,7 @@ classdef exemplarDataset < modelDataset
             % setup fda
             paramsFd.basisOrder = 4;
             paramsFd.penaltyOrder = 2;
-            paramsFd.lambda = 1E2;
+            paramsFd.lambda = 1E-2;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -67,7 +67,7 @@ classdef exemplarDataset < modelDataset
                             datasetName = name, ...
                             channelLabels = "Y (no units)", ...
                             timeLabel = "Time (no units)", ...
-                            channelLimits = [0 0.5] );
+                            channelLimits = [0 2.5] );
 
             self.ClassSizes = args.ClassSizes;
             self.BetweenClassScale = args.BetweenClassScale;
@@ -107,17 +107,18 @@ classdef exemplarDataset < modelDataset
             for c = 1:length( args.ClassSizes )
 
                 % set the class amplitude, mean and standard deviation
-                ampl0 = 1 + btwScale*randn;
+                ampl0 = 2*(2+ btwScale*randn);
                 mu0 = randn;
-                sigma0 = 1 + btwScale*randn;
+                sigma0 = 1 + 0.1*btwScale*randn;
 
                 for i = 1:args.ClassSizes(c)
 
                     k = k+1;
-                    X( :, k ) = normFcn( args.tSpan, ...
-                                         ampl0 + withinScale*randn, ...
-                                         mu0 + withinScale*randn, ...
-                                         sigma0 + withinScale*randn );
+                    ampl = abs( ampl0 + withinScale*randn );
+                    mu = mu0 + withinScale*randn;
+                    sigma = abs( sigma0 + withinScale*randn );
+
+                    X( :, k ) = normFcn( args.tSpan, ampl, mu, sigma );
 
                     X( :, k ) = X( : , k ) + noise*randn(nPts,1);
 

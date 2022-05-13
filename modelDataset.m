@@ -191,6 +191,68 @@ classdef modelDataset
             end
 
         end
+
+
+        function validateSmoothing( self )
+            % Re-run smoothing with maximum flexibility
+            arguments
+                self        modelDataset
+            end
+
+            % pad the raw series for smoothing
+            X = padData( self.XInputRaw, ...
+                         self.padding.length, ...
+                         self.padding.value, ...
+                         Same = self.padding.same, ...
+                         Location = self.padding.location, ...
+                         Anchoring = self.padding.anchoring );
+
+            % create a time span with maximum detail
+            tSpan = linspace( self.fda.tSpan(1),...
+                              self.fda.tSpan(end), ...
+                              size( X, 1 ) );
+
+            % create a new basis with maximum number of functions
+            basis = create_bspline_basis( [tSpan(1) tSpan(end)], ...
+                                          size( X, 1 ), ...
+                                          self.fda.basisOrder);
+            
+            % Find minimum GCV value of lambda
+            % search for the best value for lambda, the roughness penalty
+            logLambda   = -12:1:6;
+            gcvSave = zeros( length(logLambda), self.XChannels );
+            dfSave  = zeros( length(logLambda), 1 );
+            
+            for i = 1:length(logLambda)
+                
+                % set smoothing parameters
+                XFdPari = fdPar( basis, ...
+                                 self.fda.penaltyOrder, ...
+                                 10^logLambda(i) );
+                
+                % perform smoothing
+                [~, dfi, gcvi] = smooth_basis( tSpan, X, XFdPari );
+                
+                % determine mean GCV and degrees of freedom
+                gcvSave(i,:) = sqrt( sum( gcvi )/self.nObs ); 
+                dfSave(i)  = dfi;
+                
+            end
+            
+            %  plot the results for GCV and DF
+            figure;
+            
+            plot( logLambda, log10(gcvSave), 'k-o' );
+            ylabel('\fontsize{13} log_{10}( GCV )');
+            hold on;
+            
+            yyaxis right;
+            plot( logLambda, log10(dfSave), 'r-o' );
+            ylabel('\fontsize{13} log_{10}( DF )');
+            
+            xlabel('\fontsize{13} log_{10}(\lambda)');
+            
+        end
         
         
     end
