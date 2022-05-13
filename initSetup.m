@@ -3,8 +3,10 @@ function setup = initSetup
 
     % dataset
     setup.data.class = @exemplarDataset;
-    setup.data.args.Type = 'Gaussian';
-    setup.data.args.ClassSizes = [ 500 500 500 ];
+    setup.data.args.ClassSizes = [ 500 500 ];
+    setup.data.args.ClassMeans = [-1 1];
+    setup.data.args.ClassSDs = [1 0.5];
+    setup.data.args.ClassPeaks = [2 1];
     setup.data.args.normalization = 'PAD';
     setup.data.args.normalizeInput = false;
     setup.data.args.normalizedPts = 101;

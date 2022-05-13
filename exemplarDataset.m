@@ -4,8 +4,12 @@ classdef exemplarDataset < modelDataset
 
     properties
         ClassSizes          % number observations per class (vector)
-        BetweenClassScale   % parameters' SD between-classes variation
-        WithinClassScale    % parameters' SD between-classes variation
+        ClassMeans          % positions of classes
+        ClassSDs            % standard deviations of classes
+        ClassPeaks          % amplitudes of classes
+        MeanVariations      % within-class position variations
+        SDVariations        % within-class SD variations
+        PeakVariations      % within-class peak variations
         Noise               % noise 
     end
 
@@ -17,26 +21,24 @@ classdef exemplarDataset < modelDataset
                 set                 char ...
                     {mustBeMember( set, ...
                                    {'Training', 'Testing'} )}
-                args.Type           char ...
-                    {mustBeMember( args.Type, ...
-                       {'Gaussian'} )} = 'Gaussian'
                 args.ClassSizes     double ...
-                    {mustBeInteger, mustBePositive} = [500 500 500]
-                args.BetweenClassScale   double = 0.5
-                args.WithinClassScale    double = 0.25
+                    {mustBeInteger, mustBePositive} = 500
+                args.ClassMeans     double
+                args.ClassSDs       double
+                args.ClassPeaks     double
+                args.MeanVariations double
+                args.SDVariations   double
+                args.PeakVariations double
                 args.Noise          double = 0.002
                 superArgs.?modelDataset
             end
 
+            args = validateArgs( args );
+
             nPts = 501;
             args.tSpan = linspace( -5, 5, nPts );
 
-            switch args.Type
-                case 'Gaussian'
-                    [ X, Y ] = ...
-                        exemplarDataset.gaussianData( args );
-
-            end
+            [ X, Y ] = generateData( args );
 
             % convert to cell array
             X = num2cell( X, 1 );
@@ -59,7 +61,7 @@ classdef exemplarDataset < modelDataset
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            name = ['Exemplar Data (' args.Type ')'];
+            name = 'Exemplar Data';
 
             self = self@modelDataset( X, Y, superArgsCell{:}, ...
                             padding = pad, ...
@@ -67,74 +69,109 @@ classdef exemplarDataset < modelDataset
                             datasetName = name, ...
                             channelLabels = "Y (no units)", ...
                             timeLabel = "Time (no units)", ...
-                            channelLimits = [0 2.5] );
+                            channelLimits = [0 2] );
 
             self.ClassSizes = args.ClassSizes;
-            self.BetweenClassScale = args.BetweenClassScale;
-            self.WithinClassScale = args.WithinClassScale;
+            self.ClassMeans = args.ClassMeans;
+            self.ClassSDs = args.ClassSDs;
+            self.ClassPeaks = args.ClassPeaks;
+            self.MeanVariations = args.MeanVariations;
+            self.SDVariations = args.SDVariations;
+            self.PeakVariations = args.PeakVariations;
             self.Noise = args.Noise;
-            
 
         end
 
     end
 
+end
 
-    methods (Static)
 
-        function [ X, Y ] = gaussianData( args )
-            % Generate gaussian shaped curves
-            arguments
-                args            struct
-            end
+function args = validateArgs( args )
+
+    nClasses = length( args.ClassSizes );
+
+    if ~isfield( args, 'ClassMeans' )
+        args.ClassMeans = linspace( -2, 2, nClasses );
+    end
     
-            % initialize the function
-            normFcn = @(x, ampl, mu, sigma) ...
-                        (ampl/sqrt((2*pi))*exp(-0.5*((x-mu)/sigma).^2));
+    if ~isfield( args, 'ClassSDs' )
+        args.ClassSDs = ones( 1, nClasses );
+    end
 
-            % for convenience use short meaningful coefficients
-            noise = args.Noise;
-            btwScale = args.BetweenClassScale;
-            withinScale = args.WithinClassScale;
+    if ~isfield( args, 'ClassPeaks' )
+        args.ClassPeaks = 2*ones( 1, nClasses );
+    end
 
-            % initialise the array holding the generated data
-            nPts = length( args.tSpan );
-            nObs = sum( args.ClassSizes );
-            X = zeros( nPts, nObs );
-            Y = zeros( sum(nObs), 1 );
+    if ~isfield( args, 'MeanVariations' )
+        args.MeanVariations = 0.1*ones( 1, nClasses );
+    end
 
-            k = 0;
-            for c = 1:length( args.ClassSizes )
+    if ~isfield( args, 'SDVariations' )
+        args.SDVariations = 0.1*ones( 1, nClasses );
+    end
 
-                % set the class amplitude, mean and standard deviation
-                ampl0 = 2*(2+ btwScale*randn);
-                mu0 = randn;
-                sigma0 = 1 + 0.1*btwScale*randn;
+    if ~isfield( args, 'PeakVariations' )
+        args.PeakVariations = 0.25*ones( 1, nClasses );
+    end
 
-                for i = 1:args.ClassSizes(c)
+    invalid =    length( args.ClassMeans ) ~= nClasses ...
+              || length( args.ClassSDs ) ~= nClasses ...
+              || length( args.ClassPeaks ) ~= nClasses ...
+              || length( args.MeanVariations ) ~= nClasses ...
+              || length( args.SDVariations ) ~= nClasses ...
+              || length( args.PeakVariations ) ~= nClasses;
 
-                    k = k+1;
-                    ampl = abs( ampl0 + withinScale*randn );
-                    mu = mu0 + withinScale*randn;
-                    sigma = abs( sigma0 + withinScale*randn );
+    if invalid
+        eid = 'exemplarDataset:InvalidParameters';
+        msg = 'The parameters do not all have the same number of elements.';
+        throwAsCaller( MException(eid,msg) );
+    end
 
-                    X( :, k ) = normFcn( args.tSpan, ampl, mu, sigma );
+end
 
-                    X( :, k ) = X( : , k ) + noise*randn(nPts,1);
+function [ X, Y ] = generateData( args )
+    % Generate gaussian shaped curves
+    arguments
+        args            struct
+    end
 
-                end
+    % initialize the function
+    normFcn = @(x, ampl, mu, sigma) ...
+                (ampl/sqrt((2*pi))*exp(-0.5*((x-mu)/sigma).^2));
 
-                Y( k-args.ClassSizes(c)+1:k ) = c;
+    % initialise the array holding the generated data
+    nPts = length( args.tSpan );
+    nObs = sum( args.ClassSizes );
+    X = zeros( nPts, nObs );
+    Y = zeros( sum(nObs), 1 );
 
-            end
+    k = 0;
+    for i = 1:length( args.ClassSizes )
+
+        % set the class amplitude, mean and standard deviation
+        ampl0 = args.ClassPeaks(i);
+        mu0 = args.ClassMeans(i);
+        sigma0 = args.ClassSDs(i);
+
+        for j = 1:args.ClassSizes(i)
+
+            k = k+1;
+            ampl = abs( ampl0 + args.PeakVariations(i)*randn );
+            mu = mu0 + args.MeanVariations(i)*randn;
+            sigma = abs( sigma0 + args.SDVariations(i)*randn );
+
+            X( :, k ) = normFcn( args.tSpan, ampl, mu, sigma );
+
+            X( :, k ) = X( : , k ) + args.Noise*randn(nPts,1);
 
         end
 
+        Y( k-args.ClassSizes(i)+1:k ) = i;
 
-
-   end
-
+    end
 
 end
+
 
 
