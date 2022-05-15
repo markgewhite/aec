@@ -3,10 +3,18 @@ function setup = initSetup
 
     % dataset
     setup.data.class = @exemplarDataset;
-    setup.data.args.ClassSizes = [ 500 500 ];
+    setup.data.args.ClassSizes = 500;
+    
     setup.data.args.ClassMeans = [-1 1];
-    setup.data.args.ClassSDs = [1 0.5];
-    setup.data.args.ClassPeaks = [2 1];
+    setup.data.args.ClassSDs = [0.5 1.0];
+    setup.data.args.ClassPeaks = [5.0 10];
+    setup.data.args.MeanCovariance{1} = [0.2 0.2; 0.2 0.3];
+    setup.data.args.SDCovariance{1} = [1 0.5; 0.5 1];
+    setup.data.args.PeakCovariance{1} = [1 -0.5; -0.5 1];
+
+    setup.data.args.HasVariableLength = true;
+    setup.data.args.TerminationValue = 0.1;
+
     setup.data.args.normalization = 'PAD';
     setup.data.args.normalizeInput = false;
     setup.data.args.normalizedPts = 101;
