@@ -63,6 +63,7 @@ classdef modelDataset
                 args.adaptiveUpperBound double = 1E-1
                 args.resampleRate       double ...
                     {mustBeNumeric} = 1
+                args.overSmoothing      double = 1E2
                 args.datasetName        string
                 args.timeLabel          string = "Time"
                 args.channelLabels      string
@@ -87,6 +88,7 @@ classdef modelDataset
             self.adaptiveLowerBound = args.adaptiveLowerBound;
             self.adaptiveUpperBound = args.adaptiveUpperBound;
             self.resampleRate = args.resampleRate;
+            self.fda.overSmoothing = args.overSmoothing;
 
             self.info.datasetName = args.datasetName;
             self.info.channelLabels = args.channelLabels;
@@ -388,11 +390,12 @@ classdef modelDataset
 
             self.XTargetDim = size( self.XTarget, 1 );
 
+            lambda = self.fda.lambda*self.fda.overSmoothing;
             self.fda.fdParamsTarget = setFDAParameters( ...
-                                            self.fda.tSpanTarget, ...
-                                            self.fda.basisOrder, ...
-                                            self.fda.penaltyOrder, ...
-                                            self.fda.lambda );
+                                    self.fda.tSpanTarget, ...
+                                    self.fda.basisOrder, ...
+                                    self.fda.penaltyOrder, ...
+                                    lambda );
 
         end
 
