@@ -2,24 +2,28 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @exemplarDataset;
-    setup.data.args.ClassSizes = 500;
+    setup.data.class = @gaitrecDataset;
+    setup.data.args.HasVGRFOnly = false;
+    setup.data.args.HasDerivative = true;
+
+    %setup.data.class = @exemplarDataset;   
+    %setup.data.args.ClassSizes = 500;
     
-    setup.data.args.ClassMeans = [-1 1];
-    setup.data.args.ClassSDs = [0.5 1.0];
-    setup.data.args.ClassPeaks = [5.0 10];
-    setup.data.args.MeanCovariance{1} = [0.2 0.2; 0.2 0.3];
-    setup.data.args.SDCovariance{1} = [1 0.5; 0.5 1];
-    setup.data.args.PeakCovariance{1} = [1 -0.5; -0.5 1];
+    %setup.data.args.ClassMeans = [-1 1];
+    %setup.data.args.ClassSDs = [0.5 1.0];
+    %setup.data.args.ClassPeaks = [5.0 10];
+    %setup.data.args.MeanCovariance{1} = [0.2 0.2; 0.2 0.3];
+    %setup.data.args.SDCovariance{1} = [1 0.5; 0.5 1];
+    %setup.data.args.PeakCovariance{1} = [1 -0.5; -0.5 1];
 
-    setup.data.args.HasVariableLength = true;
-    setup.data.args.TerminationValue = 0.1;
+    %setup.data.args.HasVariableLength = true;
+    %setup.data.args.TerminationValue = 0.1;
 
-    setup.data.args.normalization = 'PAD';
-    setup.data.args.normalizeInput = false;
-    setup.data.args.normalizedPts = 101;
-    setup.data.args.adaptiveTimeSpan = true;
-    setup.data.args.resampleRate = 1;
+    %setup.data.args.normalization = 'PAD';
+    %setup.data.args.normalizeInput = false;
+    %setup.data.args.normalizedPts = 101;
+    %setup.data.args.adaptiveTimeSpan = true;
+    %setup.data.args.resampleRate = 1;
 
     % loss functions
     setup.lossFcns.recon.class = @reconstructionLoss;

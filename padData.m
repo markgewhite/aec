@@ -69,14 +69,14 @@ function XP = padData( X, padLen, padValue, args )
     switch args.Anchoring
 
         case 'Left'
-            XP( 1, :, : ) = mean( XP(1, :, :), 2 );
+            XP( 1, :, : ) = repmat( mean( XP(1, :, :), 2 ), nObs, 1 );
 
         case 'Right'
-            XP( end, :, : ) = mean( XP(end, :, :), 2 );
+            XP( end, :, : ) = repmat( mean( XP(end, :, :), 2 ), nObs, 1 );
 
         case 'Both'
-            XP( 1, :, : ) = mean( XP(1, :, :), 2 );
-            XP( end, :, : ) = mean( XP(end, :, :), 2 );
+            XP( 1, :, : ) = repmat( mean( XP(1, :, :), 2 ), nObs, 1 );
+            XP( end, :, : ) = repmat( mean( XP(end, :, :), 2 ), nObs, 1 );
 
     end
     
