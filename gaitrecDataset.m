@@ -14,6 +14,7 @@ classdef gaitrecDataset < modelDataset
         Side                % left/right selection criterion
         HasDerivative       % whether it includes first derivative of 'side'
         HasDelta            % whether it includes difference between L & R
+        FromMatlabFile      % if from Matlab file rather than original data files
     end
 
     methods
@@ -46,6 +47,7 @@ classdef gaitrecDataset < modelDataset
                      'Affected', 'Unaffected'} )} = 'Affected'
                 args.HasDerivative  logical = false
                 args.HasDelta       logical = false
+                args.FromMatlabFile logical = true
                 superArgs.?modelDataset
             end
 
@@ -93,6 +95,7 @@ classdef gaitrecDataset < modelDataset
             self.Side = args.Side;
             self.HasDerivative = args.HasDerivative;
             self.HasDelta = args.HasDelta;
+            self.FromMatlabFile = args.FromMatlabFile;
 
             self.SubjectID = S;           
 
@@ -156,9 +159,23 @@ classdef gaitrecDataset < modelDataset
             nSessions = size( metaData, 1 );          
             X = zeros( nSessions*10, 101, channelsPerTrial );
 
-            % load the trial data
-            [ trialData, sessions, sources ] = ...
-                            loadTrialData( datapath, nFiles, args );
+            if args.FromMatlabFile ...
+                    && isfile( fullfile(datapath,'RecentData.mat') )
+
+                % load data from a previous run - this is faster
+                load( fullfile(datapath,'RecentData.mat'), ...
+                      'trialData', 'sessions', 'sources' );
+
+            else
+                % load the trial data from original files
+                [ trialData, sessions, sources ] = ...
+                                loadTrialData( datapath, nFiles, args );
+                % save it for future reference
+                save( fullfile(datapath,'RecentData.mat'), ...
+                      'trialData', 'sessions', 'sources', '-v7.3' );
+            
+            end
+
             subjects = table2array( metaData( :, 1 ) );
 
             names = strings( channelsPerTrial, 1 );
