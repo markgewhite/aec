@@ -57,10 +57,10 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 25;
+    setup.trainer.args.updateFreq = 1;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 200;
-    setup.trainer.args.batchSize = 100;
+    setup.trainer.args.nEpochs = 20;
+    setup.trainer.args.batchSize = 200;
 
 
 end

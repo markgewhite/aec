@@ -12,6 +12,8 @@ classdef modelDataset
         XChannels       % number of X input channels
         XInputLen       % lengths of the input series
 
+        XDimLabels      % X's dlarray dimension labels
+
         Y               % outcome variable
         CDim            % number of categories
         YLabels         % Y labels
@@ -36,13 +38,14 @@ classdef modelDataset
 
     methods
 
-        function self = modelDataset( XInputRaw, Y, args )
+        function self = modelDataset( XInputRaw, Y, dimLabels, args )
             % Create and preprocess the data.
             % The calling function will be a data loader or
             % a function partitioning the data.
             arguments
                 XInputRaw               cell
                 Y
+                dimLabels               char
                 args.XTargetRaw         cell = []
                 args.purpose            char ...
                     {mustBeMember( args.purpose, ...
@@ -72,6 +75,7 @@ classdef modelDataset
 
             self.XInputRaw = XInputRaw;
             self.Y = Y;
+            self.XDimLabels = dimLabels;
             
             if strcmp( args.purpose, 'ForSubset' )
                 % don't do the setup
@@ -118,8 +122,9 @@ classdef modelDataset
 
             subXRaw = split( self.XInputRaw, idx );
             subY = self.Y( idx );
+            subLabels = self.XDimLabels;
 
-            thisSubset = modelDataset( subXRaw, subY, ...
+            thisSubset = modelDataset( subXRaw, subY, subLabels, ...
                                        purpose='ForSubset' );
 
             thisSubset.normalization = self.normalization;
@@ -138,6 +143,7 @@ classdef modelDataset
             thisSubset.XInputDim = self.XInputDim;
             thisSubset.XTargetDim = self.XTargetDim;
             thisSubset.XChannels = self.XChannels;
+            thisSubset.XDimLabels = self.XDimLabels;
 
             thisSubset.CDim = self.CDim;
             thisSubset.YLabels = self.YLabels;
@@ -167,24 +173,12 @@ classdef modelDataset
                 arg.dlarray     logical = true
             end
             
-            if iscell( self.XInput )
-                X = padData( self.XInput, 0, self.padding.value, ...
-                             Longest = true, ...
-                             Same = self.padding.same, ...
-                             Location = self.padding.location );
-                X = permute( X, [ 3 1 2 ] );
-                if arg.dlarray
-                    X = dlarray( X, 'CTB' );
-                end
+            X = padData( self.XInput, 0, self.padding.value, ...
+                         Longest = true, ...
+                         Same = self.padding.same, ...
+                         Location = self.padding.location );
 
-            else
-                if arg.dlarray
-                    X = dlarray( self.XInput, 'CB' );
-                else
-                    X = self.XInput;
-                end
-
-            end
+            X = dlarray( X, self.XDimLabels );
 
             if arg.dlarray
                 Y = dlarray( self.Y, 'CB' );
@@ -282,7 +276,7 @@ classdef modelDataset
             % re-sampling at the given rate
             self.fda.tSpanRegular = linspace( ...
                     self.fda.tSpan(1), self.fda.tSpan(end), ...
-                    fix( self.padding.length/self.resampleRate )+1 );  
+                    fix( self.padding.length/self.resampleRate ) );  
 
             % adaptive resampling, as required
             if self.adaptiveTimeSpan
@@ -418,28 +412,16 @@ classdef modelDataset
 
             [ ds, XNfmt ] = createDatastore( self.XInput, self.XTarget, self.Y );
 
-            % setup the minibatch queues
-            if self.isFixedLength
-                % no preprocessing required
+            % setup the minibatch preprocessing function
+            preproc = @( X, XN, Y ) preprocMiniBatch( X, XN, Y, ...
+                          self.padding.value, ...
+                          self.padding.location );
 
-                mbq = minibatchqueue( ds,...
-                                  'MiniBatchSize', batchSize, ...
-                                  'PartialMiniBatch', args.partialBatch, ...
-                                  'MiniBatchFormat', {'CB', XNfmt, 'BC'} );
-            
-            else
-                % setup the minibatch preprocessing function
-                preproc = @( X, XN, Y ) preprocMiniBatch( X, XN, Y, ...
-                              self.padding.value, ...
-                              self.padding.location );
-
-                mbq = minibatchqueue(  ds,...
-                                  'MiniBatchSize', batchSize, ...
-                                  'PartialMiniBatch', args.partialBatch, ...
-                                  'MiniBatchFcn', preproc, ...
-                                  'MiniBatchFormat', {'CTB', XNfmt, 'CB'} );
-
-            end
+            mbq = minibatchqueue(  ds,...
+                  MiniBatchSize = batchSize, ...
+                  PartialMiniBatch = args.partialBatch, ...
+                  MiniBatchFcn = preproc, ...
+                  MiniBatchFormat = {self.XDimLabels, self.XDimLabels, 'CB'} );
 
         end
 
@@ -496,7 +478,7 @@ function fdParams = setFDAParameters( tSpan, ...
 end
 
 
-function [ XNew, XDim, XLenNew ] = processXInput( ...
+function [ X, XDim, XLenNew ] = processXInput( ...
                                 XFd, XLen, tSpan, tSpanNew, pad, ...
                                 normalize, normalizedPts, normalization )
 
@@ -515,14 +497,16 @@ function [ XNew, XDim, XLenNew ] = processXInput( ...
 
     if normalize
         % use time-normalization method to set a fixed length
-        XNew = normalizeXSeries( XCell, normalizedPts, ...
+        XNorm = normalizeXSeries( XCell, normalizedPts, ...
                                         normalization, ...
                                         pad );
-        XDim = size( XNew, 1);
+        XDim = size( XNorm, 1);
+        X = num2cell( permute( XNorm, [2 1 3]), [2 3] );
+        X = cellfun( @squeeze, X , 'UniformOutput', false);
 
     else
         % has variable length input
-        XNew = XCell;
+        X = XCell;
         XDim = 1;
     end
 
@@ -645,20 +629,15 @@ end
 function [ dsFull, XNfmt ] = createDatastore( X, XN, Y )
 
     % create the datastore for the input X
-    if iscell( X )           
-        % sort them in ascending order of length
-        XLen = cellfun( @length, X );
-        [ ~, orderIdx ] = sort( XLen, 'descend' );
-    
-        X = X( orderIdx );
-        dsX = arrayDatastore( X, 'IterationDimension', 1, ...
-                                 'OutputType', 'same' );
-    
-    else
-        dsX = arrayDatastore( X, 'IterationDimension', 2 );
-    
-    end
-    
+         
+    % sort them in ascending order of length
+    %XLen = cellfun( @length, X );
+    %[ ~, orderIdx ] = sort( XLen, 'descend' );
+
+    %X = X( orderIdx );
+    dsX = arrayDatastore( X, 'IterationDimension', 1, ...
+                             'OutputType', 'same' );
+       
     % create the datastore for the time-normalised output X
     dsXN = arrayDatastore( XN, 'IterationDimension', 2 );
     if size( XN, 3 ) > 1
@@ -681,7 +660,7 @@ function [ X, XN, Y ] = preprocMiniBatch( XCell, XNCell, YCell, ...
     % Preprocess a sequence batch for training
 
     X = padData( XCell, 0, padValue, Longest = true, Location = padLoc  );
-    X = permute( X, [ 3 1 2 ] );
+    %X = permute( X, [ 3 1 2 ] );
     
     if ~isempty( XNCell )
         XN = cat( 2, XNCell{:} );   

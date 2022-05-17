@@ -19,13 +19,14 @@ classdef fcModel < autoencoderModel
 
     methods
 
-        function self = fcModel( XDim, XOutputDim, XChannels, CDim, ...
+        function self = fcModel( XDim, XOutputDim, XChannels, ZDim, CDim, ...
                                    lossFcns, superArgs, args )
             % Initialize the model
             arguments
                 XDim            double {mustBeInteger, mustBePositive}
                 XOutputDim      double {mustBeInteger, mustBePositive}
                 XChannels       double {mustBeInteger, mustBePositive}
+                ZDim            double {mustBeInteger, mustBePositive}
                 CDim            double {mustBeInteger, mustBePositive}
             end
             arguments (Repeating)
@@ -52,6 +53,7 @@ classdef fcModel < autoencoderModel
             self = self@autoencoderModel( XDim, ...
                                           XOutputDim, ...
                                           XChannels, ...
+                                          ZDim, ...
                                           CDim, ...
                                           lossFcns{:}, ...
                                           superArgsCell{:}, ...
@@ -78,7 +80,8 @@ classdef fcModel < autoencoderModel
                 self        fcModel
             end
 
-            layersEnc = [ featureInputLayer( self.XDim, 'Name', 'in', ...
+            layersEnc = [ featureInputLayer( self.XDim*self.XChannels, ...
+                                   'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 ) 
                           dropoutLayer( self.inputDropout, 'Name', 'drop0' ) ];
@@ -149,6 +152,63 @@ classdef fcModel < autoencoderModel
 
         end
 
+
+        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
+            % Forward-run the fully-connected network
+            % by first flattening the input array
+            arguments
+                self        fcModel
+                encoder     dlnetwork
+                decoder     dlnetwork
+                dlX         dlarray
+            end
+
+            dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
+            dlX = dlarray( dlX, 'CB' );
+
+            % generate latent encodings
+            [ dlZ, state.encoder ] = forward( encoder, dlX );
+    
+            % reconstruct curves from latent codes
+            [ dlXHat, state.decoder ] = forward( decoder, dlZ );
+
+        end
+
+    end
+
+
+    methods (Static )
+
+        function dlZ = encode( self, X, arg )
+            % Encode features Z from X using the model
+            % by first flattening the input array
+            arguments
+                self            autoencoderModel
+                X
+                arg.convert     logical = true
+            end
+
+            if isa( X, 'modelDataset' )
+                dlX = X.getInput;
+            elseif isa( X, 'dlarray' )
+                dlX = X;
+            else
+                eid = 'Autoencoder:NotValidX';
+                msg = 'The input data should be a modelDataset or a dlarray.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            % flatten the input array
+            dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
+            dlX = dlarray( dlX, 'CB' );
+
+            dlZ = predict( self.nets.encoder, dlX );
+
+            if arg.convert
+                dlZ = double(extractdata( dlZ ))';
+            end
+
+        end
 
     end
 

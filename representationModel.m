@@ -145,7 +145,7 @@ classdef representationModel
             end
     
             % re-order the dimensions for FDA
-            %XC = permute( XC, [1 3 2] );
+            XC = permute( XC, [1 3 2] );
     
             % smooth and re-evaluate all curves
             tSpanPlot = linspace( fda.tSpan(1), fda.tSpan(end), 101 );

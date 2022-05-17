@@ -148,9 +148,9 @@ classdef modelTrainer < handle
                     
                     % read mini-batch of data
                     [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
-                    if size( dlXNTrn, 3 ) > 1
-                        dlXNTrn = dlarray( squeeze(dlXNTrn), 'SCB' );
-                    end
+                    %if size( dlXNTrn, 3 ) > 1
+                    %    dlXNTrn = dlarray( squeeze(dlXNTrn), 'SCB' );
+                    %end
                     
                     % evaluate the model gradients 
                     [ grads, states, self.lossTrn(j,:) ] = ...

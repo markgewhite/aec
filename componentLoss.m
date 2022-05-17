@@ -72,7 +72,7 @@ function loss = innerProduct( dlXC, nSample )
     % tracing is maintained through the mandatory reconstruction loss
     XC = double(extractdata( dlXC ));
 
-    nComp = size( XC, 2 )/nSample;
+    nComp = size( XC, 3 )/nSample;
     orth = 0;
     for i = 1:nComp
         for j = i+1:nComp
@@ -80,7 +80,7 @@ function loss = innerProduct( dlXC, nSample )
                 for l = k+1:nSample
                     iSample = (i-1)*nSample+k;
                     jSample = (j-1)*nSample+l;
-                    orth = orth + abs( mean(XC(i,iSample,:).*XC(j,jSample,:)) );
+                    orth = orth + abs( mean(XC(i,:,iSample).*XC(j,:,jSample)) );
                 end
             end
         end
