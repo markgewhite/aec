@@ -257,7 +257,11 @@ classdef modelTrainer < handle
                 args.lossVal    double = []
             end
         
-            meanLoss = mean( lossTrn );
+            if size( lossTrn, 1 ) > 1
+                meanLoss = mean( lossTrn );
+            else
+                meanLoss = lossTrn;
+            end
         
             fprintf('Loss (%4d) = ', epoch);
             for k = 1:thisModel.nLoss

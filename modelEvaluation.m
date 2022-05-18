@@ -97,8 +97,8 @@ classdef modelEvaluation < handle
                     num2str( self.TrainingEvaluation.ReconLoss, '%.3f' )]);
                 disp(['Smoothed Reconstruction Loss = ' ...
                     num2str( self.TrainingEvaluation.ReconLossSmoothed, '%.3f' )]);
-                disp([' Regular Reconstruction Loss = ' ...
-                    num2str( self.TrainingEvaluation.ReconLossRegular, '%.3f' )]);
+                %disp([' Regular Reconstruction Loss = ' ...
+                %    num2str( self.TrainingEvaluation.ReconLossRegular, '%.3f' )]);
                 disp(['        Auxiliary Model Loss = ' ...
                     num2str( self.TrainingEvaluation.AuxModelLoss, '%.3f' )]);
 
@@ -107,8 +107,8 @@ classdef modelEvaluation < handle
                     num2str( self.TestingEvaluation.ReconLoss, '%.3f' )]);
                 disp(['Smoothed Reconstruction Loss = ' ...
                     num2str( self.TrainingEvaluation.ReconLossSmoothed, '%.3f' )]);
-                disp([' Regular Reconstruction Loss = ' ...
-                    num2str( self.TestingEvaluation.ReconLossRegular, '%.3f' )]);
+                %disp([' Regular Reconstruction Loss = ' ...
+                %    num2str( self.TestingEvaluation.ReconLossRegular, '%.3f' )]);
                 disp(['        Auxiliary Model Loss = ' ...
                     num2str( self.TestingEvaluation.AuxModelLoss, '%.3f' )]);
             end
@@ -335,19 +335,20 @@ classdef modelEvaluation < handle
             eval.XHatRegular = eval_fd( thisDataset.fda.tSpanRegular, XHatFd );
 
             % compute reconstruction loss for the regularised curves
-            eval.ReconLossRegular = ...
-                thisModel.getReconLoss( eval.XHatRegular, eval.XRegular );
+            %eval.ReconLossRegular = ...
+            %    thisModel.getReconLoss( eval.XHatRegular, eval.XRegular );
 
-            tErr = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
-            figure(4);
-            hold on;
-            plot( thisDataset.fda.tSpanRegular, tErr );
+            %tErr = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
+            %figure(4);
+            %hold on;
+            %plot( thisDataset.fda.tSpanRegular, tErr );
 
 
             % compute the auxiliary loss
-            eval.AuxModelYHat = predict( thisModel.auxModel, eval.Z );
+            ZLong = reshape( eval.Z, size( eval.Z, 1 ), [] );
+            eval.AuxModelYHat = predict( thisModel.auxModel, ZLong );
             eval.AuxModelLoss = loss( thisModel.auxModel, ...
-                eval.Z, thisDataset.Y );
+                                            ZLong, thisDataset.Y );
 
 
             % generate the latent components

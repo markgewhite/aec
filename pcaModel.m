@@ -66,9 +66,14 @@ classdef pcaModel < representationModel
                 throwAsCaller( MException(eid,msg) );
             end
 
+            XInput = reshape( cell2mat( thisDataset.XInputRegular ), ...
+                              [], ...
+                              thisDataset.nObs, ...
+                              thisDataset.XChannels );
+
             % convert input to a functional data object
             XFd = smooth_basis( thisDataset.fda.tSpanRegular, ...
-                                thisDataset.XInputRegular, ...
+                                XInput, ...
                                 thisDataset.fda.fdParamsInput );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
@@ -80,7 +85,7 @@ classdef pcaModel < representationModel
             self.ZStd = std( pcaStruct.harmscr );
 
             % train the auxiliary model
-            Z = pcaStruct.harmscr;
+            Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
             switch self.auxModelType
                 case 'Fisher'
                     self.auxModel = fitcdiscr( Z, thisDataset.Y );

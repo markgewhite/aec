@@ -343,7 +343,8 @@ classdef modelDataset
                 if self.normalizeInput
                     if self.matchingOutput
                         % matching input and output
-                        self.XTarget = self.XInputRegular;
+                        self.XTarget = timeNormalize( self.XInput, ...
+                                              length(self.fda.tSpanRegular) );
                     else
                         % time-normalize the input
                         self.XTarget = timeNormalize( self.XInput, ...
@@ -410,7 +411,7 @@ classdef modelDataset
                     {'return', 'discard'} )} = 'discard'
             end
 
-            [ ds, XNfmt ] = createDatastore( self.XInput, self.XTarget, self.Y );
+            ds = createDatastore( self.XInput, self.XTarget, self.Y );
 
             % setup the minibatch preprocessing function
             preproc = @( X, XN, Y ) preprocMiniBatch( X, XN, Y, ...
@@ -501,9 +502,14 @@ function [ X, XDim, XLenNew ] = processXInput( ...
                                         normalization, ...
                                         pad );
         XDim = size( XNorm, 1);
-        X = num2cell( permute( XNorm, [2 1 3]), [2 3] );
-        X = cellfun( @squeeze, X , 'UniformOutput', false);
-
+        if size( XNorm, 3 ) > 1
+            X = num2cell( permute( XNorm, [2 1 3]), [2 3] );
+            X = cellfun( @squeeze, X , 'UniformOutput', false);
+        else
+            X = num2cell( permute( XNorm, [2 1]), 2 );
+            X = cellfun( @transpose, X , 'UniformOutput', false);
+        end
+        
     else
         % has variable length input
         X = XCell;
@@ -626,7 +632,7 @@ function XS = split( X, indices )
 end
 
 
-function [ dsFull, XNfmt ] = createDatastore( X, XN, Y )
+function dsFull = createDatastore( X, XN, Y )
 
     % create the datastore for the input X
          
@@ -660,7 +666,6 @@ function [ X, XN, Y ] = preprocMiniBatch( XCell, XNCell, YCell, ...
     % Preprocess a sequence batch for training
 
     X = padData( XCell, 0, padValue, Longest = true, Location = padLoc  );
-    %X = permute( X, [ 3 1 2 ] );
     
     if ~isempty( XNCell )
         XN = cat( 2, XNCell{:} );   

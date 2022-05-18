@@ -163,8 +163,10 @@ classdef fcModel < autoencoderModel
                 dlX         dlarray
             end
 
-            dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
-            dlX = dlarray( dlX, 'CB' );
+            if size( dlX, 3 ) > 1
+                dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
+                dlX = dlarray( dlX, 'CB' );
+            end
 
             % generate latent encodings
             [ dlZ, state.encoder ] = forward( encoder, dlX );
@@ -198,9 +200,11 @@ classdef fcModel < autoencoderModel
                 throwAsCaller( MException(eid,msg) );
             end
 
-            % flatten the input array
-            dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
-            dlX = dlarray( dlX, 'CB' );
+            if size( dlX, 3 ) > 1
+                % flatten the input array
+                dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
+                dlX = dlarray( dlX, 'CB' );
+            end
 
             dlZ = predict( self.nets.encoder, dlX );
 

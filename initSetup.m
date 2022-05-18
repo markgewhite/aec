@@ -2,9 +2,16 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @gaitrecDataset;
-    setup.data.args.HasVGRFOnly = false;
-    setup.data.args.HasDerivative = true;
+    setup.data.class = @jumpGRFDataset;
+    setup.data.args.normalizeInput = true;
+    setup.data.args.resampleRate = 10;
+    setup.data.args.adaptiveTimeSpan = true;
+    setup.data.args.normalization = 'PAD';
+    
+    %setup.data.class = @gaitrecDataset;
+    %setup.data.args.HasVGRFOnly = false;
+    %setup.data.args.HasDerivative = true;
+    %setup.data.args.normalizeInput = true;
 
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
@@ -20,7 +27,7 @@ function setup = initSetup
     %setup.data.args.TerminationValue = 0.1;
 
     %setup.data.args.normalization = 'PAD';
-    %setup.data.args.normalizeInput = false;
+
     %setup.data.args.normalizedPts = 101;
     %setup.data.args.adaptiveTimeSpan = true;
     %setup.data.args.resampleRate = 1;
@@ -57,10 +64,10 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 1;
+    setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 20;
-    setup.trainer.args.batchSize = 200;
+    setup.trainer.args.nEpochs = 100;
+    setup.trainer.args.batchSize = 40;
 
 
 end

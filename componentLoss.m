@@ -72,6 +72,9 @@ function loss = innerProduct( dlXC, nSample )
     % tracing is maintained through the mandatory reconstruction loss
     XC = double(extractdata( dlXC ));
 
+    if size( XC, 3 ) == 1
+        XC = permute( XC, [1 3 2] );
+    end
     nComp = size( XC, 3 )/nSample;
     orth = 0;
     for i = 1:nComp

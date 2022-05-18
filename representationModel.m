@@ -145,7 +145,9 @@ classdef representationModel
             end
     
             % re-order the dimensions for FDA
-            XC = permute( XC, [1 3 2] );
+            if size( XC, 3 ) > 1
+                XC = permute( XC, [1 3 2] );
+            end
     
             % smooth and re-evaluate all curves
             tSpanPlot = linspace( fda.tSpan(1), fda.tSpan(end), 101 );
@@ -165,110 +167,118 @@ classdef representationModel
             else
                 nSample = self.NumCompLines;
             end
-    
-            nPlots = length( self.Axes.Comp );
-            j = 0;
-            for c = 1:nPlots
-    
-                axis = self.Axes.Comp(c);
 
-                cla( axis );
-                hold( axis, 'on' );
-                k = 1;
+            for c = 1:self.XChannels
+
+                k = 0; % sample counter
+
+                for i = 1:self.ZDim
     
-                pltObj = gobjects( 3, 1 );
-                l = 0;
+                    axis = self.Axes.Comp(c,i);
     
-                % plot the gradations
-                for i = 1:nSample
-                    
-                    % next sample
-                    j = j+1;
-    
-                    isOuterCurve = (i==1 || i==nSample);
-                    if isOuterCurve
-                        % fill-up shading area
-                        if args.shading
-                            plotShadedArea( axis, ...
-                                            tSpanPlot, ...
-                                            XCsmth( :, j ), ...
-                                            XCsmth( :, end ), ...
-                                            compColours(k,:), ...
-                                            name = names(k) );
-                        end
-                        width = 1.5;
-                    
-                    else
-                        width = 1.0;
-                    end
-    
-                    % plot gradation curve
-    
-                    if any(strcmp( args.type, {'Predicted','Both'} ))
-                        % plot predicted values
-                        plot( axis, ...
-                              fda.tSpanAdaptive, XC( :, j ), ...
-                              Color = gray, ...
-                              LineWidth = 0.5 );
-                    end
-                    if any(strcmp( args.type, {'Smoothed','Both'} ))
-                        % plot smoothed curves
-                        if isOuterCurve
-                            % include in legend
-                            l = l+1;
-                            pltObj(l) = plot( axis, ...
-                                              tSpanPlot, XCsmth( :, j ), ...
-                                              Color = compColours(k,:), ...
-                                              LineWidth = width, ...
-                                              DisplayName = names(k));
-                        else
-                            % don't record it for the legend
-                            plot( axis, ...
-                                              tSpanPlot, XCsmth( :, j ), ...
-                                              Color = compColours(k,:), ...
-                                              LineWidth = width );
-                        end
-    
-                    end
-    
-                    if mod( i, nSample/2 )==0
-                        % next colour
+                    cla( axis );
+                    hold( axis, 'on' );
+
+                    pltObj = gobjects( 3, 1 );
+
+                    l = 0; % legend counter
+                    s = 1; % sign/colour counter
+
+                    % plot the gradations
+                    for j = 1:nSample
+                        
+                        % next sample
                         k = k+1;
+        
+                        isOuterCurve = (j==1 || j==nSample);
+                        if isOuterCurve
+                            % fill-up shading area
+                            if args.shading
+                                plotShadedArea( axis, ...
+                                                tSpanPlot, ...
+                                                XCsmth( :, k, c ), ...
+                                                XCsmth( :, end, c ), ...
+                                                compColours(s,:), ...
+                                                name = names(s) );
+                            end
+                            width = 1.5;
+                        
+                        else
+                            width = 1.0;
+                        end
+        
+                        % plot gradation curve
+        
+                        if any(strcmp( args.type, {'Predicted','Both'} ))
+                            % plot predicted values
+                            plot( axis, ...
+                                  fda.tSpanAdaptive, XC( :, k, c ), ...
+                                  Color = gray, ...
+                                  LineWidth = 0.5 );
+                        end
+                        if any(strcmp( args.type, {'Smoothed','Both'} ))
+                            % plot smoothed curves
+                            if isOuterCurve
+                                % include in legend
+                                l = l+1;
+                                pltObj(l) = plot( axis, ...
+                                                  tSpanPlot, XCsmth( :, k, c ), ...
+                                                  Color = compColours(s,:), ...
+                                                  LineWidth = width, ...
+                                                  DisplayName = names(s));
+                            else
+                                % don't record it for the legend
+                                plot( axis, ...
+                                                  tSpanPlot, XCsmth( :, k, c ), ...
+                                                  Color = compColours(s,:), ...
+                                                  LineWidth = width );
+                            end
+        
+                        end
+        
+                        if mod( j, nSample/2 )==0
+                            % next colour
+                            s = s+1;
+                        end
+
                     end
     
+                    % plot the mean curve
+                    l = l+1;
+                    pltObj(l) = plot( axis, ...
+                                      tSpanPlot, XCsmth( :, end, c ), ...
+                                      Color = black, ...
+                                      LineWidth = 1.5, ...
+                                      DisplayName = 'Mean' );
+        
+                    hold( axis, 'off' );
+        
+                    % finalise the plot with formatting, etc
+                    if args.legend && c==1 && i==1
+                        legend( axis, pltObj, Location = 'best' );
+                    end
+                    
+                    if c==1
+                        title( axis, ['Component ' num2str(i)] );
+                    end
+                    if c==self.XChannels
+                        xlabel( axis, args.xAxisLabel );
+                    end
+                    if i==1
+                        ylabel( axis, args.yAxisLabel(c) );
+                    end
+                    xlim( axis, [fda.tSpan(1) fda.tSpan(end)] );
+        
+                    if ~isempty( args.yAxisLimits )
+                        ylim( axis, args.yAxisLimits(c,:) );
+                    end               
+        
+                    axis.YAxis.TickLabelFormat = '%.1f';
+        
+                    finalisePlot( axis, square = true );
+    
                 end
-    
-                % plot the mean curve
-                l = l+1;
-                pltObj(l) = plot( axis, ...
-                                  tSpanPlot, XCsmth( :, end ), ...
-                                  Color = black, ...
-                                  LineWidth = 1.5, ...
-                                  DisplayName = 'Mean' );
-    
-                hold( axis, 'off' );
-    
-                % finalise the plot with formatting, etc
-                if args.legend && c==1
-                    legend( axis, pltObj, Location = 'best' );
-                end
-    
-                title( axis, ['Component ' num2str(c)] );
-                xlabel( axis, args.xAxisLabel );
-                if c==1
-                    ylabel( axis, args.yAxisLabel );
-                end
-                xlim( axis, [fda.tSpan(1) fda.tSpan(end)] );
-    
-                if ~isempty( args.yAxisLimits )
-                    ylim( axis, args.yAxisLimits );
-                end               
-    
-                axis.YAxis.TickLabelFormat = '%.1f';
-    
-                finalisePlot( axis, square = true );
-    
-    
+
             end
 
         end
@@ -388,15 +398,16 @@ function [figs, axes]= initializePlots( XChannels, ZDim )
 
     % setup the components figure
     figs.Components = figure(2);
+    figs.Components.Position(2) = 0;
     figs.Components.Position(3) = 100 + ZDim*250;
     figs.Components.Position(4) = 100 + XChannels*250;
     
     clf;
-    axes.Comp = gobjects( ZDim, XChannels );
+    axes.Comp = gobjects( XChannels, ZDim );
 
-    for j = 1:XChannels
-        for i = 1:ZDim
-            axes.Comp(i,j) = subplot( XChannels, ZDim, (j-1)*ZDim + i );
+    for i = 1:XChannels
+        for j = 1:ZDim
+            axes.Comp(i,j) = subplot( XChannels, ZDim, (i-1)*ZDim + j );
         end
     end
 

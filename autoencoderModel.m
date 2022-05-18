@@ -480,6 +480,7 @@ classdef autoencoderModel < representationModel
 
             if arg.convert
                 dlXHat = double(extractdata( dlXHat ));
+                dlXHat = permute( dlXHat, [1 3 2] );
             end
             
 
