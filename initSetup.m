@@ -2,15 +2,15 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @jumpGRFDataset;
-    setup.data.args.normalization = 'PAD';
-    setup.data.args.normalizeInput = false;
+    %setup.data.class = @jumpGRFDataset;
+    %setup.data.args.normalization = 'PAD';
+    %setup.data.args.normalizeInput = false;
     setup.data.args.normalizedPts = 51;
     setup.data.args.adaptiveTimeSpan = true;
-    setup.data.args.resampleRate = 10;
+    setup.data.args.resampleRate = 1;
     
-    %setup.data.class = @gaitrecDataset;
-    %setup.data.args.HasVGRFOnly = false;
+    setup.data.class = @gaitrecDataset;
+    setup.data.args.HasVGRFOnly = false;
     %setup.data.args.HasDerivative = true;
     %setup.data.args.normalizeInput = true;
 

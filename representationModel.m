@@ -52,7 +52,9 @@ classdef representationModel
                 X           double
                 XHat        double
             end
-            err = mse( X, XHat );
+
+            err = mean( (XHat-X).^2, 'all' );
+        
         end
 
 
@@ -302,6 +304,8 @@ classdef representationModel
             if isa( Z, 'dlarray' )
                 Z = double( extractdata( Z ) )';
             end
+            % ensure Z is 2D
+            Z = reshape( Z, size(Z,1), [] );
 
             if isempty( args.Y ) && strcmp( args.type, 'Canonical' )
                 eid = 'aeModel:LabelsMissing';

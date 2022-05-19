@@ -7,11 +7,7 @@ classdef pcaModel < representationModel
         ZStd                  % latent score standard deviation (scaling factor)
         varProp       double  % explained variance
         fdParams              % functional data parameters
-        basisFd               % functional basis
         tSpan         double  % time span
-        nKnots        double  % number of knots
-        lambda        double  % roughness penalty
-        penaltyOrder          % linear differential operator
 
         auxModelType          % type of auxiliary model to use
         auxModel              % auxiliary model itself
@@ -19,10 +15,11 @@ classdef pcaModel < representationModel
 
     methods
 
-        function self = pcaModel( fdParameters, superArgs, args )
+        function self = pcaModel( XChannels, ZDim, superArgs, args )
             % Initialize the model
             arguments
-                fdParameters
+                XChannels       double {mustBeInteger, mustBePositive}
+                ZDim            double {mustBeInteger, mustBePositive}
                 superArgs.?representationModel
                 args.auxModel       string ...
                         {mustBeMember( args.auxModel, ...
@@ -31,22 +28,14 @@ classdef pcaModel < representationModel
 
             argsCell = namedargs2cell(superArgs);
             self = self@representationModel( argsCell{:}, ...
+                                             ZDim = ZDim, ...
+                                             XChannels = XChannels, ...
                                              NumCompLines = 2 );
 
 
             self.meanFd = [];
             self.compFd = [];
             self.varProp = [];
-
-            self.fdParams = fdParameters;
-
-            self.basisFd = getbasis( fdParameters );
-            range = getbasisrange( self.basisFd );
-            knots = getbasispar( self.basisFd );
-            self.tSpan = [ range(1) knots range(2) ];
-            self.nKnots = getnbasis( self.basisFd );
-            self.lambda = getlambda( fdParameters );
-            self.penaltyOrder = getLfd( fdParameters );
 
             self.auxModelType = args.auxModel;
 
@@ -60,21 +49,14 @@ classdef pcaModel < representationModel
                 thisDataset     modelDataset
             end
 
-            if ~isequal( self.fdParams, thisDataset.fda.fdParamsRegular )
-                eid = 'PCAModel:InvalidFDParam';
-                msg = 'The dataset''s FD parameters do not match those of this initialized model.';
-                throwAsCaller( MException(eid,msg) );
-            end
+            self.fdParams = thisDataset.fda.fdParamsRegular;
+            self.tSpan = thisDataset.fda.tSpanRegular;
 
-            XInput = reshape( cell2mat( thisDataset.XInputRegular ), ...
-                              [], ...
-                              thisDataset.nObs, ...
-                              thisDataset.XChannels );
+            XInput = thisDataset.XInputRegular;
+            %XInput = permute( XInput, [1 3 2] );
 
             % convert input to a functional data object
-            XFd = smooth_basis( thisDataset.fda.tSpanRegular, ...
-                                XInput, ...
-                                thisDataset.fda.fdParamsInput );
+            XFd = smooth_basis( self.tSpan, XInput, self.fdParams );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
 
@@ -82,7 +64,7 @@ classdef pcaModel < representationModel
             self.compFd = pcaStruct.harmfd;
             self.varProp = pcaStruct.varprop;
 
-            self.ZStd = std( pcaStruct.harmscr );
+            self.ZStd = squeeze(std( pcaStruct.harmscr ));
 
             % train the auxiliary model
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
@@ -100,7 +82,7 @@ classdef pcaModel < representationModel
             % Present the FPCs in form consistent with autoencoder model
             arguments
                 self            pcaModel
-                Z               double
+                Z               double % redundant
                 args.sampling   char ...
                     {mustBeMember(args.sampling, ...
                         {'Random', 'Fixed'} )} = 'Random'
@@ -121,10 +103,11 @@ classdef pcaModel < representationModel
                 XCMean = eval_fd( self.tSpan, self.meanFd );
             end
 
-            XCStd = zeros( length(self.tSpan), self.ZDim );
+            XCStd = zeros( length(self.tSpan), self.ZDim, self.XChannels );
             % compute the components
             for i = 1:self.ZDim
-               XCStd(:,i) = self.ZStd(i)*eval_fd( self.tSpan, self.compFd(i) );
+               XCStd(:,i,:) = self.ZStd(i,:) ...
+                        .*squeeze(eval_fd( self.tSpan, self.compFd(i) ));
             end
 
             if strcmp( args.sampling, 'Fixed' )
@@ -133,10 +116,10 @@ classdef pcaModel < representationModel
             end
 
             if args.centre
-                XC = zeros( length(self.tSpan), self.ZDim*nSample );
+                XC = zeros( length(self.tSpan), self.XChannels, self.ZDim*nSample );
             else
-                XC = zeros( length(self.tSpan), self.ZDim*nSample+1 );
-                XC(:,end) = XCMean;
+                XC = zeros( length(self.tSpan), self.XChannels, self.ZDim*nSample+1 );
+                XC(:,:,end) = XCMean;
             end
             
             for j = 1:nSample
@@ -149,7 +132,7 @@ classdef pcaModel < representationModel
                 end
 
                 for i =1:self.ZDim
-                    XC(:,(i-1)*nSample+j) = XCMean + offset*XCStd(:,i);
+                    XC(:,:,(i-1)*nSample+j) = XCMean + offset*XCStd(:,i,:);
                 end
 
             end
@@ -180,7 +163,8 @@ classdef pcaModel < representationModel
 
             else
                 if isa( data, 'modelDataset' )
-                    X = data.XTarget;
+                    X = data.XInputRegular;
+                    %X = permute( X, [1 3 2] );
 
                 elseif isa( data, 'double' )
                     X = data;
@@ -192,9 +176,7 @@ classdef pcaModel < representationModel
 
                 end
                 % convert input to a functional data object
-                XFd = smooth_basis( self.tSpan, ...
-                                    X, ...
-                                    self.fdParams );
+                XFd = smooth_basis( self.tSpan, X, self.fdParams );
 
             end
 
@@ -204,11 +186,12 @@ classdef pcaModel < representationModel
             
         end
 
-        function XHat = reconstruct( self, Z )
+        function XHat = reconstruct( self, Z, arg )
             % Reconstruct X from Z using the model
             arguments
-                self        pcaModel
-                Z           double  % latent codes  
+                self                pcaModel
+                Z                   double  % latent codes
+                arg.convert         logical = true
             end
             
             % create the set of points from the mean for each curve
@@ -224,6 +207,10 @@ classdef pcaModel < representationModel
                     end
                 end
             end
+
+            %if arg.convert
+            %    XHat = permute( XHat, [1 3 2] );
+            %end
  
         end
 

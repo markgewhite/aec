@@ -229,8 +229,10 @@ classdef modelEvaluation < handle
                 argsCell = {};
             end
 
-            self.Model = pcaModel( self.TrainingDataset.fda.fdParamsRegular, ...
-                                   argsCell{:} ); 
+            self.Model = pcaModel( ...
+                            self.TrainingDataset.XChannels, ...
+                            setup.model.args.ZDim, ...
+                            argsCell{:} ); 
 
         end
 
@@ -316,32 +318,38 @@ classdef modelEvaluation < handle
             eval.Z = thisModel.encode( thisModel, thisDataset );
 
             % reconstruct the curves
-            eval.XHat = thisModel.reconstruct( thisModel, eval.Z );
+            eval.XHat = squeeze( thisModel.reconstruct( thisModel, eval.Z ) );
 
             % smooth the reconstructed curves
             XHatFd = smooth_basis( thisDataset.fda.tSpanTarget, ...
                                    eval.XHat, ...
                                    thisDataset.fda.fdParamsTarget );
-            eval.XHatSmoothed = eval_fd( thisDataset.fda.tSpanTarget, XHatFd );
+            eval.XHatSmoothed = squeeze( ...
+                        eval_fd( thisDataset.fda.tSpanTarget, XHatFd ) );
+            
+            eval.XHatRegular = squeeze( ...
+                        eval_fd( thisDataset.fda.tSpanRegular, XHatFd ) );
 
             % compute reconstruction loss
             eval.ReconLoss = thisModel.getReconLoss( ...
-                thisDataset.XTarget, eval.XHat );
+                                        thisDataset.XTarget, eval.XHat );
             eval.ReconLossSmoothed = ...
                 thisModel.getReconLoss( eval.XHatSmoothed, eval.XHat );
 
-            % evaluate the original input, distinct from the target
-            eval.XRegular = thisDataset.XInputRegular;
-            eval.XHatRegular = eval_fd( thisDataset.fda.tSpanRegular, XHatFd );
-
             % compute reconstruction loss for the regularised curves
+            eval.XRegular = squeeze( thisDataset.XInputRegular );
             eval.ReconLossRegular = ...
                 thisModel.getReconLoss( eval.XHatRegular, eval.XRegular );
 
-            %tErr = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
-            %figure(4);
-            %hold on;
-            %plot( thisDataset.fda.tSpanRegular, tErr );
+            % compute the mean squared error as a function of time
+            if size( eval.XRegular, 3 ) > 1
+                eval.ReconTimeMSE = mean( (eval.XHatRegular-eval.XRegular).^2, [2 3] );
+            else
+                eval.ReconTimeMSE = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
+            end
+            figure(4);
+            hold on;
+            plot( thisDataset.fda.tSpanRegular, eval.ReconTimeMSE );
 
 
             % compute the auxiliary loss

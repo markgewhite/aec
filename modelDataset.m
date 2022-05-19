@@ -66,11 +66,11 @@ classdef modelDataset
                 args.fda                struct ...
                     {mustBeValidFdParams}
                 args.adaptiveTimeSpan   logical = false
-                args.adaptiveLowerBound double = 1E-8
+                args.adaptiveLowerBound double = 1E-6
                 args.adaptiveUpperBound double = 1E-1
                 args.resampleRate       double ...
                     {mustBeNumeric} = 1
-                args.overSmoothing      double = 1E2
+                args.overSmoothing      double = 1E0
                 args.datasetName        string
                 args.timeLabel          string = "Time"
                 args.channelLabels      string
@@ -261,7 +261,7 @@ classdef modelDataset
                 self    modelDataset
             end
 
-            X = processX( self.XFd, ...
+            XCell = processX( self.XFd, ...
                                self.XLen, ...
                                self.fda.tSpan, ...
                                self.fda.tSpanRegular, ...
@@ -269,6 +269,8 @@ classdef modelDataset
                                true, ...
                                length(self.fda.tSpanRegular), ...
                                self.normalization );
+
+            X = reshape( cell2mat( XCell ), [], self.nObs, self.XChannels );
 
         end
 
@@ -279,14 +281,14 @@ classdef modelDataset
                 self    modelDataset
             end
 
-            X = processX( self.XFd, ...
-                               self.XLen, ...
-                               self.fda.tSpan, ...
-                               self.fda.tSpanInput, ...
-                               self.padding, ...
-                               self.normalizeInput, ...
-                               length(self.fda.tSpanInput), ...
-                               self.normalization );
+            X = processX(  self.XFd, ...
+                           self.XLen, ...
+                           self.fda.tSpan, ...
+                           self.fda.tSpanInput, ...
+                           self.padding, ...
+                           self.normalizeInput, ...
+                           length(self.fda.tSpanInput), ...
+                           self.normalization );
 
         end
         
@@ -298,16 +300,22 @@ classdef modelDataset
                 self    modelDataset
             end
 
-            XCell = processX( self.XFd, ...
+            if self.matchingOutput
+                nPts = self.XInputDim;
+            else
+                nPts = self.normalizedPts;
+            end
+
+            XCell = processX(  self.XFd, ...
                                self.XLen, ...
                                self.fda.tSpan, ...
                                self.fda.tSpanTarget, ...
                                self.padding, ...
                                true, ...
-                               self.normalizedPts, ...
+                               nPts, ...
                                self.normalization );
 
-            X = timeNormalize( XCell, self.normalizedPts );
+            X = timeNormalize( XCell, nPts );
 
         end
         
@@ -392,73 +400,6 @@ classdef modelDataset
                                     self.fda.penaltyOrder, ...
                                     lambda );
 
-
-        end
-
-
-        function self = prepareXTarget( self, XTargetRaw )
-            % Prepare the target data based on input data
-            % or a specified cell array
-            arguments
-                self                modelDataset
-                XTargetRaw          cell
-            end
-
-            if isempty( XTargetRaw )
-                % no new target dataset, use the same data as input
-
-                self.fda.tSpanTarget = self.fda.tSpanInput;
-                if self.normalizeInput
-                    if self.matchingOutput
-                        % matching input and output
-                        self.XTarget = timeNormalize( self.XInput, ...
-                                              length(self.fda.tSpanRegular) );
-                    else
-                        % time-normalize the input
-                        self.XTarget = timeNormalize( self.XInput, ...
-                                                      self.normalizedPts );
-                    end
-
-                else
-                    % prepare normalized data of fixed length
-                    pad = self.padding;
-                    pad.length = max( self.XInputLen );
-                    self.XTarget = normalizeXSeries( self.XInput, ...
-                                                     self.normalizedPts, ...
-                                                     self.normalization, ...
-                                                     pad );
-                end
-
-                if self.matchingOutput
-                    self.fda.tSpanTarget = self.fda.tSpanRegular;
-                else
-                    % adjust the time span in proportion to number of points
-                    tSpan0 = 1:length( self.fda.tSpanInput );
-                    tSpan1 = linspace( 1, length(self.fda.tSpanInput), ...
-                                       self.normalizedPts );
-
-                    self.fda.tSpanTarget= interp1( ...
-                                tSpan0, self.fda.tSpanInput, tSpan1 );
-                end
-
-
-            else
-                % new dataset requires processing
-                targetX = processXSeries( self, XTargetRaw );
-                % and time-normalized
-
-                % !!!! This needs work !!!!
-
-            end
-
-            self.XTargetDim = size( self.XTarget, 1 );
-
-            lambda = self.fda.lambda*self.fda.overSmoothing;
-            self.fda.fdParamsTarget = setFDAParameters( ...
-                                    self.fda.tSpanTarget, ...
-                                    self.fda.basisOrder, ...
-                                    self.fda.penaltyOrder, ...
-                                    lambda );
 
         end
 
@@ -592,29 +533,21 @@ function tSpanAdaptive = calcAdaptiveTimeSpan( XFd, tSpan, ...
                                                 lowerBound, upperBound )
 
     % resample the timespan
-    tSpan = linspace( tSpan(1), tSpan(end), fix( padLen/resampleRate )+1 );   
+    tSpan = linspace( tSpan(1), tSpan(end), fix( padLen/resampleRate ) );   
 
     % evaluate the mean XFd curvature (2nd derivative)
-    D1XEval = mean( abs(eval_fd( tSpan, XFd, 1 )), 2)';
-    D2XEval = mean( abs(eval_fd( tSpan, XFd, 2 )), 2)';
+    D1XEval = squeeze(mean( abs(eval_fd( tSpan, XFd, 1 )), 2));
+    D2XEval = squeeze(mean( abs(eval_fd( tSpan, XFd, 2 )), 2));
 
-    D1XEval = min( max( D1XEval/sum(D1XEval), lowerBound ), upperBound );
-    D2XEval = min( max( D2XEval/sum(D2XEval), lowerBound ), upperBound );
+    D1XEval = min( max( D1XEval./sum(D1XEval), lowerBound ), upperBound );
+    D2XEval = min( max( D2XEval./sum(D2XEval), lowerBound ), upperBound );
     
-    DXEvalComb = D1XEval + D2XEval;
+    DXEvalComb = sum( D1XEval + D2XEval, 2 );
 
     % cumulatively sum the absolute inverse curvatures
     % inserting zero at the begining to ensure first point will be at 0
-    D2XInt = cumsum( [0 1./DXEvalComb] );
+    D2XInt = cumsum( [0; 1./DXEvalComb] );
     D2XInt = D2XInt./max(D2XInt);
-
-    % calculate variance as a function of time
-    XVar = max( var( eval_fd( tSpan, XFd ), [], 2 ), 1E-2 );
-
-    % cumulatively sum the absolute inverse curvatures
-    XVarInt = cumsum( (1./XVar) );
-    XVarInt = XVarInt./max(XVarInt);
-
 
     % normalize to the tSpan
     tSpanAdaptive = tSpan(1) + D2XInt*(tSpan(end)-tSpan(1));
@@ -703,7 +636,7 @@ end
 function XSFd = splitFd( XFd, indices )
 
     coeff = getcoef( XFd );
-    coeff( :, ~indices ) = [];
+    coeff( :, ~indices, : ) = [];
     XSFd = putcoef( XFd, coeff );
 
 end
