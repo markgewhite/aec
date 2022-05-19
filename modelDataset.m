@@ -3,14 +3,12 @@ classdef modelDataset
 
     properties
         XInputRaw       % original, raw time series data
-        XInput          % processed input data (variable length)
-        XInputRegular   % processed input with regularly spaced time span
-        XTarget         % target output
+        XFd             % functional representation of the data
+        XLen            % array recording the length of each series
 
         XInputDim       % number of X input dimensions
         XTargetDim      % normalized X output size (time series length)
         XChannels       % number of X input channels
-        XInputLen       % lengths of the input series
 
         XDimLabels      % X's dlarray dimension labels
 
@@ -33,6 +31,12 @@ classdef modelDataset
         resampleRate    % downsampling rate
 
         info            % dataset information (used for plotting)
+    end
+
+    properties (Dependent = true)
+        XInput          % processed input data (variable length)       
+        XTarget         % target output
+        XInputRegular   % processed input with regularly spaced time span
     end
 
 
@@ -102,9 +106,6 @@ classdef modelDataset
             % prepare the input data
             self = processXSeries( self, XInputRaw );
 
-            % prepare the target data
-            self = prepareXTarget( self, args.XTargetRaw );
-
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
             self.CDim = length( self.YLabels );          
@@ -127,6 +128,9 @@ classdef modelDataset
             thisSubset = modelDataset( subXRaw, subY, subLabels, ...
                                        purpose='ForSubset' );
 
+            thisSubset.XFd = splitFd( self.XFd, idx );
+            thisSubset.XLen = self.XLen( idx );
+
             thisSubset.normalization = self.normalization;
             thisSubset.normalizedPts = self.normalizedPts;
             thisSubset.normalizeInput = self.normalizeInput;
@@ -134,11 +138,6 @@ classdef modelDataset
             thisSubset.padding = self.padding;
             thisSubset.fda = self.fda;
             thisSubset.resampleRate = self.resampleRate;
-
-            thisSubset.XInput = split( self.XInput, idx );
-            thisSubset.XInputRegular = split( self.XInputRegular, idx );
-            thisSubset.XTarget = split( self.XTarget, idx );
-            thisSubset.XInputLen = self.XInputLen( idx );
 
             thisSubset.XInputDim = self.XInputDim;
             thisSubset.XTargetDim = self.XTargetDim;
@@ -148,6 +147,11 @@ classdef modelDataset
             thisSubset.CDim = self.CDim;
             thisSubset.YLabels = self.YLabels;
             thisSubset.nObs = sum( idx );
+
+            thisSubset.matchingOutput = self.matchingOutput;
+            thisSubset.adaptiveTimeSpan = self.adaptiveTimeSpan;
+            thisSubset.adaptiveLowerBound = self.adaptiveLowerBound;
+            thisSubset.adaptiveUpperBound = self.adaptiveUpperBound;
 
             thisSubset.info = self.info;
 
@@ -166,7 +170,7 @@ classdef modelDataset
 
 
 
-        function [ X, Y ] = getInput( self, arg )
+        function [ X, Y ] = getDLInput( self, arg )
             % Convert X and Y into dl arrays
             arguments
                 self            modelDataset
@@ -249,7 +253,63 @@ classdef modelDataset
             xlabel('\fontsize{13} log_{10}(\lambda)');
             
         end
+
+
+        function X = get.XInputRegular( self )
+            % Generate the regularly-spaced input from XFd
+            arguments
+                self    modelDataset
+            end
+
+            X = processX( self.XFd, ...
+                               self.XLen, ...
+                               self.fda.tSpan, ...
+                               self.fda.tSpanRegular, ...
+                               self.padding, ...
+                               true, ...
+                               length(self.fda.tSpanRegular), ...
+                               self.normalization );
+
+        end
+
+
+        function X = get.XInput( self )
+            % Generate the adaptively-spaced input from XFd
+            arguments
+                self    modelDataset
+            end
+
+            X = processX( self.XFd, ...
+                               self.XLen, ...
+                               self.fda.tSpan, ...
+                               self.fda.tSpanInput, ...
+                               self.padding, ...
+                               self.normalizeInput, ...
+                               length(self.fda.tSpanInput), ...
+                               self.normalization );
+
+        end
         
+
+        function X = get.XTarget( self )
+            % Generate the adaptively-spaced input from XFd
+            % producing an array of fixed length
+            arguments
+                self    modelDataset
+            end
+
+            XCell = processX( self.XFd, ...
+                               self.XLen, ...
+                               self.fda.tSpan, ...
+                               self.fda.tSpanTarget, ...
+                               self.padding, ...
+                               true, ...
+                               self.normalizedPts, ...
+                               self.normalization );
+
+            X = timeNormalize( XCell, self.normalizedPts );
+
+        end
         
     end
 
@@ -271,7 +331,9 @@ classdef modelDataset
             self.XChannels = size( XInputRaw{1}, 2 );
 
             % create smooth functions for the data
-            [XFd, XLen] = smoothRawData( XInputRaw, self.padding, self.fda  );
+            [self.XFd, self.XLen] = smoothRawData( XInputRaw, ...
+                                                   self.padding, ...
+                                                   self.fda  );
 
             % re-sampling at the given rate
             self.fda.tSpanRegular = linspace( ...
@@ -281,7 +343,7 @@ classdef modelDataset
             % adaptive resampling, as required
             if self.adaptiveTimeSpan
                 self.fda.tSpanInput = calcAdaptiveTimeSpan( ...
-                    XFd, self.fda.tSpan, ...
+                    self.XFd, self.fda.tSpan, ...
                     self.resampleRate, self.padding.length, ...
                     self.adaptiveLowerBound, ...
                     self.adaptiveUpperBound );
@@ -289,40 +351,46 @@ classdef modelDataset
                 self.fda.tSpanInput = self.fda.tSpanRegular;    
             end
 
-            % process the input with a regularly-spaced time span
-            [ self.XInputRegular, ~, self.XInputLen ] = ...
-                               processXInput( ...
-                                            XFd, ...
-                                            XLen, ...
-                                            self.fda.tSpan, ...
-                                            self.fda.tSpanRegular, ...
-                                            self.padding, ...
-                                            true, ...
-                                            length(self.fda.tSpanRegular), ...
-                                            self.normalization );
+            if self.matchingOutput
+                % endure the input and target time spans match
+                % this usually applies for PCA
+                self.fda.tSpanTarget = self.fda.tSpanRegular;
 
+            else
+                % adjust the time span in proportion to number of points
+                tSpan0 = 1:length( self.fda.tSpanInput );
+                tSpan1 = linspace( 1, length(self.fda.tSpanInput), ...
+                                   self.normalizedPts );
+
+                self.fda.tSpanTarget= interp1( ...
+                            tSpan0, self.fda.tSpanInput, tSpan1 );
+            end
+
+            self.XInputDim = length( self.fda.tSpanInput );
+            self.XTargetDim = self.normalizedPts;
+
+            % set the FD parameters for regular spacing
             self.fda.fdParamsRegular = setFDAParameters( ...
                                             self.fda.tSpanRegular, ...
                                             self.fda.basisOrder, ...
                                             self.fda.penaltyOrder, ...
                                             self.fda.lambda );
 
-            % process the input with an adaptive time span
-            [ self.XInput, self.XInputDim ] = processXInput( ...
-                                            XFd, ...
-                                            XLen, ...
-                                            self.fda.tSpan, ...
-                                            self.fda.tSpanInput, ...
-                                            self.padding, ...
-                                            self.normalizeInput, ...
-                                            length(self.fda.tSpanInput), ...
-                                            self.normalization );
-
+            % set the FD parameters for adaptive spacing
             self.fda.fdParamsInput = setFDAParameters( ...
                                             self.fda.tSpanInput, ...
                                             self.fda.basisOrder, ...
                                             self.fda.penaltyOrder, ...
                                             self.fda.lambda );
+
+            % set the FD parameters for adaptive spacing
+            % with a higher level of smoothing than the input
+            lambda = self.fda.lambda*self.fda.overSmoothing;
+            self.fda.fdParamsTarget = setFDAParameters( ...
+                                    self.fda.tSpanTarget, ...
+                                    self.fda.basisOrder, ...
+                                    self.fda.penaltyOrder, ...
+                                    lambda );
 
 
         end
@@ -479,7 +547,7 @@ function fdParams = setFDAParameters( tSpan, ...
 end
 
 
-function [ X, XDim, XLenNew ] = processXInput( ...
+function [ X, XDim ] = processX( ...
                                 XFd, XLen, tSpan, tSpanNew, pad, ...
                                 normalize, normalizedPts, normalization )
 
@@ -628,6 +696,15 @@ function XS = split( X, indices )
     else
         XS = X( :, indices, : );
     end
+
+end
+
+
+function XSFd = splitFd( XFd, indices )
+
+    coeff = getcoef( XFd );
+    coeff( :, ~indices ) = [];
+    XSFd = putcoef( XFd, coeff );
 
 end
 

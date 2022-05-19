@@ -110,10 +110,10 @@ classdef modelTrainer < handle
                                         partialBatch = self.partialBatch );
 
             % get the validation data (one-time only)
-            [ dlXVal, dlYVal ] = thisValData.getInput;
+            [ dlXVal, dlYVal ] = thisValData.getDLInput;
             
             % setup whole training set
-            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getInput;
+            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput;
 
             % initialize counters
             nIter = iterationsPerEpoch( mbqTrn );           
@@ -273,7 +273,7 @@ classdef modelTrainer < handle
                 fprintf(' : %1.3f\n', args.lossVal );
             end
         
-            [dlX, dlY] = thisData.getInput;
+            [dlX, dlY] = thisData.getDLInput;
         
             % compute the AE components
             dlZ = thisModel.encode( thisModel, dlX, convert = false );

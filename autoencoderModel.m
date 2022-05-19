@@ -444,7 +444,7 @@ classdef autoencoderModel < representationModel
             end
 
             if isa( X, 'modelDataset' )
-                dlX = X.getInput;
+                dlX = X.getDLInput;
             elseif isa( X, 'dlarray' )
                 dlX = X;
             else
