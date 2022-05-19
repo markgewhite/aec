@@ -3,10 +3,11 @@ function setup = initSetup
 
     % dataset
     setup.data.class = @jumpGRFDataset;
-    setup.data.args.normalizeInput = true;
-    setup.data.args.resampleRate = 10;
-    setup.data.args.adaptiveTimeSpan = true;
     setup.data.args.normalization = 'PAD';
+    setup.data.args.normalizeInput = false;
+    setup.data.args.normalizedPts = 51;
+    setup.data.args.adaptiveTimeSpan = true;
+    setup.data.args.resampleRate = 10;
     
     %setup.data.class = @gaitrecDataset;
     %setup.data.args.HasVGRFOnly = false;
@@ -64,7 +65,7 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 10;
+    setup.trainer.args.updateFreq = 5;
     setup.trainer.args.valType = 'AuxModel';
     setup.trainer.args.nEpochs = 100;
     setup.trainer.args.batchSize = 40;

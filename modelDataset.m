@@ -646,11 +646,6 @@ function dsFull = createDatastore( X, XN, Y )
        
     % create the datastore for the time-normalised output X
     dsXN = arrayDatastore( XN, 'IterationDimension', 2 );
-    if size( XN, 3 ) > 1
-        XNfmt = 'SSCB';
-    else
-        XNfmt = 'CB';
-    end
     
     % create the datastore for the labels/outcomes
     dsY = arrayDatastore( Y, 'IterationDimension', 1 );   
