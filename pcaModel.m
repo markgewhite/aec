@@ -50,7 +50,7 @@ classdef pcaModel < representationModel
             end
 
             self.fdParams = thisDataset.fda.fdParamsRegular;
-            self.tSpan = thisDataset.fda.tSpanRegular;
+            self.tSpan = thisDataset.tSpan.regular;
 
             XInput = thisDataset.XInputRegular;
             %XInput = permute( XInput, [1 3 2] );
@@ -64,7 +64,7 @@ classdef pcaModel < representationModel
             self.compFd = pcaStruct.harmfd;
             self.varProp = pcaStruct.varprop;
 
-            self.ZStd = squeeze(std( pcaStruct.harmscr ));
+            self.ZStd = squeeze(std( pcaStruct.harmscr ))';
 
             % train the auxiliary model
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
@@ -106,7 +106,7 @@ classdef pcaModel < representationModel
             XCStd = zeros( length(self.tSpan), self.ZDim, self.XChannels );
             % compute the components
             for i = 1:self.ZDim
-               XCStd(:,i,:) = self.ZStd(i,:) ...
+               XCStd(:,i,:) = self.ZStd(:,i) ...
                         .*squeeze(eval_fd( self.tSpan, self.compFd(i) ));
             end
 

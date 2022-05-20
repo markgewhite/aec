@@ -122,13 +122,14 @@ classdef representationModel
         end
 
 
-        function plotLatentComp( self, XC, fda, args )
+        function plotLatentComp( self, XC, tSpan, fdParams, args )
             % Plot characteristic curves of the latent codings which are similar
             % in conception to the functional principal components
             arguments
                 self                representationModel
                 XC
-                fda                 struct
+                tSpan               struct
+                fdParams            
                 args.nSample        double = 0
                 args.type           char ...
                     {mustBeMember(args.type, ...
@@ -152,8 +153,8 @@ classdef representationModel
             end
     
             % smooth and re-evaluate all curves
-            tSpanPlot = linspace( fda.tSpan(1), fda.tSpan(end), 101 );
-            XCFd = smooth_basis( fda.tSpanTarget, XC, fda.fdParamsTarget );
+            tSpanPlot = linspace( tSpan.original(1), tSpan.original(end), 101 );
+            XCFd = smooth_basis( tSpan.target, XC, fdParams );
             XCsmth = eval_fd( tSpanPlot, XCFd );
     
             % set the colours from blue and red
@@ -269,7 +270,7 @@ classdef representationModel
                     if i==1
                         ylabel( axis, args.yAxisLabel(c) );
                     end
-                    xlim( axis, [fda.tSpan(1) fda.tSpan(end)] );
+                    xlim( axis, [tSpanPlot(1) tSpanPlot(end)] );
         
                     if ~isempty( args.yAxisLimits )
                         ylim( axis, args.yAxisLimits(c,:) );

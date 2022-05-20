@@ -23,9 +23,15 @@ classdef modelDataset
         matchingOutput  % whether input and target output must match
 
         padding         % structure specifying padding setup
-
         fda             % functional data analysis settings
-        adaptiveTimeSpan % flag whether to adjust timespan to complexity
+
+        tSpan           % time span structure of vectors holding
+                        %   .original = matching the raw data
+                        %   .regular = regularly-spaced times
+                        %   .input = input to the model (may be adaptive)
+                        %   .target = for autoencoder reconstructions
+
+        hasAdaptiveTimeSpan % flag whether to adjust timespan to complexity
         adaptiveLowerBound % lower limit on point density
         adaptiveUpperBound % upper limit on point density
         resampleRate    % downsampling rate
@@ -42,39 +48,41 @@ classdef modelDataset
 
     methods
 
-        function self = modelDataset( XInputRaw, Y, dimLabels, args )
+        function self = modelDataset( XInputRaw, Y, tSpan, dimLabels, args )
             % Create and preprocess the data.
             % The calling function will be a data loader or
             % a function partitioning the data.
             arguments
-                XInputRaw               cell
+                XInputRaw                   cell
                 Y
-                dimLabels               char
-                args.XTargetRaw         cell = []
-                args.purpose            char ...
+                tSpan                       double
+                dimLabels                   char
+                args.XTargetRaw             cell = []
+                args.purpose                char ...
                     {mustBeMember( args.purpose, ...
                     {'Creation', 'ForSubset'} )} = 'Creation'
-                args.normalization      char ...
+                args.normalization          char ...
                     {mustBeMember( args.normalization, ...
                     {'PAD', 'LTN'} )} = 'LTN'
-                args.normalizedPts      double ...
+                args.normalizedPts          double ...
                     {mustBeNumeric, mustBePositive, mustBeInteger} = 101
-                args.normalizeInput     logical = false
-                args.matchingOutput     logical = false
-                args.padding            struct ...
+                args.normalizeInput         logical = false
+                args.matchingOutput         logical = false
+                args.padding                struct ...
                     {mustBeValidPadding}
-                args.fda                struct ...
+                args.fda                    struct ...
                     {mustBeValidFdParams}
-                args.adaptiveTimeSpan   logical = false
-                args.adaptiveLowerBound double = 1E-6
-                args.adaptiveUpperBound double = 1E-1
-                args.resampleRate       double ...
+                args.tSpan                  double = []
+                args.hasAdaptiveTimeSpan    logical = false
+                args.adaptiveLowerBound     double = 1E-6
+                args.adaptiveUpperBound     double = 1E-1
+                args.resampleRate           double ...
                     {mustBeNumeric} = 1
-                args.overSmoothing      double = 1E0
-                args.datasetName        string
-                args.timeLabel          string = "Time"
-                args.channelLabels      string
-                args.channelLimits      double
+                args.overSmoothing          double = 1E0
+                args.datasetName            string
+                args.timeLabel              string = "Time"
+                args.channelLabels          string
+                args.channelLimits          double
             end
 
             self.XInputRaw = XInputRaw;
@@ -86,13 +94,16 @@ classdef modelDataset
                 return
             end
 
+            % set properties
             self.normalization = args.normalization;
             self.normalizedPts = args.normalizedPts;
             self.normalizeInput = args.normalizeInput;
             self.matchingOutput = args.matchingOutput;
             self.padding = args.padding;
             self.fda = args.fda;
-            self.adaptiveTimeSpan = args.adaptiveTimeSpan;
+
+            self.tSpan.original = tSpan;
+            self.hasAdaptiveTimeSpan = args.hasAdaptiveTimeSpan;
             self.adaptiveLowerBound = args.adaptiveLowerBound;
             self.adaptiveUpperBound = args.adaptiveUpperBound;
             self.resampleRate = args.resampleRate;
@@ -103,8 +114,79 @@ classdef modelDataset
             self.info.timeLabel = args.timeLabel;
             self.info.channelLimits = args.channelLimits;
 
-            % prepare the input data
-            self = processXSeries( self, XInputRaw );
+            % get immediately available dimensions
+            self.nObs = length( XInputRaw );
+            self.XChannels = size( XInputRaw{1}, 2 );
+
+            % create smooth functions for the data
+            [self.XFd, self.XLen] = smoothRawData( XInputRaw, ...
+                                                   self.padding, ...
+                                                   self.tSpan.original, ...
+                                                   self.fda  );
+
+            % re-sampling at the given rate
+            self.tSpan.regular = linspace( ...
+                    self.tSpan.original(1), ...
+                    self.tSpan.original(end), ...
+                    fix( self.padding.length/self.resampleRate ) );  
+
+            % adaptive resampling, as required
+            if self.hasAdaptiveTimeSpan && isempty( args.tSpan )
+
+                self.tSpan.input = calcAdaptiveTimeSpan( ...
+                    self.XFd, ...
+                    self.tSpan.original, ...
+                    self.resampleRate, ...
+                    self.padding.length, ...
+                    self.adaptiveLowerBound, ...
+                    self.adaptiveUpperBound );
+
+            elseif isempty( self.hasAdaptiveTimeSpan )
+                self.tSpan.input = self.tSpan.regular;
+            else
+                self.tSpan.input = args.tSpan;
+            end
+
+            if self.matchingOutput
+                % ensure the input and target time spans match
+                % this usually applies for PCA
+                self.tSpan.target = self.tSpan.regular;
+
+            else
+                % adjust the time span in proportion to number of points
+                tSpan0 = 1:length( self.tSpan.input );
+                tSpan1 = linspace( 1, length(self.tSpan.input), ...
+                                   self.normalizedPts );
+
+                self.tSpan.target= interp1( ...
+                            tSpan0, self.tSpan.input, tSpan1 );
+            end
+
+            self.XInputDim = length( self.tSpan.input );
+            self.XTargetDim = self.normalizedPts;
+
+            % set the FD parameters for regular spacing
+            self.fda.fdParamsRegular = setFDAParameters( ...
+                                            self.tSpan.regular, ...
+                                            self.fda.basisOrder, ...
+                                            self.fda.penaltyOrder, ...
+                                            self.fda.lambda );
+
+            % set the FD parameters for adaptive spacing
+            self.fda.fdParamsInput = setFDAParameters( ...
+                                            self.tSpan.input, ...
+                                            self.fda.basisOrder, ...
+                                            self.fda.penaltyOrder, ...
+                                            self.fda.lambda );
+
+            % set the FD parameters for adaptive spacing
+            % with a higher level of smoothing than the input
+            lambda = self.fda.lambda*self.fda.overSmoothing;
+            self.fda.fdParamsTarget = setFDAParameters( ...
+                                    self.tSpan.target, ...
+                                    self.fda.basisOrder, ...
+                                    self.fda.penaltyOrder, ...
+                                    lambda );
 
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
@@ -123,9 +205,10 @@ classdef modelDataset
 
             subXRaw = split( self.XInputRaw, idx );
             subY = self.Y( idx );
+            subTSpan = self.tSpan.original;
             subLabels = self.XDimLabels;
 
-            thisSubset = modelDataset( subXRaw, subY, subLabels, ...
+            thisSubset = modelDataset( subXRaw, subY, subTSpan, subLabels, ...
                                        purpose='ForSubset' );
 
             thisSubset.XFd = splitFd( self.XFd, idx );
@@ -148,8 +231,10 @@ classdef modelDataset
             thisSubset.YLabels = self.YLabels;
             thisSubset.nObs = sum( idx );
 
+            thisSubset.tSpan = self.tSpan;
+
             thisSubset.matchingOutput = self.matchingOutput;
-            thisSubset.adaptiveTimeSpan = self.adaptiveTimeSpan;
+            thisSubset.hasAdaptiveTimeSpan = self.hasAdaptiveTimeSpan;
             thisSubset.adaptiveLowerBound = self.adaptiveLowerBound;
             thisSubset.adaptiveUpperBound = self.adaptiveUpperBound;
 
@@ -208,8 +293,8 @@ classdef modelDataset
                          Anchoring = self.padding.anchoring );
 
             % create a time span with maximum detail
-            tSpan = linspace( self.fda.tSpan(1),...
-                              self.fda.tSpan(end), ...
+            tSpan = linspace( self.tSpan.original(1),...
+                              self.tSpan.original(end), ...
                               size( X, 1 ) );
 
             % create a new basis with maximum number of functions
@@ -263,11 +348,11 @@ classdef modelDataset
 
             XCell = processX( self.XFd, ...
                                self.XLen, ...
-                               self.fda.tSpan, ...
-                               self.fda.tSpanRegular, ...
+                               self.tSpan.original, ...
+                               self.tSpan.regular, ...
                                self.padding, ...
                                true, ...
-                               length(self.fda.tSpanRegular), ...
+                               length(self.tSpan.regular), ...
                                self.normalization );
 
             X = reshape( cell2mat( XCell ), [], self.nObs, self.XChannels );
@@ -283,11 +368,11 @@ classdef modelDataset
 
             X = processX(  self.XFd, ...
                            self.XLen, ...
-                           self.fda.tSpan, ...
-                           self.fda.tSpanInput, ...
+                           self.tSpan.original, ...
+                           self.tSpan.input, ...
                            self.padding, ...
                            self.normalizeInput, ...
-                           length(self.fda.tSpanInput), ...
+                           length(self.tSpan.input), ...
                            self.normalization );
 
         end
@@ -301,109 +386,24 @@ classdef modelDataset
             end
 
             if self.matchingOutput
-                nPts = self.XInputDim;
+                numPts = self.XInputDim;
             else
-                nPts = self.normalizedPts;
+                numPts = self.normalizedPts;
             end
 
             XCell = processX(  self.XFd, ...
                                self.XLen, ...
-                               self.fda.tSpan, ...
-                               self.fda.tSpanTarget, ...
+                               self.tSpan.original, ...
+                               self.tSpan.target, ...
                                self.padding, ...
                                true, ...
-                               nPts, ...
+                               numPts, ...
                                self.normalization );
 
-            X = timeNormalize( XCell, nPts );
+            X = timeNormalize( XCell, numPts );
 
         end
         
-    end
-
-
-    methods (Access = private)    
-        
-
-        function self = processXSeries( self, XInputRaw )
-            % Prepare the input data by smoothing, re-sampling
-            % adding the 1st derivative as a separate channel
-            % XInputRaw and XInput are cell arrays
-            arguments
-                self        modelDataset
-                XInputRaw   cell
-            end
-
-            % get immediately available dimensions
-            self.nObs = length( XInputRaw );
-            self.XChannels = size( XInputRaw{1}, 2 );
-
-            % create smooth functions for the data
-            [self.XFd, self.XLen] = smoothRawData( XInputRaw, ...
-                                                   self.padding, ...
-                                                   self.fda  );
-
-            % re-sampling at the given rate
-            self.fda.tSpanRegular = linspace( ...
-                    self.fda.tSpan(1), self.fda.tSpan(end), ...
-                    fix( self.padding.length/self.resampleRate ) );  
-
-            % adaptive resampling, as required
-            if self.adaptiveTimeSpan
-                self.fda.tSpanInput = calcAdaptiveTimeSpan( ...
-                    self.XFd, self.fda.tSpan, ...
-                    self.resampleRate, self.padding.length, ...
-                    self.adaptiveLowerBound, ...
-                    self.adaptiveUpperBound );
-            else
-                self.fda.tSpanInput = self.fda.tSpanRegular;    
-            end
-
-            if self.matchingOutput
-                % endure the input and target time spans match
-                % this usually applies for PCA
-                self.fda.tSpanTarget = self.fda.tSpanRegular;
-
-            else
-                % adjust the time span in proportion to number of points
-                tSpan0 = 1:length( self.fda.tSpanInput );
-                tSpan1 = linspace( 1, length(self.fda.tSpanInput), ...
-                                   self.normalizedPts );
-
-                self.fda.tSpanTarget= interp1( ...
-                            tSpan0, self.fda.tSpanInput, tSpan1 );
-            end
-
-            self.XInputDim = length( self.fda.tSpanInput );
-            self.XTargetDim = self.normalizedPts;
-
-            % set the FD parameters for regular spacing
-            self.fda.fdParamsRegular = setFDAParameters( ...
-                                            self.fda.tSpanRegular, ...
-                                            self.fda.basisOrder, ...
-                                            self.fda.penaltyOrder, ...
-                                            self.fda.lambda );
-
-            % set the FD parameters for adaptive spacing
-            self.fda.fdParamsInput = setFDAParameters( ...
-                                            self.fda.tSpanInput, ...
-                                            self.fda.basisOrder, ...
-                                            self.fda.penaltyOrder, ...
-                                            self.fda.lambda );
-
-            % set the FD parameters for adaptive spacing
-            % with a higher level of smoothing than the input
-            lambda = self.fda.lambda*self.fda.overSmoothing;
-            self.fda.fdParamsTarget = setFDAParameters( ...
-                                    self.fda.tSpanTarget, ...
-                                    self.fda.basisOrder, ...
-                                    self.fda.penaltyOrder, ...
-                                    lambda );
-
-
-        end
-
-
     end
 
 
@@ -441,7 +441,7 @@ classdef modelDataset
 end
 
 
-function [XFd, XLen] = smoothRawData( X, padding, fda )
+function [XFd, XLen] = smoothRawData( X, padding, tSpan, fda )
 
     % find the series lengths (capped at padLen)
     XLen = min( cellfun( @length, X ), padding.length );
@@ -453,12 +453,12 @@ function [XFd, XLen] = smoothRawData( X, padding, fda )
                  Anchoring = padding.anchoring );
     
     % setup the smoothing parameters
-    fdParams = setFDAParameters( fda.tSpan, ...
+    fdParams = setFDAParameters( tSpan, ...
                                  fda.basisOrder, fda.penaltyOrder, ...
                                  fda.lambda );
 
     % create the smooth functions
-    XFd = smooth_basis( fda.tSpan, X, fdParams );
+    XFd = smooth_basis( tSpan, X, fdParams );
 
 end
 

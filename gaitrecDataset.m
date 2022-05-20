@@ -67,7 +67,7 @@ classdef gaitrecDataset < modelDataset
             pad.same = false;
             pad.anchoring = 'Both';
 
-            paramsFd.tSpan= linspace( 0, 100, 101 );
+            tSpan= linspace( 0, 100, 101 );
         
             % setup fda
             paramsFd.basisOrder = 4;
@@ -77,7 +77,7 @@ classdef gaitrecDataset < modelDataset
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            self = self@modelDataset( XRaw, Y, 'SBC', ...
+            self = self@modelDataset( XRaw, Y, tSpan, 'SBC', ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...

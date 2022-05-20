@@ -5,9 +5,9 @@ function setup = initSetup
     %setup.data.class = @jumpGRFDataset;
     %setup.data.args.normalization = 'PAD';
     %setup.data.args.normalizeInput = false;
-    setup.data.args.normalizedPts = 51;
-    setup.data.args.adaptiveTimeSpan = true;
-    setup.data.args.resampleRate = 1;
+    %setup.data.args.normalizedPts = 51;
+    setup.data.args.hasAdaptiveTimeSpan = true;
+    %setup.data.args.resampleRate = 10;
     
     setup.data.class = @gaitrecDataset;
     setup.data.args.HasVGRFOnly = false;
