@@ -64,7 +64,10 @@ classdef pcaModel < representationModel
             self.compFd = pcaStruct.harmfd;
             self.varProp = pcaStruct.varprop;
 
-            self.ZStd = squeeze(std( pcaStruct.harmscr ))';
+            if size( pcaStruct.harmscr, 3 ) == 1
+                pcaStruct.harmscr = permute( pcaStruct.harmscr, [1 3 2] );
+            end
+            self.ZStd = squeeze( std(pcaStruct.harmscr) );
 
             % train the auxiliary model
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
@@ -106,8 +109,10 @@ classdef pcaModel < representationModel
             XCStd = zeros( length(self.tSpan), self.ZDim, self.XChannels );
             % compute the components
             for i = 1:self.ZDim
-               XCStd(:,i,:) = self.ZStd(:,i) ...
-                        .*squeeze(eval_fd( self.tSpan, self.compFd(i) ));
+                XC = squeeze(eval_fd( self.tSpan, self.compFd(i) ));
+                for c = 1:self.XChannels
+                    XCStd(:,i,c) = self.ZStd(i,c)*XC(:,c);
+                end
             end
 
             if strcmp( args.sampling, 'Fixed' )
