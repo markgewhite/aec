@@ -3,17 +3,15 @@ function setup = initSetup
 
     % dataset
     %setup.data.class = @jumpGRFDataset;
-    setup.data.args.normalization = 'PAD';
-    setup.data.args.normalizeInput = false;
+    setup.data.args.normalization = 'LTN';
+    setup.data.args.normalizeInput = true;
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = true;
     %setup.data.args.resampleRate = 10;
     
-    setup.data.class = @gaitrecDataset;
+    setup.data.class = @fukuchiDataset;
     setup.data.args.HasVGRFOnly = false;
-    %setup.data.args.HasDerivative = true;
-    %setup.data.args.normalizeInput = true;
-
+    
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
     
