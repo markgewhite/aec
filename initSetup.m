@@ -7,9 +7,10 @@ function setup = initSetup
     setup.data.args.normalizeInput = true;
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = true;
-    %setup.data.args.resampleRate = 10;
+    setup.data.args.resampleRate = 10;
     
     setup.data.class = @fukuchiDataset;
+    setup.data.args.FromMatlabFile = false;
     setup.data.args.HasVGRFOnly = false;
     
     %setup.data.class = @exemplarDataset;   

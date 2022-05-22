@@ -293,12 +293,12 @@ classdef modelDataset
                          Anchoring = self.padding.anchoring );
 
             % create a time span with maximum detail
-            tSpan = linspace( self.tSpan.original(1),...
+            thisTSpan = linspace( self.tSpan.original(1),...
                               self.tSpan.original(end), ...
                               size( X, 1 ) );
 
             % create a new basis with maximum number of functions
-            basis = create_bspline_basis( [tSpan(1) tSpan(end)], ...
+            basis = create_bspline_basis( [thisTSpan(1) thisTSpan(end)], ...
                                           size( X, 1 ), ...
                                           self.fda.basisOrder);
             
@@ -316,7 +316,7 @@ classdef modelDataset
                                  10^logLambda(i) );
                 
                 % perform smoothing
-                [~, dfi, gcvi] = smooth_basis( tSpan, X, XFdPari );
+                [~, dfi, gcvi] = smooth_basis( thisTSpan, X, XFdPari );
                 
                 % determine mean GCV and degrees of freedom
                 gcvSave(i,:) = sqrt( sum( gcvi )/self.nObs ); 
@@ -568,11 +568,11 @@ function XLen = adjustXLengths( XLen, tSpan, tSpanAdaptive, padding )
 
             case 'Left'
                 tEnd = tSpan( length(tSpan)-XLen(i)+1 );
-                XLen(i) = length(tSpan) - find( tEnd < tSpanAdaptive, 1 );
+                XLen(i) = length(tSpan) - find( tEnd <= tSpanAdaptive, 1 );
 
             case {'Right', 'Both'}
                 tEnd = tSpan( XLen(i) );
-                XLen(i) = find( tEnd < tSpanAdaptive, 1 );
+                XLen(i) = find( tEnd <= tSpanAdaptive, 1 );
 
         end
     end

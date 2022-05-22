@@ -5,6 +5,7 @@ classdef fukuchiDataset < modelDataset
         Category            % type of data 
         YReference          % chosen Y variable
         SubjectID           % array of subject IDs matching X and Y
+        Side                % indicating left or right
         HasGRF              % whether data includes ground reaction force
         HasVGRFOnly         % whether GRF data has only vertical axis force
         HasCOP              % whether data includes centre of pressure
@@ -39,17 +40,18 @@ classdef fukuchiDataset < modelDataset
                 throwAsCaller( MException(eid,msg) );
             end
 
-            [ XRaw, Y, S, labels ] = fukuchiDataset.load( set, args );
+            [ XRaw, Y, S, side, labels ] = fukuchiDataset.load( set, args );
 
             % setup padding
-            pad.length = 101;
-            pad.longest = false;
+            maxLen = max( cellfun( @length, XRaw ) );
+            pad.length = maxLen;
+            pad.longest = true;
             pad.location = 'Right';
             pad.value = 0;
             pad.same = true;
             pad.anchoring = 'Both';
 
-            tSpan= linspace( 0, 100, 101 );
+            tSpan= (0:maxLen-1)/300;
         
             % setup fda
             paramsFd.basisOrder = 4;
@@ -74,7 +76,8 @@ classdef fukuchiDataset < modelDataset
             self.HasCOP = args.HasCOP;
             self.FromMatlabFile = args.FromMatlabFile;
 
-            self.SubjectID = S;           
+            self.SubjectID = S;
+            self.Side = side;
 
         end
 
@@ -82,7 +85,7 @@ classdef fukuchiDataset < modelDataset
 
     methods (Static)
 
-        function [X, Y, S, names ] = load( set, args )
+        function [X, Y, S, side, names ] = load( set, args )
 
             if ismac
                 rootpath = '/Users/markgewhite/Google Drive/';
@@ -96,7 +99,6 @@ classdef fukuchiDataset < modelDataset
             % load the meta data
             metaData = readtable( fullfile(datapath, 'WBDSInfo.xlsx') );
 
-            metaData.Subject = categorical( metaData.Subject );
             metaData.AgeGroup = categorical( metaData.AgeGroup );
             metaData.Gender = categorical( metaData.Gender );
             metaData.Dominance = categorical( metaData.Dominance );
@@ -127,18 +129,19 @@ classdef fukuchiDataset < modelDataset
 
             end
 
+            filename = ['Recent' set 'Data.mat'];
             if args.FromMatlabFile ...
-                    && isfile( fullfile(datapath,'RecentData.mat') )
+                    && isfile( fullfile(datapath,filename) )
 
                 % load data from a previous run - this is faster
-                load( fullfile(datapath,'RecentData.mat'), ...
-                      'X', 'Y', 'S', 'names' );
+                load( fullfile(datapath,filename), ...
+                      'X', 'Y', 'S', 'side', 'names' );
 
             else
                 % load the trial data from original files
                 switch args.Category
                     case 'GRF'
-                        [ X, Y, S, names ] = loadGRFData( datapath, ...
+                        [ X, Y, S, side, names ] = loadGRFData( datapath, ...
                                                     refY, ...
                                                     metaData.Subject, ...
                                                     args );
@@ -150,8 +153,8 @@ classdef fukuchiDataset < modelDataset
                 end
                         
                 % save it for future reference
-                save( fullfile(datapath,'RecentData.mat'), ...
-                      'X', 'Y', 'S', 'names', '-v7.3' );
+                save( fullfile(datapath,filename), ...
+                      'X', 'Y', 'S', 'side', 'names', '-v7.3' );
             
             end
             
@@ -179,51 +182,65 @@ function filter = setFilter( metaData, set, args )
             filter = ~ismember( metaData.Subject, subjectsForTraining );
     end
 
+    % filter for only treadmill files
+    filter = filter & metaData.TreadHands~='--';
+
+    % filter for only txt files
+    filter = filter & metaData.FileName(end-2:end)=='txt';
+
 end
 
 
-function [X, Y, S, side] = loadGRFData( datapath, ref, subject, args )
+function [X, Y, S, side, names] = loadGRFData( datapath, ref, subject, args )
 
     % constants
     nSubjects = 42;
     nTrials = 8;
-    nFiles = nSubjects*nTrials;
-    nMaxCycles = 25;
+    nMaxCyclesPerFile = 60;
 
     % pre-allocate space
-    X = cell( nFiles*nMaxCycles, 1 );
-    Y = zeros( nFiles*nMaxCycles, 1 );
-    S = zeros( nFiles*nMaxCycles, 1 );
-    side = zeros( nFiles*nMaxCycles, 1 );
+    nCycles = nSubjects*nTrials*nMaxCyclesPerFile;
+    X = cell( nCycles, 1 );
+    Y = zeros( nCycles, 1 );
+    S = zeros( nCycles, 1 );
+    side = zeros( nCycles, 1 );
 
     % identify the required fields
     fields = [];
+    names = [];
     if args.HasGRF
         if args.HasVGRFOnly
             fields = 4;
+            names = "GRFz";
         else
             fields = [ 2 3 4 ];
+            names = ["GRFx", "GRFy", "GRFz"];
         end
     end
 
     if args.HasCOP
         fields = [ fields 5 7 ];
+        names = strcat( names, ["COPx", "COPy"] );
     end
 
     % read in the data, file by file
     kEnd = 0;
-    for i = 1:nFiles
+    for i = 1:nSubjects
 
         for j = 1:nTrials
 
             filename = sprintf( 'WBDS%02uwalkT%02ugrf', i, j );
-            trialData = readtable( fullfile(datapath, filename) );
+            try
+                trialData = readtable( fullfile(datapath, filename) );
+            catch
+                continue
+            end
             data{1} = table2array(trialData( :, [1, 2:8] ));
             data{2} = table2array(trialData( :, [1, 9:15] ));
 
             for m = 1:2
 
-                data{m} = gapFill( data{m} );
+                data{m} = gapFill( data{m}, fields );
 
                 cycleData = extractCycles( data{m}, fields );
 
@@ -252,16 +269,19 @@ end
 
 function cycles = extractCycles ( data, fldIdx )
 
-    loadThreshold = 25;
-    minLen = 100;
+    loadThreshold = 20;
+    minSwingLen = 50;
+    minStanceLen = 100;
+    offsetStart = 8;
+    offsetEnd = 12;
     
-    % identify FZ (files are not consistent)
-    maxF = max( data(:,2:4) );
-    [~, FZIdx] = max(maxF);
-    FZIdx = FZIdx + 1;
+    % re-arrange columns into the standard order
+    GRF = data( :, 2:4 );
+    GRF = GRF( :, [1 3 2] );
+    data( :, 2:4 ) = GRF;
 
     % smooth FZ for reliability
-    indicator = smoothdata( data(:, FZIdx), 'Gaussian', 10 );
+    indicator = smoothdata( data(:, 4), 'Gaussian', 10 );
 
     % initialize an array to hold up to 25 cycles
     cycles = cell( 25, 1 );
@@ -274,18 +294,24 @@ function cycles = extractCycles ( data, fldIdx )
     while ~finished
 
         % find the start of the next cycle, the stance phase
-        t1 = find( indicator( t2+minLen:end ) > loadThreshold, 1 );
+        t1 = find( indicator( t2+minSwingLen:end ) > loadThreshold, 1 );
         if isempty( t1 )
             break
         end
-        t1 = t1 + t2 + minLen - 1;
+        t1 = t1 + t2 + minSwingLen - offsetStart;
+        if t1 > length(indicator)
+            break
+        end
  
         % find the end of the stance phase
-        t2 = find( indicator( t1+minLen:end ) < loadThreshold, 1 );
+        t2 = find( indicator( t1+minStanceLen:end ) < loadThreshold, 1 );
         if isempty( t2 )
             break
         end
-        t2 = t2 + t1 + minLen - 1;
+        t2 = t2 + t1 + minStanceLen + offsetEnd;
+        if t2 > length(indicator)
+            break
+        end
 
         % cycle found: store it
         c = c + 1;
@@ -298,26 +324,30 @@ function cycles = extractCycles ( data, fldIdx )
 end
 
 
-function data = gapFill( data )
+function data = gapFill( data, fldIdx )
+
+    % not dropouts if absolute value is less than threshold
+    threshold = 40;
 
     % define the full time span 
     tSpanAll = data( :, 1 );
-
-    % identify the fields for gap filling
-    indices = [2:5, 7:8];
     
-    for i = indices
+    for i = fldIdx
 
-        % find rows with non-zero entries (no gaps)
-        valid = data(:, i)~=0;
+        % take moving averages to look for dropouts
+        % averaging either side of the point
+        m3 = [0; (data(1:end-2,i)+data(3:end,i))/2; 0];
+
+        % find rows with non-zero entries (single gaps)
+        valid = data(:, i)~=0 | abs(m3)<threshold;
 
         % define a time span that includes only valid rows
         tSpanValid = data( valid, 1 );
-    
+
         % interpolate in those gaps
         data( :, i ) = interp1(   tSpanValid, ...
                                   data(valid, i), ...
-                                  tSpanAll, 'nearest' );
+                                  tSpanAll, 'pchip' );
 
     end
 
