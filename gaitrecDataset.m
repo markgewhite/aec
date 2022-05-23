@@ -48,6 +48,7 @@ classdef gaitrecDataset < modelDataset
                 args.HasDerivative  logical = false
                 args.HasDelta       logical = false
                 args.FromMatlabFile logical = true
+                args.PaddingLength  double = 0
                 superArgs.?modelDataset
             end
 
@@ -60,7 +61,11 @@ classdef gaitrecDataset < modelDataset
             [ XRaw, Y, S, labels ] = gaitrecDataset.load( set, args );
 
             % setup padding
-            pad.length = 101;
+            if args.PaddingLength==0
+                pad.length = 101;
+            else
+                pad.length = args.PaddingLength;
+            end
             pad.longest = false;
             pad.location = 'Left';
             pad.value = 1;

@@ -36,6 +36,7 @@ classdef syntheticDataset < modelDataset
                 args.Tau            double = 0
                 args.SharedLevel    double = 3
                 args.WarpLevel      double = 2
+                args.PaddingLength  double = 0
                 superArgs.?modelDataset
             end
 
@@ -44,7 +45,12 @@ classdef syntheticDataset < modelDataset
             [ XRaw, Y ] = syntheticDataset.genData( args.ClassSizes, args );
 
             % setup padding
-            pad.length = length( args.tSpan );
+            if args.PaddingLength==0
+                pad.length = length( args.tSpan );
+            else
+                pad.length = args.PaddingLength;
+            end
+
             pad.longest = false;
             pad.location = 'Left';
             pad.value = 1;

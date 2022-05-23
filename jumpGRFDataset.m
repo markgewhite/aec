@@ -7,12 +7,13 @@ classdef jumpGRFDataset < modelDataset
 
     methods
 
-        function self = jumpGRFDataset( set, superArgs )
+        function self = jumpGRFDataset( set, args, superArgs )
             % Load the countermovement jump GRF dataset
             arguments
                 set        char ...
                     {mustBeMember( set, ...
                                    {'Training', 'Testing'} )}
+                args.PaddingLength  double = 0
                 superArgs.?modelDataset
             end
 
@@ -20,7 +21,11 @@ classdef jumpGRFDataset < modelDataset
             Y = Y+1;
 
             % setup padding
-            pad.length = 1501;
+            if args.PaddingLength==0
+                pad.length = 1501;
+            else
+                pad.length = args.PaddingLength;
+            end
             pad.longest = false;
             pad.location = 'Left';
             pad.value = 1;

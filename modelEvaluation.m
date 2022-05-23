@@ -41,7 +41,8 @@ classdef modelEvaluation < handle
 
             self.TestingDataset = setup.data.class( 'Testing', ...
                                                     argsCell{:}, ...
-                            tSpan = self.TrainingDataset.tSpan.input );
+                    tSpan = self.TrainingDataset.tSpan.input, ...
+                    PaddingLength = self.TrainingDataset.padding.length );
 
             if isfield( setup.lossFcns, 'cls' )
                 % set the number of classes

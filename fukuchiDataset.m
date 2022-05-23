@@ -31,6 +31,7 @@ classdef fukuchiDataset < modelDataset
                 args.HasVGRFOnly    logical = true
                 args.HasCOP         logical = false
                 args.FromMatlabFile logical = true
+                args.PaddingLength  double = 0
                 superArgs.?modelDataset
             end
 
@@ -43,20 +44,24 @@ classdef fukuchiDataset < modelDataset
             [ XRaw, Y, S, side, labels ] = fukuchiDataset.load( set, args );
 
             % setup padding
-            maxLen = max( cellfun( @length, XRaw ) );
-            pad.length = maxLen;
+            if args.PaddingLength==0
+                maxLen = max( cellfun( @length, XRaw ) );
+                pad.length = maxLen;
+            else
+                pad.length = args.PaddingLength;
+            end
             pad.longest = true;
             pad.location = 'Right';
             pad.value = 0;
             pad.same = true;
             pad.anchoring = 'Both';
 
-            tSpan= (0:maxLen-1)/300;
+            tSpan= (0:pad.length-1)/300;
         
             % setup fda
             paramsFd.basisOrder = 4;
             paramsFd.penaltyOrder = 2;
-            paramsFd.lambda = 1E2; % 1E2
+            paramsFd.lambda = 1E-8;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -142,8 +147,9 @@ classdef fukuchiDataset < modelDataset
                 switch args.Category
                     case 'GRF'
                         [ X, Y, S, side, names ] = loadGRFData( datapath, ...
-                                                    refY, ...
+                                                    metaData.FileName, ...
                                                     metaData.Subject, ...
+                                                    refY, ...
                                                     args );
 
                     case 'JointAngles'
@@ -186,20 +192,31 @@ function filter = setFilter( metaData, set, args )
     filter = filter & metaData.TreadHands~='--';
 
     % filter for only txt files
-    filter = filter & metaData.FileName(end-2:end)=='txt';
+    % and for the particular data category
+    switch args.Category
+        case 'GRF'
+            identifier = 'grf';
+        case 'JointAngles'
+            identifier = 'ang';
+        case 'JointMoments'
+            identifier = 'knt';
+    end
+
+    filter = filter & contains( metaData.FileName, ...
+                                [identifier '.txt'] );
 
 end
 
 
-function [X, Y, S, side, names] = loadGRFData( datapath, ref, subject, args )
+function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
+                                               subjects, ref, args )
 
     % constants
-    nSubjects = 42;
-    nTrials = 8;
+    nFiles = length( filenames );
     nMaxCyclesPerFile = 60;
 
     % pre-allocate space
-    nCycles = nSubjects*nTrials*nMaxCyclesPerFile;
+    nCycles = nFiles*nMaxCyclesPerFile;
     X = cell( nCycles, 1 );
     Y = zeros( nCycles, 1 );
     S = zeros( nCycles, 1 );
@@ -224,36 +241,33 @@ function [X, Y, S, side, names] = loadGRFData( datapath, ref, subject, args )
     end
 
     % read in the data, file by file
+    filenames = string( filenames );
     kEnd = 0;
-    for i = 1:nSubjects
+    for i = 1:nFiles
 
-        for j = 1:nTrials
+        try
+            trialData = readtable( fullfile(datapath, filenames(i)) );
+        catch
+            continue
+        end
+        
+        data{1} = table2array(trialData( :, [1, 2:8] ));
+        data{2} = table2array(trialData( :, [1, 9:15] ));
 
-            filename = sprintf( 'WBDS%02uwalkT%02ugrf', i, j );
-            try
-                trialData = readtable( fullfile(datapath, filename) );
-            catch
-                continue
-            end
-            data{1} = table2array(trialData( :, [1, 2:8] ));
-            data{2} = table2array(trialData( :, [1, 9:15] ));
+        for j = 1:2
 
-            for m = 1:2
+            data{j} = gapFill( data{j}, fields );
 
-                data{m} = gapFill( data{m}, fields );
+            cycleData = extractCycles( data{j}, fields );
 
-                cycleData = extractCycles( data{m}, fields );
+            kStart = kEnd + 1;
+            kEnd = kStart + length( cycleData ) - 1;
 
-                kStart = kEnd + 1;
-                kEnd = kStart + length( cycleData ) - 1;
+            X( kStart:kEnd ) = cycleData;
+            Y( kStart:kEnd ) = ref(i);
+            S( kStart:kEnd ) = subjects(i);
 
-                X( kStart:kEnd ) = cycleData;
-                Y( kStart:kEnd ) = ref( (i-1)*nTrials+j );
-                S( kStart:kEnd ) = subject( (i-1)*nTrials+j );
-
-                side( kStart:kEnd ) = m;
-
-            end
+            side( kStart:kEnd ) = j;
 
         end
 

@@ -74,8 +74,8 @@ classdef modelDataset
                     {mustBeValidFdParams}
                 args.tSpan                  double = []
                 args.hasAdaptiveTimeSpan    logical = false
-                args.adaptiveLowerBound     double = 1E-6
-                args.adaptiveUpperBound     double = 1E-1
+                args.adaptiveLowerBound     double = 0.05
+                args.adaptiveUpperBound     double = 5
                 args.resampleRate           double ...
                     {mustBeNumeric} = 1
                 args.overSmoothing          double = 1E0
@@ -135,13 +135,11 @@ classdef modelDataset
 
                 self.tSpan.input = calcAdaptiveTimeSpan( ...
                     self.XFd, ...
-                    self.tSpan.original, ...
-                    self.resampleRate, ...
-                    self.padding.length, ...
+                    self.tSpan.regular, ...
                     self.adaptiveLowerBound, ...
                     self.adaptiveUpperBound );
 
-            elseif isempty( self.hasAdaptiveTimeSpan )
+            elseif isempty( args.tSpan )
                 self.tSpan.input = self.tSpan.regular;
             else
                 self.tSpan.input = args.tSpan;
@@ -319,7 +317,7 @@ classdef modelDataset
                 [~, dfi, gcvi] = smooth_basis( thisTSpan, X, XFdPari );
                 
                 % determine mean GCV and degrees of freedom
-                gcvSave(i,:) = sqrt( sum( gcvi )/self.nObs ); 
+                gcvSave(i,:) = sqrt( sum( gcvi, 2 )/self.nObs ); 
                 dfSave(i)  = dfi;
                 
             end
@@ -441,13 +439,13 @@ classdef modelDataset
 end
 
 
-function [XFd, XLen] = smoothRawData( X, padding, tSpan, fda )
+function [XFd, XLen] = smoothRawData( XCell, padding, tSpan, fda )
 
     % find the series lengths (capped at padLen)
-    XLen = min( cellfun( @length, X ), padding.length );
+    XLen = min( cellfun( @length, XCell ), padding.length );
 
     % pad the series for smoothing
-    X = padData( X, padding.length, padding.value, ...
+    X = padData( XCell, padding.length, padding.value, ...
                  Same = padding.same, ...
                  Location = padding.location, ...
                  Anchoring = padding.anchoring );
@@ -499,7 +497,6 @@ function [ X, XDim ] = processX( ...
     XLenNew = adjustXLengths( XLen, tSpan, tSpanNew, pad.location );
     
     % re-scale for resampled length
-    XLenNew = ceil( size( XEval, 1 )*XLenNew / pad.length );
     pad.length = max( XLenNew );
     
     % recreate the cell time series
@@ -529,18 +526,14 @@ end
 
 
 function tSpanAdaptive = calcAdaptiveTimeSpan( XFd, tSpan, ...
-                                                resampleRate, padLen, ...
-                                                lowerBound, upperBound )
-
-    % resample the timespan
-    tSpan = linspace( tSpan(1), tSpan(end), fix( padLen/resampleRate ) );   
+                                               lowerBound, upperBound ) 
 
     % evaluate the mean XFd curvature (2nd derivative)
     D1XEval = squeeze(mean( abs(eval_fd( tSpan, XFd, 1 )), 2));
     D2XEval = squeeze(mean( abs(eval_fd( tSpan, XFd, 2 )), 2));
 
-    D1XEval = min( max( D1XEval./sum(D1XEval), lowerBound ), upperBound );
-    D2XEval = min( max( D2XEval./sum(D2XEval), lowerBound ), upperBound );
+    D1XEval = min( max( D1XEval./mean(D1XEval), lowerBound ), upperBound );
+    D2XEval = min( max( D2XEval./mean(D2XEval), lowerBound ), upperBound );
     
     DXEvalComb = sum( D1XEval + D2XEval, 2 );
 
@@ -553,10 +546,10 @@ function tSpanAdaptive = calcAdaptiveTimeSpan( XFd, tSpan, ...
     tSpanAdaptive = tSpan(1) + D2XInt*(tSpan(end)-tSpan(1));
 
     % reinterpolate to remove the extra point
-    nPts = length(tSpan);
+    nPts = length( tSpan );
     tSpanAdaptive = interp1( 1:nPts+1, ...
-                              tSpanAdaptive, ...
-                              linspace(1, nPts+1, nPts) );
+                             tSpanAdaptive, ...
+                             linspace(1, nPts+1, nPts) );
 
 end
 
@@ -568,7 +561,7 @@ function XLen = adjustXLengths( XLen, tSpan, tSpanAdaptive, padding )
 
             case 'Left'
                 tEnd = tSpan( length(tSpan)-XLen(i)+1 );
-                XLen(i) = length(tSpan) - find( tEnd <= tSpanAdaptive, 1 );
+                XLen(i) = length(tSpanAdaptive) - find( tEnd <= tSpanAdaptive, 1 ) + 1;
 
             case {'Right', 'Both'}
                 tEnd = tSpan( XLen(i) );

@@ -44,6 +44,7 @@ classdef exemplarDataset < modelDataset
                 args.Noise              double = 0.002
                 args.HasVariableLength  logical = false
                 args.TerminationValue   double = 0
+                args.PaddingLength      double = 0
                 superArgs.?modelDataset
             end
 
@@ -79,7 +80,11 @@ classdef exemplarDataset < modelDataset
             end
 
             % setup padding
-            pad.length = length( args.tSpan );
+            if args.PaddingLength==0
+                pad.length = length( args.tSpan );
+            else
+                pad.length = args.PaddingLength;
+            end
             pad.longest = false;
             pad.location = 'Left';
             pad.value = 1;

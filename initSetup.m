@@ -2,16 +2,16 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    %setup.data.class = @jumpGRFDataset;
-    setup.data.args.normalization = 'LTN';
+    setup.data.class = @jumpGRFDataset;
+    setup.data.args.normalization = 'PAD';
     setup.data.args.normalizeInput = true;
     setup.data.args.normalizedPts = 51;
-    setup.data.args.hasAdaptiveTimeSpan = true;
+    setup.data.args.hasAdaptiveTimeSpan = false;
     setup.data.args.resampleRate = 10;
     
-    setup.data.class = @fukuchiDataset;
-    setup.data.args.FromMatlabFile = false;
-    setup.data.args.HasVGRFOnly = false;
+    %setup.data.class = @fukuchiDataset;
+    %setup.data.args.FromMatlabFile = false;
+    %setup.data.args.HasVGRFOnly = false;
     
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
@@ -66,7 +66,7 @@ function setup = initSetup
     % training
     setup.trainer.args.updateFreq = 5;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 10;
+    setup.trainer.args.nEpochs = 100;
     setup.trainer.args.batchSize = 40;
 
 
