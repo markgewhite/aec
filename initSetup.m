@@ -2,17 +2,21 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @jumpGRFDataset;
-    setup.data.args.normalization = 'PAD';
-    setup.data.args.normalizeInput = true;
+    %setup.data.class = @jumpGRFDataset;
+    setup.data.args.normalization = 'LTN';
+    setup.data.args.normalizeInput = false;
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = false;
-    setup.data.args.resampleRate = 10;
+    setup.data.args.resampleRate = 1;
     
-    %setup.data.class = @fukuchiDataset;
-    %setup.data.args.FromMatlabFile = false;
+    setup.data.class = @fukuchiDataset;
+    setup.data.args.FromMatlabFile = false;
     %setup.data.args.HasVGRFOnly = false;
-    
+    setup.data.args.Category = 'JointAngles';
+    setup.data.args.HasPelvis = true;
+    setup.data.args.HasHip = true;
+    setup.data.args.HasKnee = true;
+
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
     

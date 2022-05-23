@@ -9,6 +9,11 @@ classdef fukuchiDataset < modelDataset
         HasGRF              % whether data includes ground reaction force
         HasVGRFOnly         % whether GRF data has only vertical axis force
         HasCOP              % whether data includes centre of pressure
+        HasPelvisAngles     % whether data includes pelvis joint angles
+        HasHipAngles        % whether data includes hip joint angles
+        HasKneeAngles       % whether data includes knee joint angles
+        HasAnkleAngles      % whether data includes ankle joint angles
+        HasFootAngles       % whether data includes foot joint angles
         FromMatlabFile      % if from Matlab file rather than original data files
     end
 
@@ -17,21 +22,26 @@ classdef fukuchiDataset < modelDataset
         function self = fukuchiDataset( set, args, superArgs )
             % Load the data
             arguments
-                set                 char ...
+                set                     char ...
                     {mustBeMember( set, ...
                     {'Training', 'Testing'} )}
-                args.RandomSeed     double = 1234
-                args.YReference     char ...
+                args.RandomSeed         double = 1234
+                args.YReference         char ...
                     {mustBeMember( args.YReference, ...
                     {'AgeGroup', 'Gender', 'SpeedClass', 'GaitSpeed'} )} = 'AgeGroup'
-                args.Category       char ...
+                args.Category           char ...
                     {mustBeMember( args.Category, ...
-                    {'GRF', 'JointAngles', 'JointMoments'} )} = 'GRF'
-                args.HasGRF         logical = true
-                args.HasVGRFOnly    logical = true
-                args.HasCOP         logical = false
-                args.FromMatlabFile logical = true
-                args.PaddingLength  double = 0
+                    {'GRF', 'JointAngles'} )} = 'GRF'
+                args.HasGRF             logical = true
+                args.HasVGRFOnly        logical = true
+                args.HasCOP             logical = false
+                args.HasPelvisAngles    logical = false
+                args.HasHipAngles       logical = false
+                args.HasKneeAngles      logical = false
+                args.HasAnkleAngles     logical = false
+                args.HasFootAngles      logical = false
+                args.FromMatlabFile     logical = true
+                args.PaddingLength      double = 0
                 superArgs.?modelDataset
             end
 
@@ -56,7 +66,14 @@ classdef fukuchiDataset < modelDataset
             pad.same = true;
             pad.anchoring = 'Both';
 
-            tSpan= (0:pad.length-1)/300;
+            switch args.Category
+                case 'GRF'
+                    tSpan= (0:pad.length-1)/300;
+                    label = "Stance Time (s)";
+                case 'JointAngles'
+                    tSpan = 0:100;
+                    label = "Percentage Stance (%)";
+            end
         
             % setup fda
             paramsFd.basisOrder = 4;
@@ -72,13 +89,18 @@ classdef fukuchiDataset < modelDataset
                             fda = paramsFd, ...
                             datasetName = "Fukuchi", ...
                             channelLabels = labels, ...
-                            timeLabel = "Percentage Stance", ...
+                            timeLabel = label, ...
                             channelLimits = [] );
 
             self.Category = args.Category;
             self.YReference = args.YReference;
             self.HasGRF = args.HasGRF;
             self.HasCOP = args.HasCOP;
+            self.HasPelvisAngles = args.HasPelvisAngles;
+            self.HasHipAngles = args.HasHipAngles;
+            self.HasKneeAngles = args.HasKneeAngles;
+            self.HasAnkleAngles = args.HasAnkleAngles;
+            self.HasFootAngles = args.HasFootAngles;
             self.FromMatlabFile = args.FromMatlabFile;
 
             self.SubjectID = S;
@@ -153,8 +175,11 @@ classdef fukuchiDataset < modelDataset
                                                     args );
 
                     case 'JointAngles'
-
-                    case 'JointMoments'
+                        [ X, Y, S, side, names ] = loadAnglesData( datapath, ...
+                                                    metaData.FileName, ...
+                                                    metaData.Subject, ...
+                                                    refY, ...
+                                                    args );
 
                 end
                         
@@ -189,7 +214,7 @@ function filter = setFilter( metaData, set, args )
     end
 
     % filter for only treadmill files
-    filter = filter & metaData.TreadHands~='--';
+    filter = filter & contains( metaData.FileName, 'walkT' );
 
     % filter for only txt files
     % and for the particular data category
@@ -237,7 +262,7 @@ function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
 
     if args.HasCOP
         fields = [ fields 5 7 ];
-        names = strcat( names, ["COPx", "COPy"] );
+        names = [names, "COPx", "COPy"];
     end
 
     % read in the data, file by file
@@ -277,6 +302,87 @@ function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
     Y = Y( 1:kEnd );
     S = S( 1:kEnd );
     side = side( 1:kEnd );
+
+end
+
+
+function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
+                                               subjects, ref, args )
+
+    % constants
+    nFiles = length( filenames );
+
+    % pre-allocate space
+    X = cell( 2*nFiles, 1 );
+    Y = zeros( 2*nFiles, 1 );
+    S = zeros( 2*nFiles, 1 );
+    side = zeros( 2*nFiles, 1 );
+
+    % identify the required fields
+    fields = [];
+    names = [];
+    if args.HasPelvisAngles
+        fields = [ fields 2 3 4 ];
+        names = ["Pelvis Tilt", "Pelvis Obliquity", "Pelvis Rotation"];
+    end
+
+    if args.HasHipAngles
+        fields = [ fields 5 6 7 ];
+        names = [ names, ...
+          "Hip Flexion/Extension", "Hip Add/Abduction", "Hip Int/External Rotation"];
+    end
+
+    if args.HasKneeAngles
+        fields = [ fields 8 9 10 ];
+        names = [names, ...
+          "Knee Flexion/Extension", "Knee Add/Abduction", "Knee Int/External Rotation"];
+    end
+
+    if args.HasAnkleAngles
+        fields = [ fields 11 12 13 ];
+        names = [names, ...
+          "Ankle Dorsi/Plantarflexion", "Ankle Inv/Eversion", "Ankle Add/Abduction"];
+    end
+
+    if args.HasFootAngles
+        fields = [ fields 14 15 16 ];
+        names = [names, ...
+          "Foot Dorsi/Plantarflexion", "Foot Inv/Eversion", "Foot Add/Abduction"];
+    end
+
+    % read in the data, file by file
+    filenames = string( filenames );
+    k = 0;
+    for i = 1:nFiles
+
+        try
+            trialData = readtable( fullfile(datapath, filenames(i)) );
+        catch
+            continue
+        end
+        
+        data{1} = table2array(trialData( :, [2:4  8:10 14:16 20:22 26:28] ));
+        data{2} = table2array(trialData( :, [5:7 11:13 17:19 23:25 29:31] ));
+
+        for j = 1:2
+
+            cycleData = data{j}( :, fields );
+
+            k = k+1;
+            X{k} = cycleData;
+            Y(k) = ref(i);
+            S(k) = subjects(i);
+
+            side(k) = j;
+
+        end
+
+    end
+
+    X = X( 1:k );
+    Y = Y( 1:k );
+    S = S( 1:k );
+    side = side( 1:k );
 
 end
 
