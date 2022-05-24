@@ -223,6 +223,9 @@ classdef autoencoderModel < representationModel
                 throwAsCaller( MException(eid,msg) );
             end
 
+            % set the scaling factors for reconstruction loss
+            self.setReconScale( thisDataset.XTarget );
+
             % re-partition the data to create training and validation sets
             cvPart = cvpartition( thisDataset.nObs, 'Holdout', 0.25 );
             
@@ -242,13 +245,40 @@ classdef autoencoderModel < representationModel
         function loss = getReconLoss( self, X, XHat )
             % Calculate the reconstruction loss
             arguments
-                self
+                self            autoencoderModel
                 X     
                 XHat  
             end
             
             name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
             loss = self.lossFcns.(name).calcLoss( X, XHat );
+
+        end
+
+
+        function loss = getReconTemporalLoss( self, X, XHat )
+            % Calculate the reconstruction loss over time
+            arguments
+                self            autoencoderModel
+                X     
+                XHat  
+            end
+            
+            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
+            loss = self.lossFcns.(name).calcTemporalLoss( X, XHat );
+
+        end
+
+
+        function setReconScale( self, data )
+            % Set the scaling factors for reconstructions
+            arguments
+                self            autoencoderModel
+                data            double
+            end
+            
+            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
+            self.lossFcns.(name).setScale( data );
 
         end
 

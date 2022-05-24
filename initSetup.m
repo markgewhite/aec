@@ -7,11 +7,11 @@ function setup = initSetup
     setup.data.args.normalizeInput = false;
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = false;
-    setup.data.args.resampleRate = 1;
+    %setup.data.args.resampleRate = 10;
     
     setup.data.class = @fukuchiDataset;
-    setup.data.args.FromMatlabFile = false;
-    %setup.data.args.HasVGRFOnly = false;
+    setup.data.args.FromMatlabFile = true;
+    setup.data.args.HasVGRFOnly = false;
     setup.data.args.Category = 'JointAngles';
     setup.data.args.HasPelvis = true;
     setup.data.args.HasHip = true;
@@ -68,10 +68,10 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 5;
+    setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 100;
-    setup.trainer.args.batchSize = 40;
+    setup.trainer.args.nEpochs = 200;
+    setup.trainer.args.batchSize = 100;
 
 
 end

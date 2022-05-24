@@ -345,14 +345,14 @@ classdef modelEvaluation < handle
                 thisModel.getReconLoss( eval.XHatRegular, eval.XRegular );
 
             % compute the mean squared error as a function of time
-            if size( eval.XRegular, 3 ) > 1
-                eval.ReconTimeMSE = mean( (eval.XHatRegular-eval.XRegular).^2, [2 3] );
-            else
-                eval.ReconTimeMSE = mean( (eval.XHatRegular-eval.XRegular).^2, 2 );
-            end
+            eval.ReconTimeMSE = ...
+                thisModel.getReconTemporalLoss( eval.XHatRegular, eval.XRegular );
+
             figure(4);
             hold on;
-            plot( thisDataset.tSpan.regular, eval.ReconTimeMSE );
+            for i = 1:thisDataset.XChannels
+                plot( thisDataset.tSpan.regular, eval.ReconTimeMSE(:,i) );
+            end
 
 
             % compute the auxiliary loss
