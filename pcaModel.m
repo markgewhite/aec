@@ -8,6 +8,7 @@ classdef pcaModel < representationModel
         varProp       double  % explained variance
         fdParams              % functional data parameters
         tSpan         double  % time span
+        Scale                 % scaling factor for reconstruction loss
 
         auxModelType          % type of auxiliary model to use
         auxModel              % auxiliary model itself
@@ -53,7 +54,10 @@ classdef pcaModel < representationModel
             self.tSpan = thisDataset.tSpan.regular;
 
             XInput = thisDataset.XInputRegular;
-            %XInput = permute( XInput, [1 3 2] );
+
+            % set the channel-wise scaling factor
+            scaling = squeeze(mean(var( XInput )))';
+            self.Scale = scaling;
 
             % convert input to a functional data object
             XFd = smooth_basis( self.tSpan, XInput, self.fdParams );
@@ -145,6 +149,42 @@ classdef pcaModel < representationModel
         end
 
 
+        function loss = getReconLoss( self, X, XHat )
+            % Calculate the reconstruction loss
+            arguments
+                self        pcaModel
+                X           double
+                XHat        double
+            end
+
+            if size( X, 3 ) == 1
+                loss = mean( (X-XHat).^2, [1 2] )/self.Scale;
+            else
+                loss = mean(mean( (X-XHat).^2, [1 2] )./ ...
+                                    permute(self.Scale, [1 3 2]));
+            end
+    
+        end
+
+
+        function loss = getReconTemporalLoss( self, X, XHat )
+            % Calculate the reconstruction loss across time domain
+            arguments
+                self        pcaModel
+                X           double
+                XHat        double
+            end
+
+            if size( X, 3 ) == 1
+                loss = squeeze(mean( (X-XHat).^2, 2 )/self.Scale);
+            else
+                loss = squeeze(mean( (X-XHat).^2, 2 )./ ...
+                                    permute(self.Scale, [1 3 2]));
+            end
+    
+        end
+
+
     end
 
     
@@ -196,7 +236,7 @@ classdef pcaModel < representationModel
             arguments
                 self                pcaModel
                 Z                   double  % latent codes
-                arg.convert         logical = true
+                arg.convert         logical % redundant
             end
             
             % create the set of points from the mean for each curve
@@ -212,10 +252,6 @@ classdef pcaModel < representationModel
                     end
                 end
             end
-
-            %if arg.convert
-            %    XHat = permute( XHat, [1 3 2] );
-            %end
  
         end
 
