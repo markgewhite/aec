@@ -35,6 +35,7 @@ classdef modelDataset
         adaptiveLowerBound % lower limit on point density
         adaptiveUpperBound % upper limit on point density
         resampleRate    % downsampling rate
+        overSmoothing   % additional factor for target roughness penalty 
 
         info            % dataset information (used for plotting)
     end

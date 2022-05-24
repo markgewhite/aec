@@ -8,8 +8,9 @@
 classdef componentLoss < lossFunction
 
     properties
-        criterion   % criterion function for component loss
-        nSample     % number of samples to draw to generate components
+        Criterion     % criterion function for component loss
+        NumSamples    % number of samples to draw to generate components
+        Scale         % scaling factor between channels
     end
 
     methods
@@ -32,8 +33,22 @@ classdef componentLoss < lossFunction
                                  input = 'XC', ...
                                  lossNets = {'encoder', 'decoder'} );
 
-            self.criterion = args.criterion;
-            self.nSample = args.nSample;
+            self.Criterion = args.criterion;
+            self.NumSamples = args.nSample;
+            self.Scale = 1;
+
+        end
+
+
+        function self = setScale( self, data )
+            % Set the scaling factor when calculating reconstruction loss
+            arguments
+                self        componentLoss
+                data        double
+            end
+
+            scaling = squeeze(mean(var( data )))';
+            self.Scale = scaling;
 
         end
 
@@ -45,11 +60,11 @@ classdef componentLoss < lossFunction
                 dlXC  dlarray  % generated AE components
             end
 
-            switch self.criterion
+            switch self.Criterion
                 case 'Orthogonality'
                     % compute the inner product as a test
                     % of component orthogonality
-                    loss = innerProduct( dlXC, self.nSample );
+                    loss = innerProduct( dlXC, self.NumSamples, self.Scale );
 
                 case 'Varimax'
                     % compute the component variance across 
@@ -65,7 +80,7 @@ classdef componentLoss < lossFunction
 end
 
 
-function loss = innerProduct( dlXC, nSample )
+function loss = innerProduct( dlXC, nSample, scale )
     % Calculate the inner product
 
     % for speed convert to ordinary numeric array
@@ -76,19 +91,24 @@ function loss = innerProduct( dlXC, nSample )
         XC = permute( XC, [1 3 2] );
     end
     nComp = size( XC, 3 )/nSample;
-    orth = 0;
-    for i = 1:nComp
-        for j = i+1:nComp
-            for k = 1:nSample
-                for l = k+1:nSample
-                    iSample = (i-1)*nSample+k;
-                    jSample = (j-1)*nSample+l;
-                    orth = orth + abs( mean(XC(i,:,iSample).*XC(j,:,jSample)) );
+    nChannels = size( XC, 2 );
+
+    orth = zeros( 1, nChannels );
+
+    for c = 1:nChannels
+        for i = 1:nComp
+            for j = i+1:nComp
+                for k = 1:nSample
+                    s = (i-1)*nSample+k;
+                    orth(c) = orth(c) + mean(XC(i,c,s).*XC(j,c,s))^2;
                 end
             end
         end
     end
-    loss = 4*orth/(nComp*(nComp-1)*nSample*(nSample-1));
+
+    orth = orth./scale;
+
+    loss = mean(orth)/(nComp*nSample*(nSample-1));
 
 end
 

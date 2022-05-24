@@ -14,6 +14,7 @@ classdef smoothnessLoss < lossFunction
         Lambda              % roughness penalty
         BasisFd             % basis functional data object
         FdParams            % functional data parameters
+        Scale               % scaling factor for channels
     end
 
     methods
@@ -29,7 +30,7 @@ classdef smoothnessLoss < lossFunction
                 args.PenaltyOrder    double ...
                     {mustBeInteger,mustBePositive} = 1
                 args.Lambda          double ...
-                    {mustBePositive} = 1E-1
+                    {mustBePositive} = 1E-2
                 superArgs.?lossFunction
             end
 
@@ -53,6 +54,22 @@ classdef smoothnessLoss < lossFunction
                                    self.PenaltyOrder, ...
                                    self.Lambda );
 
+            self.Scale = 1;
+
+        end
+
+
+
+        function self = setScale( self, data )
+            % Set the scaling factor when calculating the loss
+            arguments
+                self        smoothnessLoss
+                data        double
+            end
+
+            scaling = squeeze(mean(var( data )))';
+            self.Scale = scaling;
+
         end
 
 
@@ -71,7 +88,24 @@ classdef smoothnessLoss < lossFunction
             XHatFd = smooth_basis( tSpan, XHat, self.FdParams );
             XHatSmth = eval_fd( tSpan, XHatFd );
 
-            loss = mean( (XHat - XHatSmth).^2, 'all' );
+            if isa( dlXHat, 'dlarray' )
+                % dimensions are Time x Channel x Batch
+                if size( XHat, 3 ) == 1
+                    loss = mean( (XHat-XHatSmth).^2, [1 2] )/self.Scale;
+                else
+                    loss = mean(mean( (XHat-XHatSmth).^2, [1 3] )./self.Scale);
+                end
+            else
+                % dimensions are Time x Batch x Channel
+                if size( XHat, 3 ) == 1
+                    loss = mean( (XHat-XHatSmth).^2, [1 2] )/self.Scale;
+                else
+                    loss = mean(mean( (XHat-XHatSmth).^2, [1 2] )./ ...
+                                        permute(self.Scale, [1 3 2]));
+                end
+            end
+
+            loss = 10*loss;
 
         end
 

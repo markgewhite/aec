@@ -8,7 +8,7 @@ function setup = initSetup
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = false;
     %setup.data.args.resampleRate = 10;
-    
+        
     setup.data.class = @fukuchiDataset;
     setup.data.args.FromMatlabFile = true;
     setup.data.args.HasVGRFOnly = false;
@@ -16,6 +16,7 @@ function setup = initSetup
     setup.data.args.HasPelvis = true;
     setup.data.args.HasHip = true;
     setup.data.args.HasKnee = true;
+    setup.data.args.overSmoothing = 1E5;
 
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
@@ -53,7 +54,7 @@ function setup = initSetup
 
     setup.lossFcns.orth.class = @componentLoss;
     setup.lossFcns.orth.name = 'Component';
-    setup.lossFcns.orth.args.nSample = 10;
+    setup.lossFcns.orth.args.nSample = 100;
     setup.lossFcns.orth.args.criterion = 'Orthogonality';
 
     setup.lossFcns.smooth.class = @smoothnessLoss;
@@ -68,10 +69,10 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 10;
+    setup.trainer.args.updateFreq = 25;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 200;
-    setup.trainer.args.batchSize = 100;
+    setup.trainer.args.nEpochs = 500;
+    setup.trainer.args.batchSize = 50;
 
 
 end

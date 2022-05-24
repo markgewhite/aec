@@ -277,8 +277,14 @@ classdef autoencoderModel < representationModel
                 data            double
             end
             
-            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
-            self.lossFcns.(name).setScale( data );
+            for i = 1:size( self.lossFcnTbl, 1 )
+                
+                if ismember( self.lossFcnTbl.inputs(i), {'X-XHat', 'XC', 'XHat'} )
+                    name = self.lossFcnTbl.names(i);
+                    self.lossFcns.(name).setScale( data );
+                end
+    
+            end
 
         end
 
@@ -325,23 +331,29 @@ classdef autoencoderModel < representationModel
             ZMean = double(extractdata( dlZMean ));
             ZStd = double(extractdata( dlZStd ));
             
-            if strcmp( args.sampling, 'Fixed' )
-                % define the offset spacing
-                offsets = linspace( -args.range, args.range, nSample );
+            % define the offset spacing, which must sum to zero
+            switch args.sampling
+                case 'Random'
+                    % generate centred normal distribution
+                    %offsets = args.range*randn( nSample, 1 );
+                    % generate a chi-squared distribution
+                    offsets = args.range*2*chi2pdf( abs(randn( nSample, 1 )), 1.9 );
+                    % randomly flip signs and centre it
+                    offsets = offsets.*(2*randi(2, nSample, 1)-3);
+                    offsets = offsets-mean(offsets);
+                    % adjust one randomly-chosen offset to enforce zero sum
+                    j = randi(nSample);
+                    offsets(j) = offsets(j) - 0.5*sum(offsets);
+
+                case 'Fixed'
+                    offsets = linspace( -args.range, args.range, nSample );
             end
 
             for j = 1:nSample
                 
-                switch args.sampling
-                    case 'Random'
-                        offset = args.range*rand;
-                    case 'Fixed'
-                        offset = offsets(j);
-                end
-
                 for i =1:ZDim
                     % vary ith component randomly about its mean
-                    dlZC(i,(i-1)*nSample+j) = ZMean(i) + offset*ZStd(i);
+                    dlZC(i,(i-1)*nSample+j) = ZMean(i) + offsets(j)*ZStd(i);
                 end
 
             end

@@ -278,7 +278,7 @@ classdef representationModel
         
                     axis.YAxis.TickLabelFormat = '%.1f';
         
-                    finalisePlot( axis, square = true );
+                    finalisePlot( axis );
     
                 end
 

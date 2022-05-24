@@ -66,19 +66,19 @@ classdef fukuchiDataset < modelDataset
             pad.same = true;
             pad.anchoring = 'Both';
 
+            % setup fda
+            paramsFd.basisOrder = 4;
+            paramsFd.penaltyOrder = 2;
             switch args.Category
                 case 'GRF'
                     tSpan= (0:pad.length-1)/300;
                     label = "Stance Time (s)";
+                    paramsFd.lambda = 1E-6;
                 case 'JointAngles'
                     tSpan = 0:100;
                     label = "Percentage Stance (%)";
-            end
-        
-            % setup fda
-            paramsFd.basisOrder = 4;
-            paramsFd.penaltyOrder = 2;
-            paramsFd.lambda = 1E-8;
+                    paramsFd.lambda = 1E-4;
+            end          
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -323,7 +323,7 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
     names = [];
     if args.HasPelvisAngles
         fields = [ fields 2 3 4 ];
-        names = ["Pelvis Tilt", "Pelvis Obliquity", "Pelvis Rotation"];
+        names = ["Pelvic Tilt", "Pelvic Obliquity", "Pelvic Rotation"];
     end
 
     if args.HasHipAngles
