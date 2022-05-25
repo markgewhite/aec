@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'TestAdaptive';
+name = 'JumpsGRF(Adaptive-Classification)';
 path = fileparts( which('runAnalysis.m') );
 path = [path '/results/'];
 
@@ -12,7 +12,6 @@ path = [path '/results/'];
 %values = [ {2:6} {{false, true}} ];
 
 parameters = [ "model.class" ];
-%values = {{@fcModel, @lstmfcModel, @lstmModel, @convModel, @tcnModel, @pcaModel}};
-values = {{@pcaModel}};
+values = {{@tcnModel, @fcModel, @convModel, @tcnModel, @lstmfcModel, @lstmModel, @pcaModel }};
 
 myInvestigation = investigation( name, path, parameters, values, setup );

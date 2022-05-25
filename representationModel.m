@@ -405,7 +405,7 @@ function [figs, axes]= initializePlots( XChannels, ZDim )
     figs.Components = figure(2);
     figs.Components.Position(2) = 0;
     figs.Components.Position(3) = 100 + ZDim*250;
-    figs.Components.Position(4) = 100 + XChannels*250;
+    figs.Components.Position(4) = 50 + XChannels*200;
     
     clf;
     axes.Comp = gobjects( XChannels, ZDim );

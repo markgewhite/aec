@@ -2,21 +2,21 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    %setup.data.class = @jumpGRFDataset;
-    setup.data.args.normalization = 'LTN';
+    setup.data.class = @jumpGRFDataset;
+    setup.data.args.normalization = 'PAD';
     setup.data.args.normalizeInput = false;
     setup.data.args.normalizedPts = 51;
-    setup.data.args.hasAdaptiveTimeSpan = false;
-    %setup.data.args.resampleRate = 10;
+    setup.data.args.hasAdaptiveTimeSpan = true;
+    setup.data.args.resampleRate = 10;
         
-    setup.data.class = @fukuchiDataset;
-    setup.data.args.FromMatlabFile = true;
-    setup.data.args.HasVGRFOnly = false;
-    setup.data.args.Category = 'JointAngles';
-    setup.data.args.HasPelvis = true;
-    setup.data.args.HasHip = true;
-    setup.data.args.HasKnee = true;
-    setup.data.args.overSmoothing = 1E5;
+    %setup.data.class = @fukuchiDataset;
+    %setup.data.args.FromMatlabFile = false;
+    %setup.data.args.HasVGRFOnly = false;
+    %setup.data.args.Category = 'JointAngles';
+    %setup.data.args.HasPelvis = true;
+    %setup.data.args.HasHip = true;
+    %setup.data.args.HasKnee = true;
+    %setup.data.args.overSmoothing = 1E5;
 
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
@@ -44,9 +44,6 @@ function setup = initSetup
     setup.lossFcns.adv.class = @adversarialLoss;
     setup.lossFcns.adv.name = 'Discriminator';
 
-    %setup.lossFcns.cls.class = @classifierLoss;
-    %setup.lossFcns.cls.name = 'Classification';
-
     %setup.lossFcns.mmd.class = @wassersteinLoss;
     %setup.lossFcns.mmd.name = 'MMDDiscriminator';
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
@@ -60,7 +57,10 @@ function setup = initSetup
     setup.lossFcns.smooth.class = @smoothnessLoss;
     setup.lossFcns.smooth.name = 'Roughness';
     setup.lossFcns.smooth.args.Lambda = 1E-2;
-    setup.lossFcns.smooth.args.useLoss = false;
+    setup.lossFcns.smooth.args.useLoss = true;
+
+    setup.lossFcns.cls.class = @classifierLoss;
+    setup.lossFcns.cls.name = 'Classification';
 
     % model
     setup.model.class = @fcModel;
@@ -69,10 +69,10 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 25;
+    setup.trainer.args.updateFreq = 50;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 500;
-    setup.trainer.args.batchSize = 50;
+    setup.trainer.args.nEpochs = 1000;
+    setup.trainer.args.batchSize = 40;
 
 
 end
