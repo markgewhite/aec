@@ -108,7 +108,7 @@ classdef modelDataset
             self.adaptiveLowerBound = args.adaptiveLowerBound;
             self.adaptiveUpperBound = args.adaptiveUpperBound;
             self.resampleRate = args.resampleRate;
-            self.fda.overSmoothing = args.overSmoothing;
+            self.overSmoothing = args.overSmoothing;
 
             self.info.datasetName = args.datasetName;
             self.info.channelLabels = args.channelLabels;
@@ -180,7 +180,7 @@ classdef modelDataset
 
             % set the FD parameters for adaptive spacing
             % with a higher level of smoothing than the input
-            lambda = self.fda.lambda*self.fda.overSmoothing;
+            lambda = self.fda.lambda*self.overSmoothing;
             self.fda.fdParamsTarget = setFDAParameters( ...
                                     self.tSpan.target, ...
                                     self.fda.basisOrder, ...
