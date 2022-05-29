@@ -29,8 +29,8 @@ function XP = padData( X, padLen, padValue, args )
             xStart = X{i}(1,:);
             xEnd = X{i}(end,:);
         else
-            xStart = padValue;
-            xEnd = padValue;
+            xStart = repelem( padValue, 1, nDim );
+            xEnd = repelem( padValue, 1, nDim );
         end
     
         switch args.Location

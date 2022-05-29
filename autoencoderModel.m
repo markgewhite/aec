@@ -27,7 +27,11 @@ classdef autoencoderModel < representationModel
 
         trainer        % trainer object holding training parameters
         optimizer      % optimizer object
+    end
 
+    properties (Dependent = true)
+        XDimLabels     % dimensional labelling for X input dlarrays
+        XNDimLabels    % dimensional labelling for time-normalized output
     end
 
     methods
@@ -289,6 +293,44 @@ classdef autoencoderModel < representationModel
         end
 
 
+        function labels = get.XDimLabels( self )
+            % Get the X dimensional labels for dlarrays
+            arguments
+                self            autoencoderModel
+            end
+
+            if self.XChannels==1
+                if self.hasSeqInput
+                    labels = 'TBC';
+                else
+                    labels = 'CB';
+                end
+            else
+                if self.hasSeqInput
+                    labels = 'TBC';
+                else
+                    labels = 'SBC';
+                end
+            end
+            
+        end
+
+
+        function labels = get.XNDimLabels( self )
+            % Get the XN dimensional labels for dlarrays
+            arguments
+                self            autoencoderModel
+            end
+
+            if self.XChannels==1
+                labels = 'CB';
+            else
+                labels = 'SBC';
+            end
+            
+        end
+
+
         function dlXC = latentComponents( self, dlZ, args )
             % Calculate the funtional components from the latent codes
             % using the decoder network. For each component, the relevant 
@@ -486,7 +528,7 @@ classdef autoencoderModel < representationModel
             end
 
             if isa( X, 'modelDataset' )
-                dlX = X.getDLInput;
+                dlX = X.getDLInput( self.XDimLabels );
             elseif isa( X, 'dlarray' )
                 dlX = X;
             else

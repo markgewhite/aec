@@ -107,13 +107,15 @@ classdef modelTrainer < handle
             % setup the minibatch queues
             mbqTrn = thisTrnData.getMiniBatchQueue( thisTrnData, ...
                                         self.batchSize, ...
+                                        thisModel.XDimLabels, ...
+                                        thisModel.XNDimLabels, ...
                                         partialBatch = self.partialBatch );
 
             % get the validation data (one-time only)
-            [ dlXVal, dlYVal ] = thisValData.getDLInput;
+            [ dlXVal, dlYVal ] = thisValData.getDLInput( thisModel.XDimLabels );
             
             % setup whole training set
-            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput;
+            [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput( thisModel.XDimLabels );
 
             % initialize counters
             nIter = iterationsPerEpoch( mbqTrn );           
@@ -270,7 +272,7 @@ classdef modelTrainer < handle
                 fprintf(' : %1.3f\n', args.lossVal );
             end
         
-            [dlX, dlY] = thisData.getDLInput;
+            [dlX, dlY] = thisData.getDLInput( thisModel.XDimLabels );
         
             % compute the AE components
             dlZ = thisModel.encode( thisModel, dlX, convert = false );

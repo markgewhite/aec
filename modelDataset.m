@@ -10,8 +10,6 @@ classdef modelDataset
         XTargetDim      % normalized X output size (time series length)
         XChannels       % number of X input channels
 
-        XDimLabels      % X's dlarray dimension labels
-
         Y               % outcome variable
         CDim            % number of categories
         YLabels         % Y labels
@@ -49,7 +47,7 @@ classdef modelDataset
 
     methods
 
-        function self = modelDataset( XInputRaw, Y, tSpan, dimLabels, args )
+        function self = modelDataset( XInputRaw, Y, tSpan, args )
             % Create and preprocess the data.
             % The calling function will be a data loader or
             % a function partitioning the data.
@@ -57,7 +55,6 @@ classdef modelDataset
                 XInputRaw                   cell
                 Y
                 tSpan                       double
-                dimLabels                   char
                 args.XTargetRaw             cell = []
                 args.purpose                char ...
                     {mustBeMember( args.purpose, ...
@@ -88,7 +85,6 @@ classdef modelDataset
 
             self.XInputRaw = XInputRaw;
             self.Y = Y;
-            self.XDimLabels = dimLabels;
             
             if strcmp( args.purpose, 'ForSubset' )
                 % don't do the setup
@@ -205,9 +201,8 @@ classdef modelDataset
             subXRaw = split( self.XInputRaw, idx );
             subY = self.Y( idx );
             subTSpan = self.tSpan.original;
-            subLabels = self.XDimLabels;
 
-            thisSubset = modelDataset( subXRaw, subY, subTSpan, subLabels, ...
+            thisSubset = modelDataset( subXRaw, subY, subTSpan, ...
                                        purpose='ForSubset' );
 
             thisSubset.XFd = splitFd( self.XFd, idx );
@@ -224,7 +219,6 @@ classdef modelDataset
             thisSubset.XInputDim = self.XInputDim;
             thisSubset.XTargetDim = self.XTargetDim;
             thisSubset.XChannels = self.XChannels;
-            thisSubset.XDimLabels = self.XDimLabels;
 
             thisSubset.CDim = self.CDim;
             thisSubset.YLabels = self.YLabels;
@@ -254,10 +248,11 @@ classdef modelDataset
 
 
 
-        function [ X, Y ] = getDLInput( self, arg )
+        function [ X, Y ] = getDLInput( self, labels, arg )
             % Convert X and Y into dl arrays
             arguments
                 self            modelDataset
+                labels          char
                 arg.dlarray     logical = true
             end
             
@@ -266,7 +261,7 @@ classdef modelDataset
                          Same = self.padding.same, ...
                          Location = self.padding.location );
 
-            X = dlarray( X, self.XDimLabels );
+            X = dlarray( X, labels );
 
             if arg.dlarray
                 Y = dlarray( self.Y, 'CB' );
@@ -408,12 +403,14 @@ classdef modelDataset
 
     methods (Static)
 
-        function mbq = getMiniBatchQueue( self, batchSize, args )
+        function mbq = getMiniBatchQueue( self, batchSize, XLabels, XNLabels, args )
             % Create a minibatch queue
             arguments
                 self                modelDataset
                 batchSize           double ...
                     {mustBeInteger, mustBePositive}
+                XLabels             char
+                XNLabels            char
                 args.partialBatch   char ...
                     {mustBeMember( args.partialBatch, ...
                     {'return', 'discard'} )} = 'discard'
@@ -430,7 +427,7 @@ classdef modelDataset
                   MiniBatchSize = batchSize, ...
                   PartialMiniBatch = args.partialBatch, ...
                   MiniBatchFcn = preproc, ...
-                  MiniBatchFormat = {self.XDimLabels, self.XDimLabels, 'CB'} );
+                  MiniBatchFormat = {XLabels, XNLabels, 'CB'} );
 
         end
 

@@ -10,7 +10,7 @@ function setup = initSetup
     setup.data.args.resampleRate = 10;
         
     %setup.data.class = @fukuchiDataset;
-    %setup.data.args.FromMatlabFile = false;
+    %setup.data.args.FromMatlabFile = true;
     %setup.data.args.HasVGRFOnly = false;
     %setup.data.args.Category = 'JointAngles';
     %setup.data.args.HasPelvis = true;
@@ -61,6 +61,7 @@ function setup = initSetup
 
     setup.lossFcns.cls.class = @classifierLoss;
     setup.lossFcns.cls.name = 'Classification';
+    setup.lossFcns.cls.args.useLoss = false;
 
     % model
     setup.model.class = @fcModel;
@@ -69,9 +70,9 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 50;
+    setup.trainer.args.updateFreq = 5;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 1000;
+    setup.trainer.args.nEpochs = 100;
     setup.trainer.args.batchSize = 40;
 
 

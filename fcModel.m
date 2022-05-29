@@ -164,7 +164,11 @@ classdef fcModel < autoencoderModel
             end
 
             if size( dlX, 3 ) > 1
-                dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
+                CDimIdx = finddim( dlX, 'C' );
+                SDimIdx = finddim( dlX, 'S' );
+                BDimIdx = finddim( dlX, 'B' );
+                dlX = reshape( dlX, size(dlX,SDimIdx)*size(dlX,CDimIdx), ...
+                               size(dlX,BDimIdx) );
                 dlX = dlarray( dlX, 'CB' );
             end
 
