@@ -266,21 +266,31 @@ classdef modelTrainer < handle
             for k = 1:thisModel.nLoss
                 fprintf(' %6.3f', meanLoss(k) );
             end
-            if isempty( args.lossVal )
-                fprintf('\n');
-            else
-                fprintf(' : %1.3f\n', args.lossVal );
+            if ~isempty( args.lossVal )
+                fprintf(' : %1.3f', args.lossVal );
             end
         
             [dlX, dlY] = thisData.getDLInput( thisModel.XDimLabels );
         
             % compute the AE components
             dlZ = thisModel.encode( thisModel, dlX, convert = false );
-            dlXC = thisModel.latentComponents( ...
+            [dlXC, offsets] = thisModel.latentComponents( ...
                             dlZ, ...
                             sampling = 'Fixed', ...
                             centre = false );
-        
+            
+            % reconstruct the curves
+            dlXHat = squeeze( thisModel.reconstruct( thisModel, dlZ ) );
+
+            % compute explained variance
+            varProp = thisModel.explainedVariance( dlXHat, dlXC, offsets ); 
+            fprintf('; VarProp = ');
+            for k = 1:length(varProp)
+                fprintf(' %8.2f', varProp(k) );
+            end
+            fprintf('\n');
+
+
             % plot them on specified axes
             thisModel.plotLatentComp( ...
                           dlXC, ...

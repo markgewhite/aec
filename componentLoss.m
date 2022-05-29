@@ -21,7 +21,8 @@ classdef componentLoss < lossFunction
                 name                 char {mustBeText}
                 args.criterion       char ...
                     {mustBeMember( args.criterion, ...
-                        {'Orthogonality', 'Varimax'} )} = 'Orthogonality'
+                        {'Orthogonality', 'Varimax', 'ExplainedVariance'} )} ...
+                                        = 'Orthogonality'
                 args.nSample         double ...
                     {mustBeInteger, mustBePositive} = 10
                 superArgs.?lossFunction
@@ -71,6 +72,11 @@ classdef componentLoss < lossFunction
                     % its length, penalising low variance
                     loss = varimax( dlXC );
 
+                case 'ExplainedVariance'
+                    % compute the component variance across 
+                    % its length, penalising high variance
+                    loss = explainedVariance( dlXC, self.NumSamples, self.Scale );
+
             end
 
         end
@@ -93,14 +99,15 @@ function loss = innerProduct( dlXC, nSample, scale )
     nComp = size( XC, 3 )/nSample;
     nChannels = size( XC, 2 );
 
+    XC = reshape( XC, size(XC,1), nChannels, nSample, nComp );
+
     orth = zeros( 1, nChannels );
 
     for c = 1:nChannels
         for i = 1:nComp
             for j = i+1:nComp
                 for k = 1:nSample
-                    s = (i-1)*nSample+k;
-                    orth(c) = orth(c) + mean(XC(i,c,s).*XC(j,c,s))^2;
+                    orth(c) = orth(c) + mean(XC(:,c,k,i).*XC(:,c,k,j))^2;
                 end
             end
         end
@@ -129,6 +136,39 @@ function loss = varimax( dlXC )
     end
 
     loss = -0.01*mean(var)/nObs;   
+
+end
+
+
+function loss = explainedVariance( dlXC, nSample, scale )
+    % Calculate the explained variance loss 
+
+    % convert to ordinary numeric array for speed
+    % tracing is maintained through the mandatory reconstruction loss
+    XC = double(extractdata( dlXC ));
+
+    if size( XC, 3 ) == 1
+        XC = permute( XC, [1 3 2] );
+    end
+    nComp = size( XC, 3 )/nSample;
+    nChannels = size( XC, 2 );
+
+    XC = reshape( XC, size(XC,1), nChannels, nSample, nComp );
+
+    var = zeros( 1, nChannels );
+
+    for c = 1:nChannels
+        for i = 1:nComp
+            for k = 1:nSample
+                var(c) = var(c) + mean( XC(:,c,k,i).^2 );
+            end
+        end
+    end
+
+    var = var./scale;
+
+    loss = mean(var)/(nComp*nSample);
+
 
 end
 

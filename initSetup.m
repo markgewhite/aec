@@ -50,9 +50,15 @@ function setup = initSetup
     %setup.lossFcns.mmd.args.useLoss = false;
 
     setup.lossFcns.orth.class = @componentLoss;
-    setup.lossFcns.orth.name = 'Component';
+    setup.lossFcns.orth.name = 'Orthogonality';
     setup.lossFcns.orth.args.nSample = 100;
     setup.lossFcns.orth.args.criterion = 'Orthogonality';
+
+    setup.lossFcns.var.class = @componentLoss;
+    setup.lossFcns.var.name = 'ExplainedVariance';
+    setup.lossFcns.var.args.nSample = 100;
+    setup.lossFcns.var.args.criterion = 'ExplainedVariance';
+    setup.lossFcns.var.args.useLoss = false;
 
     setup.lossFcns.smooth.class = @smoothnessLoss;
     setup.lossFcns.smooth.name = 'Roughness';
@@ -70,9 +76,9 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 10;
+    setup.trainer.args.updateFreq = 5;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 100;
+    setup.trainer.args.nEpochs = 200;
     setup.trainer.args.batchSize = 40;
 
 
