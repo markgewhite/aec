@@ -195,7 +195,7 @@ classdef fcModel < autoencoderModel
             end
 
             if isa( X, 'modelDataset' )
-                dlX = X.getDLInput;
+                dlX = X.getDLInput( self.XDimLabels );
             elseif isa( X, 'dlarray' )
                 dlX = X;
             else

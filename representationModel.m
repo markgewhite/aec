@@ -58,6 +58,67 @@ classdef representationModel
         end
 
 
+        function varProp = explainedVariance( self, X, XC, offsets )
+            % Compute the explained variance for the components
+            arguments
+                self            representationModel
+                X
+                XC
+                offsets         double
+            end
+
+            % convert to double for convenience
+            if isa( X, 'dlarray' )
+                X = double( extractdata( X ) );
+            end
+            if isa( XC, 'dlarray' )
+                XC = double( extractdata( XC ) );
+            end
+    
+            % find the mean and centre
+            XMean = mean( X, 2 );
+            X = X - XMean;     
+
+            % re-order the dimensions for FDA
+            if size( XC, 3 ) > 1
+                XC = permute( XC, [1 3 2] );
+            end
+
+            % drop the XC mean curve, if present
+            if mod( size( XC, 2 ), 2 )==1
+                if size( XC, 3 ) > 1
+                    XC = XC( :, :, 1:end-1 ) - XC( :, :, end );
+                else
+                    XC = XC( :, 1:end-1 ) - XC( :, end );
+                end
+            else
+                XC = XC - XMean;
+            end     
+
+            % reshape XC by introducing dim for offset
+            nOffsets = length( offsets );
+            XC = reshape( XC, size(XC,1), self.XChannels, nOffsets, self.ZDim );
+
+            % compute the total variance 
+            totVar = mean(sum( X.^2, 2 ));
+
+            % compute the component variances in turn
+            compVar = zeros( self.XChannels, nOffsets, self.ZDim );
+
+            for i = 1:self.XChannels
+                for j = 1:nOffsets
+                    for k = 1:self.ZDim
+                        compVar( i, j, k ) = ...
+                            sum( XC(:,i,j,k).^2 )/(0.682*abs(offsets(j)));
+                    end
+                end
+            end
+
+            varProp = squeeze( mean( compVar, 2 )./totVar );
+
+        end
+
+
         function plotZDist( self, Z, args )
             % Update the Z distributions plot
             arguments

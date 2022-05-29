@@ -85,7 +85,7 @@ classdef pcaModel < representationModel
         end
 
 
-        function XC = latentComponents( self, Z, args )
+        function [ XC, offsets ] = latentComponents( self, Z, args )
             % Present the FPCs in form consistent with autoencoder model
             arguments
                 self            pcaModel

@@ -331,7 +331,7 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function dlXC = latentComponents( self, dlZ, args )
+        function [ dlXC, offsets ] = latentComponents( self, dlZ, args )
             % Calculate the funtional components from the latent codes
             % using the decoder network. For each component, the relevant 
             % code is varied randomly about the mean. This is more 
@@ -346,6 +346,7 @@ classdef autoencoderModel < representationModel
                 args.centre     logical = true
                 args.nSample    double {mustBeInteger} = 0
                 args.range      double {mustBePositive} = 2.0
+                args.convert    logical = false
             end
 
             if args.nSample > 0
@@ -412,6 +413,10 @@ classdef autoencoderModel < representationModel
                 else
                     dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );
                 end
+            end
+
+            if args.convert
+                dlXC = double(extractdata( dlXC ));
             end
 
         end
