@@ -364,7 +364,6 @@ classdef autoencoderModel < representationModel
             
             % compute the mean and SD across the batch
             dlZMean = mean( dlZ, 2 );
-            dlZStd = std( dlZ, [], 2 );
             
             % initialise the components' Z codes at the mean
             % include an extra one that will be preserved
@@ -372,26 +371,26 @@ classdef autoencoderModel < representationModel
 
             % convert to double to speed up processing
             % provided dlZC can trace back to original dlZ
-            ZMean = double(extractdata( dlZMean ));
-            ZStd = double(extractdata( dlZStd ));
+            Z = double(extractdata( dlZ ));
             
             % define the offset spacing, which must sum to zero
             switch args.sampling
                 case 'Random'
-                    % generate centred normal distribution
+                    % generate centred uniform distribution
                     offsets = 2*args.range*(rand( nSample, 1 )-0.5);
-                    prc = prctile( offsets );
 
                 case 'Fixed'
                     offsets = linspace( -args.range, args.range, nSample );
             end
-            offsets = norminv(
+            % convert the z-scores (offsets) to percentiles
+            % giving a preponderance of values at the tails
+            prc = 100*normcdf( offsets );
 
             for j = 1:nSample
                 
                 for i =1:ZDim
                     % vary ith component randomly about its mean
-                    dlZC(i,(i-1)*nSample+j) = ZMean(i) + offsets(j)*ZStd(i);
+                    dlZC(i,(i-1)*nSample+j) = prctile( Z(i,:), prc(j) );
                 end
 
             end
