@@ -9,13 +9,13 @@ classdef adversarialLoss < lossFunction
 
     properties
         ZDim                % latent codes dimension size  
-        nHidden             % number of hidden layers
-        nFC                 % number of fully connected nodes at widest
-        fcFactor            % node ratio specifying the power 2 index
-        scale               % leaky Relu scale
-        dropout             % dropout rate
-        initLearningRate    % initial learning rate
-        distribution        % type of target distribution
+        NumHidden           % number of hidden layers
+        NumFC               % number of fully connected nodes at widest
+        FCFactor            % node ratio specifying the power 2 index
+        Scale               % leaky Relu scale
+        Dropout             % dropout rate
+        InitLearningRate    % initial learning rate
+        Distribution        % type of target distribution
     end
 
     methods
@@ -29,9 +29,9 @@ classdef adversarialLoss < lossFunction
                     {mustBeMember( args.distribution, ...
                                     {'Gaussian', ...
                                      'Categorical'} )} = 'Gaussian'
-                args.nHidden    double ...
+                args.numHidden  double ...
                             {mustBeInteger, mustBePositive} = 3
-                args.nFC        double ...
+                args.numFC      double ...
                             {mustBeInteger, mustBePositive} = 256
                 args.fcFactor   double ...
                             {mustBeInteger, mustBePositive} = 2
@@ -44,7 +44,7 @@ classdef adversarialLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = { string({'decoder',name}); {'encoder'} };
+            netAssignments = { string({'Decoder',name}); {'Encoder'} };
 
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
@@ -54,14 +54,14 @@ classdef adversarialLoss < lossFunction
                                  hasNetwork = true, ...
                                  hasState = true );
 
-            self.nHidden = args.nHidden;
-            self.nFC = args.nFC;
-            self.fcFactor = args.fcFactor;
-            self.scale = args.scale;
-            self.dropout = args.dropout;
+            self.NumHidden = args.numHidden;
+            self.NumFC = args.numFC;
+            self.FCFactor = args.fcFactor;
+            self.Scale = args.scale;
+            self.Dropout = args.dropout;
             
-            self.distribution = args.distribution;
-            self.initLearningRate = args.initLearningRate;
+            self.Distribution = args.distribution;
+            self.InitLearningRate = args.initLearningRate;
 
         end
 
@@ -79,13 +79,13 @@ classdef adversarialLoss < lossFunction
             layers = featureInputLayer( self.ZDim, 'Name', 'in' );
             
             % create the hidden layers
-            for i = 1:self.nHidden
-                nNodes = fix( self.nFC*2^(self.fcFactor*(1-i)) );
+            for i = 1:self.NumHidden
+                nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
                 layers = [ layers; ...
                     fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                     batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( self.scale, 'Name', ['relu' num2str(i)] )
-                    dropoutLayer( self.dropout, 'Name', ['drop' num2str(i)] )
+                    leakyReluLayer( self.Scale, 'Name', ['relu' num2str(i)] )
+                    dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
                     ]; %#ok<AGROW> 
             end
             
@@ -118,7 +118,7 @@ classdef adversarialLoss < lossFunction
             end 
 
             % generate a target distribution
-            switch self.distribution
+            switch self.Distribution
                 case 'Gaussian'
                     dlZReal = dlarray( randn( ZSize, batchSize ), 'CB' );
                 case 'Categorical'

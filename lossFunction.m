@@ -8,15 +8,15 @@
 classdef lossFunction < handle
 
     properties
-        name        % name of the function
-        type        % type of loss function
-        input       % indicator for input variables
-        nLoss       % number of losses calculated
-        lossNets    % names of networks assigned the losses
-        hasNetwork  % flag indicating network defined
-        hasState    % flag if network has a state to be carried forward
-        doCalcLoss  % flag whether to compute the specified loss
-        useLoss     % flag whether to include loss in overall calculation
+        Name        % name of the function
+        Type        % type of loss function
+        Input       % indicator for input variables
+        NumLoss     % number of losses calculated
+        LossNets    % names of networks assigned the losses
+        HasNetwork  % flag indicating network defined
+        HasState    % flag if network has a state to be carried forward
+        DoCalcLoss  % flag whether to compute the specified loss
+        UseLoss     % flag whether to include loss in overall calculation
     end
 
     methods
@@ -42,22 +42,22 @@ classdef lossFunction < handle
                                              'Z-Y' } )}
                 args.nLoss       double ...
                     {mustBeInteger,mustBePositive} = 1
-                args.lossNets    = {'encoder'}
+                args.lossNets    = {'Encoder'}
                 args.hasNetwork  logical = false
                 args.hasState     logical = false
                 args.doCalcLoss  logical = true
                 args.useLoss     logical = true
             end
 
-            self.name = name;
-            self.type = args.type;
-            self.input = args.input;
-            self.nLoss = args.nLoss;
-            self.lossNets = args.lossNets;
-            self.doCalcLoss = args.doCalcLoss;
-            self.useLoss = args.useLoss;
-            self.hasNetwork = args.hasNetwork;
-            self.hasState = args.hasState;
+            self.Name = name;
+            self.Type = args.type;
+            self.Input = args.input;
+            self.NumLoss = args.nLoss;
+            self.LossNets = args.lossNets;
+            self.DoCalcLoss = args.doCalcLoss;
+            self.UseLoss = args.useLoss;
+            self.HasNetwork = args.hasNetwork;
+            self.HasState = args.hasState;
 
         end
 

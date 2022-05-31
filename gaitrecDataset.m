@@ -62,15 +62,15 @@ classdef gaitrecDataset < modelDataset
 
             % setup padding
             if args.PaddingLength==0
-                pad.length = 101;
+                pad.Length = 101;
             else
-                pad.length = args.PaddingLength;
+                pad.Length = args.PaddingLength;
             end
-            pad.longest = false;
-            pad.location = 'Left';
-            pad.value = 1;
-            pad.same = false;
-            pad.anchoring = 'Both';
+            pad.Longest = false;
+            pad.Location = 'Left';
+            pad.Value = 1;
+            pad.Same = false;
+            pad.Anchoring = 'Both';
 
             tSpan= linspace( 0, 100, 101 );
         

@@ -9,16 +9,16 @@
 classdef lstmfcModel < autoencoderModel
 
     properties
-        nLSTMHidden             % number of LSTM hidden layers
-        nLSTMNodes              % number LSTM nodes
-        lstmFactor              % log2 scaling factor subsequent layers
-        nFCHidden               % number of FC hidden layers
-        nFCNodes                % number of nodes for widest layer
-        fcFactor                % log2 scaling factor subsequent layers
-        scale                   % leaky ReLu scale factor
-        inputDropout            % initial dropout rate
-        dropout                 % dropout rate
-        bidirectional           % if the network is bidirectional
+        NumLSTMHidden           % number of LSTM hidden layers
+        NumLSTMNodes            % number LSTM nodes
+        LSTMFactor              % log2 scaling factor subsequent layers
+        NumFCHidden             % number of FC hidden layers
+        NumFCNodes              % number of nodes for widest layer
+        FCFactor                % log2 scaling factor subsequent layers
+        Scale                   % leaky ReLu scale factor
+        InputDropout            % initial dropout rate
+        Dropout                 % dropout rate
+        Bidirectional           % if the network is bidirectional
     end
 
     methods
@@ -38,15 +38,15 @@ classdef lstmfcModel < autoencoderModel
             end
             arguments
                 superArgs.?autoencoderModel
-                args.nLSTMHidden        double ...
+                args.numLSTMHidden      double ...
                     {mustBeInteger, mustBePositive} = 3
-                args.nLSTMNodes         double ...
+                args.numLSTMNodes       double ...
                     {mustBeInteger, mustBePositive} = 16
                 args.lstmFactor         double ...
                     {mustBeInteger} = 0
-                args.nFCHidden          double ...
+                args.numFCHidden        double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.nFCNodes           double ...
+                args.numFCNodes         double ...
                     {mustBeInteger, mustBePositive} = 64
                 args.fcFactor           double ...
                     {mustBeInteger} = 2
@@ -73,18 +73,18 @@ classdef lstmfcModel < autoencoderModel
 
 
             % store this class's properties
-            self.nLSTMHidden = args.nLSTMHidden;
-            self.nLSTMNodes = args.nLSTMNodes;
-            self.lstmFactor = args.lstmFactor;
-            self.nFCHidden = args.nFCHidden;
-            self.nFCNodes = args.nFCNodes;
-            self.fcFactor = args.fcFactor;
+            self.NumLSTMHidden = args.numLSTMHidden;
+            self.NumLSTMNodes = args.numLSTMNodes;
+            self.LSTMFactor = args.lstmFactor;
+            self.NumFCHidden = args.numFCHidden;
+            self.NumFCNodes = args.numFCNodes;
+            self.FCFactor = args.fcFactor;
 
-            self.scale = args.scale;
-            self.inputDropout = args.inputDropout;
-            self.dropout = args.dropout;
+            self.Scale = args.scale;
+            self.InputDropout = args.inputDropout;
+            self.Dropout = args.dropout;
 
-            self.bidirectional = args.bidirectional;
+            self.Bidirectional = args.bidirectional;
 
             % initialize the networks
             self = initEncoder( self );
@@ -103,35 +103,35 @@ classdef lstmfcModel < autoencoderModel
                 sequenceInputLayer( self.XChannels, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 )
-                dropoutLayer( self.inputDropout, 'Name', 'drop0' )
+                dropoutLayer( self.InputDropout, 'Name', 'drop0' )
                 ];
             
             lgraphEnc = layerGraph( layersEnc );
             lastLayer = 'drop0';
             
-            for i = 1:self.nLSTMHidden
+            for i = 1:self.NumLSTMHidden
 
-                nNodes = fix( self.nLSTMNodes*2^(self.lstmFactor*(i-1)) );
-                sequenceOutput = (i < self.nLSTMHidden);
+                nNodes = fix( self.NumLSTMNodes*2^(self.LSTMFactor*(i-1)) );
+                sequenceOutput = (i < self.NumLSTMHidden);
 
                 [lgraphEnc, lastLayer] = addLSTMBlock( lgraphEnc, i, lastLayer, ...
-                        nNodes, self.bidirectional, ...
-                        self.scale, self.dropout, sequenceOutput );
+                        nNodes, self.Bidirectional, ...
+                        self.Scale, self.Dropout, sequenceOutput );
 
             end
             
-            outLayers = fullyConnectedLayer( self.ZDim*(self.isVAE+1), ...
+            outLayers = fullyConnectedLayer( self.ZDim*(self.IsVAE+1), ...
                                                'Name', 'out' );
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...
                                        lastLayer, 'out' );
 
-            if self.isVAE
-                self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.nVAEDraws );
+            if self.IsVAE
+                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
+                                                  nDraws = self.NumVAEDraws );
             else
-                self.nets.encoder = dlnetwork( lgraphEnc );
+                self.Nets.Encoder = dlnetwork( lgraphEnc );
             end
 
         end
@@ -148,12 +148,12 @@ classdef lstmfcModel < autoencoderModel
             lgraphDec = layerGraph( layersDec );
             lastLayer = 'in';
             
-            for i = 1:self.nFCHidden
+            for i = 1:self.NumFCHidden
 
-                nNodes = fix( self.nFCNodes*2^(self.fcFactor*(-self.nFCHidden+i)) );
+                nNodes = fix( self.NumFCNodes*2^(self.FCFactor*(-self.NumFCHidden+i)) );
 
                 [lgraphDec, lastLayer] = addFCBlock( lgraphDec, i, lastLayer, ...
-                                    nNodes, self.scale, self.dropout );
+                                    nNodes, self.Scale, self.Dropout );
 
             end
 
@@ -170,7 +170,7 @@ classdef lstmfcModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, 'fcout' );
 
-            self.nets.decoder = dlnetwork( lgraphDec );
+            self.Nets.Decoder = dlnetwork( lgraphDec );
 
         end
 
@@ -199,17 +199,17 @@ classdef lstmfcModel < autoencoderModel
             nObs = size( dlX, 2 );
             dlZ = dlarray( zeros( self.ZDim, nObs ), 'CB' );
 
-            batchSize = size( self.nets.encoder.State.Value{1}, 2 );
+            batchSize = size( self.Nets.Encoder.State.Value{1}, 2 );
             nBatches = fix(nObs/batchSize);
 
             j = 1;
             for i = 1:nBatches
-                dlZ(:,j:j+batchSize-1) = predict( self.nets.encoder, ...
+                dlZ(:,j:j+batchSize-1) = predict( self.Nets.Encoder, ...
                                         dlX(:,j:j+batchSize-1,:) );
                 j = j+batchSize;
             end
 
-            dlZ( :, end-batchSize+1:end ) = predict( self.nets.encoder, ...
+            dlZ( :, end-batchSize+1:end ) = predict( self.Nets.Encoder, ...
                                     dlX( :, end-batchSize+1:end, : ) );
 
             if arg.convert

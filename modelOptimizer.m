@@ -2,11 +2,11 @@ classdef modelOptimizer
     % Class defining the optimizer for the model's networks
 
     properties
-        type            % type of optimizer
-        netNames        % list network names for convenience
-        learningRates   % learning rates for all networks
-        states          % optimizer states for all networks
-        lrFactor        % learning rate reduction factor 
+        Type            % type of optimizer
+        NetNames        % list network names for convenience
+        LearningRates   % learning rates for all networks
+        States          % optimizer states for all networks
+        LRFactor        % learning rate reduction factor 
     end
 
     methods
@@ -29,9 +29,9 @@ classdef modelOptimizer
             end
 
             % initialize the optimization parameters
-            self.netNames = netNames;
-            self.type = args.type;
-            self.lrFactor = args.lrFactor;
+            self.NetNames = netNames;
+            self.Type = args.type;
+            self.LRFactor = args.lrFactor;
 
             nNetworks = length( netNames );
 
@@ -49,18 +49,18 @@ classdef modelOptimizer
             
             for i = 1:nNetworks
                 if netSpecific
-                    self.learningRates.(netNames{i}) = args.initLearningRates(i);
+                    self.LearningRates.(netNames{i}) = args.initLearningRates(i);
                 else
-                    self.learningRates.(netNames{i}) = args.initLearningRates;
+                    self.LearningRates.(netNames{i}) = args.initLearningRates;
                 end
-                switch self.type
+                switch self.Type
                     case 'ADAM'
-                        self.states.(netNames{i}).avgG = []; 
-                        self.states.(netNames{i}).avgGS = [];
-                        self.states.(netNames{i}).beta1 = args.beta1;
-                        self.states.(netNames{i}).beta2 = args.beta2;
+                        self.States.(netNames{i}).AvgG = []; 
+                        self.States.(netNames{i}).AvgGS = [];
+                        self.States.(netNames{i}).Beta1 = args.beta1;
+                        self.States.(netNames{i}).Beta2 = args.beta2;
                     case 'SGDM'
-                        self.states.(netNames{i}).vel = [];
+                        self.States.(netNames{i}).vel = [];
                 end
             end
 
@@ -79,11 +79,11 @@ classdef modelOptimizer
                 doTrainAE   logical
             end
 
-            nNets = length( self.netNames );
+            nNets = length( self.NetNames );
             for i = 1:nNets
 
-                thisName = self.netNames{i};
-                if any(strcmp( thisName, {'encoder','decoder'} )) ...
+                thisName = self.NetNames{i};
+                if any(strcmp( thisName, {'Encoder','Decoder'} )) ...
                     && not(doTrainAE)
                     % skip training for the AE
                     continue
@@ -94,22 +94,22 @@ classdef modelOptimizer
                     continue
                 end
 
-                thisState = self.states.(thisName);
-                thisLearningRate = self.learningRates.(thisName);
+                thisState = self.States.(thisName);
+                thisLearningRate = self.LearningRates.(thisName);
                 % update the network parameters
-                switch self.type
+                switch self.Type
                     case 'ADAM'         
                         [ nets.(thisName), ...
-                          thisState.avgG, ...
-                          thisState.avgGS ] = ...
+                          thisState.AvgG, ...
+                          thisState.AvgGS ] = ...
                                 adamupdate( nets.(thisName), ...
                                             grads.(thisName), ...
-                                            thisState.avgG, ...
-                                            thisState.avgGS, ...
+                                            thisState.AvgG, ...
+                                            thisState.AvgGS, ...
                                             count, ...
                                             thisLearningRate, ...
-                                            thisState.beta1, ...
-                                            thisState.beta2 );
+                                            thisState.Beta1, ...
+                                            thisState.Beta2 );
                     case 'SGD'
                         [ nets.(thisName), ...
                           thisState.vel ] = ...
@@ -119,7 +119,7 @@ classdef modelOptimizer
                                         thisLearningRate );
                 end
                 
-                self.states.(thisName) = thisState;
+                self.States.(thisName) = thisState;
             
             end
 
@@ -133,17 +133,17 @@ classdef modelOptimizer
                 doTrainAE    logical
             end
 
-            for i = 1:length( self.netNames )
+            for i = 1:length( self.NetNames )
 
-                thisName = self.netNames{i};
-                if any(strcmp( thisName, {'encoder','decoder'} )) ...
+                thisName = self.NetNames{i};
+                if any(strcmp( thisName, {'Encoder','Decoder'} )) ...
                     && not(doTrainAE)
                     % skip training for the AE
                     continue
                 end
 
-                self.learningRates.(thisName) = ...
-                            self.learningRates.(thisName)*self.lrFactor;
+                self.LearningRates.(thisName) = ...
+                            self.LearningRates.(thisName)*self.LRFactor;
             end
 
         end

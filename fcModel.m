@@ -8,12 +8,12 @@
 classdef fcModel < autoencoderModel
 
     properties
-        nHidden       % number of hidden layers
-        nFC           % number of nodes for widest layer
-        fcFactor      % log2 scaling factor subsequent layers
-        scale         % leaky ReLu scale factor
-        inputDropout  % input dropout rate
-        dropout       % hidden layer dropout rate
+        NumHidden     % number of hidden layers
+        NumFC         % number of nodes for widest layer
+        FCFactor      % log2 scaling factor subsequent layers
+        Scale         % leaky ReLu scale factor
+        InputDropout  % input dropout rate
+        Dropout       % hidden layer dropout rate
 
     end
 
@@ -60,12 +60,12 @@ classdef fcModel < autoencoderModel
                                           hasSeqInput = false );
 
             % store this class's properties
-            self.nHidden = args.nHidden;
-            self.nFC = args.nFC;
-            self.fcFactor = args.fcFactor;
-            self.scale = args.scale;
-            self.inputDropout = args.inputDropout;
-            self.dropout = args.dropout;
+            self.NumHidden = args.nHidden;
+            self.NumFC = args.nFC;
+            self.FCFactor = args.fcFactor;
+            self.Scale = args.scale;
+            self.InputDropout = args.inputDropout;
+            self.Dropout = args.dropout;
 
             % initialize the networks
             self = initEncoder( self );
@@ -84,32 +84,32 @@ classdef fcModel < autoencoderModel
                                    'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 ) 
-                          dropoutLayer( self.inputDropout, 'Name', 'drop0' ) ];
+                          dropoutLayer( self.InputDropout, 'Name', 'drop0' ) ];
 
             lgraphEnc = layerGraph( layersEnc );       
             lastLayer = 'drop0';
             
-            for i = 1:self.nHidden
+            for i = 1:self.NumHidden
 
-                nNodes = fix( self.nFC*2^(self.fcFactor*(1-i)) );
+                nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
 
                 [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
-                                    nNodes, self.scale, self.dropout );
+                                    nNodes, self.Scale, self.Dropout );
 
             end
             
-            outLayers = fullyConnectedLayer( self.ZDim*(self.isVAE+1), ...
+            outLayers = fullyConnectedLayer( self.ZDim*(self.IsVAE+1), ...
                                                'Name', 'out' );
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...
                                        lastLayer, 'out' );
 
-            if self.isVAE
-                self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.nVAEDraws );
+            if self.IsVAE
+                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
+                                                  nDraws = self.NumVAEDraws );
             else
-                self.nets.encoder = dlnetwork( lgraphEnc );
+                self.Nets.Encoder = dlnetwork( lgraphEnc );
             end
 
         end
@@ -126,12 +126,12 @@ classdef fcModel < autoencoderModel
             lgraphDec = layerGraph( layersDec );
             lastLayer = 'in';
             
-            for i = 1:self.nHidden
+            for i = 1:self.NumHidden
 
-                nNodes = fix( self.nFC*2^(self.fcFactor*(-self.nHidden+i)) );
+                nNodes = fix( self.NumFC*2^(self.FCFactor*(-self.NumHidden+i)) );
 
                 [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
-                                    nNodes, self.scale, self.dropout );
+                                    nNodes, self.Scale, self.Dropout );
 
             end
 
@@ -148,7 +148,7 @@ classdef fcModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, 'fcout' );
 
-            self.nets.decoder = dlnetwork( lgraphDec );
+            self.Nets.Decoder = dlnetwork( lgraphDec );
 
         end
 
@@ -173,10 +173,10 @@ classdef fcModel < autoencoderModel
             end
 
             % generate latent encodings
-            [ dlZ, state.encoder ] = forward( encoder, dlX );
+            [ dlZ, state.Encoder ] = forward( encoder, dlX );
     
             % reconstruct curves from latent codes
-            [ dlXHat, state.decoder ] = forward( decoder, dlZ );
+            [ dlXHat, state.Decoder ] = forward( decoder, dlZ );
 
         end
 
@@ -206,7 +206,7 @@ classdef fcModel < autoencoderModel
                 dlX = dlarray( dlX, 'CB' );
             end
 
-            dlZ = predict( self.nets.encoder, dlX );
+            dlZ = predict( self.Nets.Encoder, dlX );
 
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';

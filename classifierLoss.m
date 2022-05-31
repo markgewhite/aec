@@ -10,13 +10,13 @@ classdef classifierLoss < lossFunction
     properties
         ZDim                % latent codes dimension size
         CDim                % number of possible classes
-        nHidden             % number of hidden layers
-        nFC                 % number of fully connected nodes at widest
-        fcFactor            % node ratio specifying the power 2 index
-        scale               % leaky Relu scale
-        dropout             % dropout rate
-        initLearningRate    % initial learning rate
-        modelType           % type of classifier model
+        NumHidden           % number of hidden layers
+        NumFC               % number of fully connected nodes at widest
+        FCFactor            % node ratio specifying the power 2 index
+        Scale               % leaky Relu scale
+        Dropout             % dropout rate
+        InitLearningRate    % initial learning rate
+        ModelType           % type of classifier model
         CLabels             % categorical labels
     end
 
@@ -49,7 +49,7 @@ classdef classifierLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = {'encoder', name};
+            netAssignments = {'Encoder', name};
 
             isNet = strcmp( args.modelType, 'Network' );
 
@@ -60,17 +60,17 @@ classdef classifierLoss < lossFunction
                                  hasNetwork = isNet, ...
                                  hasState = isNet );
 
-            self.nHidden = args.nHidden;
-            self.nFC = args.nFC;
-            self.fcFactor = args.fcFactor;
-            self.scale = args.scale;
-            self.dropout = args.dropout;
-            self.modelType = args.modelType;
+            self.NumHidden = args.nHidden;
+            self.NumFC = args.nFC;
+            self.FCFactor = args.fcFactor;
+            self.Scale = args.scale;
+            self.Dropout = args.dropout;
+            self.ModelType = args.modelType;
 
             if isNet
-                self.initLearningRate = args.initLearningRate;
+                self.InitLearningRate = args.initLearningRate;
             else
-                self.initLearningRate = 0;
+                self.InitLearningRate = 0;
             end
 
             self.CDim = args.CDim;
@@ -86,7 +86,7 @@ classdef classifierLoss < lossFunction
                 ZDim       double {mustBeInteger, mustBePositive}
             end
 
-            if ~strcmp( self.modelType, 'Network' )
+            if ~strcmp( self.ModelType, 'Network' )
                 eid = 'classifierLoss:NotNetwork';
                 msg = 'This classifier function does not use a network.';
                 throwAsCaller( MException(eid,msg) );
@@ -98,13 +98,13 @@ classdef classifierLoss < lossFunction
             layers = featureInputLayer( self.ZDim, 'Name', 'in' );
             
             % create the hidden layers
-            for i = 1:self.nHidden
-                nNodes = fix( self.nFC*2^(self.fcFactor*(1-i)) );
+            for i = 1:self.NumHidden
+                nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
                 layers = [ layers; ...
                     fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                     batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( self.scale, 'Name', ['relu' num2str(i)] )
-                    dropoutLayer( self.dropout, 'Name', ['drop' num2str(i)] )
+                    leakyReluLayer( self.Scale, 'Name', ['relu' num2str(i)] )
+                    dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
                     ]; %#ok<AGROW> 
             end
             
@@ -129,11 +129,11 @@ classdef classifierLoss < lossFunction
                 dlC      dlarray  % actual distribution
             end
 
-            if self.hasNetwork                    
+            if self.HasNetwork                    
                 [ loss, state ] = self.networkLoss( net, dlZGen, dlC );
             
             else
-                loss = self.nonNetworkLoss( self.modelType, dlZGen, dlC );
+                loss = self.nonNetworkLoss( self.ModelType, dlZGen, dlC );
                 state = [];
 
             end
@@ -169,7 +169,7 @@ classdef classifierLoss < lossFunction
             C = double(extractdata( dlC ));
             
             % fit the appropriate model
-            switch self.modelType
+            switch self.ModelType
                 case 'Fisher'
                     model = fitcdiscr( ZGen, C );
                 case 'SVM'

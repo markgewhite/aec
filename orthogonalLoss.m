@@ -26,7 +26,7 @@ classdef orthogonalLoss < lossFunction
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'Z', ...
-                                 lossNets = {'encoder'} );
+                                 lossNets = {'Encoder'} );
 
         end
 
@@ -36,7 +36,7 @@ classdef orthogonalLoss < lossFunction
 
         function loss = calcLoss( self, dlZ )
             % Calculate the orthogonality loss
-            if self.doCalcLoss
+            if self.DoCalcLoss
                 
                 orth = dlVectorSq( dlZ );
                 loss.orth = ...

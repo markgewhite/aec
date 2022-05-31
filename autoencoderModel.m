@@ -9,24 +9,24 @@ classdef autoencoderModel < representationModel
 
     properties
         XOutputDim     % output dimension (may differ from XInputDim)
-        nets           % networks defined in this model (structure)
-        netNames       % names of the networks (for convenience)
-        nNets          % number of networks
-        isVAE          % flag indicating if variational autoencoder
-        nVAEDraws      % number of draws from encoder output distribution
-        lossFcns       % array of loss functions
-        lossFcnNames   % names of the loss functions
-        lossFcnWeights % weights to be applied to the loss function
-        lossFcnTbl     % convenient table summarising loss function details
-        nLoss          % number of computed losses
-        isInitialized  % flag indicating if fully initialized
-        hasSeqInput    % supports variable-length input
-        auxNetwork     % name of auxiliary dlnetwork
-        auxModelType   % type of auxiliary model to use
-        auxModel       % auxiliary model itself
+        Nets           % networks defined in this model (structure)
+        NetNames       % names of the networks (for convenience)
+        NumNetworks    % number of networks
+        IsVAE          % flag indicating if variational autoencoder
+        NumVAEDraws    % number of draws from encoder output distribution
+        LossFcns       % array of loss functions
+        LossFcnNames   % names of the loss functions
+        LossFcnWeights % weights to be applied to the loss function
+        LossFcnTbl     % convenient table summarising loss function details
+        NumLoss        % number of computed losses
+        IsInitialized  % flag indicating if fully initialized
+        HasSeqInput    % supports variable-length input
+        AuxNetwork     % name of auxiliary dlnetwork
+        AuxModelType   % type of auxiliary model to use
+        AuxModel       % auxiliary model itself
 
-        trainer        % trainer object holding training parameters
-        optimizer      % optimizer object
+        Trainer        % trainer object holding training parameters
+        Optimizer      % optimizer object
     end
 
     properties (Dependent = true)
@@ -59,7 +59,7 @@ classdef autoencoderModel < representationModel
                 superArgs.?representationModel
                 args.hasSeqInput    logical = false
                 args.isVAE          logical = false
-                args.nVAEDraws      double ...
+                args.numVAEDraws    double ...
                     {mustBeInteger, mustBePositive} = 1
                 args.weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
@@ -80,25 +80,25 @@ classdef autoencoderModel < representationModel
             self.CDim = CDim;
 
             % placeholders for subclasses to define
-            self.nets.encoder = [];
-            self.nets.decoder = [];
-            self.netNames = {'encoder', 'decoder'};
-            self.nNets = 2;
-            self.isVAE = args.isVAE;
-            self.nVAEDraws = args.nVAEDraws;
-            self.hasSeqInput = args.hasSeqInput;
+            self.Nets.Encoder = [];
+            self.Nets.Decoder = [];
+            self.NetNames = {'Encoder', 'Decoder'};
+            self.NumNetworks = 2;
+            self.IsVAE = args.isVAE;
+            self.NumVAEDraws = args.numVAEDraws;
+            self.HasSeqInput = args.hasSeqInput;
 
-            self.auxModelType = args.auxModel;
-            self.auxModel = [];
+            self.AuxModelType = args.auxModel;
+            self.AuxModel = [];
 
             % copy over the loss functions associated
             % and any networks with them for later training 
             self = addLossFcns( self, lossFcns{:}, weights = args.weights );
 
-            self.nLoss = sum( self.lossFcnTbl.nLosses );
+            self.NumLoss = sum( self.LossFcnTbl.NumLosses );
 
             % indicate that further initialization is required
-            self.isInitialized = false;
+            self.IsInitialized = false;
 
         end
 
@@ -129,13 +129,13 @@ classdef autoencoderModel < representationModel
             else
                 w = args.weights;
             end
-            self.lossFcnWeights = [ self.lossFcnWeights w ];
+            self.LossFcnWeights = [ self.LossFcnWeights w ];
 
             % update the names list
-            self.lossFcnNames = [ self.lossFcnNames getFcnNames(newFcns) ];
+            self.LossFcnNames = [ self.LossFcnNames getFcnNames(newFcns) ];
             % add to the loss functions
             for i = 1:length( newFcns )
-                self.lossFcns.(newFcns{i}.name) = newFcns{i};
+                self.LossFcns.(newFcns{i}.Name) = newFcns{i};
             end
 
             % add networks, if required
@@ -144,26 +144,26 @@ classdef autoencoderModel < representationModel
             % store the loss functions' details 
             % and relevant details for easier access when training
             self = self.setLossInfoTbl;
-            self.lossFcnTbl.types = categorical( self.lossFcnTbl.types );
-            self.lossFcnTbl.inputs = categorical( self.lossFcnTbl.inputs );
+            self.LossFcnTbl.Types = categorical( self.LossFcnTbl.Types );
+            self.LossFcnTbl.Inputs = categorical( self.LossFcnTbl.Inputs );
 
             % check a reconstruction loss is present
-            if ~any( self.lossFcnTbl.types=='Reconstruction' )
+            if ~any( self.LossFcnTbl.Types=='Reconstruction' )
                 eid = 'aeModel:NoReconstructionLoss';
                 msg = 'No reconstruction loss object has been specified.';
                 throwAsCaller( MException(eid,msg) );
             end 
 
             % check there is no more than one auxiliary network, if at all
-            auxFcns = self.lossFcnTbl.types=='Auxiliary';
+            auxFcns = self.LossFcnTbl.Types=='Auxiliary';
             if sum( auxFcns ) > 1
                 eid = 'aeModel:MulitpleAuxiliaryFunction';
                 msg = 'There is more than one auxiliary loss function.';
                 throwAsCaller( MException(eid,msg) );
             elseif sum( auxFcns ) == 1
                 % for convenience identify the auxiliary network
-                auxNet = (self.netNames == self.lossFcnNames(auxFcns));
-                self.auxNetwork = self.netNames( auxNet );
+                auxNet = (self.NetNames == self.LossFcnNames(auxFcns));
+                self.AuxNetwork = self.NetNames( auxNet );
             end
 
         end
@@ -177,12 +177,12 @@ classdef autoencoderModel < representationModel
 
             % set the trainer's properties
             argsCell = namedargs2cell( args );
-            self.trainer = modelTrainer( self.lossFcnTbl, ...
+            self.Trainer = modelTrainer( self.LossFcnTbl, ...
                                          argsCell{:}, ...
                                          showPlots = self.ShowPlots );
 
             % confirm if initialization is complete
-            self.isInitialized = ~isempty(self.optimizer);
+            self.IsInitialized = ~isempty(self.Optimizer);
 
         end
         
@@ -195,10 +195,10 @@ classdef autoencoderModel < representationModel
 
             % set the trainer's properties
             argsCell = namedargs2cell( args );
-            self.optimizer = modelOptimizer( self.netNames, argsCell{:} );
+            self.Optimizer = modelOptimizer( self.NetNames, argsCell{:} );
 
             % confirm if initialization is complete
-            self.isInitialized = ~isempty(self.trainer);
+            self.IsInitialized = ~isempty(self.Trainer);
 
         end
 
@@ -210,14 +210,14 @@ classdef autoencoderModel < representationModel
                 thisDataset   modelDataset
             end
 
-            if ~self.isInitialized
+            if ~self.IsInitialized
                 eid = 'Autoencoder:NotInitialized';
                 msg = 'The trainer, optimizer or dataset parameters have not all been set.';
                 throwAsCaller( MException(eid,msg) );
             end
 
             % check dataset is suitable
-            if thisDataset.isFixedLength == self.hasSeqInput
+            if thisDataset.isFixedLength == self.HasSeqInput
                 eid = 'aeModel:DatasetNotSuitable';
                 if thisDataset.isFixedLength
                     msg = 'The dataset should have variable length for the model.';
@@ -231,14 +231,14 @@ classdef autoencoderModel < representationModel
             self.setReconScale( thisDataset.XTarget );
 
             % re-partition the data to create training and validation sets
-            cvPart = cvpartition( thisDataset.nObs, 'Holdout', 0.25 );
+            cvPart = cvpartition( thisDataset.NumObs, 'Holdout', 0.25 );
             
             thisTrnSet = thisDataset.partition( training(cvPart) );
             thisValSet = thisDataset.partition( test(cvPart) );
 
             % run the training loop
-            [ self, self.optimizer ] = ...
-                            self.trainer.runTraining( self, ...
+            [ self, self.Optimizer ] = ...
+                            self.Trainer.runTraining( self, ...
                                                       thisTrnSet, ...
                                                       thisValSet );
 
@@ -254,8 +254,8 @@ classdef autoencoderModel < representationModel
                 XHat  
             end
             
-            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
-            loss = self.lossFcns.(name).calcLoss( X, XHat );
+            name = self.LossFcnTbl.Names( self.LossFcnTbl.Types=='Reconstruction' );
+            loss = self.LossFcns.(name).calcLoss( X, XHat );
 
         end
 
@@ -268,8 +268,8 @@ classdef autoencoderModel < representationModel
                 XHat  
             end
             
-            name = self.lossFcnTbl.names( self.lossFcnTbl.types=='Reconstruction' );
-            loss = self.lossFcns.(name).calcTemporalLoss( X, XHat );
+            name = self.LossFcnTbl.Names( self.LossFcnTbl.Types=='Reconstruction' );
+            loss = self.LossFcns.(name).calcTemporalLoss( X, XHat );
 
         end
 
@@ -281,11 +281,11 @@ classdef autoencoderModel < representationModel
                 data            double
             end
             
-            for i = 1:size( self.lossFcnTbl, 1 )
+            for i = 1:size( self.LossFcnTbl, 1 )
                 
-                if ismember( self.lossFcnTbl.inputs(i), {'X-XHat', 'XC', 'XHat'} )
-                    name = self.lossFcnTbl.names(i);
-                    self.lossFcns.(name).setScale( data );
+                if ismember( self.LossFcnTbl.Inputs(i), {'X-XHat', 'XC', 'XHat'} )
+                    name = self.LossFcnTbl.Names(i);
+                    self.LossFcns.(name).setScale( data );
                 end
     
             end
@@ -300,13 +300,13 @@ classdef autoencoderModel < representationModel
             end
 
             if self.XChannels==1
-                if self.hasSeqInput
+                if self.HasSeqInput
                     labels = 'TBC';
                 else
                     labels = 'CB';
                 end
             else
-                if self.hasSeqInput
+                if self.HasSeqInput
                     labels = 'TBC';
                 else
                     labels = 'SBC';
@@ -397,9 +397,9 @@ classdef autoencoderModel < representationModel
 
             % generate all the component curves using the decoder
             if args.forward
-                dlXC = forward( self.nets.decoder, dlZC );
+                dlXC = forward( self.Nets.Decoder, dlZC );
             else
-                dlXC = predict( self.nets.decoder, dlZC );
+                dlXC = predict( self.Nets.Decoder, dlZC );
             end
 
             XDim = size( dlXC );
@@ -430,10 +430,10 @@ classdef autoencoderModel < representationModel
             end
 
             % generate latent encodings
-            [ dlZ, state.encoder ] = forward( encoder, dlX );
+            [ dlZ, state.Encoder ] = forward( encoder, dlX );
     
             % reconstruct curves from latent codes
-            [ dlXHat, state.decoder ] = forward( decoder, dlZ );
+            [ dlXHat, state.Decoder ] = forward( decoder, dlZ );
 
         end
 
@@ -456,7 +456,7 @@ classdef autoencoderModel < representationModel
                 throwAsCaller( MException(eid,msg) );
             end
 
-            dlZ = predict( self.nets.encoder, dlX );
+            dlZ = predict( self.Nets.Encoder, dlX );
 
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';
@@ -479,7 +479,7 @@ classdef autoencoderModel < representationModel
                 dlZ = dlarray( Z', 'CB' );
             end
 
-            dlXHat = predict( self.nets.decoder, dlZ );
+            dlXHat = predict( self.Nets.Decoder, dlZ );
 
             if arg.convert
                 dlXHat = double(extractdata( dlXHat ));
@@ -503,21 +503,21 @@ classdef autoencoderModel < representationModel
                 dlZ = dlarray( Z, 'CB' );
             end
 
-            auxNet = (self.lossFcnTbl.types == 'Auxiliary');
+            auxNet = (self.LossFcnTbl.Types == 'Auxiliary');
             if ~any( auxNet )
                 eid = 'aeModel:NoAuxiliaryFunction';
                 msg = 'No auxiliary loss function specified in the model.';
                 throwAsCaller( MException(eid,msg) );
             end
 
-            if ~self.lossFcnTbl.hasNetwork( auxNet )
+            if ~self.LossFcnTbl.HasNetwork( auxNet )
                 eid = 'aeModel:NoAuxiliaryNetwork';
                 msg = 'No auxiliary network specified in the model.';
                 throwAsCaller( MException(eid,msg) );
             end
 
-            auxNetName = self.lossFcnTbl.names( auxNet );
-            dlYHat = predict( self.nets.(auxNetName), dlZ );
+            auxNetName = self.LossFcnTbl.Names( auxNet );
+            dlYHat = predict( self.Nets.(auxNetName), dlZ );
 
             YHat = double(extractdata( dlYHat ));
 
@@ -530,9 +530,9 @@ classdef autoencoderModel < representationModel
                 name         string {mustBeNetName( self, name )}
             end
             
-            net = self.nets.(name);
+            net = self.Nets.(name);
             if isa( net, 'lossFunction' )
-                net = self.lossFcns.(name).net;
+                net = self.LossFcns.(name).net;
             end
 
         end
@@ -543,7 +543,7 @@ classdef autoencoderModel < representationModel
                 self
             end
             
-            names = fieldnames( self.nets );
+            names = fieldnames( self.Nets );
 
         end
 
@@ -586,18 +586,18 @@ classdef autoencoderModel < representationModel
             end
 
             nFcns = length( newFcns );
-            k = length( self.nets );
+            k = length( self.Nets );
             for i = 1:nFcns
                 thisLossFcn = newFcns{i};
-                if thisLossFcn.hasNetwork
+                if thisLossFcn.HasNetwork
                     k = k+1;
                     % add the network object
-                    self.nets.(thisLossFcn.name) = ...
+                    self.Nets.(thisLossFcn.Name) = ...
                             initNetwork( thisLossFcn, self.ZDim );
                     % record its name
-                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
+                    self.NetNames = [ string(self.NetNames) thisLossFcn.Name ];
                     % increment the counter
-                    self.nNets = self.nNets + 1;
+                    self.NumNetworks = self.NumNetworks + 1;
                 end
             end
 
@@ -607,46 +607,46 @@ classdef autoencoderModel < representationModel
         function self = setLossInfoTbl( self )
             % Update the info table
             
-            nFcns = length( self.lossFcnNames );
-            names = strings( nFcns, 1 );
-            types = strings( nFcns, 1 );
-            inputs = strings( nFcns, 1 );
-            weights = zeros( nFcns, 1 );
-            nLosses = zeros( nFcns, 1 );
-            lossNets = strings( nFcns, 1 );
-            hasNetwork = false( nFcns, 1 );
-            doCalcLoss = false( nFcns, 1 );
-            useLoss = false( nFcns, 1 );
+            nFcns = length( self.LossFcnNames );
+            Names = strings( nFcns, 1 );
+            Types = strings( nFcns, 1 );
+            Inputs = strings( nFcns, 1 );
+            Weights = zeros( nFcns, 1 );
+            NumLosses = zeros( nFcns, 1 );
+            LossNets = strings( nFcns, 1 );
+            HasNetwork = false( nFcns, 1 );
+            DoCalcLoss = false( nFcns, 1 );
+            UseLoss = false( nFcns, 1 );
 
             for i = 1:nFcns
                 
-                thisLossFcn = self.lossFcns.(self.lossFcnNames(i));
-                names(i) = thisLossFcn.name;
-                types(i) = thisLossFcn.type;
-                inputs(i) = thisLossFcn.input;
-                weights(i) = self.lossFcnWeights(i);
-                nLosses(i) = thisLossFcn.nLoss;
-                hasNetwork(i) = thisLossFcn.hasNetwork;
-                doCalcLoss(i) = thisLossFcn.doCalcLoss;
-                useLoss(i) = thisLossFcn.useLoss;
+                thisLossFcn = self.LossFcns.(self.LossFcnNames(i));
+                Names(i) = thisLossFcn.Name;
+                Types(i) = thisLossFcn.Type;
+                Inputs(i) = thisLossFcn.Input;
+                Weights(i) = self.LossFcnWeights(i);
+                NumLosses(i) = thisLossFcn.NumLoss;
+                HasNetwork(i) = thisLossFcn.HasNetwork;
+                DoCalcLoss(i) = thisLossFcn.DoCalcLoss;
+                UseLoss(i) = thisLossFcn.UseLoss;
 
-                nFcnNets = length( thisLossFcn.lossNets );
+                nFcnNets = length( thisLossFcn.LossNets );
                 for j = 1:nFcnNets
-                    if length(string( thisLossFcn.lossNets{j} ))==1
-                        assignments = thisLossFcn.lossNets{j};
+                    if length(string( thisLossFcn.LossNets{j} ))==1
+                        assignments = thisLossFcn.LossNets{j};
                     else
-                        assignments = strjoin( thisLossFcn.lossNets{j,:}, '+' );
+                        assignments = strjoin( thisLossFcn.LossNets{j,:}, '+' );
                     end
-                    lossNets(i) = strcat( lossNets(i), assignments ) ;
+                    LossNets(i) = strcat( LossNets(i), assignments ) ;
                     if j < nFcnNets
-                        lossNets(i) = strcat( lossNets(i), "; " );
+                        LossNets(i) = strcat( LossNets(i), "; " );
                     end
                 end
 
             end
 
-            self.lossFcnTbl = table( names, types, inputs, weights, ...
-                    nLosses, lossNets, hasNetwork, doCalcLoss, useLoss );
+            self.LossFcnTbl = table( Names, Types, Inputs, Weights, ...
+                    NumLosses, LossNets, HasNetwork, DoCalcLoss, UseLoss );
 
         end
 
@@ -661,7 +661,7 @@ function names = getFcnNames( lossFcns )
     nFcns = length( lossFcns );
     names = strings( nFcns, 1 );
     for i = 1:nFcns
-        names(i) = lossFcns{i}.name;
+        names(i) = lossFcns{i}.Name;
     end
 
 end

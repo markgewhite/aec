@@ -11,10 +11,10 @@
 classdef wassersteinLoss < lossFunction
 
     properties
-        kernel        % type of kernel to use
-        scale         % kernel scale 
-        baseType      % kernel distribution
-        distribution  % target distribution
+        Kernel        % type of kernel to use
+        Scale         % kernel scale 
+        BaseType      % kernel distribution
+        Distribution  % target distribution
     end
 
     methods
@@ -39,12 +39,12 @@ classdef wassersteinLoss < lossFunction
             self = self@lossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'Z', ...
-                                 lossNets = {'encoder'} );
+                                 lossNets = {'Encoder'} );
             
-            self.kernel = args.kernel;
-            self.scale = args.scale;
-            self.baseType = args.baseType;
-            self.distribution = args.distribution;
+            self.Kernel = args.kernel;
+            self.Scale = args.scale;
+            self.BaseType = args.baseType;
+            self.Distribution = args.distribution;
 
         end
 
@@ -62,18 +62,18 @@ classdef wassersteinLoss < lossFunction
             ZQ = double(extractdata( dlZQ ) )';
 
             % generate a target distribution
-            switch self.distribution
+            switch self.Distribution
                 case 'Gaussian'
                     ZP = randn( ZSize, batchSize )';
                 case 'Categorical'
                     ZP = randi( ZSize, batchSize )';
             end
 
-            switch self.kernel
+            switch self.Kernel
                 case 'RBF'
                     loss = mmdLossRBF( ZP, ZQ );
                 case 'IMQ'
-                    loss = mmdLossIMQ( ZP, ZQ, self.scale, self.baseType );
+                    loss = mmdLossIMQ( ZP, ZQ, self.Scale, self.BaseType );
             end
 
         end

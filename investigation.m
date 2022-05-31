@@ -179,7 +179,7 @@ function setup = updateDependencies( setup, parameter, value )
 
                 case {'fcModel', 'convModel'}
 
-                    dependency = 'data.args.normalizeInput';
+                    dependency = 'data.args.hasNormalizedInput';
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
 
@@ -191,11 +191,11 @@ function setup = updateDependencies( setup, parameter, value )
 
                 case 'pcaModel'
 
-                    dependency = 'data.args.normalizeInput';
+                    dependency = 'data.args.hasNormalizedInput';
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
                     
-                    dependency = 'data.args.matchingOutput';
+                    dependency = 'data.args.hasMatchingOutput';
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
 

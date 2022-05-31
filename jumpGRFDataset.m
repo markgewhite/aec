@@ -22,22 +22,22 @@ classdef jumpGRFDataset < modelDataset
 
             % setup padding
             if args.PaddingLength==0
-                pad.length = 1501;
+                pad.Length = 1501;
             else
-                pad.length = args.PaddingLength;
+                pad.Length = args.PaddingLength;
             end
-            pad.longest = false;
-            pad.location = 'Left';
-            pad.value = 1;
-            pad.same = false;
-            pad.anchoring = 'Right';
+            pad.Longest = false;
+            pad.Location = 'Left';
+            pad.Value = 1;
+            pad.Same = false;
+            pad.Anchoring = 'Right';
 
-            tSpan= -pad.length+1:0;
+            tSpan= -pad.Length+1:0;
         
             % setup fda
-            paramsFd.basisOrder = 4;
-            paramsFd.penaltyOrder = 2;
-            paramsFd.lambda = 1E5; % 1E2
+            paramsFd.BasisOrder = 4;
+            paramsFd.PenaltyOrder = 2;
+            paramsFd.Lambda = 1E5; % 1E2
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );

@@ -2,29 +2,29 @@ classdef modelTrainer < handle
     % Class defining a model trainer
 
     properties
-        nEpochs        % maximum number of epochs for training
-        nEpochsPreTrn  % number of epochs for pretraining
-        currentEpoch   % epoch counter
-        batchSize      % minibatch size
-        partialBatch   % what to do with an incomplete batch
+        NumEpochs        % maximum number of epochs for training
+        NumEpochsPreTrn  % number of epochs for pretraining
+        CurrentEpoch     % epoch counter
+        BatchSize        % minibatch size
+        PartialBatch     % what to do with an incomplete batch
 
-        valFreq        % validation frequency in epochs
-        updateFreq     % update frequency in epochs
-        lrFreq         % learning rate update frequency
+        ValFreq          % validation frequency in epochs
+        UpdateFreq       % update frequency in epochs
+        LRFreq           % learning rate update frequency
 
-        valPatience    % validation patience in valFreq units
-        valType        % validation function name
+        ValPatience      % validation patience in valFreq units
+        ValType          % validation function name
 
-        nLossFcns      % number of loss functions
-        lossTrn        % record of training losses
-        lossVal        % record of validation losses
+        NumLossFcns      % number of loss functions
+        LossTrn          % record of training losses
+        LossVal          % record of validation losses
 
-        preTraining    % flag to indicate AE training
-        postTraining   % flag to indicate whether to continue training
+        PreTraining      % flag to indicate AE training
+        PostTraining     % flag to indicate whether to continue training
 
-        showPlots      % flag whether to show plots
-        lossFig        % figure for the loss lines
-        lossLines      % animated lines cell array
+        ShowPlots        % flag whether to show plots
+        LossFig          % figure for the loss lines
+        LossLines        % animated lines cell array
     end
 
     methods
@@ -33,9 +33,9 @@ classdef modelTrainer < handle
             % Initialize the model
             arguments
                 lossFcnTbl          table
-                args.nEpochs        double ...
+                args.numEpochs      double ...
                     {mustBeInteger, mustBePositive} = 2000;
-                args.nEpochsPreTrn  double ...
+                args.numEpochsPreTrn  double ...
                     {mustBeInteger, mustBePositive} = 10;
                 args.batchSize      double ...
                     {mustBeInteger, mustBePositive} = 40;
@@ -60,30 +60,30 @@ classdef modelTrainer < handle
             end
 
             % initialize the training parameters
-            self.nEpochs = args.nEpochs;
-            self.nEpochsPreTrn = args.nEpochsPreTrn;
-            self.currentEpoch = 0;
-            self.batchSize = args.batchSize;
-            self.partialBatch = args.partialBatch;
+            self.NumEpochs = args.numEpochs;
+            self.NumEpochsPreTrn = args.numEpochsPreTrn;
+            self.CurrentEpoch = 0;
+            self.BatchSize = args.batchSize;
+            self.PartialBatch = args.partialBatch;
 
-            self.valFreq = args.valFreq;
-            self.updateFreq = args.updateFreq;
-            self.lrFreq = args.lrFreq;
+            self.ValFreq = args.valFreq;
+            self.UpdateFreq = args.updateFreq;
+            self.LRFreq = args.lrFreq;
 
-            self.valPatience = args.valPatience;
-            self.valType = args.valType;
+            self.ValPatience = args.valPatience;
+            self.ValType = args.valType;
 
-            self.nLossFcns = size( lossFcnTbl,1 );
-            self.lossTrn = [];
-            self.lossVal = [];
+            self.NumLossFcns = size( lossFcnTbl,1 );
+            self.LossTrn = [];
+            self.LossVal = [];
 
-            self.preTraining = true;
-            self.postTraining = args.postTraining;
+            self.PreTraining = true;
+            self.PostTraining = args.postTraining;
 
-            self.showPlots = args.showPlots;
+            self.ShowPlots = args.showPlots;
 
-            if self.showPlots
-                [self.lossFig, self.lossLines] = ...
+            if self.ShowPlots
+                [self.LossFig, self.LossLines] = ...
                                 initializeLossPlots( lossFcnTbl );
             end
 
@@ -106,10 +106,10 @@ classdef modelTrainer < handle
             
             % setup the minibatch queues
             mbqTrn = thisTrnData.getMiniBatchQueue( thisTrnData, ...
-                                        self.batchSize, ...
+                                        self.BatchSize, ...
                                         thisModel.XDimLabels, ...
                                         thisModel.XNDimLabels, ...
-                                        partialBatch = self.partialBatch );
+                                        partialBatch = self.PartialBatch );
 
             % get the validation data (one-time only)
             [ dlXVal, dlYVal ] = thisValData.getDLInput( thisModel.XDimLabels );
@@ -121,19 +121,19 @@ classdef modelTrainer < handle
             nIter = iterationsPerEpoch( mbqTrn );           
             j = 0;
             v = 0;
-            vp = self.valPatience;
+            vp = self.ValPatience;
             
-            self.lossTrn = zeros( nIter*self.nEpochs, thisModel.nLoss );
-            self.lossVal = zeros( ceil( (self.nEpochs-self.nEpochsPreTrn) ...
-                                        /self.valFreq ), 1 );
+            self.LossTrn = zeros( nIter*self.NumEpochs, thisModel.NumLoss );
+            self.LossVal = zeros( ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
+                                        /self.ValFreq ), 1 );
             
-            for epoch = 1:self.nEpochs
+            for epoch = 1:self.NumEpochs
                 
-                self.currentEpoch = epoch;
+                self.CurrentEpoch = epoch;
 
                 % Pre-training
-                self.preTraining = (epoch<=self.nEpochsPreTrn);
-                doTrainAE = (self.postTraining || self.preTraining);
+                self.PreTraining = (epoch<=self.NumEpochsPreTrn);
+                doTrainAE = (self.PostTraining || self.PreTraining);
             
                 if thisTrnData.isFixedLength
                     % reset with a shuffled order
@@ -152,9 +152,9 @@ classdef modelTrainer < handle
                     [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
                     
                     % evaluate the model gradients 
-                    [ grads, states, self.lossTrn(j,:) ] = ...
+                    [ grads, states, self.LossTrn(j,:) ] = ...
                                       dlfeval(  @gradients, ...
-                                                thisModel.nets, ...
+                                                thisModel.Nets, ...
                                                 thisModel, ...
                                                 dlXTTrn, ...
                                                 dlXNTrn, ...
@@ -162,23 +162,23 @@ classdef modelTrainer < handle
                                                 doTrainAE );
 
                     % store revised network states
-                    for m = 1:thisModel.nNets
-                        thisName = thisModel.netNames{m};
+                    for m = 1:thisModel.NumNetworks
+                        thisName = thisModel.NetNames{m};
                         if isfield( states, thisName )
-                            thisModel.nets.(thisName).State = states.(thisName);
+                            thisModel.Nets.(thisName).State = states.(thisName);
                         end
                     end
 
                     % update network parameters
-                    [ thisOptimizer, thisModel.nets ] = ...
-                        thisModel.optimizer.updateNets( thisModel.nets, ...
+                    [ thisOptimizer, thisModel.Nets ] = ...
+                        thisModel.Optimizer.updateNets( thisModel.Nets, ...
                                                         grads, ...
                                                         j, ...
                                                         doTrainAE );
 
-                    if self.showPlots
+                    if self.ShowPlots
                         % update loss plots
-                        updateLossLines( self.lossLines, j, self.lossTrn(j,:) );
+                        updateLossLines( self.LossLines, j, self.LossTrn(j,:) );
                     end
 
                 end
@@ -187,23 +187,23 @@ classdef modelTrainer < handle
                 dlZTrnAll = thisModel.encode( dlXTrnAll, ...
                                               convert = false );
 
-                thisModel.auxModel = trainAuxModel( ...
-                                            thisModel.auxModelType, ...
+                thisModel.AuxModel = trainAuxModel( ...
+                                            thisModel.AuxModelType, ...
                                             dlZTrnAll, ...
                                             dlYTrnAll );
                
 
-                if ~self.preTraining ...
-                        && mod( epoch, self.valFreq )==0
+                if ~self.PreTraining ...
+                        && mod( epoch, self.ValFreq )==0
                     
                     % run a validation check
                     v = v + 1;
-                    self.lossVal( v ) = validationCheck( thisModel, ...
-                                                    self.valType, ...
+                    self.LossVal( v ) = validationCheck( thisModel, ...
+                                                    self.ValType, ...
                                                     dlXVal, dlYVal );
                     if v > 2*vp-1
-                        if mean(self.lossVal(v-2*vp+1:v-vp)) ...
-                                < mean(self.lossVal(v-vp+1:v))
+                        if mean(self.LossVal(v-2*vp+1:v-vp)) ...
+                                < mean(self.LossVal(v-vp+1:v))
                             % no longer improving - stop training
                             break
                         end
@@ -212,22 +212,22 @@ classdef modelTrainer < handle
                 end
             
                 % update progress on screen
-                if mod( epoch, self.updateFreq )==0 && self.showPlots
-                    if self.preTraining
+                if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots
+                    if self.PreTraining
                         % exclude validation
                         lossValArg = [];
                     else
                         % include validation
-                        lossValArg = self.lossVal( v );
+                        lossValArg = self.LossVal( v );
                     end                       
                     self.reportProgress( thisModel, ...
                                          thisTrnData, ...
-                                         self.lossTrn( j-nIter+1:j, : ), ...
+                                         self.LossTrn( j-nIter+1:j, : ), ...
                                          epoch, ...
                                          lossVal = lossValArg );
                 end
             
-                if mod( epoch, self.lrFreq )==0
+                if mod( epoch, self.LRFreq )==0
                     % update learning rates
                     thisOptimizer = ...
                         thisOptimizer.updateLearningRates( doTrainAE );
@@ -263,7 +263,7 @@ classdef modelTrainer < handle
             end
         
             fprintf('Loss (%4d) = ', epoch);
-            for k = 1:thisModel.nLoss
+            for k = 1:thisModel.NumLoss
                 fprintf(' %6.3f', meanLoss(k) );
             end
             if ~isempty( args.lossVal )
@@ -295,14 +295,14 @@ classdef modelTrainer < handle
             % plot them on specified axes
             thisModel.plotLatentComp( ...
                           dlXC, ...
-                          thisData.tSpan, ...
-                          thisData.fda.fdParamsTarget, ...
+                          thisData.TSpan, ...
+                          thisData.FDA.FdParamsTarget, ...
                           type = 'Smoothed', ...
                           shading = true, ...
-                          plotTitle = thisData.info.datasetName, ...
-                          xAxisLabel = thisData.info.timeLabel, ...
-                          yAxisLabel = thisData.info.channelLabels, ...
-                          yAxisLimits = thisData.info.channelLimits );
+                          plotTitle = thisData.Info.DatasetName, ...
+                          xAxisLabel = thisData.Info.TimeLabel, ...
+                          yAxisLabel = thisData.Info.ChannelLabels, ...
+                          yAxisLimits = thisData.Info.ChannelLimits );
         
             % plot the Z distributions
             thisModel.plotZDist( dlZ );
@@ -342,9 +342,9 @@ function [grad, state, loss] = gradients( nets, ...
     if doTrainAE
         % autoencoder training
         [ dlXGen, dlZGen, state ] = ...
-                forward( thisModel, nets.encoder, nets.decoder, dlXIn );
+                forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
     
-        if thisModel.isVAE
+        if thisModel.IsVAE
             % duplicate X & Y to match VAE's multiple draws
             nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
             dlXOut = repmat( dlXOut, 1, nDraws );
@@ -353,20 +353,20 @@ function [grad, state, loss] = gradients( nets, ...
         
     else
         % no autoencoder training
-        dlZGen = predict( nets.encoder, dlXIn );
+        dlZGen = predict( nets.Encoder, dlXIn );
     
     end
 
 
     % select the active loss functions
-    isActive = thisModel.lossFcnTbl.doCalcLoss;
-    activeFcns = thisModel.lossFcnTbl( isActive, : );
+    isActive = thisModel.LossFcnTbl.DoCalcLoss;
+    activeFcns = thisModel.LossFcnTbl( isActive, : );
 
-    compLossFcnIdx = find( activeFcns.types=='Component', 1 );
+    compLossFcnIdx = find( activeFcns.Types=='Component', 1 );
     if ~isempty( compLossFcnIdx )
         % identify the component loss function
-        thisName = activeFcns.names(compLossFcnIdx);
-        thisLossFcn = thisModel.lossFcns.(thisName);
+        thisName = activeFcns.Names(compLossFcnIdx);
+        thisLossFcn = thisModel.LossFcns.(thisName);
         % compute the AE components
         dlXC = thisModel.latentComponents( ...
                                 dlZGen, ...
@@ -379,22 +379,22 @@ function [grad, state, loss] = gradients( nets, ...
     % and assign to networks
     
     nFcns = size( activeFcns, 1 );
-    nLoss = sum( activeFcns.nLosses );
+    nLoss = sum( activeFcns.NumLosses );
     loss = zeros( nLoss, 1 );
     idx = 1;
     lossAccum = [];
     for i = 1:nFcns
        
         % identify the loss function
-        thisName = activeFcns.names(i);
-        thisLossFcn = thisModel.lossFcns.(thisName);
+        thisName = activeFcns.Names(i);
+        thisLossFcn = thisModel.LossFcns.(thisName);
 
         % assign indices for the number of losses returned
-        lossIdx = idx:idx+thisLossFcn.nLoss-1;
-        idx = idx + thisLossFcn.nLoss;
+        lossIdx = idx:idx+thisLossFcn.NumLoss-1;
+        idx = idx + thisLossFcn.NumLoss;
 
         % select the input variables
-        switch thisLossFcn.input
+        switch thisLossFcn.Input
             case 'X-XHat'
                 dlV = { dlXOut, dlXGen };
             case 'XC'
@@ -414,10 +414,10 @@ function [grad, state, loss] = gradients( nets, ...
         % calculate the loss
         % (make sure to use the model's copy 
         %  of the relevant network object)
-        if thisLossFcn.hasNetwork
+        if thisLossFcn.HasNetwork
             % call the loss function with the network object
             thisNetwork = nets.(thisName);
-            if thisLossFcn.hasState
+            if thisLossFcn.HasState
                 % and store the network state too
                 [ thisLoss, state.(thisName) ] = ...
                         thisLossFcn.calcLoss( thisNetwork, dlV{:} );
@@ -430,7 +430,7 @@ function [grad, state, loss] = gradients( nets, ...
         end
         loss( lossIdx ) = thisLoss;
 
-        if thisLossFcn.useLoss
+        if thisLossFcn.UseLoss
             lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx );
         end
 
@@ -456,9 +456,9 @@ function lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx )
 
     for j = 1:length( lossIdx )
 
-        for k = 1:length( thisLossFcn.lossNets(j,:) )
+        for k = 1:length( thisLossFcn.LossNets(j,:) )
 
-            netAssignments = string(thisLossFcn.lossNets{j,k});
+            netAssignments = string(thisLossFcn.LossNets{j,k});
 
                 for l = 1:length(netAssignments)
 
@@ -523,15 +523,15 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
             lossVal = thisModel.getReconLoss( dlXVal, dlXValHat );
 
         case 'AuxNetwork'
-            dlYHatVal = predict( thisModel.nets.(thisModel.auxNetwork), dlZVal );
-            cLabels = thisModel.lossFcns.(thisModel.auxNetwork).CLabels;
+            dlYHatVal = predict( thisModel.Nets.(thisModel.auxNetwork), dlZVal );
+            cLabels = thisModel.LossFcns.(thisModel.auxNetwork).CLabels;
             dlYHatVal = double( onehotdecode( dlYHatVal, single(cLabels), 1 ));
             lossVal = sum( dlYHatVal~=dlYVal )/length(dlYVal);
 
         case 'AuxModel'
             ZVal = double(extractdata( dlZVal ));
             YVal = double(extractdata( dlYVal ));
-            lossVal = loss( thisModel.auxModel, ZVal', YVal );
+            lossVal = loss( thisModel.AuxModel, ZVal', YVal );
     end
 
 
@@ -561,14 +561,14 @@ function [fig, lossLines] = initializeLossPlots( lossFcnTbl )
     % setup figure for plotting loss functions
     fig = figure(3);
     clf;
-    nLines = sum( lossFcnTbl.nLosses );
+    nLines = sum( lossFcnTbl.NumLosses );
     lossLines = gobjects( nLines, 1 );
     colours = lines( nLines );
     c = 0;
     for i = 1:nAxes
-        thisName = lossFcnTbl.names(i);
+        thisName = lossFcnTbl.Names(i);
         axis = subplot( rows, cols, i );
-        for k = 1:lossFcnTbl.nLosses(i)
+        for k = 1:lossFcnTbl.NumLosses(i)
             c = c+1;
             lossLines(c) = animatedline( axis, 'Color', colours(c,:) );
         end

@@ -4,7 +4,7 @@ function setup = initSetup
     % dataset
     setup.data.class = @jumpGRFDataset;
     setup.data.args.normalization = 'PAD';
-    setup.data.args.normalizeInput = false;
+    setup.data.args.hasNormalizedInput = false;
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = true;
     setup.data.args.resampleRate = 10;
@@ -16,7 +16,7 @@ function setup = initSetup
     %setup.data.args.HasPelvis = true;
     %setup.data.args.HasHip = true;
     %setup.data.args.HasKnee = true;
-    %setup.data.args.overSmoothing = 1E5;
+    %setup.data.args.OverSmoothing = 1E5;
 
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
@@ -79,7 +79,7 @@ function setup = initSetup
     % training
     setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.nEpochs = 200;
+    setup.trainer.args.numEpochs = 200;
     setup.trainer.args.batchSize = 40;
 
 

@@ -78,13 +78,13 @@ classdef representationModel
                                             convert = true );
 
             % smooth the curves        
-            XCFd = smooth_basis( thisDataset.tSpan.target, ...
+            XCFd = smooth_basis( thisDataset.TSpan.Target, ...
                                  XC, ...
-                                 thisDataset.fda.fdParamsTarget );
+                                 thisDataset.FDA.FdParamsTarget );
             XCReg = squeeze( ...
-                        eval_fd( thisDataset.tSpan.regular, XCFd ) );
+                        eval_fd( thisDataset.TSpan.Regular, XCFd ) );
             XReg = squeeze( ...
-                        eval_fd( thisDataset.tSpan.regular, ...
+                        eval_fd( thisDataset.TSpan.Regular, ...
                                  thisDataset.XFd ) );
 
             % compute the components' explained variance
@@ -248,8 +248,8 @@ classdef representationModel
             end
     
             % smooth and re-evaluate all curves
-            tSpanPlot = linspace( tSpan.original(1), tSpan.original(end), 101 );
-            XCFd = smooth_basis( tSpan.target, XC, fdParams );
+            tSpanPlot = linspace( tSpan.Original(1), tSpan.Original(end), 101 );
+            XCFd = smooth_basis( tSpan.Target, XC, fdParams );
             XCsmth = eval_fd( tSpanPlot, XCFd );
     
             % set the colours from blue and red

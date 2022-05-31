@@ -56,28 +56,28 @@ classdef fukuchiDataset < modelDataset
             % setup padding
             if args.PaddingLength==0
                 maxLen = max( cellfun( @length, XRaw ) );
-                pad.length = maxLen;
+                pad.Length = maxLen;
             else
-                pad.length = args.PaddingLength;
+                pad.Length = args.PaddingLength;
             end
-            pad.longest = true;
-            pad.location = 'Right';
-            pad.value = 0;
-            pad.same = true;
-            pad.anchoring = 'Both';
+            pad.Longest = true;
+            pad.Location = 'Right';
+            pad.Value = 0;
+            pad.Same = true;
+            pad.Anchoring = 'Both';
 
             % setup fda
-            paramsFd.basisOrder = 4;
-            paramsFd.penaltyOrder = 2;
+            paramsFd.BasisOrder = 4;
+            paramsFd.PenaltyOrder = 2;
             switch args.Category
                 case 'GRF'
-                    tSpan= (0:pad.length-1)/300;
+                    tSpan= (0:pad.Length-1)/300;
                     label = "Stance Time (s)";
-                    paramsFd.lambda = 1E-6;
+                    paramsFd.Lambda = 1E-6;
                 case 'JointAngles'
                     tSpan = 0:100;
                     label = "Percentage Stance (%)";
-                    paramsFd.lambda = 1E-4;
+                    paramsFd.Lambda = 1E-4;
             end          
          
             % process the data and complete the initialization

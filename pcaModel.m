@@ -2,16 +2,16 @@ classdef pcaModel < representationModel
     % Class defining a PCA model
 
     properties
-        meanFd                % mean curve
-        compFd                % functional principal components
+        MeanFd                % mean curve
+        CompFd                % functional principal components
         ZStd                  % latent score standard deviation (scaling factor)
-        varProp       double  % explained variance
-        fdParams              % functional data parameters
-        tSpan         double  % time span
+        VarProp       double  % explained variance
+        FdParams              % functional data parameters
+        TSpan         double  % time span
         Scale                 % scaling factor for reconstruction loss
 
-        auxModelType          % type of auxiliary model to use
-        auxModel              % auxiliary model itself
+        AuxModelType          % type of auxiliary model to use
+        AuxModel              % auxiliary model itself
     end
 
     methods
@@ -34,11 +34,11 @@ classdef pcaModel < representationModel
                                              NumCompLines = 2 );
 
 
-            self.meanFd = [];
-            self.compFd = [];
-            self.varProp = [];
+            self.MeanFd = [];
+            self.CompFd = [];
+            self.VarProp = [];
 
-            self.auxModelType = args.auxModel;
+            self.AuxModelType = args.auxModel;
 
         end
 
@@ -50,8 +50,8 @@ classdef pcaModel < representationModel
                 thisDataset     modelDataset
             end
 
-            self.fdParams = thisDataset.fda.fdParamsRegular;
-            self.tSpan = thisDataset.tSpan.regular;
+            self.FdParams = thisDataset.FDA.FdParamsRegular;
+            self.TSpan = thisDataset.TSpan.Regular;
 
             XInput = thisDataset.XInputRegular;
 
@@ -60,13 +60,13 @@ classdef pcaModel < representationModel
             self.Scale = scaling;
 
             % convert input to a functional data object
-            XFd = smooth_basis( self.tSpan, XInput, self.fdParams );
+            XFd = smooth_basis( self.TSpan, XInput, self.FdParams );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
 
-            self.meanFd = pcaStruct.meanfd;
-            self.compFd = pcaStruct.harmfd;
-            self.varProp = pcaStruct.varprop;
+            self.MeanFd = pcaStruct.meanfd;
+            self.CompFd = pcaStruct.harmfd;
+            self.VarProp = pcaStruct.varprop;
 
             if size( pcaStruct.harmscr, 3 ) == 1
                 pcaStruct.harmscr = permute( pcaStruct.harmscr, [1 3 2] );
@@ -75,11 +75,11 @@ classdef pcaModel < representationModel
 
             % train the auxiliary model
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
-            switch self.auxModelType
+            switch self.AuxModelType
                 case 'Fisher'
-                    self.auxModel = fitcdiscr( Z, thisDataset.Y );
+                    self.AuxModel = fitcdiscr( Z, thisDataset.Y );
                 case 'SVM'
-                    self.auxModel = fitcecoc( Z, thisDataset.Y );
+                    self.AuxModel = fitcecoc( Z, thisDataset.Y );
             end
 
         end
@@ -106,15 +106,15 @@ classdef pcaModel < representationModel
             end
            
             if args.centre
-                XCMean = zeros( self.tSpan, 1 );
+                XCMean = zeros( self.TSpan, 1 );
             else
-                XCMean = eval_fd( self.tSpan, self.meanFd );
+                XCMean = eval_fd( self.TSpan, self.MeanFd );
             end
 
-            XCStd = zeros( length(self.tSpan), self.ZDim, self.XChannels );
+            XCStd = zeros( length(self.TSpan), self.ZDim, self.XChannels );
             % compute the components
             for i = 1:self.ZDim
-                XC = squeeze(eval_fd( self.tSpan, self.compFd(i) ));
+                XC = squeeze(eval_fd( self.TSpan, self.CompFd(i) ));
                 for c = 1:self.XChannels
                     XCStd(:,i,c) = self.ZStd(i,c)*XC(:,c);
                 end
@@ -126,9 +126,9 @@ classdef pcaModel < representationModel
             end
 
             if args.centre
-                XC = zeros( length(self.tSpan), self.XChannels, self.ZDim*nSample );
+                XC = zeros( length(self.TSpan), self.XChannels, self.ZDim*nSample );
             else
-                XC = zeros( length(self.tSpan), self.XChannels, self.ZDim*nSample+1 );
+                XC = zeros( length(self.TSpan), self.XChannels, self.ZDim*nSample+1 );
                 XC(:,:,end) = XCMean;
             end
             
@@ -195,7 +195,7 @@ classdef pcaModel < representationModel
 
             if isa( data, 'fd' )
                 % validity of the FD object
-                if ~isequal( self.fdParams, thisDataset.fda.XInputRegular )
+                if ~isequal( self.FdParams, thisDataset.fda.XInputRegular )
                     eid = 'PCAModel:InvalidFDParam';
                     msg = 'The input FD parameters do not match the model''s FD parameters.';
                     throwAsCaller( MException(eid,msg) );
@@ -217,11 +217,11 @@ classdef pcaModel < representationModel
 
                 end
                 % convert input to a functional data object
-                XFd = smooth_basis( self.tSpan, X, self.fdParams );
+                XFd = smooth_basis( self.TSpan, X, self.FdParams );
 
             end
 
-            Z = pca_fd_score( XFd, self.meanFd, self.compFd, ...
+            Z = pca_fd_score( XFd, self.MeanFd, self.CompFd, ...
                               self.ZDim, true );
 
             
@@ -237,10 +237,10 @@ classdef pcaModel < representationModel
             
             % create the set of points from the mean for each curve
             nRows = size( Z, 1 );
-            XHat = repmat( eval_fd( self.tSpan, self.meanFd ), 1, nRows );
+            XHat = repmat( eval_fd( self.TSpan, self.MeanFd ), 1, nRows );
         
             % linearly combine the components, points-wise
-            XC = eval_fd( self.tSpan, self.compFd );
+            XC = eval_fd( self.TSpan, self.CompFd );
             for k = 1:self.XChannels
                 for j = 1:self.ZDim        
                     for i = 1:nRows

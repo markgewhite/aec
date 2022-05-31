@@ -46,28 +46,29 @@ classdef syntheticDataset < modelDataset
 
             % setup padding
             if args.PaddingLength==0
-                pad.length = length( args.tSpan );
+                pad.Length = length( args.tSpan );
             else
-                pad.length = args.PaddingLength;
+                pad.Length = args.PaddingLength;
             end
 
-            pad.longest = false;
-            pad.location = 'Left';
-            pad.value = 1;
-            pad.same = true;
-            pad.anchoring = 'None';
+            pad.Longest = false;
+            pad.Location = 'Left';
+            pad.Value = 1;
+            pad.Same = true;
+            pad.Anchoring = 'None';
 
-            paramsFd.tSpan= args.tSpan;
+            tSpan= args.tSpan;
         
             % setup fda
-            paramsFd.basisOrder = 4;
-            paramsFd.penaltyOrder = 2;
-            paramsFd.lambda = 1E2;
+            paramsFd.BasisOrder = 4;
+            paramsFd.PenaltyOrder = 2;
+            paramsFd.Lambda = 1E2;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            self = self@modelDataset( XRaw, Y, superArgsCell{:}, ...
+            self = self@modelDataset( XRaw, Y, tSpan, ...
+                            superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...
                             datasetName = "Synthetic Data", ...

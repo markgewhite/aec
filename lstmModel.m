@@ -8,14 +8,14 @@
 classdef lstmModel < autoencoderModel
 
     properties
-        nHiddenUnits            % number LSTM nodes
-        scale                   % leaky ReLu scale factor
-        inputDropout            % initial dropout rate
-        dropout                 % dropout rate
-        reverseDecoding         % whether to reverse the order when decoding
-        bidirectional           % if the network is bidirectional
-        scheduleSampling        % whether to perform schedule sampling
-        samplingRateIncrement   % sampling rate increment per epoch
+        NumHiddenUnits          % number LSTM nodes
+        Scale                   % leaky ReLu scale factor
+        InputDropout            % initial dropout rate
+        Dropout                 % dropout rate
+        ReverseDecoding         % whether to reverse the order when decoding
+        Bidirectional           % if the network is bidirectional
+        ScheduleSampling        % whether to perform schedule sampling
+        SamplingRateIncrement   % sampling rate increment per epoch
     end
 
     methods
@@ -35,7 +35,7 @@ classdef lstmModel < autoencoderModel
             end
             arguments
                 superArgs.?autoencoderModel
-                args.nHiddenUnits       double ...
+                args.numHiddenUnits     double ...
                     {mustBeInteger, mustBePositive} = 50
                 args.scale              double ...
                     {mustBeInRange(args.scale, 0, 1)} = 0.2
@@ -64,15 +64,15 @@ classdef lstmModel < autoencoderModel
 
 
             % store this class's properties
-            self.nHiddenUnits = args.nHiddenUnits;
-            self.scale = args.scale;
-            self.inputDropout = args.inputDropout;
-            self.dropout = args.dropout;
+            self.NumHiddenUnits = args.numHiddenUnits;
+            self.Scale = args.scale;
+            self.InputDropout = args.inputDropout;
+            self.Dropout = args.dropout;
 
-            self.reverseDecoding = args.reverseDecoding;
-            self.bidirectional = args.bidirectional;
-            self.scheduleSampling = args.scheduleSampling;
-            self.samplingRateIncrement = args.samplingRateIncrement;
+            self.ReverseDecoding = args.reverseDecoding;
+            self.Bidirectional = args.bidirectional;
+            self.ScheduleSampling = args.scheduleSampling;
+            self.SamplingRateIncrement = args.samplingRateIncrement;
 
             % initialize the networks
             self = initEncoder( self );
@@ -91,17 +91,17 @@ classdef lstmModel < autoencoderModel
                 sequenceInputLayer( self.XChannels, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 )
-                dropoutLayer( self.inputDropout, 'Name', 'drop0' )
+                dropoutLayer( self.InputDropout, 'Name', 'drop0' )
                 ];
             
-            if self.bidirectional
+            if self.Bidirectional
                 layersEnc = [ layersEnc; ...
-                    bilstmLayer( self.nHiddenUnits, ...
+                    bilstmLayer( self.NumHiddenUnits, ...
                                     'OutputMode', 'last', ...
                                      'Name', 'lstm' ) ];
             else
                 layersEnc = [ layersEnc; ...
-                    lstmLayer( self.nHiddenUnits, ...
+                    lstmLayer( self.NumHiddenUnits, ...
                                     'OutputMode', 'last', ...
                                      'Name', 'lstm' ) ];
             end
@@ -112,7 +112,7 @@ classdef lstmModel < autoencoderModel
 
             lgraphEnc = layerGraph( layersEnc );
                    
-            self.nets.encoder = dlnetwork( lgraphEnc );
+            self.Nets.Encoder = dlnetwork( lgraphEnc );
 
         end
 
@@ -127,7 +127,7 @@ classdef lstmModel < autoencoderModel
                 sequenceInputLayer( self.XChannels, 'Name', 'in' )
                 ];
 
-            if self.bidirectional
+            if self.Bidirectional
                 layersDec = [ layersDec; ...
                     bilstmLayer( self.ZDim, 'OutputMode', 'last', ...
                                             'HasStateInputs', true, ...
@@ -155,7 +155,7 @@ classdef lstmModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, 'hidden', 'lstm/hidden' );
             lgraphDec = connectLayers( lgraphDec, 'cell', 'lstm/cell' );
             
-            self.nets.decoder = dlnetwork( lgraphDec );
+            self.Nets.Decoder = dlnetwork( lgraphDec );
 
         end
 
@@ -170,19 +170,19 @@ classdef lstmModel < autoencoderModel
             end
 
             % generate latent encodings
-            [ dlZ, state.encoder ] = forward( encoder, dlX );
+            [ dlZ, state.Encoder ] = forward( encoder, dlX );
 
             % initialize the hidden states (HS) and cell states (CS)
             dlHS = dlZ;
             dlCS = dlarray( zeros(size(dlZ), 'like', dlZ), 'CB' );
             
-            if self.bidirectional
+            if self.Bidirectional
                 dlHS = repmat( dlHS, [2 1] );
                 dlCS = repmat( dlCS, [2 1]);
             end
 
             % reconstruct curves using teacher forcing/free running
-            if self.reverseDecoding
+            if self.ReverseDecoding
                 dlX = flip( dlX, 3 );
             end
 
@@ -191,16 +191,16 @@ classdef lstmModel < autoencoderModel
 
             dlXHat = repmat( dlX, [1 1 2] );
             
-            if self.scheduleSampling
-                rate = min( self.trainer.currentEpoch...
-                                *self.samplingRateIncrement, 1 );
+            if self.ScheduleSampling
+                rate = min( self.Trainer.CurrentEpoch...
+                                *self.SamplingRateIncrement, 1 );
                 mask = rand( seqOutputLen, 1 ) < rate;
             end
             
             for i = 1:seqOutputLen
 
                 if i > 1
-                    if (self.scheduleSampling && mask(i)) ...
+                    if (self.ScheduleSampling && mask(i)) ...
                             || i > seqInputLen
                         % free running: last prediction
                         dlNextX = dlXHat(:,:,i-1);
@@ -256,7 +256,7 @@ classdef lstmModel < autoencoderModel
                 throwAsCaller( MException(eid,msg) );
             end
 
-            batchSize = size( self.nets.encoder.State.Value{1}, 2 );
+            batchSize = size( self.Nets.Encoder.State.Value{1}, 2 );
             nObs = size( dlX, 2 );
             nBatches = fix(nObs/batchSize);
             dlZ = dlarray( zeros( self.ZDim, nObs), 'CB' );
@@ -264,12 +264,12 @@ classdef lstmModel < autoencoderModel
             j = 1;
             % make predictions in batches
             for i = 1:nBatches
-                dlZ(:,j:j+batchSize-1) = predict( self.nets.encoder, ...
+                dlZ(:,j:j+batchSize-1) = predict( self.Nets.Encoder, ...
                                 dlX( :, j:j+batchSize-1, :)  );
                 j = j+batchSize;
             end
             % cover the remainder
-            dlZ( :, end-batchSize+1:end ) = predict( self.nets.encoder, ...
+            dlZ( :, end-batchSize+1:end ) = predict( self.Nets.Encoder, ...
                                 dlX( :, end-batchSize+1:end, : ) );
 
             if arg.convert

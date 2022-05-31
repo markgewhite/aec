@@ -8,14 +8,14 @@
 classdef convModel < autoencoderModel
 
     properties
-        nHidden       % number of hidden layers
-        nFilters      % number of filters aka kernels
-        filterSize    % length of the filters
-        stride        % filter step size
-        scale         % leaky ReLu scale factor
-        inputDropout  % initial dropout rate
-        dropout       % dropout rate
-        pooling       % pooling operator
+        NumHidden     % number of hidden layers
+        NumFilters    % number of filters aka kernels
+        FilterSize    % length of the filters
+        Stride        % filter step size
+        Scale         % leaky ReLu scale factor
+        InputDropout  % initial dropout rate
+        Dropout       % dropout rate
+        Pooling       % pooling operator
     end
 
     methods
@@ -66,14 +66,14 @@ classdef convModel < autoencoderModel
                                           hasSeqInput = false );
 
             % store this class's properties
-            self.nHidden = args.nHidden;
-            self.nFilters = args.nFilters*2.^(0:self.nHidden-1);
-            self.filterSize = args.filterSize;
-            self.stride = args.stride;
-            self.scale = args.scale;
-            self.inputDropout = args.inputDropout;
-            self.dropout = args.dropout;
-            self.pooling = args.pooling;
+            self.NumHidden = args.nHidden;
+            self.NumFilters = args.nFilters*2.^(0:self.NumHidden-1);
+            self.FilterSize = args.filterSize;
+            self.Stride = args.stride;
+            self.Scale = args.scale;
+            self.InputDropout = args.inputDropout;
+            self.Dropout = args.dropout;
+            self.Pooling = args.pooling;
 
             % initialize the networks
             self = initEncoder( self );
@@ -93,21 +93,21 @@ classdef convModel < autoencoderModel
             layersEnc = [ featureInputLayer( self.XDim, 'Name', 'in', ...
                               'Normalization', 'zscore', ...
                               'Mean', 0, 'StandardDeviation', 1 ) 
-                          dropoutLayer( self.dropout, 'Name', 'drop0' )
+                          dropoutLayer( self.Dropout, 'Name', 'drop0' )
                           reshapeLayer( projectionSize, 'Name', 'proj' ) ];
 
             lgraphEnc = layerGraph( layersEnc );
             lastLayer = 'proj';
             
             % create hidden layers
-            for i = 1:self.nHidden
+            for i = 1:self.NumHidden
                 [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
-                    self.filterSize, self.nFilters(i), ...
-                    self.scale, self.dropout, false );
+                    self.FilterSize, self.NumFilters(i), ...
+                    self.Scale, self.Dropout, false );
             end
             
             % add the output layers
-            switch self.pooling
+            switch self.Pooling
                 case 'GlobalMax'
                     outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
                     poolingLayer = 'maxPool';
@@ -120,7 +120,7 @@ classdef convModel < autoencoderModel
             end
             
             outLayers = [ outLayers;
-                          fullyConnectedLayer( self.ZDim*(self.isVAE+1), ...
+                          fullyConnectedLayer( self.ZDim*(self.IsVAE+1), ...
                                                'Name', 'out' ) ];
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
@@ -128,11 +128,11 @@ classdef convModel < autoencoderModel
                                        lastLayer, poolingLayer );
         
         
-            if self.isVAE
-                self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.nVAEDraws );
+            if self.IsVAE
+                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
+                                                  nDraws = self.NumVAEDraws );
             else
-                self.nets.encoder = dlnetwork( lgraphEnc );
+                self.Nets.Encoder = dlnetwork( lgraphEnc );
             end
 
         end
@@ -152,14 +152,14 @@ classdef convModel < autoencoderModel
             lgraphDec = layerGraph( layersDec );
             lastLayer = 'proj';
             
-            for i = 1:self.nHidden
-                f = self.nFilters( self.nHidden-i+1 );
+            for i = 1:self.NumHidden
+                f = self.NumFilters( self.NumHidden-i+1 );
                 [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
-                    self.filterSize, f, self.scale, self.dropout, true );
+                    self.FilterSize, f, self.Scale, self.Dropout, true );
             end
             
             % add the output layers
-            switch self.pooling
+            switch self.Pooling
                 case 'GlobalMax'
                     outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
                     poolingLayer = 'maxPool';
@@ -183,7 +183,7 @@ classdef convModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, poolingLayer );
             
-            self.nets.decoder = dlnetwork( lgraphDec );
+            self.Nets.Decoder = dlnetwork( lgraphDec );
 
         end
 

@@ -8,15 +8,15 @@
 classdef tcnModel < autoencoderModel
 
     properties
-        nHidden       % number of hidden layers
-        nFilters      % number of filters aka kernels
-        filterSize    % length of the filters
-        dilations     % dilations
-        scale         % leaky ReLu scale factor
-        inputDropout  % initial dropout rate
-        dropout       % dropout rate
-        pooling       % pooling operator
-        useSkips      % whether to include short circuit paths
+        NumHidden     % number of hidden layers
+        NumFilters    % number of filters aka kernels
+        FilterSize    % length of the filters
+        Dilations     % dilations
+        Scale         % leaky ReLu scale factor
+        InputDropout  % initial dropout rate
+        Dropout       % dropout rate
+        Pooling       % pooling operator
+        UseSkips      % whether to include short circuit paths
 
     end
 
@@ -37,9 +37,9 @@ classdef tcnModel < autoencoderModel
             end
             arguments
                 superArgs.?autoencoderModel
-                args.nHidden       double ...
+                args.numHidden     double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.nFilters      double ...
+                args.numFilters    double ...
                     {mustBeInteger, mustBePositive} = 16
                 args.filterSize    double ...
                     {mustBeInteger, mustBePositive} = 5
@@ -70,23 +70,23 @@ classdef tcnModel < autoencoderModel
 
 
             % store this class's properties
-            self.nHidden = args.nHidden;
-            self.filterSize = args.filterSize;
+            self.NumHidden = args.numHidden;
+            self.FilterSize = args.filterSize;
 
-            self.scale = args.scale;
-            self.inputDropout = args.inputDropout;
-            self.dropout = args.dropout;
-            self.pooling = args.pooling;
-            self.useSkips = args.useSkips;
+            self.Scale = args.scale;
+            self.InputDropout = args.inputDropout;
+            self.Dropout = args.dropout;
+            self.Pooling = args.pooling;
+            self.UseSkips = args.useSkips;
 
-            if self.useSkips
+            if self.UseSkips
                 % must use the same number of filters in each block
-                self.nFilters = args.nFilters*ones( self.nHidden, 1 );
+                self.NumFilters = args.numFilters*ones( self.NumHidden, 1 );
             else
                 % progressively double filters
-                self.nFilters = args.nFilters*2.^(0:self.nHidden-1);
+                self.NumFilters = args.numFilters*2.^(0:self.NumHidden-1);
             end
-            self.dilations = 2.^((0:self.nHidden-1)*args.dilationFactor);
+            self.Dilations = 2.^((0:self.NumHidden-1)*args.dilationFactor);
 
             % initialize the networks
             self = initEncoder( self );
@@ -105,22 +105,22 @@ classdef tcnModel < autoencoderModel
             layersEnc = [ sequenceInputLayer( self.XChannels, 'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 )
-                          dropoutLayer( self.inputDropout, ...
+                          dropoutLayer( self.InputDropout, ...
                                         'Name', 'drop0' ) ];
             lgraphEnc = layerGraph( layersEnc );
             lastLayer = 'drop0';
             
             % create hidden layers
-            for i = 1:self.nHidden
+            for i = 1:self.NumHidden
                 [lgraphEnc, lastLayer] = addResidualBlock( ...
                     lgraphEnc, i, lastLayer, ...
-                    self.filterSize, self.nFilters(i), ...
-                    self.dilations(i), ...
-                    self.scale, self.dropout, self.useSkips, false );
+                    self.FilterSize, self.NumFilters(i), ...
+                    self.Dilations(i), ...
+                    self.Scale, self.Dropout, self.UseSkips, false );
             end
             
             % add the output layers
-            switch self.pooling
+            switch self.Pooling
                 case 'GlobalMax'
                     outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
                     poolingLayer = 'maxPool';
@@ -130,7 +130,7 @@ classdef tcnModel < autoencoderModel
             end
             
             outLayers = [ outLayers;
-                          fullyConnectedLayer( self.ZDim*(self.isVAE+1), ...
+                          fullyConnectedLayer( self.ZDim*(self.IsVAE+1), ...
                                                'Name', 'out' ) ];
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
@@ -138,11 +138,11 @@ classdef tcnModel < autoencoderModel
                                        lastLayer, poolingLayer );
         
         
-            if self.isVAE
-                self.nets.encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.nVAEDraws );
+            if self.IsVAE
+                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
+                                                  nDraws = self.NumVAEDraws );
             else
-                self.nets.encoder = dlnetwork( lgraphEnc );
+                self.Nets.Encoder = dlnetwork( lgraphEnc );
             end
 
         end
@@ -162,17 +162,17 @@ classdef tcnModel < autoencoderModel
             lgraphDec = layerGraph( layersDec );
             lastLayer = 'proj';
             
-            for i = 1:self.nHidden
-                f = self.nFilters( self.nHidden-i+1 );
+            for i = 1:self.NumHidden
+                f = self.NumFilters( self.NumHidden-i+1 );
                 [lgraphDec, lastLayer] = addResidualBlock( ...
                     lgraphDec, i, lastLayer, ...
-                    self.filterSize, f, ...
-                    self.dilations(i), ...
-                    self.scale, self.dropout, self.useSkips, true );
+                    self.FilterSize, f, ...
+                    self.Dilations(i), ...
+                    self.Scale, self.Dropout, self.UseSkips, true );
             end
             
             % add the output layers
-            switch self.pooling
+            switch self.Pooling
                 case 'GlobalMax'
                     outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
                     poolingLayer = 'maxPool';
@@ -195,7 +195,7 @@ classdef tcnModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, poolingLayer );
             
-            self.nets.decoder = dlnetwork( lgraphDec );
+            self.Nets.Decoder = dlnetwork( lgraphDec );
 
         end
 
