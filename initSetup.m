@@ -53,13 +53,13 @@ function setup = initSetup
     setup.lossFcns.orth.name = 'Orthogonality';
     setup.lossFcns.orth.args.nSample = 100;
     setup.lossFcns.orth.args.criterion = 'Orthogonality';
-    setup.lossFcns.var.args.useLoss = false;
+    setup.lossFcns.var.args.useLoss = true;
 
     setup.lossFcns.var.class = @componentLoss;
     setup.lossFcns.var.name = 'ExplainedVariance';
     setup.lossFcns.var.args.nSample = 100;
     setup.lossFcns.var.args.criterion = 'ExplainedVariance';
-    setup.lossFcns.var.args.useLoss = true;
+    setup.lossFcns.var.args.useLoss = false;
 
     setup.lossFcns.smooth.class = @smoothnessLoss;
     setup.lossFcns.smooth.name = 'Roughness';

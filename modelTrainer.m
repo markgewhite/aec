@@ -184,7 +184,7 @@ classdef modelTrainer < handle
                 end
 
                 % train the auxiliary model
-                dlZTrnAll = thisModel.encode( thisModel, dlXTrnAll, ...
+                dlZTrnAll = thisModel.encode( dlXTrnAll, ...
                                               convert = false );
 
                 thisModel.auxModel = trainAuxModel( ...
@@ -268,24 +268,28 @@ classdef modelTrainer < handle
             end
             if ~isempty( args.lossVal )
                 fprintf(' : %1.3f', args.lossVal );
+            else
+                fprintf('        ');
             end
         
             [dlX, dlY] = thisData.getDLInput( thisModel.XDimLabels );
         
+            % generate the latent encodings
+            dlZ = thisModel.encode( dlX, convert = false );
+
             % compute the AE components
-            dlZ = thisModel.encode( thisModel, dlX, convert = false );
             dlXC = thisModel.latentComponents( ...
                             dlZ, ...
                             sampling = 'Fixed', ...
                             centre = false );
 
             % compute explained variance
-            varProp = thisModel.getExplainedVariance( dlZ, thisData ); 
-            fprintf('; VarProp = ');
+            varProp = thisModel.getExplainedVariance( thisData );            
+            fprintf('; VarProp = %5.3f (', sum(varProp) );
             for k = 1:length(varProp)
-                fprintf(' %8.2f', varProp(k) );
+                fprintf(' %5.3f', varProp(k) );
             end
-            fprintf('\n');
+            fprintf(' )\n');
 
 
             % plot them on specified axes
@@ -512,11 +516,11 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
         dlYVal          dlarray
     end
 
-    dlZVal = thisModel.encode( thisModel, dlXVal, convert = false );
+    dlZVal = thisModel.encode( dlXVal, convert = false );
     switch valType
         case 'Reconstruction'
-            dlXValHat = thisModel.reconstruct( thisModel, dlZVal );
-            lossVal = thisModel.getReconLoss( thisModel, dlXVal, dlXValHat );
+            dlXValHat = thisModel.reconstruct( dlZVal );
+            lossVal = thisModel.getReconLoss( dlXVal, dlXValHat );
 
         case 'AuxNetwork'
             dlYHatVal = predict( thisModel.nets.(thisModel.auxNetwork), dlZVal );

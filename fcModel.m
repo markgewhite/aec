@@ -180,10 +180,6 @@ classdef fcModel < autoencoderModel
 
         end
 
-    end
-
-
-    methods (Static )
 
         function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model

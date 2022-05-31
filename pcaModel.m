@@ -96,6 +96,7 @@ classdef pcaModel < representationModel
                 args.nSample    double {mustBeInteger} = 0
                 args.centre     logical = true
                 args.range      double {mustBePositive} = 2.0
+                args.convert    logical = false % redundant
             end
 
             if args.nSample > 0
@@ -184,11 +185,6 @@ classdef pcaModel < representationModel
     
         end
 
-
-    end
-
-    
-    methods (Static)
 
         function Z = encode( self, data )
             % Encode features Z from X using the model

@@ -379,15 +379,7 @@ classdef autoencoderModel < representationModel
             switch args.sampling
                 case 'Random'
                     % generate centred normal distribution
-                    %offsets = args.range*randn( nSample, 1 );
-                    % generate a chi-squared distribution
-                    offsets = args.range*2*chi2pdf( abs(randn( nSample, 1 )), 1.9 );
-                    % randomly flip signs and centre it
-                    offsets = offsets.*(2*randi(2, nSample, 1)-3);
-                    offsets = offsets-mean(offsets);
-                    % adjust one randomly-chosen offset to enforce zero sum
-                    j = randi(nSample);
-                    offsets(j) = offsets(j) - 0.5*sum(offsets);
+                    offsets = args.range*randn( nSample, 1 );
 
                 case 'Fixed'
                     offsets = linspace( -args.range, args.range, nSample );
@@ -443,91 +435,7 @@ classdef autoencoderModel < representationModel
             [ dlXHat, state.decoder ] = forward( decoder, dlZ );
 
         end
-    
-    
-    end
 
-
-    methods (Access = protected)
-
-
-        function self = addLossFcnNetworks( self, newFcns )
-            % Add one or more networks to the model
-            arguments
-                self
-                newFcns
-            end
-
-            nFcns = length( newFcns );
-            k = length( self.nets );
-            for i = 1:nFcns
-                thisLossFcn = newFcns{i};
-                if thisLossFcn.hasNetwork
-                    k = k+1;
-                    % add the network object
-                    self.nets.(thisLossFcn.name) = ...
-                            initNetwork( thisLossFcn, self.ZDim );
-                    % record its name
-                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
-                    % increment the counter
-                    self.nNets = self.nNets + 1;
-                end
-            end
-
-
-        end
-
-        function self = setLossInfoTbl( self )
-            % Update the info table
-            
-            nFcns = length( self.lossFcnNames );
-            names = strings( nFcns, 1 );
-            types = strings( nFcns, 1 );
-            inputs = strings( nFcns, 1 );
-            weights = zeros( nFcns, 1 );
-            nLosses = zeros( nFcns, 1 );
-            lossNets = strings( nFcns, 1 );
-            hasNetwork = false( nFcns, 1 );
-            doCalcLoss = false( nFcns, 1 );
-            useLoss = false( nFcns, 1 );
-
-            for i = 1:nFcns
-                
-                thisLossFcn = self.lossFcns.(self.lossFcnNames(i));
-                names(i) = thisLossFcn.name;
-                types(i) = thisLossFcn.type;
-                inputs(i) = thisLossFcn.input;
-                weights(i) = self.lossFcnWeights(i);
-                nLosses(i) = thisLossFcn.nLoss;
-                hasNetwork(i) = thisLossFcn.hasNetwork;
-                doCalcLoss(i) = thisLossFcn.doCalcLoss;
-                useLoss(i) = thisLossFcn.useLoss;
-
-                nFcnNets = length( thisLossFcn.lossNets );
-                for j = 1:nFcnNets
-                    if length(string( thisLossFcn.lossNets{j} ))==1
-                        assignments = thisLossFcn.lossNets{j};
-                    else
-                        assignments = strjoin( thisLossFcn.lossNets{j,:}, '+' );
-                    end
-                    lossNets(i) = strcat( lossNets(i), assignments ) ;
-                    if j < nFcnNets
-                        lossNets(i) = strcat( lossNets(i), "; " );
-                    end
-                end
-
-            end
-
-            self.lossFcnTbl = table( names, types, inputs, weights, ...
-                    nLosses, lossNets, hasNetwork, doCalcLoss, useLoss );
-
-        end
-
-
-    end
-
-
-    methods (Static)
 
         function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model
@@ -661,6 +569,85 @@ classdef autoencoderModel < representationModel
 
         end
 
+
+    end
+
+
+
+    methods (Access = protected)
+
+
+        function self = addLossFcnNetworks( self, newFcns )
+            % Add one or more networks to the model
+            arguments
+                self
+                newFcns
+            end
+
+            nFcns = length( newFcns );
+            k = length( self.nets );
+            for i = 1:nFcns
+                thisLossFcn = newFcns{i};
+                if thisLossFcn.hasNetwork
+                    k = k+1;
+                    % add the network object
+                    self.nets.(thisLossFcn.name) = ...
+                            initNetwork( thisLossFcn, self.ZDim );
+                    % record its name
+                    self.netNames = [ string(self.netNames) thisLossFcn.name ];
+                    % increment the counter
+                    self.nNets = self.nNets + 1;
+                end
+            end
+
+
+        end
+
+        function self = setLossInfoTbl( self )
+            % Update the info table
+            
+            nFcns = length( self.lossFcnNames );
+            names = strings( nFcns, 1 );
+            types = strings( nFcns, 1 );
+            inputs = strings( nFcns, 1 );
+            weights = zeros( nFcns, 1 );
+            nLosses = zeros( nFcns, 1 );
+            lossNets = strings( nFcns, 1 );
+            hasNetwork = false( nFcns, 1 );
+            doCalcLoss = false( nFcns, 1 );
+            useLoss = false( nFcns, 1 );
+
+            for i = 1:nFcns
+                
+                thisLossFcn = self.lossFcns.(self.lossFcnNames(i));
+                names(i) = thisLossFcn.name;
+                types(i) = thisLossFcn.type;
+                inputs(i) = thisLossFcn.input;
+                weights(i) = self.lossFcnWeights(i);
+                nLosses(i) = thisLossFcn.nLoss;
+                hasNetwork(i) = thisLossFcn.hasNetwork;
+                doCalcLoss(i) = thisLossFcn.doCalcLoss;
+                useLoss(i) = thisLossFcn.useLoss;
+
+                nFcnNets = length( thisLossFcn.lossNets );
+                for j = 1:nFcnNets
+                    if length(string( thisLossFcn.lossNets{j} ))==1
+                        assignments = thisLossFcn.lossNets{j};
+                    else
+                        assignments = strjoin( thisLossFcn.lossNets{j,:}, '+' );
+                    end
+                    lossNets(i) = strcat( lossNets(i), assignments ) ;
+                    if j < nFcnNets
+                        lossNets(i) = strcat( lossNets(i), "; " );
+                    end
+                end
+
+            end
+
+            self.lossFcnTbl = table( names, types, inputs, weights, ...
+                    nLosses, lossNets, hasNetwork, doCalcLoss, useLoss );
+
+        end
 
     end
 

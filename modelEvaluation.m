@@ -318,10 +318,10 @@ classdef modelEvaluation < handle
             end
 
             % generate latent encoding using the trained model
-            eval.Z = thisModel.encode( thisModel, thisDataset );
+            eval.Z = thisModel.encode( thisDataset );
 
             % reconstruct the curves
-            eval.XHat = squeeze( thisModel.reconstruct( thisModel, eval.Z ) );
+            eval.XHat = squeeze( thisModel.reconstruct( eval.Z ) );
 
             % smooth the reconstructed curves
             XHatFd = smooth_basis( thisDataset.tSpan.target, ...
@@ -369,7 +369,7 @@ classdef modelEvaluation < handle
                             convert = true );
 
             % compute the components' explained variance
-            eval.VarProp = thisModel.getExplainedVariance( eval.Z, thisDataset );
+            eval.VarProp = thisModel.getExplainedVariance( thisDataset );
 
 
         end

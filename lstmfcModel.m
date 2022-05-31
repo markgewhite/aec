@@ -175,11 +175,6 @@ classdef lstmfcModel < autoencoderModel
         end
 
 
-    end
-
-
-    methods (Static)
-
         function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model
             % overriding the autoencoder encode method

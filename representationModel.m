@@ -58,16 +58,18 @@ classdef representationModel
         end
 
 
-        function varProp = getExplainedVariance( self, Z, thisDataset )
+        function varProp = getExplainedVariance( self, thisDataset )
             % Compute the explained variance for the components
             % using a finer-grained set of offsets
             arguments
-                self            representationModel
-                Z               
+                self            representationModel            
                 thisDataset     modelDataset
             end
 
-            % generate the latent components
+            % generate the latent encodings
+            Z = self.encode( thisDataset );
+
+            % generate the AE components
             [ XC, offsets ] = self.latentComponents( ...
                                             Z, ...
                                             sampling = 'Fixed', ...
@@ -75,49 +77,61 @@ classdef representationModel
                                             centre = false, ...
                                             convert = true );
 
-            % smooth the component curves
+            % smooth the curves        
             XCFd = smooth_basis( thisDataset.tSpan.target, ...
                                  XC, ...
-                                 thisDataset.fda.fdParamsTarget );           
-            XCRegular = squeeze( ...
+                                 thisDataset.fda.fdParamsTarget );
+            XCReg = squeeze( ...
                         eval_fd( thisDataset.tSpan.regular, XCFd ) );
+            XReg = squeeze( ...
+                        eval_fd( thisDataset.tSpan.regular, ...
+                                 thisDataset.XFd ) );
 
             % compute the components' explained variance
-            varProp = self.explainedVariance( XCRegular, offsets );    
+            varProp = self.explainedVariance( XReg, XCReg, offsets );    
 
         end
 
 
-        function varProp = explainedVariance( self, XC, offsets )
+        function varProp = explainedVariance( self, X, XC, offsets )
             % Compute the explained variance for the components
             arguments
                 self            representationModel
+                X
                 XC
                 offsets         double
             end
 
             % convert to double for convenience
+            if isa( X, 'dlarray' )
+                X = double( extractdata( X ) );
+            end  
             if isa( XC, 'dlarray' )
                 XC = double( extractdata( XC ) );
             end  
 
             % re-order the dimensions for FDA
             if size( XC, 3 ) > 1
+                X = permute( X, [1 3 2] );
                 XC = permute( XC, [1 3 2] );
             end
 
             if mod( size( XC, 2 ), 2 )==1
                 % remove the XC mean curve at the end
                 if size( XC, 3 ) > 1
-                    XC = XC( :, :, 1:end-1 ) - XC( :, :, end );
+                    XC = XC( :, :, 1:end-1 );
                 else
-                    XC = XC( :, 1:end-1 ) - XC( :, end );
+                    XC = XC( :, 1:end-1 );
                 end
             end
 
-            % centre XC using the XC mean curve
+            % centre using the X mean curve (XC mean is almost identical)
+            X = X - mean( X, 2 );
             XC = XC - mean( XC, 2 );
             
+            % compute the total variance from X
+            totVar = mean( sum( X.^2 ) );
+
             % reshape XC by introducing dim for offset
             nOffsets = length( offsets );
             XC = reshape( XC, size(XC,1), self.XChannels, nOffsets, self.ZDim );
@@ -128,15 +142,12 @@ classdef representationModel
             for i = 1:self.XChannels
                 for j = 1:nOffsets
                     for k = 1:self.ZDim
-                        compVar( i, j, k ) = sum( XC(:,i,j,k).^2 );
-
-%                        compVar( i, j, k ) = ...
-%                            sum( XC(:,i,j,k).^2 )/(0.682*abs(offsets(j)));
+                        compVar( i, j, k ) = sum( (XC(:,i,j,k)/offsets(j)).^2 );
                     end
                 end
             end
 
-            varProp = squeeze( sum( compVar, 2 )./sum( compVar, [2 3] ) );
+            varProp = squeeze( mean( compVar, 2 )./totVar );
 
         end
 
