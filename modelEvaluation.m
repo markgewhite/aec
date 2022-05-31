@@ -369,7 +369,8 @@ classdef modelEvaluation < handle
                             convert = true );
 
             % compute the components' explained variance
-            eval.VarProp = thisModel.getExplainedVariance( thisDataset );
+            [eval.VarProp, eval.CompVar] = ...
+                            thisModel.getExplainedVariance( thisDataset );
 
 
         end

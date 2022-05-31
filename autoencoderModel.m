@@ -379,11 +379,13 @@ classdef autoencoderModel < representationModel
             switch args.sampling
                 case 'Random'
                     % generate centred normal distribution
-                    offsets = args.range*randn( nSample, 1 );
+                    offsets = 2*args.range*(rand( nSample, 1 )-0.5);
+                    prc = prctile( offsets );
 
                 case 'Fixed'
                     offsets = linspace( -args.range, args.range, nSample );
             end
+            offsets = norminv(
 
             for j = 1:nSample
                 

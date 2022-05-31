@@ -77,7 +77,7 @@ function setup = initSetup
     setup.model.args.auxModel = 'Fisher';
     
     % training
-    setup.trainer.args.updateFreq = 5;
+    setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
     setup.trainer.args.nEpochs = 200;
     setup.trainer.args.batchSize = 40;

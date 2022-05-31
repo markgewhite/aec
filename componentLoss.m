@@ -71,10 +71,10 @@ classdef componentLoss < lossFunction
             nComp = size( XC, 3 )/self.NumSamples;
             nChannels = size( XC, 2 );
         
-            XC = reshape( XC, size(XC,1), nChannels, nComp, self.NumSamples );
+            XC = reshape( XC, size(XC,1), nChannels, self.NumSamples, nComp );
         
             % re-centre by component
-            XC = XC - mean( XC, 4 );
+            XC = XC - mean( XC, 3 );
 
             switch self.Criterion
                 case 'Orthogonality'
@@ -109,10 +109,10 @@ function loss = innerProduct( XC, nChannels, nComps, nSamples, scale )
     orth = zeros( 1, nChannels );
 
     for c = 1:nChannels
-        for i = 1:nComps
-            for j = i+1:nComps
-                for k = 1:nSamples
-                    orth(c) = orth(c) + mean(XC(:,c,i,k).*XC(:,c,j,k))^2;
+        for k = 1:nSamples
+            for i = 1:nComps
+                for j = i+1:nComps
+                    orth(c) = orth(c) + mean(XC(:,c,k,i).*XC(:,c,k,j))^2;
                 end
             end
         end
@@ -149,9 +149,9 @@ function loss = explainedVariance( XC, nChannels, nComps, nSamples, scale )
     var = zeros( 1, nChannels );
 
     for c = 1:nChannels
-        for i = 1:nComps
-            for k = 1:nSamples
-                var(c) = var(c) + mean( XC(:,c,i,k).^2 );
+        for k = 1:nSamples
+            for i = 1:nComps
+                var(c) = var(c) + mean( XC(:,c,k,i).^2 );
             end
         end
     end

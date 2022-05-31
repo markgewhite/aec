@@ -58,7 +58,7 @@ classdef representationModel
         end
 
 
-        function varProp = getExplainedVariance( self, thisDataset )
+        function [ varProp, compVar ] = getExplainedVariance( self, thisDataset )
             % Compute the explained variance for the components
             % using a finer-grained set of offsets
             arguments
@@ -88,12 +88,12 @@ classdef representationModel
                                  thisDataset.XFd ) );
 
             % compute the components' explained variance
-            varProp = self.explainedVariance( XReg, XCReg, offsets );    
+            [varProp, compVar] = self.explainedVariance( XReg, XCReg, offsets );    
 
         end
 
 
-        function varProp = explainedVariance( self, X, XC, offsets )
+        function [ varProp, compVar ] = explainedVariance( self, X, XC, offsets )
             % Compute the explained variance for the components
             arguments
                 self            representationModel
@@ -147,7 +147,8 @@ classdef representationModel
                 end
             end
 
-            varProp = squeeze( mean( compVar, 2 )./totVar );
+            compVar = squeeze( compVar./totVar );
+            varProp = mean( compVar );
 
         end
 
