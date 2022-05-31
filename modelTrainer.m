@@ -274,16 +274,13 @@ classdef modelTrainer < handle
         
             % compute the AE components
             dlZ = thisModel.encode( thisModel, dlX, convert = false );
-            [dlXC, offsets] = thisModel.latentComponents( ...
+            dlXC = thisModel.latentComponents( ...
                             dlZ, ...
                             sampling = 'Fixed', ...
                             centre = false );
-            
-            % reconstruct the curves
-            dlXHat = squeeze( thisModel.reconstruct( thisModel, dlZ ) );
 
             % compute explained variance
-            varProp = thisModel.explainedVariance( dlXHat, dlXC, offsets ); 
+            varProp = thisModel.getExplainedVariance( dlZ, thisData ); 
             fprintf('; VarProp = ');
             for k = 1:length(varProp)
                 fprintf(' %8.2f', varProp(k) );
@@ -369,7 +366,8 @@ function [grad, state, loss] = gradients( nets, ...
         % compute the AE components
         dlXC = thisModel.latentComponents( ...
                                 dlZGen, ...
-                                nSample = thisLossFcn.NumSamples );
+                                nSample = thisLossFcn.NumSamples, ...
+                                forward = true );
     end
 
     

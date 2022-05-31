@@ -58,49 +58,69 @@ classdef representationModel
         end
 
 
-        function varProp = explainedVariance( self, X, XC, offsets )
+        function varProp = getExplainedVariance( self, Z, thisDataset )
+            % Compute the explained variance for the components
+            % using a finer-grained set of offsets
+            arguments
+                self            representationModel
+                Z               
+                thisDataset     modelDataset
+            end
+
+            % generate the latent components
+            [ XC, offsets ] = self.latentComponents( ...
+                                            Z, ...
+                                            sampling = 'Fixed', ...
+                                            nSample = 100, ...
+                                            centre = false, ...
+                                            convert = true );
+
+            % smooth the component curves
+            XCFd = smooth_basis( thisDataset.tSpan.target, ...
+                                 XC, ...
+                                 thisDataset.fda.fdParamsTarget );           
+            XCRegular = squeeze( ...
+                        eval_fd( thisDataset.tSpan.regular, XCFd ) );
+
+            % compute the components' explained variance
+            varProp = self.explainedVariance( XCRegular, offsets );    
+
+        end
+
+
+        function varProp = explainedVariance( self, XC, offsets )
             % Compute the explained variance for the components
             arguments
                 self            representationModel
-                X
                 XC
                 offsets         double
             end
 
             % convert to double for convenience
-            if isa( X, 'dlarray' )
-                X = double( extractdata( X ) );
-            end
             if isa( XC, 'dlarray' )
                 XC = double( extractdata( XC ) );
-            end
-    
-            % find the mean and centre
-            XMean = mean( X, 2 );
-            X = X - XMean;     
+            end  
 
             % re-order the dimensions for FDA
             if size( XC, 3 ) > 1
                 XC = permute( XC, [1 3 2] );
             end
 
-            % drop the XC mean curve, if present
             if mod( size( XC, 2 ), 2 )==1
+                % remove the XC mean curve at the end
                 if size( XC, 3 ) > 1
                     XC = XC( :, :, 1:end-1 ) - XC( :, :, end );
                 else
                     XC = XC( :, 1:end-1 ) - XC( :, end );
                 end
-            else
-                XC = XC - XMean;
-            end     
+            end
 
+            % centre XC using the XC mean curve
+            XC = XC - mean( XC, 2 );
+            
             % reshape XC by introducing dim for offset
             nOffsets = length( offsets );
             XC = reshape( XC, size(XC,1), self.XChannels, nOffsets, self.ZDim );
-
-            % compute the total variance 
-            totVar = mean(sum( X.^2, 2 ));
 
             % compute the component variances in turn
             compVar = zeros( self.XChannels, nOffsets, self.ZDim );
@@ -108,13 +128,15 @@ classdef representationModel
             for i = 1:self.XChannels
                 for j = 1:nOffsets
                     for k = 1:self.ZDim
-                        compVar( i, j, k ) = ...
-                            sum( XC(:,i,j,k).^2 )/(0.682*abs(offsets(j)));
+                        compVar( i, j, k ) = sum( XC(:,i,j,k).^2 );
+
+%                        compVar( i, j, k ) = ...
+%                            sum( XC(:,i,j,k).^2 )/(0.682*abs(offsets(j)));
                     end
                 end
             end
 
-            varProp = squeeze( mean( compVar, 2 )./totVar );
+            varProp = squeeze( sum( compVar, 2 )./sum( compVar, [2 3] ) );
 
         end
 

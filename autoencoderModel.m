@@ -346,6 +346,7 @@ classdef autoencoderModel < representationModel
                 args.centre     logical = true
                 args.nSample    double {mustBeInteger} = 0
                 args.range      double {mustBePositive} = 2.0
+                args.forward    logical = false
                 args.convert    logical = false
             end
 
@@ -402,7 +403,11 @@ classdef autoencoderModel < representationModel
             end
 
             % generate all the component curves using the decoder
-            dlXC = forward( self.nets.decoder, dlZC );
+            if args.forward
+                dlXC = forward( self.nets.decoder, dlZC );
+            else
+                dlXC = predict( self.nets.decoder, dlZC );
+            end
 
             XDim = size( dlXC );
 
