@@ -24,7 +24,7 @@ classdef pcaModel < representationModel
                 superArgs.?representationModel
                 args.auxModel       string ...
                         {mustBeMember( args.auxModel, ...
-                                {'Fisher', 'SVM'} )} = 'Fisher'
+                        {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
             end
 
             argsCell = namedargs2cell(superArgs);
@@ -76,6 +76,9 @@ classdef pcaModel < representationModel
             % train the auxiliary model
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
             switch self.AuxModelType
+                case 'Logistic'
+                    self.AuxModel = fitclinear( Z, thisDataset.Y, ...
+                                                Learner = "logistic");
                 case 'Fisher'
                     self.AuxModel = fitcdiscr( Z, thisDataset.Y );
                 case 'SVM'

@@ -487,7 +487,7 @@ function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
     % Train a non-network auxiliary model
     arguments
         modelType   string ...
-            {mustBeMember(modelType, {'Fisher', 'SVM'} )}
+            {mustBeMember(modelType, {'Logistic', 'Fisher', 'SVM'} )}
         dlZTrn      dlarray
         dlYTrn      dlarray
     end
@@ -498,6 +498,8 @@ function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
     
     % fit the appropriate model
     switch modelType
+        case 'Logistic'
+            model = fitclinear( ZTrn, YTrn, Learner = "logistic" );
         case 'Fisher'
             model = fitcdiscr( ZTrn, YTrn );
         case 'SVM'

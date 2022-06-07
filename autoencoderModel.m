@@ -65,7 +65,7 @@ classdef autoencoderModel < representationModel
                                     {mustBeNumeric,mustBeVector} = 1
                 args.auxModel       string ...
                         {mustBeMember( args.auxModel, ...
-                                {'Fisher', 'SVM'} )} = 'Fisher'
+                           {'Logistic', 'Fisher', 'SVM'} )} = 'Logisitic'
             end
 
             % set the superclass's properties

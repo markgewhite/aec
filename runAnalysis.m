@@ -12,6 +12,6 @@ path = [path '/results/'];
 %values = [ {2:6} {{false, true}} ];
 
 parameters = [ "model.class" ];
-values = {{@pcaModel, @fcModel, @tcnModel, @lstmfcModel, @convModel}};
+values = {{@pcaModel, @fcModel}};
 
 myInvestigation = investigation( name, path, parameters, values, setup );
