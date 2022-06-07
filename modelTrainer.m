@@ -409,6 +409,8 @@ function [grad, state, loss] = gradients( nets, ...
                 dlV = dlYHat;
             case 'Z-Y'
                 dlV = { dlZGen, dlY };
+            case 'X-Y'
+                dlV = { dlXIn, dlY };
         end
 
         % calculate the loss

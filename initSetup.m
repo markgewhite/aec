@@ -49,26 +49,30 @@ function setup = initSetup
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
-    setup.lossFcns.orth.class = @componentLoss;
-    setup.lossFcns.orth.name = 'Orthogonality';
-    setup.lossFcns.orth.args.nSample = 100;
-    setup.lossFcns.orth.args.criterion = 'Orthogonality';
-    setup.lossFcns.var.args.useLoss = true;
+    %setup.lossFcns.orth.class = @componentLoss;
+    %setup.lossFcns.orth.name = 'Orthogonality';
+    %setup.lossFcns.orth.args.nSample = 100;
+    %setup.lossFcns.orth.args.criterion = 'Orthogonality';
+    %setup.lossFcns.var.args.useLoss = true;
 
-    setup.lossFcns.var.class = @componentLoss;
-    setup.lossFcns.var.name = 'ExplainedVariance';
-    setup.lossFcns.var.args.nSample = 100;
-    setup.lossFcns.var.args.criterion = 'ExplainedVariance';
-    setup.lossFcns.var.args.useLoss = false;
+    %setup.lossFcns.var.class = @componentLoss;
+    %setup.lossFcns.var.name = 'ExplainedVariance';
+    %setup.lossFcns.var.args.nSample = 100;
+    %setup.lossFcns.var.args.criterion = 'ExplainedVariance';
+    %setup.lossFcns.var.args.useLoss = false;
 
-    setup.lossFcns.smooth.class = @smoothnessLoss;
-    setup.lossFcns.smooth.name = 'Roughness';
-    setup.lossFcns.smooth.args.Lambda = 1E-2;
-    setup.lossFcns.smooth.args.useLoss = false;
+    %setup.lossFcns.smooth.class = @smoothnessLoss;
+    %setup.lossFcns.smooth.name = 'Roughness';
+    %setup.lossFcns.smooth.args.Lambda = 1E-2;
+    %setup.lossFcns.smooth.args.useLoss = false;
 
     setup.lossFcns.cls.class = @classifierLoss;
     setup.lossFcns.cls.name = 'Classification';
-    setup.lossFcns.cls.args.useLoss = false;
+    setup.lossFcns.cls.args.useLoss = true;
+
+    setup.lossFcns.xcls.class = @inputClassifierLoss;
+    setup.lossFcns.xcls.name = 'XClassification';
+    setup.lossFcns.xcls.args.useLoss = true;
 
     % model
     setup.model.class = @fcModel;
@@ -79,7 +83,7 @@ function setup = initSetup
     % training
     setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.numEpochs = 20;
+    setup.trainer.args.numEpochs = 200;
     setup.trainer.args.batchSize = 40;
 
 

@@ -44,11 +44,6 @@ classdef modelEvaluation < handle
                     tSpan = self.TrainingDataset.TSpan.Input, ...
                     PaddingLength = self.TrainingDataset.Padding.Length );
 
-            if isfield( setup.lossFcns, 'cls' )
-                % set the number of classes
-                setup.lossFcns.cls.args.CDim = self.TestingDataset.CDim;
-            end
-
             if isequal( setup.model.class, @pcaModel )
                 % this is a PCA
                 if verbose
@@ -354,8 +349,17 @@ classdef modelEvaluation < handle
                 plot( thisDataset.TSpan.Regular, eval.ReconTimeMSE(:,i) );
             end
 
+            % compute the comparator loss using the comparator network
+            [ eval.ComparatorYHat, eval.ComparatorLoss ] = ...
+                    predictComparator( thisModel, ...
+                    thisDataset.getDLInput( thisModel.XDimLabels ), ...
+                    thisDataset.Y );
 
-            % compute the auxiliary loss
+            % compute the auxiliary loss using the network
+            [ eval.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                            predictAux( thisModel, eval.Z, thisDataset.Y );
+
+            % compute the auxiliary loss using the model
             ZLong = reshape( eval.Z, size( eval.Z, 1 ), [] );
             eval.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
             eval.AuxModelLoss = loss( thisModel.AuxModel, ...

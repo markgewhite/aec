@@ -491,17 +491,24 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function YHat = predictAux( self, Z )
-            % Make prediction from X or Z using an auxiliary network
+        function [ YHat, loss ] = predictAux( self, Z, Y )
+            % Make prediction from Z using an auxiliary network
             arguments
                 self            autoencoderModel
                 Z
+                Y
             end
 
             if isa( Z, 'dlarray' )
                 dlZ = Z;
             else
-                dlZ = dlarray( Z, 'CB' );
+                dlZ = dlarray( Z', 'CB' );
+            end
+
+            if isa( Y, 'dlarray' )
+                dlY = Y;
+            else
+                dlY = dlarray( Y, 'CB' );
             end
 
             auxNet = (self.LossFcnTbl.Types == 'Auxiliary');
@@ -518,11 +525,65 @@ classdef autoencoderModel < representationModel
             end
 
             auxNetName = self.LossFcnTbl.Names( auxNet );
+
             dlYHat = predict( self.Nets.(auxNetName), dlZ );
 
-            YHat = double(extractdata( dlYHat ));
+            loss = calcLoss( self.LossFcns.(auxNetName), ...
+                             self.Nets.(auxNetName), ...
+                             dlZ, dlY );
+
+            YHat = double(extractdata( dlYHat ))';
+            loss = double(extractdata( loss ));
 
         end
+
+
+        function [ YHat, loss ] = predictComparator( self, X, Y )
+            % Make prediction from X using the comparator network
+            arguments
+                self            autoencoderModel
+                X
+                Y
+            end
+
+            if isa( X, 'dlarray' )
+                dlX = X;
+            else
+                dlX = dlarray( X', 'CB' );
+            end
+
+            if isa( Y, 'dlarray' )
+                dlY = Y;
+            else
+                dlY = dlarray( Y, 'CB' );
+            end
+
+            compNet = (self.LossFcnTbl.Types == 'Comparator');
+            if ~any( compNet )
+                eid = 'aeModel:NoComparatorFunction';
+                msg = 'No comparator loss function specified in the model.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            if ~self.LossFcnTbl.HasNetwork( compNet )
+                eid = 'aeModel:NoComparatorNetwork';
+                msg = 'No comparator network specified in the model.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            compNetName = self.LossFcnTbl.Names( compNet );
+
+            dlYHat = predict( self.Nets.(compNetName), dlX );
+
+            loss = calcLoss( self.LossFcns.(compNetName), ...
+                             self.Nets.(compNetName), ...
+                             dlX, dlY );
+
+            YHat = double(extractdata( dlYHat ))';
+            loss = double(extractdata( loss ));
+
+        end
+
 
 
         function net = getNetwork( self, name )
@@ -582,8 +643,8 @@ classdef autoencoderModel < representationModel
         function self = addLossFcnNetworks( self, newFcns )
             % Add one or more networks to the model
             arguments
-                self
-                newFcns
+                self        autoencoderModel
+                newFcns     cell
             end
 
             nFcns = length( newFcns );
@@ -592,9 +653,10 @@ classdef autoencoderModel < representationModel
                 thisLossFcn = newFcns{i};
                 if thisLossFcn.HasNetwork
                     k = k+1;
+                    % set the data dimensions 
+                    thisLossFcn = setDimensions( thisLossFcn, self );
                     % add the network object
-                    self.Nets.(thisLossFcn.Name) = ...
-                            initNetwork( thisLossFcn, self.ZDim );
+                    self.Nets.(thisLossFcn.Name) = initNetwork( thisLossFcn );
                     % record its name
                     self.NetNames = [ string(self.NetNames) thisLossFcn.Name ];
                     % increment the counter

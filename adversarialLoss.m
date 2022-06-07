@@ -66,14 +66,23 @@ classdef adversarialLoss < lossFunction
         end
 
 
-        function net = initNetwork( self, ZDim )
+        function self = setDimensions( self, thisModel )
+            % Store the Z dimension input once known
+            arguments
+                self            adversarialLoss
+                thisModel       autoencoderModel
+            end
+
+            self.ZDim = thisModel.ZDim;
+
+        end
+
+        
+        function net = initNetwork( self )
             % Generate an initialized network
             arguments
                 self
-                ZDim       double {mustBeInteger, mustBePositive}
             end
-
-            self.ZDim = ZDim;
 
             % create the input layer
             layers = featureInputLayer( self.ZDim, 'Name', 'in' );

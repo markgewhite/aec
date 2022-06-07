@@ -1,14 +1,14 @@
 % ************************************************************************
-% Class: classifierLoss
+% Class: inputClassifierLoss
 %
-% Subclass for classifier loss using an auxiliary network
+% Subclass for classifier loss with X as the input for comparison purposes
 %
 % ************************************************************************
 
-classdef classifierLoss < lossFunction
+classdef inputClassifierLoss < lossFunction
 
     properties
-        ZDim                % latent codes dimension size
+        XDim                % input dimension size
         CDim                % number of possible classes
         NumHidden           % number of hidden layers
         NumFC               % number of fully connected nodes at widest
@@ -22,7 +22,7 @@ classdef classifierLoss < lossFunction
 
     methods
 
-        function self = classifierLoss( name, superArgs, args )
+        function self = inputClassifierLoss( name, superArgs, args )
             % Initialize the loss function
             arguments
                 name            char {mustBeText}
@@ -48,13 +48,13 @@ classdef classifierLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = {'Encoder', name};
+            netAssignments = {name};
 
             isNet = strcmp( args.modelType, 'Network' );
 
             self = self@lossFunction( name, superArgsCell{:}, ...
-                                 type = 'Auxiliary', ...
-                                 input = 'Z-Y', ...
+                                 type = 'Comparator', ...
+                                 input = 'X-Y', ...
                                  lossNets = netAssignments, ...
                                  hasNetwork = isNet, ...
                                  hasState = isNet );
@@ -78,21 +78,21 @@ classdef classifierLoss < lossFunction
         function self = setDimensions( self, thisModel )
             % Store the Z dimension input once known
             arguments
-                self            classifierLoss
+                self            inputClassifierLoss
                 thisModel       autoencoderModel
             end
 
-            self.ZDim = thisModel.ZDim;
+            self.XDim = thisModel.XDim;
             self.CDim = thisModel.CDim;
             self.CLabels = categorical( 1:self.CDim );
 
         end
-
-
+        
+        
         function net = initNetwork( self )
             % Generate an initialized network
             arguments
-                self
+                self       inputClassifierLoss
             end
 
             if ~strcmp( self.ModelType, 'Network' )
@@ -102,7 +102,10 @@ classdef classifierLoss < lossFunction
             end 
 
             % create the input layer
-            layers = featureInputLayer( self.ZDim, 'Name', 'in' );
+            layers = featureInputLayer( self.XDim, ...
+                                   'Name', 'in', ...
+                                   'Normalization', 'zscore', ...
+                                   'Mean', 0, 'StandardDeviation', 1 );
             
             % create the hidden layers
             for i = 1:self.NumHidden
@@ -127,20 +130,20 @@ classdef classifierLoss < lossFunction
         end
 
 
-        function [ loss, state ] = calcLoss(  self, net, dlZGen, dlC )
+        function [ loss, state ] = calcLoss(  self, net, dlX, dlC )
             % Calculate the classifier loss
             arguments
-                self     classifierLoss
+                self     inputClassifierLoss
                 net      dlnetwork
-                dlZGen   dlarray  % generated latent distribtion
-                dlC      dlarray  % actual distribution
+                dlX      dlarray  % input distribtion
+                dlC      dlarray  % class distribution
             end
 
             if self.HasNetwork                    
-                [ loss, state ] = self.networkLoss( net, dlZGen, dlC );
+                [ loss, state ] = self.networkLoss( net, dlX, dlC );
             
             else
-                loss = self.nonNetworkLoss( self.ModelType, dlZGen, dlC );
+                loss = self.nonNetworkLoss( self.ModelType, dlX, dlC );
                 state = [];
 
             end
@@ -153,10 +156,10 @@ classdef classifierLoss < lossFunction
 
     methods (Access = protected)
 
-        function [ loss, state ] = networkLoss( self, net, dlZGen, dlC )
+        function [ loss, state ] = networkLoss( self, net, dlX, dlC )
 
             % get the network's predicted class
-            [ dlCGen, state ] = forward( net, dlZGen );
+            [ dlCGen, state ] = forward( net, dlX );
 
             % hotcode the actual class 
             dlCActual = dlarray( ...
@@ -169,20 +172,20 @@ classdef classifierLoss < lossFunction
         end
 
 
-        function loss = nonNetworkLoss( self, dlZGen, dlC )
+        function loss = nonNetworkLoss( self, dlX, dlC )
 
             % convert to double for models which don't take dlarrays
-            ZGen = double(extractdata( dlZGen ))';
+            X = double(extractdata( dlX ))';
             C = double(extractdata( dlC ));
             
             % fit the appropriate model
             switch self.ModelType
                 case 'Logistic'
-                    model = fitclinear( ZGen, C, Learner = "logistic" );
+                    model = fitclinear( X, C, Learner = "logistic" );
                 case 'Fisher'
-                    model = fitcdiscr( ZGen, C );
+                    model = fitcdiscr( X, C );
                 case 'SVM'
-                    model = fitcecoc( ZGen, C );
+                    model = fitcecoc( X, C );
             end
             
             % compute the training loss
