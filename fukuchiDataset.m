@@ -108,6 +108,17 @@ classdef fukuchiDataset < modelDataset
 
         end
 
+
+        function unit = getPartitioningUnit( self )
+            % Provide the SubjectID for partitioning (overriding parent)
+            arguments
+                self    fukuchiDataset
+            end
+
+            unit = self.SubjectID;
+
+        end
+
     end
 
     methods (Static)

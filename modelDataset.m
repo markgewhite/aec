@@ -397,11 +397,76 @@ classdef modelDataset
             X = timeNormalize( XCell, numPts );
 
         end
+
+
+        function unit = getPartitioningUnit( self )
+            % Provide the variable to be unit for partitioning
+            % Placeholder function that may be overridden by children
+            arguments
+                self    modelDataset
+            end
+
+            unit = 1:self.NumObs;
+
+        end
         
+
     end
 
 
     methods (Static)
+
+        function selection = getCVPartition( self, args )
+            % Generate a CV partition for the dataset
+            arguments
+                self                modelDataset
+                args.Holdout        double ...
+                    {mustBeInRange(args.Holdout, 0, 1)}
+                args.KFold          double ...
+                    {mustBeInteger, mustBePositive}
+            end
+
+            if ~isfield( args, 'Holdout' ) && ~isfield( args, 'KFold' )
+                eid = 'ModelDataset:PartitioningNotSpecified';
+                msg = 'Partitioning scheme not specified.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            if isfield( args, 'Holdout' ) && isfield( args, 'KFold' )
+                eid = 'ModelDataset:PartitioningOverSpecified';
+                msg = 'Two partitioning schemes specified, not one.';
+                throwAsCaller( MException(eid,msg) );
+            end
+
+            unit = self.getPartitioningUnit;
+            uniqueUnit = unique( unit );
+
+            if isfield( args, 'Holdout' )
+                % holdout partitioning
+                cvpart = cvpartition( length( uniqueUnit ), ...
+                                      Holdout = args.Holdout );
+                selection = ismember( unit, uniqueUnit( training(cvpart) ));
+              
+            else
+                % K-fold partitioning
+                cvpart = cvpartition( length( uniqueUnit ), ...
+                                      KFold = args.KFold );
+                
+                if length( uniqueUnit ) < length( unit )
+                    % partitioning unit is a grouping variable
+                    selection = false( self.NumObs, args.KFold );
+                    for k = 1:args.KFold
+                        selection( :, k ) = ismember( unit, ...
+                                        uniqueUnit( training(cvpart,k) ));
+                    end
+                else
+                    selection = training( cvpart );
+                end
+
+            end
+
+        end
+
 
         function mbq = getMiniBatchQueue( self, batchSize, XLabels, XNLabels, args )
             % Create a minibatch queue

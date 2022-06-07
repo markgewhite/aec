@@ -231,10 +231,11 @@ classdef autoencoderModel < representationModel
             self.setReconScale( thisDataset.XTarget );
 
             % re-partition the data to create training and validation sets
-            cvPart = cvpartition( thisDataset.NumObs, 'Holdout', 0.25 );
+            selection = thisDataset.getCVPartition( thisDataset, ...
+                                                    Holdout = 0.25 );
             
-            thisTrnSet = thisDataset.partition( training(cvPart) );
-            thisValSet = thisDataset.partition( test(cvPart) );
+            thisTrnSet = thisDataset.partition( selection );
+            thisValSet = thisDataset.partition( ~selection );
 
             % run the training loop
             [ self, self.Optimizer ] = ...

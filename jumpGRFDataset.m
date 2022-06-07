@@ -2,7 +2,7 @@ classdef jumpGRFDataset < modelDataset
     % Subclass for loading the countermovement jump VGRF dataset
 
     properties
-
+        SubjectID       % identifying participants
     end
 
     methods
@@ -17,7 +17,7 @@ classdef jumpGRFDataset < modelDataset
                 superArgs.?modelDataset
             end
 
-            [ XRaw, Y ] = jumpGRFDataset.load( set );
+            [ XRaw, Y, S ] = jumpGRFDataset.load( set );
             Y = Y+1;
 
             % setup padding
@@ -50,7 +50,19 @@ classdef jumpGRFDataset < modelDataset
                             channelLabels = "VGRF (BW)", ...
                             timeLabel = "Time (ms)", ...
                             channelLimits = [0 2.5] );
-            
+
+            self.SubjectID = S;
+
+        end
+
+
+        function unit = getPartitioningUnit( self )
+            % Provide the SubjectID for partitioning (overriding parent)
+            arguments
+                self    jumpGRFDataset
+            end
+
+            unit = self.SubjectID;
 
         end
 
@@ -58,7 +70,7 @@ classdef jumpGRFDataset < modelDataset
 
     methods (Static)
 
-        function [X, Y ] = load( set )
+        function [ X, Y, S ] = load( set )
 
             if ismac
                 rootpath = '/Users/markgewhite/Google Drive/';
@@ -90,7 +102,7 @@ classdef jumpGRFDataset < modelDataset
             options.threshold2 = 0.025; % fraction of BW for sustained low threshold
             options.prctileLimit = 90; % no outliers are beyond this limit
             
-            [ rawDataSet, ~, typeSet ] =  extractVGRFData( ... 
+            [ rawDataSet, typeSet, subjectSet ] =  extractVGRFData( ... 
                                                 grf, bwall, nJumpsPerSubject, ...
                                                 sDataID, sJumpID, jumpOrder, ...
                                                 subjectExclusions, jumpExclusions, ...
@@ -98,6 +110,7 @@ classdef jumpGRFDataset < modelDataset
             % extract the relevant data
             X = rawDataSet{2}; % jumps with and without arm swing
             Y = typeSet{2}; % jump class (with/without arm swing)
+            S = subjectSet{2}; % subject ID
             
        end
 
@@ -107,7 +120,7 @@ classdef jumpGRFDataset < modelDataset
 end
 
 
-function [ curveSet, IDSet, typeSet ] =  extractVGRFData( ...
+function [ curveSet, typeSet, subjectSet ] =  extractVGRFData( ...
                                     grf, bwall, nJumpsPerSubject, ...
                                     sDataID, sJumpID, jumpOrder, ...
                                     subjectExclusions, jumpExclusions, ...
@@ -125,8 +138,8 @@ function [ curveSet, IDSet, typeSet ] =  extractVGRFData( ...
     
     % VGRF data (vertical jumps only)
     vgrfData = cell( nTotal, 1 );
-    vgrfRef = zeros( nTotal, 2 );
     withArms = false( nTotal, 1 );
+    subject = zeros( nTotal, 1 );
 
     k = 0;
     c = 0;
@@ -161,8 +174,9 @@ function [ curveSet, IDSet, typeSet ] =  extractVGRFData( ...
                     % store the VGRF data in bodyweight units
                     vgrfData{ k } = grf.raw{i,j}( tStart:tEnd )/bwall(i,j);
         
-                    vgrfRef( k, : ) = [ i j ];
                     withArms( k ) = (length(jump{1}) == 2);
+
+                    subject( k ) = sDataID(i);
        
                 end
                     
@@ -175,8 +189,8 @@ function [ curveSet, IDSet, typeSet ] =  extractVGRFData( ...
     
     % trim the arrays
     vgrfData = vgrfData(1:k);
-    vgrfRef = vgrfRef(1:k,:);
     withArms = withArms(1:k,:);
+    subject = subject(1:k);
     
     % check lengths
     len = cellfun( @length, vgrfData(1:k) );  
@@ -184,13 +198,13 @@ function [ curveSet, IDSet, typeSet ] =  extractVGRFData( ...
     
     % exclude outliers 
     vgrfData = vgrfData(~outliers);
-    vgrfRef = vgrfRef(~outliers,:);
     withArms = withArms(~outliers,:);
+    subject = subject(~outliers);
     
     % combine all datasets together
     curveSet = { vgrfData(~withArms), vgrfData };
-    IDSet = { vgrfRef(~withArms,:), vgrfRef };
-    typeSet = { false(length(IDSet{1}),1), withArms };
+    typeSet = { false(sum(~withArms)), withArms };
+    subjectSet = { subject(~withArms), subject };
 
 end
 
