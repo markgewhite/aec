@@ -349,15 +349,25 @@ classdef modelEvaluation < handle
                 plot( thisDataset.TSpan.Regular, eval.ReconTimeMSE(:,i) );
             end
 
-            % compute the comparator loss using the comparator network
-            [ eval.ComparatorYHat, eval.ComparatorLoss ] = ...
-                    predictComparator( thisModel, ...
-                    thisDataset.getDLInput( thisModel.XDimLabels ), ...
-                    thisDataset.Y );
+            if isa( thisModel, 'autoencoderModel' )
+                
+                % compute the comparator loss using the comparator network
+                [ eval.ComparatorYHat, eval.ComparatorLoss ] = ...
+                        predictComparator( thisModel, ...
+                            thisDataset.getDLInput( thisModel.XDimLabels ), ...
+                            thisDataset.Y );
 
-            % compute the auxiliary loss using the network
-            [ eval.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                            predictAux( thisModel, eval.Z, thisDataset.Y );
+                % compute the auxiliary loss using the network
+                [ eval.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                                predictAux( thisModel, eval.Z, thisDataset.Y );
+
+            else
+                eval.ComparatorYHat = [];
+                eval.ComparatorLoss = [];
+                eval.AuxNetworkYHat = [];
+                eval.AuxNetworkLoss = [];
+
+            end
 
             % compute the auxiliary loss using the model
             ZLong = reshape( eval.Z, size( eval.Z, 1 ), [] );

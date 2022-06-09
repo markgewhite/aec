@@ -83,7 +83,7 @@ function setup = initSetup
     % training
     setup.trainer.args.updateFreq = 10;
     setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.numEpochs = 200;
+    setup.trainer.args.numEpochs = 100;
     setup.trainer.args.batchSize = 40;
 
 
