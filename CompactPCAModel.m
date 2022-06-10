@@ -13,29 +13,16 @@ classdef CompactPCAModel < CompactRepresentationModel
 
     methods
 
-        function self = CompactPCAModel( theFullModel, superArgs )
+        function self = CompactPCAModel( theFullModel )
             % Initialize the model
             arguments
                 theFullModel        FullPCAModel
-                superArgs.?CompactRepresentationModel
             end
 
-            argsCell = namedargs2cell(superArgs);
-            self@CompactRepresentationModel( argsCell{:} );
-            
-            self.XDim = theFullModel.XDim;
-            self.ZDim = theFullModel.ZDim;
-            self.CDim = theFullModel.CDim;
-            self.XChannels = theFullModel.XChannels;
-            self.Scale = theFullModel.Scale;
-            self.AuxModelType = theFullModel.AuxModelType;
-            
+            self@CompactRepresentationModel( theFullModel );
+         
             self.TSpan = theFullModel.TSpan;
             self.FdParams = theFullModel.FdParams;
-
-            self.Figs = theFullModel.Figs;
-            self.Axes = theFullModel.Axes;
-            self.NumCompLines = theFullModel.NumCompLines;
 
             self.MeanFd = [];
             self.CompFd = [];

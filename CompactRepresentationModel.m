@@ -1,7 +1,18 @@
-classdef CompactRepresentationModel < FullRepresentationModel
+classdef CompactRepresentationModel
     % Super class encompassing all individual dimensional reduction models
 
     properties
+        XDim            % X dimension (number of points)
+        ZDim            % Z dimension (number of features)
+        CDim            % C dimension (number of classes)
+        XChannels       % number of channels in X
+        Scale           % scaling factor for reconstruction loss
+        AuxModelType    % type of auxiliary model to use
+        ShowPlots       % flag whether to show plots
+        Figs            % figures holding the plots
+        Axes            % axes for plotting latent space and components
+        NumCompLines    % number of lines in the component plot
+
         LatentComponents % computed components across partitions
         TrainingLoss     % final training loss per partition
         ValidationLoss   % final validation loss per partition
@@ -9,14 +20,22 @@ classdef CompactRepresentationModel < FullRepresentationModel
 
     methods
 
-        function self = CompactRepresentationModel( superArgs )
+        function self = CompactRepresentationModel( theFullModel )
             % Initialize the model
             arguments
-                superArgs.?FullRepresentationModel
+                theFullModel        FullRepresentationModel
             end
 
-            argsCell = namedargs2cell(superArgs);
-            self = self@FullRepresentationModel( argsCell{:} );
+            self.XDim = theFullModel.XDim;
+            self.ZDim = theFullModel.ZDim;
+            self.CDim = theFullModel.CDim;
+            self.XChannels = theFullModel.XChannels;
+            self.Scale = theFullModel.Scale;
+            self.AuxModelType = theFullModel.AuxModelType;
+            self.ShowPlots = theFullModel.ShowPlots;
+            self.Figs = theFullModel.Figs;
+            self.Axes = theFullModel.Axes;
+            self.NumCompLines = theFullModel.NumCompLines;
 
         end
 
