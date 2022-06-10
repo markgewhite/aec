@@ -1,46 +1,108 @@
-classdef representationModel
-    % Super class encompassing dimensional reduction models
+classdef CompactRepresentationModel < FullRepresentationModel
+    % Super class encompassing all individual dimensional reduction models
 
     properties
-        XDim            % X dimension (number of points)
-        ZDim            % Z dimension (number of features)
-        CDim            % C dimension (number of classes)
-        XChannels       % number of channels in X
-        ShowPlots       % flag whether to show plots
-        Figs            % figures holding the plots
-        Axes            % axes for plotting latent space and components
-        NumCompLines    % number of lines in the component plot
+        LatentComponents % computed components across partitions
+        TrainingLoss     % final training loss per partition
+        ValidationLoss   % final validation loss per partition
     end
 
     methods
 
-        function self = representationModel( args )
+        function self = CompactRepresentationModel( superArgs )
             % Initialize the model
             arguments
-                args.XDim           double ...
-                    {mustBeInteger, mustBePositive} = 10
-                args.ZDim           double ...
-                    {mustBeInteger, mustBePositive} = 1
-                args.CDim           double ...
-                    {mustBeInteger, mustBePositive} = 1
-                args.XChannels      double ...
-                    {mustBeInteger, mustBePositive} = 1
-                args.NumCompLines   double...
-                    {mustBeInteger, mustBePositive} = 8
-                args.ShowPlots      logical = true
+                superArgs.?FullRepresentationModel
             end
 
-            self.XDim = args.XDim;
-            self.ZDim = args.ZDim;
-            self.CDim = args.CDim;
-            self.XChannels = args.XChannels;
-            self.NumCompLines = args.NumCompLines;
-            self.ShowPlots = args.ShowPlots;
+            argsCell = namedargs2cell(superArgs);
+            self = self@FullRepresentationModel( argsCell{:} );
 
-            if args.ShowPlots
-                [self.Figs, self.Axes] = ...
-                        initializePlots( self.XChannels, self.ZDim );
+        end
+
+
+        function eval = evaluate( self, thisDataset )
+            % Evaluate the model with a specified dataset
+            % (training/testing)
+            arguments
+                self            CompactRepresentationModel
+                thisDataset     modelDataset
             end
+
+            % generate latent encoding using the trained model
+            eval.Z = self.encode( thisDataset );
+
+            % reconstruct the curves
+            eval.XHat = squeeze( self.reconstruct( eval.Z ) );
+
+            % smooth the reconstructed curves
+            XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
+                                   eval.XHat, ...
+                                   thisDataset.FDA.FdParamsTarget );
+            eval.XHatSmoothed = squeeze( ...
+                        eval_fd( thisDataset.TSpan.Target, XHatFd ) );
+            
+            eval.XHatRegular = squeeze( ...
+                        eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
+
+            % compute reconstruction loss
+            eval.ReconLoss = self.getReconLoss( ...
+                                        thisDataset.XTarget, eval.XHat );
+            eval.ReconLossSmoothed = ...
+                self.getReconLoss( eval.XHatSmoothed, eval.XHat );
+
+            % compute reconstruction loss for the regularised curves
+            eval.XRegular = squeeze( thisDataset.XInputRegular );
+            eval.ReconLossRegular = ...
+                self.getReconLoss( eval.XHatRegular, eval.XRegular );
+
+            % compute the mean squared error as a function of time
+            eval.ReconTimeMSE = ...
+                self.getReconTemporalLoss( eval.XHatRegular, eval.XRegular );
+
+            figure(4);
+            hold on;
+            for i = 1:thisDataset.XChannels
+                plot( thisDataset.TSpan.Regular, eval.ReconTimeMSE(:,i) );
+            end
+
+            if isa( self, 'autoencoderModel' )
+                
+                % compute the comparator loss using the comparator network
+                [ eval.ComparatorYHat, eval.ComparatorLoss ] = ...
+                        predictComparator( self, ...
+                            thisDataset.getDLInput( self.XDimLabels ), ...
+                            thisDataset.Y );
+
+                % compute the auxiliary loss using the network
+                [ eval.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                                predictAux( self, eval.Z, thisDataset.Y );
+
+            else
+                eval.ComparatorYHat = [];
+                eval.ComparatorLoss = [];
+                eval.AuxNetworkYHat = [];
+                eval.AuxNetworkLoss = [];
+
+            end
+
+            % compute the auxiliary loss using the model
+            ZLong = reshape( eval.Z, size( eval.Z, 1 ), [] );
+            eval.AuxModelYHat = predict( self.AuxModel, ZLong );
+            eval.AuxModelLoss = loss( self.AuxModel, ...
+                                            ZLong, thisDataset.Y );
+
+            % generate the latent components
+            eval.XC = self.latentComponents( ...
+                            eval.Z, ...
+                            sampling = 'Fixed', ...
+                            centre = false, ...
+                            convert = true );
+
+            % compute the components' explained variance
+            [eval.VarProp, eval.CompVar] = ...
+                            self.getExplainedVariance( thisDataset );
+
 
         end
 
@@ -48,7 +110,7 @@ classdef representationModel
         function err = getReconLoss( self, X, XHat )
             % Compute the  - placeholder
             arguments
-                self        representationModel
+                self        CompactRepresentationModel
                 X           double
                 XHat        double
             end
@@ -62,7 +124,7 @@ classdef representationModel
             % Compute the explained variance for the components
             % using a finer-grained set of offsets
             arguments
-                self            representationModel            
+                self            CompactRepresentationModel            
                 thisDataset     modelDataset
             end
 
@@ -96,7 +158,7 @@ classdef representationModel
         function [ varProp, compVar ] = explainedVariance( self, X, XC, offsets )
             % Compute the explained variance for the components
             arguments
-                self            representationModel
+                self            CompactRepresentationModel
                 X
                 XC
                 offsets         double
@@ -156,7 +218,7 @@ classdef representationModel
         function plotZDist( self, Z, args )
             % Update the Z distributions plot
             arguments
-                self                representationModel
+                self                CompactRepresentationModel
                 Z
                 args.name           string = 'Latent Distribution'
                 args.standardize    logical = false
@@ -221,7 +283,7 @@ classdef representationModel
             % Plot characteristic curves of the latent codings which are similar
             % in conception to the functional principal components
             arguments
-                self                representationModel
+                self                CompactRepresentationModel
                 XC
                 tSpan               struct
                 fdParams            
@@ -385,7 +447,7 @@ classdef representationModel
         function plotZClusters( self, Z, args )
             % Plot the latent codes on 2D plane
             arguments
-                self                representationModel
+                self                CompactRepresentationModel
                 Z
                 args.Y              = []
                 args.type           char ...
@@ -473,8 +535,8 @@ classdef representationModel
 
     methods (Abstract)
 
-        % Train the model - placeholder    
-        self = train( self, X )
+        % Train the model on the data provided
+        self = train( self, thisDataset )
 
         % Encode features Z from X using the model - placeholder
         Z = encode( self, X )
@@ -482,33 +544,6 @@ classdef representationModel
         % Reconstruct X from Z using the model - placeholder
         XHat = reconstruct( self, Z )
 
-    end
-
-end
-
-
-function [figs, axes]= initializePlots( XChannels, ZDim )
-    % Setup plots for latent space and components
-   
-    % setup figure for Z distribution and clustering
-    figs.LatentSpace = figure(1);
-    clf;
-    axes.ZDistribution = subplot( 1, 2, 1 );
-    axes.ZClustering = subplot( 1, 2, 2 );
-
-    % setup the components figure
-    figs.Components = figure(2);
-    figs.Components.Position(2) = 0;
-    figs.Components.Position(3) = 100 + ZDim*250;
-    figs.Components.Position(4) = 50 + XChannels*200;
-    
-    clf;
-    axes.Comp = gobjects( XChannels, ZDim );
-
-    for i = 1:XChannels
-        for j = 1:ZDim
-            axes.Comp(i,j) = subplot( XChannels, ZDim, (i-1)*ZDim + j );
-        end
     end
 
 end

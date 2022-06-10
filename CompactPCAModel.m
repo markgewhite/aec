@@ -1,66 +1,62 @@
-classdef pcaModel < representationModel
-    % Class defining a PCA model
+classdef CompactPCAModel < CompactRepresentationModel
+    % Class defining an individual PCA model
 
     properties
-        MeanFd                % mean curve
-        CompFd                % functional principal components
-        ZStd                  % latent score standard deviation (scaling factor)
-        VarProp       double  % explained variance
         FdParams              % functional data parameters
         TSpan         double  % time span
-        Scale                 % scaling factor for reconstruction loss
-
-        AuxModelType          % type of auxiliary model to use
-        AuxModel              % auxiliary model itself
+        MeanFd                % mean functional curve
+        CompFd                % component functional curves
+        VarProp       double  % explained variance
+        ZStd                  % latent score standard deviation (scaling factor)
+        AuxModel              % auxiliary model
     end
 
     methods
 
-        function self = pcaModel( XChannels, ZDim, superArgs, args )
+        function self = CompactPCAModel( theFullModel, superArgs )
             % Initialize the model
             arguments
-                XChannels       double {mustBeInteger, mustBePositive}
-                ZDim            double {mustBeInteger, mustBePositive}
-                superArgs.?representationModel
-                args.auxModel       string ...
-                        {mustBeMember( args.auxModel, ...
-                        {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
+                theFullModel        FullPCAModel
+                superArgs.?CompactRepresentationModel
             end
 
             argsCell = namedargs2cell(superArgs);
-            self = self@representationModel( argsCell{:}, ...
-                                             ZDim = ZDim, ...
-                                             XChannels = XChannels, ...
-                                             NumCompLines = 2 );
+            self@CompactRepresentationModel( argsCell{:} );
+            
+            self.XDim = theFullModel.XDim;
+            self.ZDim = theFullModel.ZDim;
+            self.CDim = theFullModel.CDim;
+            self.XChannels = theFullModel.XChannels;
+            self.Scale = theFullModel.Scale;
+            self.AuxModelType = theFullModel.AuxModelType;
+            
+            self.TSpan = theFullModel.TSpan;
+            self.FdParams = theFullModel.FdParams;
 
+            self.Figs = theFullModel.Figs;
+            self.Axes = theFullModel.Axes;
+            self.NumCompLines = theFullModel.NumCompLines;
 
             self.MeanFd = [];
             self.CompFd = [];
             self.VarProp = [];
-
-            self.AuxModelType = args.auxModel;
+            self.AuxModel = [];
 
         end
 
 
-        function self = train( self, thisDataset )
+        function self = train( self, thisTrnData, thisValData )
             % Run FPCA for the encoder
             arguments
-                self            pcaModel
-                thisDataset     modelDataset
+                self            CompactPCAModel
+                thisTrnData     modelDataset
+                thisValData     modelDataset % redundant for PCA
             end
 
-            self.FdParams = thisDataset.FDA.FdParamsRegular;
-            self.TSpan = thisDataset.TSpan.Regular;
-
-            XInput = thisDataset.XInputRegular;
-
-            % set the channel-wise scaling factor
-            scaling = squeeze(mean(var( XInput )))';
-            self.Scale = scaling;
-
-            % convert input to a functional data object
-            XFd = smooth_basis( self.TSpan, XInput, self.FdParams );
+            % create a functional data object with fewer bases
+            XFd = smooth_basis( self.TSpan, ...
+                                thisTrnData.XInputRegular, ...
+                                self.FdParams );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
 
@@ -77,12 +73,12 @@ classdef pcaModel < representationModel
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
             switch self.AuxModelType
                 case 'Logistic'
-                    self.AuxModel = fitclinear( Z, thisDataset.Y, ...
+                    self.AuxModel = fitclinear( Z, thisTrnData.Y, ...
                                                 Learner = "logistic");
                 case 'Fisher'
-                    self.AuxModel = fitcdiscr( Z, thisDataset.Y );
+                    self.AuxModel = fitcdiscr( Z, thisTrnData.Y );
                 case 'SVM'
-                    self.AuxModel = fitcecoc( Z, thisDataset.Y );
+                    self.AuxModel = fitcecoc( Z, thisTrnData.Y );
             end
 
         end
@@ -91,7 +87,7 @@ classdef pcaModel < representationModel
         function [ XC, offsets ] = latentComponents( self, Z, args )
             % Present the FPCs in form consistent with autoencoder model
             arguments
-                self            pcaModel
+                self            CompactPCAModel
                 Z               double % redundant
                 args.sampling   char ...
                     {mustBeMember(args.sampling, ...
@@ -156,7 +152,7 @@ classdef pcaModel < representationModel
         function loss = getReconLoss( self, X, XHat )
             % Calculate the reconstruction loss
             arguments
-                self        pcaModel
+                self        CompactPCAModel
                 X           double
                 XHat        double
             end
@@ -174,7 +170,7 @@ classdef pcaModel < representationModel
         function loss = getReconTemporalLoss( self, X, XHat )
             % Calculate the reconstruction loss across time domain
             arguments
-                self        pcaModel
+                self        CompactPCAModel
                 X           double
                 XHat        double
             end
@@ -192,7 +188,7 @@ classdef pcaModel < representationModel
         function Z = encode( self, data )
             % Encode features Z from X using the model
             arguments
-                self        pcaModel
+                self        CompactPCAModel
                 data               
             end
 
@@ -233,7 +229,7 @@ classdef pcaModel < representationModel
         function XHat = reconstruct( self, Z, arg )
             % Reconstruct X from Z using the model
             arguments
-                self                pcaModel
+                self                CompactPCAModel
                 Z                   double  % latent codes
                 arg.convert         logical % redundant
             end

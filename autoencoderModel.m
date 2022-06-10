@@ -227,16 +227,6 @@ classdef autoencoderModel < representationModel
                 throwAsCaller( MException(eid,msg) );
             end
 
-            % set the scaling factors for reconstruction loss
-            self.setReconScale( thisDataset.XTarget );
-
-            % re-partition the data to create training and validation sets
-            selection = thisDataset.getCVPartition( thisDataset, ...
-                                                    Holdout = 0.25 );
-            
-            thisTrnSet = thisDataset.partition( selection );
-            thisValSet = thisDataset.partition( ~selection );
-
             % run the training loop
             [ self, self.Optimizer ] = ...
                             self.Trainer.runTraining( self, ...
@@ -275,7 +265,7 @@ classdef autoencoderModel < representationModel
         end
 
 
-        function setReconScale( self, data )
+        function setScalingFactor( self, data )
             % Set the scaling factors for reconstructions
             arguments
                 self            autoencoderModel
