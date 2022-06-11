@@ -2,7 +2,8 @@ classdef FullRepresentationModel
     % Super class encompassing all cross-validated dimensional reduction models
 
     properties
-        XDim            % X dimension (number of points)
+        XInputDim       % X dimension (number of points) for input
+        XTargetDim      % X dimension for output
         ZDim            % Z dimension (number of features)
         CDim            % C dimension (number of classes)
         XChannels       % number of channels in X
@@ -12,6 +13,7 @@ classdef FullRepresentationModel
         Partitions      % logical array specifying the train/validation split
         SubModels       % array of trained models
         Evaluations     % evaluations structure for the sub-models
+        EvaluationsCV   % aggregate cross-validated evaluations
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
@@ -20,17 +22,12 @@ classdef FullRepresentationModel
 
     methods
 
-        function self = FullRepresentationModel( args )
+        function self = FullRepresentationModel( thisDataset, args )
             % Initialize the model
             arguments
-                args.XDim           double ...
-                    {mustBeInteger, mustBePositive} = 10
+                thisDataset         modelDataset
                 args.ZDim           double ...
-                    {mustBeInteger, mustBePositive} = 1
-                args.CDim           double ...
-                    {mustBeInteger, mustBePositive} = 1
-                args.XChannels      double ...
-                    {mustBeInteger, mustBePositive} = 1
+                    {mustBeInteger, mustBePositive}
                 args.auxModelType   string ...
                         {mustBeMember( args.auxModelType, ...
                         {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
@@ -41,10 +38,12 @@ classdef FullRepresentationModel
                 args.ShowPlots      logical = true
             end
 
-            self.XDim = args.XDim;
+            self.XInputDim = thisDataset.XInputDim;
+            self.XTargetDim = thisDataset.XTargetDim;
+            self.CDim = thisDataset.CDim;
+            self.XChannels = thisDataset.XChannels;
+
             self.ZDim = args.ZDim;
-            self.CDim = args.CDim;
-            self.XChannels = args.XChannels;
             self.AuxModelType = args.auxModelType;
             self.KFolds = args.KFold;
             self.NumCompLines = args.NumCompLines;
@@ -86,38 +85,131 @@ classdef FullRepresentationModel
 
                 % evaluate the sub-model
                 self.Evaluations.Training(k) = ...
-                                self.SubModels{k}.evaluate( thisTrnSet );
+                    modelEvaluation.evaluate( self.SubModels{k}, thisTrnSet );  
                 self.Evaluations.Validation(k) = ...
-                                self.SubModels{k}.evaluate( thisValSet );
+                    modelEvaluation.evaluate( self.SubModels{k}, thisValSet );  
 
             end
+
+            % calculate the aggregate evaluation across all partitions
+            self.Evaluations.Training = struct2table( self.Evaluations.Training );
+            self.Evaluations.Validation = struct2table( self.Evaluations.Validation );
+
+            self.EvaluationsCV.Training = ...
+                                evaluate( self.Evaluations.Training );
+            self.EvaluationsCV.Validation = ...
+                                evaluate( self.Evaluations.Validation );
+            
 
         end
 
 
-        function encodeCV( self, X )
-            % Encode aggregated features Z from X using all models
+        function loss = getReconLoss( self, X, XHat )
+            % Calculate the reconstruction loss
             arguments
                 self        FullRepresentationModel
                 X           double
+                XHat        double
             end
 
+            loss = getReconLoss( self.SubModels{1}, X, XHat );
+    
         end
 
 
-        function reconstructCV( self, Z )
-            % Reconstruct aggregated X from Z using all models
+        function loss = getReconTemporalLoss( self, X, XHat )
+            % Calculate the reconstruction loss across time domain
             arguments
                 self        FullRepresentationModel
-                Z           double
+                X           double
+                XHat        double
             end
 
+            loss = getReconTemporalLoss( self.SubModels{1}, X, XHat );
+    
+        end
+
+
+        function [ Z, ZSD ] = encode( self, thisDataset )
+            % Encode aggregated features Z from X using all models
+            arguments
+                self            FullRepresentationModel
+                thisDataset     modelDataset
+            end
+
+            ZFold = zeros( thisDataset.NumObs, self.ZDim, self.KFolds );
+            for k = 1:self.KFolds
+                ZFold( :, :, k ) = encode( self.SubModels{k}, thisDataset );
+            end
+            Z = mean( ZFold, 3 );
+            ZSD = std( ZFold, [], 3 );
 
         end
 
+
+        function [ XHat, XHatSD ] = reconstruct( self, Z )
+            % Reconstruct aggregated X from Z using all models
+            arguments
+                self            FullRepresentationModel
+                Z               double
+            end
+
+            XHatFold = zeros( length(self.TSpan), size(Z,1), self.KFolds );
+            for k = 1:self.KFolds
+                XHatFold( :, :, k ) = reconstruct( self.SubModels{k}, Z );
+            end
+            XHat = mean( XHatFold, 3 );
+            XHatSD = std( XHatFold, [], 3 );
+        end
+
+    end 
+
+
+end
+
+
+function evalsCV = evaluate( evals )
+    % Calculate the aggregate cross-validated evaluations
+    % averaging the sub-model evaluations
+    arguments
+        evals       table
     end
 
+    fields = evals.Properties.VariableNames;
 
+    for i = 1:length( fields )
+
+        Q = evals.(fields{i});
+        
+        switch fields{i}
+            case {'AuxModelYHat', 'AuxNetworkYHat'}
+                % Majority vote
+                
+            
+            otherwise
+                % Average
+                switch fields{i}
+                    case {'Z', 'VarProp', 'CompVar', ...
+                          'ReconLoss', 'ReconLossSmoothed', ...
+                          'ReconLossRegular', ...
+                          'AuxModelLoss' }
+                        d = 1;
+                    case {'XC'}
+                        d = 3;
+                    otherwise
+                        d = 2;
+                end
+        
+                if iscell( Q )
+                    Q = cat( d, Q{:} );
+                end
+        
+                evalsCV.mean.(fields{i}) = mean( Q, d );
+                evalsCV.sd.(fields{i}) = std( Q, [], d );
+
+        end
+    
+    end
 
 end
 

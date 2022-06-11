@@ -8,20 +8,17 @@ classdef FullPCAModel < FullRepresentationModel
 
     methods
 
-        function self = FullPCAModel( ZDim, thisDataset, superArgs )
+        function self = FullPCAModel( thisDataset, superArgs )
             % Initialize the model
             arguments
-                ZDim            double ...
-                        {mustBeInteger, mustBePositive}
                 thisDataset     modelDataset
                 superArgs.?FullRepresentationModel
             end
 
             argsCell = namedargs2cell(superArgs);
-            self@FullRepresentationModel( argsCell{:}, ...
-                                 ZDim = ZDim, ...
-                                 XChannels = thisDataset.XChannels, ...
-                                 NumCompLines = 2 );
+            self@FullRepresentationModel( thisDataset, ...
+                                          argsCell{:}, ...
+                                          NumCompLines = 2 );
 
             self.TSpan = thisDataset.TSpan.Regular;
             self.FdParams = thisDataset.FDA.FdParamsRegular;

@@ -2,7 +2,8 @@ classdef CompactRepresentationModel
     % Super class encompassing all individual dimensional reduction models
 
     properties
-        XDim            % X dimension (number of points)
+        XInputDim       % X dimension (number of points) for input
+        XTargetDim      % X dimension for output
         ZDim            % Z dimension (number of features)
         CDim            % C dimension (number of classes)
         XChannels       % number of channels in X
@@ -26,7 +27,8 @@ classdef CompactRepresentationModel
                 theFullModel        FullRepresentationModel
             end
 
-            self.XDim = theFullModel.XDim;
+            self.XInputDim = theFullModel.XInputDim;
+            self.XTargetDim = theFullModel.XTargetDim;
             self.ZDim = theFullModel.ZDim;
             self.CDim = theFullModel.CDim;
             self.XChannels = theFullModel.XChannels;
@@ -36,92 +38,6 @@ classdef CompactRepresentationModel
             self.Figs = theFullModel.Figs;
             self.Axes = theFullModel.Axes;
             self.NumCompLines = theFullModel.NumCompLines;
-
-        end
-
-
-        function eval = evaluate( self, thisDataset )
-            % Evaluate the model with a specified dataset
-            % (training/testing)
-            arguments
-                self            CompactRepresentationModel
-                thisDataset     modelDataset
-            end
-
-            % generate latent encoding using the trained model
-            eval.Z = self.encode( thisDataset );
-
-            % reconstruct the curves
-            eval.XHat = squeeze( self.reconstruct( eval.Z ) );
-
-            % smooth the reconstructed curves
-            XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
-                                   eval.XHat, ...
-                                   thisDataset.FDA.FdParamsTarget );
-            eval.XHatSmoothed = squeeze( ...
-                        eval_fd( thisDataset.TSpan.Target, XHatFd ) );
-            
-            eval.XHatRegular = squeeze( ...
-                        eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
-
-            % compute reconstruction loss
-            eval.ReconLoss = self.getReconLoss( ...
-                                        thisDataset.XTarget, eval.XHat );
-            eval.ReconLossSmoothed = ...
-                self.getReconLoss( eval.XHatSmoothed, eval.XHat );
-
-            % compute reconstruction loss for the regularised curves
-            eval.XRegular = squeeze( thisDataset.XInputRegular );
-            eval.ReconLossRegular = ...
-                self.getReconLoss( eval.XHatRegular, eval.XRegular );
-
-            % compute the mean squared error as a function of time
-            eval.ReconTimeMSE = ...
-                self.getReconTemporalLoss( eval.XHatRegular, eval.XRegular );
-
-            figure(4);
-            hold on;
-            for i = 1:thisDataset.XChannels
-                plot( thisDataset.TSpan.Regular, eval.ReconTimeMSE(:,i) );
-            end
-
-            if isa( self, 'autoencoderModel' )
-                
-                % compute the comparator loss using the comparator network
-                [ eval.ComparatorYHat, eval.ComparatorLoss ] = ...
-                        predictComparator( self, ...
-                            thisDataset.getDLInput( self.XDimLabels ), ...
-                            thisDataset.Y );
-
-                % compute the auxiliary loss using the network
-                [ eval.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                                predictAux( self, eval.Z, thisDataset.Y );
-
-            else
-                eval.ComparatorYHat = [];
-                eval.ComparatorLoss = [];
-                eval.AuxNetworkYHat = [];
-                eval.AuxNetworkLoss = [];
-
-            end
-
-            % compute the auxiliary loss using the model
-            ZLong = reshape( eval.Z, size( eval.Z, 1 ), [] );
-            eval.AuxModelYHat = predict( self.AuxModel, ZLong );
-            eval.AuxModelLoss = loss( self.AuxModel, ...
-                                            ZLong, thisDataset.Y );
-
-            % generate the latent components
-            eval.XC = self.latentComponents( ...
-                            eval.Z, ...
-                            sampling = 'Fixed', ...
-                            centre = false, ...
-                            convert = true );
-
-            % compute the components' explained variance
-            [eval.VarProp, eval.CompVar] = ...
-                            self.getExplainedVariance( thisDataset );
-
 
         end
 
