@@ -12,7 +12,9 @@ classdef FullRepresentationModel
         KFolds          % number of cross validation partitions
         Partitions      % logical array specifying the train/validation split
         SubModels       % array of trained models
-        Evaluations     % aggregate cross-validated evaluations
+        CVLatentComponents % cross-validated latent components
+        Loss            % collated losses from sub-models
+        CVLoss          % aggregate cross-validated losses
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
@@ -89,12 +91,45 @@ classdef FullRepresentationModel
 
             end
 
+            % calculate the aggregated latent components
+            self = self.getLatentComponentsCV;
+
             % calculate the aggregate evaluation across all partitions
-            self.Evaluations.Training = ...
-                                evaluate( self.Evaluations.Training );
-            self.Evaluations.Validation = ...
-                                evaluate( self.Evaluations.Validation );
-            
+            self = self.evaluateCV;    
+
+        end
+
+
+        function self = evaluateCV( self )
+            % Calculate the cross-validated losses
+            % using predictions from the sub-models
+            arguments
+                self        FullRepresentationModel
+            end
+
+            self.Loss.Training = collateLosses( self.SubModels, 'Training' );
+            self.Loss.Validation = collateLosses( self.SubModels, 'Validation' );
+
+            self.CVLoss.Training = calcCVLoss( self.SubModels, 'Training' );
+            self.CVLoss.Validation = calcCVLoss( self.SubModels, 'Validation' );
+
+        end
+
+
+        function self = getLatentComponentsCV( self )
+            % Calculate the cross-validated latent components
+            % by averaging across the sub-models
+            arguments
+                self        FullRepresentationModel
+            end
+
+            XC = self.SubModels{1}.LatentComponents;
+            for k = 2:self.KFolds
+                XC = XC + self.SubModels{k}.LatentComponents;
+            end
+
+            self.CVLatentComponents = XC/self.KFolds;
+
 
         end
 
@@ -163,48 +198,88 @@ classdef FullRepresentationModel
 end
 
 
-function evalsCV = evaluate( evals )
-    % Calculate the aggregate cross-validated evaluations
-    % averaging the sub-model evaluations
+function aggrLoss = collateLosses( subModels, set )
+    % Collate the losses from the submodels
     arguments
-        evals       table
+        subModels       cell
+        set             char ...
+            {mustBeMember( set, {'Training', 'Validation'} )}
     end
 
-    fields = evals.Properties.VariableNames;
+    nModels = length( subModels );
+    thisAggrLoss = zeros( nModels, 1 );
+    fields = fieldnames( subModels{1}.Loss.(set) );
+    nFields = length( fields );
 
-    for i = 1:length( fields )
+    for i = 1:nFields
+        if length( subModels{1}.Loss.(set).(fields{i}) ) == 1
+            for k = 1:nModels
+               thisAggrLoss(k) = subModels{k}.Loss.(set).(fields{i});
+            end
+            aggrLoss.(fields{i}) = thisAggrLoss;
+        end
+    end
 
-        Q = evals.(fields{i});
-        
-        switch fields{i}
-            case {'AuxModelYHat', 'AuxNetworkYHat'}
-                % Majority vote
-                
+end
+
+
+function cvLoss = calcCVLoss( subModels, set )
+    % Calculate the aggregate cross-validated losses across all submodels
+    % drawing on the pre-computed predictions 
+    arguments
+        subModels       cell
+        set             char ...
+            {mustBeMember( set, {'Training', 'Validation'} )}
+    end
+
+    nModels = length( subModels );
+
+    pairs = [   {'XTarget', 'XHat'}; ...
+                {'XTarget', 'XHatSmoothed'}; ...
+                {'XRegular', 'XHatRegular'}; ...
+                {'Y', 'AuxModelYHat'} ];
+    fieldsToPermute = { 'XTarget', 'XHat', 'XHatSmoothed', 'XRegular', 'XHatRegular' };
+    fieldsForAuxLoss = { 'AuxModelYHat' };
+
+    nPairs = length( pairs );
+    fields = unique( pairs );
+
+    % aggregate all the predictions for each field into one array
+    for i = 1:length(fields)
+
+        aggr.(fields{i}) = [];
+        doPermute = ismember( fields{i}, fieldsToPermute );
+
+        for k = 1:nModels
+
+            data = subModels{k}.Predictions.(set).(fields{i});
+            if doPermute
+                data = permute( data, [2 1 3] );
+            end
             
-            otherwise
-                % Average
-                switch fields{i}
-                    case {'Z', 'VarProp', 'CompVar', ...
-                          'ReconLoss', 'ReconLossSmoothed', ...
-                          'ReconLossRegular', ...
-                          'AuxModelLoss' }
-                        d = 1;
-                    case {'XC'}
-                        d = 3;
-                    otherwise
-                        d = 2;
-                end
-        
-                if iscell( Q )
-                    Q = cat( d, Q{:} );
-                end
-        
-                evalsCV.mean.(fields{i}) = mean( Q, d );
-                evalsCV.sd.(fields{i}) = std( Q, [], d );
+            aggr.(fields{i}) = [ aggr.(fields{i}); data ];
 
+        end
+    end
+
+
+    for i = 1:nPairs
+
+        if ismember( pairs{i,2}, fieldsForAuxLoss )
+            % cross entropy loss
+            cvLoss.(pairs{i,2}) = CompactRepresentationModel.getAuxLoss( ...
+                                          aggr.(pairs{i,1}), ...
+                                          aggr.(pairs{i,2}) );
+        else
+            % mean squared error loss
+            cvLoss.(pairs{i,2}) = getReconLoss( subModels{1}, ...
+                                          aggr.(pairs{i,1}), ...
+                                          aggr.(pairs{i,2}) );
         end
     
     end
+
+
 
 end
 

@@ -9,6 +9,8 @@ classdef CompactRepresentationModel
         XChannels       % number of channels in X
         Scale           % scaling factor for reconstruction loss
         AuxModelType    % type of auxiliary model to use
+        AuxModel        % auxiliary model
+
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
@@ -64,7 +66,7 @@ classdef CompactRepresentationModel
 
 
         function err = getReconLoss( self, X, XHat )
-            % Compute the  - placeholder
+            % Compute the reconstruction loss
             arguments
                 self        CompactRepresentationModel
                 X           double
@@ -502,6 +504,23 @@ classdef CompactRepresentationModel
     end
 
 
+
+    methods (Static)
+
+        function err = getAuxLoss( Y, YHat )
+            % Compute the cross-entropy loss
+            arguments
+                Y           double
+                YHat        double
+            end
+
+            err = 1 - mean( YHat==Y );
+        
+        end
+
+    end
+
+
     methods (Abstract)
 
         % Train the model on the data provided
@@ -526,7 +545,9 @@ function [ eval, pred ] = evaluateDataset( self, thisDataset )
     end
 
     % record the input
+    pred.XTarget = squeeze( thisDataset.XTarget );
     pred.XRegular = squeeze( thisDataset.XInputRegular );
+    pred.Y = thisDataset.Y;
 
     % generate latent encoding using the trained model
     pred.Z = self.encode( thisDataset );
@@ -557,7 +578,7 @@ function [ eval, pred ] = evaluateDataset( self, thisDataset )
     % compute the auxiliary loss using the model
     ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
     pred.AuxModelYHat = predict( self.AuxModel, ZLong );
-    eval.AuxModelLoss = loss( self.AuxModel, ZLong, thisDataset.Y );
+    eval.AuxModelLoss = self.getAuxLoss( pred.AuxModelYHat, pred.Y );
 
     if isa( self, 'autoencoderModel' )
         

@@ -8,7 +8,6 @@ classdef CompactPCAModel < CompactRepresentationModel
         CompFd                % component functional curves
         VarProp       double  % explained variance
         ZStd                  % latent score standard deviation (scaling factor)
-        AuxModel              % auxiliary model
     end
 
     methods
