@@ -56,8 +56,14 @@ classdef CompactPCAModel < CompactRepresentationModel
             end
             self.ZStd = squeeze( std(pcaStruct.harmscr) );
 
-            % train the auxiliary model
+            % compute the components' explained variance
+            [self.LatentComponents, self.VarProportion, self.ComponentVar] ...
+                            = self.genLatentComponents( thisTrnData );
+
+            % generate the latent components
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
+
+            % train the auxiliary model
             switch self.AuxModelType
                 case 'Logistic'
                     self.AuxModel = fitclinear( Z, thisTrnData.Y, ...
@@ -92,7 +98,7 @@ classdef CompactPCAModel < CompactRepresentationModel
             end
            
             if args.centre
-                XCMean = zeros( self.TSpan, 1 );
+                XCMean = zeros( length(self.TSpan), 1 );
             else
                 XCMean = eval_fd( self.TSpan, self.MeanFd );
             end

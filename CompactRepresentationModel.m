@@ -15,8 +15,11 @@ classdef CompactRepresentationModel
         NumCompLines    % number of lines in the component plot
 
         LatentComponents % computed components across partitions
-        TrainingLoss     % final training loss per partition
-        ValidationLoss   % final validation loss per partition
+        ComponentVar     % component variance of each ompoent
+        VarProportion    % proportion total variance explained by each component
+
+        Predictions      % training and validation predictions
+        Loss             % training and validation losses
     end
 
     methods
@@ -42,6 +45,24 @@ classdef CompactRepresentationModel
         end
 
 
+        function self = evaluate( self, thisTrnSet, thisValSet )
+            % Evaluate the model with a specified dataset
+            % It may be a full or compact model
+            arguments
+                self            CompactRepresentationModel
+                thisTrnSet      modelDataset
+                thisValSet      modelDataset
+            end
+
+            [ self.Loss.Training, self.Predictions.Training ] = ...
+                                evaluateDataset( self, thisTrnSet );
+
+            [ self.Loss.Validation, self.Predictions.Validation ] = ...
+                                evaluateDataset( self, thisValSet );
+
+        end
+
+
         function err = getReconLoss( self, X, XHat )
             % Compute the  - placeholder
             arguments
@@ -55,9 +76,10 @@ classdef CompactRepresentationModel
         end
 
 
-        function [ varProp, compVar ] = getExplainedVariance( self, thisDataset )
-            % Compute the explained variance for the components
-            % using a finer-grained set of offsets
+        function [ XCReg, varProp, compVar ] = ...
+                                    genLatentComponents( self, thisDataset )
+            % Generate the latent components and
+            % compute the explained variance
             arguments
                 self            CompactRepresentationModel            
                 thisDataset     modelDataset
@@ -66,26 +88,38 @@ classdef CompactRepresentationModel
             % generate the latent encodings
             Z = self.encode( thisDataset );
 
-            % generate the AE components
-            [ XC, offsets ] = self.latentComponents( ...
-                                            Z, ...
-                                            sampling = 'Fixed', ...
-                                            nSample = 100, ...
-                                            centre = false, ...
-                                            convert = true );
+            % generate the AE components, smoothing them, for storage
+            XC = self.latentComponents( Z, ...
+                                        sampling = 'Fixed', ...
+                                        convert = true );
 
-            % smooth the curves        
             XCFd = smooth_basis( thisDataset.TSpan.Target, ...
                                  XC, ...
                                  thisDataset.FDA.FdParamsTarget );
             XCReg = squeeze( ...
                         eval_fd( thisDataset.TSpan.Regular, XCFd ) );
+
+            % generate finer-grained components for calculation
+            [ XCFine, offsets ] = self.latentComponents( ...
+                                            Z, ...
+                                            sampling = 'Fixed', ...
+                                            nSample = 100, ...
+                                            centre = false, ...
+                                            convert = true );
+    
+            XCFineFd = smooth_basis( thisDataset.TSpan.Target, ...
+                                 XCFine, ...
+                                 thisDataset.FDA.FdParamsTarget );
+            XCFineReg = squeeze( ...
+                        eval_fd( thisDataset.TSpan.Regular, XCFineFd ) );
+
+            % get the input data in a smoothed form
             XReg = squeeze( ...
                         eval_fd( thisDataset.TSpan.Regular, ...
                                  thisDataset.XFd ) );
 
             % compute the components' explained variance
-            [varProp, compVar] = self.explainedVariance( XReg, XCReg, offsets );    
+            [varProp, compVar] = self.explainedVariance( XReg, XCFineReg, offsets );    
 
         end
 
@@ -482,6 +516,70 @@ classdef CompactRepresentationModel
     end
 
 end
+
+
+function [ eval, pred ] = evaluateDataset( self, thisDataset )
+    % Evaluate the model with a specified dataset
+    arguments
+        self             CompactRepresentationModel
+        thisDataset      modelDataset
+    end
+
+    % record the input
+    pred.XRegular = squeeze( thisDataset.XInputRegular );
+
+    % generate latent encoding using the trained model
+    pred.Z = self.encode( thisDataset );
+
+    % reconstruct the curves
+    pred.XHat = squeeze( self.reconstruct( pred.Z ) );
+
+    % smooth the reconstructed curves
+    XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
+                           pred.XHat, ...
+                           thisDataset.FDA.FdParamsTarget );
+    pred.XHatSmoothed = squeeze( ...
+                eval_fd( thisDataset.TSpan.Target, XHatFd ) );
+    
+    pred.XHatRegular = squeeze( ...
+                eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
+
+    % compute reconstruction loss
+    eval.ReconLoss = self.getReconLoss( thisDataset.XTarget, pred.XHat );
+    eval.ReconLossSmoothed = self.getReconLoss( pred.XHatSmoothed, pred.XHat );
+
+    % compute reconstruction loss for the regularised curves
+    eval.ReconLossRegular = self.getReconLoss( pred.XHatRegular, pred.XRegular );
+
+    % compute the mean squared error as a function of time
+    eval.ReconTimeMSE = self.getReconTemporalLoss( pred.XHatRegular, pred.XRegular );
+
+    % compute the auxiliary loss using the model
+    ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
+    pred.AuxModelYHat = predict( self.AuxModel, ZLong );
+    eval.AuxModelLoss = loss( self.AuxModel, ZLong, thisDataset.Y );
+
+    if isa( self, 'autoencoderModel' )
+        
+        % compute the comparator loss using the comparator network
+        [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
+                    predictComparator( ...
+                            self, ...
+                            thisDataset.getDLInput( self.XDimLabels ), ...
+                            thisDataset.Y );
+
+        % compute the auxiliary loss using the network
+        [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                    predictAux( self, pred.Z, thisDataset.Y );
+
+    else
+        eval.ComparatorLoss = [];
+        eval.AuxNetworkLoss = [];
+
+    end
+
+end
+
 
 
 function obj = plotShadedArea( ax, t, y1, y2, colour, args )

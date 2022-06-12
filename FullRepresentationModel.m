@@ -12,8 +12,7 @@ classdef FullRepresentationModel
         KFolds          % number of cross validation partitions
         Partitions      % logical array specifying the train/validation split
         SubModels       % array of trained models
-        Evaluations     % evaluations structure for the sub-models
-        EvaluationsCV   % aggregate cross-validated evaluations
+        Evaluations     % aggregate cross-validated evaluations
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
@@ -84,20 +83,16 @@ classdef FullRepresentationModel
                                             thisTrnSet, thisValSet );
 
                 % evaluate the sub-model
-                self.Evaluations.Training(k) = ...
-                    modelEvaluation.evaluate( self.SubModels{k}, thisTrnSet );  
-                self.Evaluations.Validation(k) = ...
-                    modelEvaluation.evaluate( self.SubModels{k}, thisValSet );  
+                self.SubModels{k} = self.SubModels{k}.evaluate( ...
+                                            thisTrnSet, thisValSet );
+ 
 
             end
 
             % calculate the aggregate evaluation across all partitions
-            self.Evaluations.Training = struct2table( self.Evaluations.Training );
-            self.Evaluations.Validation = struct2table( self.Evaluations.Validation );
-
-            self.EvaluationsCV.Training = ...
+            self.Evaluations.Training = ...
                                 evaluate( self.Evaluations.Training );
-            self.EvaluationsCV.Validation = ...
+            self.Evaluations.Validation = ...
                                 evaluate( self.Evaluations.Validation );
             
 
