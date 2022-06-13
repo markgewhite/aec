@@ -504,23 +504,6 @@ classdef CompactRepresentationModel
     end
 
 
-
-    methods (Static)
-
-        function err = getAuxLoss( Y, YHat )
-            % Compute the cross-entropy loss
-            arguments
-                Y           double
-                YHat        double
-            end
-
-            err = 1 - mean( YHat==Y );
-        
-        end
-
-    end
-
-
     methods (Abstract)
 
         % Train the model on the data provided
@@ -578,7 +561,7 @@ function [ eval, pred ] = evaluateDataset( self, thisDataset )
     % compute the auxiliary loss using the model
     ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
     pred.AuxModelYHat = predict( self.AuxModel, ZLong );
-    eval.AuxModelLoss = self.getAuxLoss( pred.AuxModelYHat, pred.Y );
+    eval.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
 
     if isa( self, 'autoencoderModel' )
         

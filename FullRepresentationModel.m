@@ -160,7 +160,7 @@ classdef FullRepresentationModel
         end
 
 
-        function [ Z, ZSD ] = encode( self, thisDataset )
+        function [ ZFold, ZMean, ZSD ] = encode( self, thisDataset )
             % Encode aggregated features Z from X using all models
             arguments
                 self            FullRepresentationModel
@@ -171,28 +171,65 @@ classdef FullRepresentationModel
             for k = 1:self.KFolds
                 ZFold( :, :, k ) = encode( self.SubModels{k}, thisDataset );
             end
-            Z = mean( ZFold, 3 );
+            ZMean = mean( ZFold, 3 );
             ZSD = std( ZFold, [], 3 );
 
         end
 
 
-        function [ XHat, XHatSD ] = reconstruct( self, Z )
+        function [ XHatFold, XHatMean, XHatSD ] = reconstruct( self, Z )
             % Reconstruct aggregated X from Z using all models
             arguments
                 self            FullRepresentationModel
                 Z               double
             end
 
+            isEnsemble = (size( Z, 3 ) > 1);
             XHatFold = zeros( length(self.TSpan), size(Z,1), self.KFolds );
             for k = 1:self.KFolds
-                XHatFold( :, :, k ) = reconstruct( self.SubModels{k}, Z );
+                if isEnsemble
+                    XHatFold( :, :, k ) = ...
+                            reconstruct( self.SubModels{k}, Z(:,:,k) );
+                else
+                    XHatFold( :, :, k ) = ...
+                            reconstruct( self.SubModels{k}, Z );
+                end
             end
-            XHat = mean( XHatFold, 3 );
+            XHatMean = mean( XHatFold, 3 );
             XHatSD = std( XHatFold, [], 3 );
         end
 
-    end 
+
+        function [ YHatFold, YHatMaj ] = predictAux( self, Z )
+            % Predict Y from Z using all auxiliary models
+            arguments
+                self            FullRepresentationModel
+                Z               double
+            end
+
+            isEnsemble = (size( Z, 3 ) > 1);
+            nRows = size( Z, 1 );
+            YHatFold = zeros( nRows, self.KFolds );
+            for k = 1:self.KFolds
+                if isEnsemble
+                    YHatFold( :, k ) = ...
+                            predict( self.SubModels{k}.AuxModel, Z(:,:,k) );
+                else
+                    YHatFold( :, k ) = ...
+                            predict( self.SubModels{k}.AuxModel, Z );
+                end
+            end
+
+            YHatMaj = zeros( nRows, 1 );
+            for i = 1:nRows
+                [votes, grps] = groupcounts( YHatFold(i,:)' );
+                [ ~, idx ] = max( votes );
+                YHatMaj(i) = grps( idx );
+            end
+
+        end
+
+    end
 
 
 end
@@ -267,7 +304,7 @@ function cvLoss = calcCVLoss( subModels, set )
 
         if ismember( pairs{i,2}, fieldsForAuxLoss )
             % cross entropy loss
-            cvLoss.(pairs{i,2}) = CompactRepresentationModel.getAuxLoss( ...
+            cvLoss.(pairs{i,2}) = getPropCorrect( ...
                                           aggr.(pairs{i,1}), ...
                                           aggr.(pairs{i,2}) );
         else

@@ -7,8 +7,10 @@ classdef modelEvaluation < handle
         TestingDataset      % testing dataset object
         Model               % trained model object
         LossFcns            % array of loss function objects
-        TrainingEvaluation  % training data's evaluation
-        TestingEvaluation   % testing data's evaluation
+        TrainingEvaluation  % cross-validated training evaluation
+        TestingEvaluation   % cross-validated training evaluation
+        TrainingPredictions % ensemble training predictions
+        TestingPredictions  % ensemble testing evaluation
     end
 
 
@@ -82,11 +84,13 @@ classdef modelEvaluation < handle
             end
 
             % evaluate the trained model
-            self.TrainingEvaluation = ...
-                self.evaluate( self.Model, self.TrainingDataset );
+            [ self.TrainingEvaluation, self.TrainingPredictions ] ...
+                    = ensembleEvaluation( ...
+                                    self.Model, self.TrainingDataset );
 
-            self.TestingEvaluation = ...
-                self.evaluate( self.Model, self.TestingDataset );
+            [ self.TestingEvaluation, self.TestingPredictions ] ...
+                    = ensembleEvaluation( ...
+                                    self.Model, self.TestingDataset );
 
             if verbose
                 disp('Training evaluation:');
@@ -113,13 +117,13 @@ classdef modelEvaluation < handle
 
             if verbose
                 % plot latent space
-                self.Model.plotZDist( self.TestingEvaluation.Z );
-                self.Model.plotZClusters( self.TestingEvaluation.Z, ...
+                self.Model.plotZDist( self.TestingPredictions.Z );
+                self.Model.plotZClusters( self.TestingPredictions.Z, ...
                                           Y = self.TestingDataset.Y );
     
                 % plot the components
                 self.Model.plotLatentComp( ...
-                              self.TestingEvaluation.XC, ...
+                              self.Model.CVLatentComponents, ...
                               self.TestingDataset.TSpan, ...
                               self.TestingDataset.FDA.FdParamsTarget, ...
                               type = 'Smoothed', ...
@@ -199,102 +203,9 @@ classdef modelEvaluation < handle
 
             end
 
-        end
+        end         
 
     end
-
-
-    methods (Static)
-
-        function eval = evaluate( thisModel, thisDataset )
-            % Evaluate the model with a specified dataset
-            % It may be a full or compact model
-            arguments
-                thisModel       {mustBeA(thisModel, ...
-                    {'FullRepresentationModel', ...
-                     'CompactRepresentationModel'})}
-                thisDataset     modelDataset
-            end
-
-            % generate latent encoding using the trained model
-            eval.Z = thisModel.encode( thisDataset );
-
-            % reconstruct the curves
-            eval.XHat = squeeze( thisModel.reconstruct( eval.Z ) );
-
-            % smooth the reconstructed curves
-            XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
-                                   eval.XHat, ...
-                                   thisDataset.FDA.FdParamsTarget );
-            eval.XHatSmoothed = squeeze( ...
-                        eval_fd( thisDataset.TSpan.Target, XHatFd ) );
-            
-            eval.XHatRegular = squeeze( ...
-                        eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
-
-            % compute reconstruction loss
-            eval.ReconLoss = thisModel.getReconLoss( ...
-                                        thisDataset.XTarget, eval.XHat );
-            eval.ReconLossSmoothed = ...
-                thisModel.getReconLoss( eval.XHatSmoothed, eval.XHat );
-
-            % compute reconstruction loss for the regularised curves
-            eval.XRegular = squeeze( thisDataset.XInputRegular );
-            eval.ReconLossRegular = ...
-                thisModel.getReconLoss( eval.XHatRegular, eval.XRegular );
-
-            % compute the mean squared error as a function of time
-            eval.ReconTimeMSE = ...
-                thisModel.getReconTemporalLoss( eval.XHatRegular, eval.XRegular );
-
-            figure(4);
-            hold on;
-            for i = 1:thisDataset.XChannels
-                plot( thisDataset.TSpan.Regular, eval.ReconTimeMSE(:,i) );
-            end
-
-            if isa( thisModel, 'autoencoderModel' )
-                
-                % compute the comparator loss using the comparator network
-                [ eval.ComparatorYHat, eval.ComparatorLoss ] = ...
-                        predictComparator( thisModel, ...
-                            thisDataset.getDLInput( thisModel.XDimLabels ), ...
-                            thisDataset.Y );
-
-                % compute the auxiliary loss using the network
-                [ eval.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                                predictAux( thisModel, eval.Z, thisDataset.Y );
-
-            else
-                eval.ComparatorYHat = [];
-                eval.ComparatorLoss = [];
-                eval.AuxNetworkYHat = [];
-                eval.AuxNetworkLoss = [];
-
-            end
-
-            % compute the auxiliary loss using the model
-            ZLong = reshape( eval.Z, size( eval.Z, 1 ), [] );
-            eval.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
-            eval.AuxModelLoss = loss( thisModel.AuxModel, ...
-                                            ZLong, thisDataset.Y );
-
-            % generate the latent components
-            eval.XC = thisModel.latentComponents( ...
-                            eval.Z, ...
-                            sampling = 'Fixed', ...
-                            centre = false, ...
-                            convert = true );
-
-            % compute the components' explained variance
-            [eval.VarProp, eval.CompVar] = ...
-                            thisModel.getExplainedVariance( thisDataset );
-
-
-        end
-
-    end
-
 
 
     methods (Access = private)
@@ -385,6 +296,80 @@ classdef modelEvaluation < handle
 
         end
 
+
+    end
+
+
+end
+
+
+function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
+    % Calculate the aggregate evaluation using all sub-models
+    arguments
+        thisModel       FullRepresentationModel
+        thisDataset     modelDataset
+    end
+
+    % generate latent encodings from all sub-models
+    [ pred.ZEnsemble, pred.Z, pred.ZStd ]= ...
+                        thisModel.encode( thisDataset );
+
+    % reconstruct the curves
+    [ pred.XHatEnsemble, pred.XHat, pred.XHatStd ] = ...
+                        thisModel.reconstruct( pred.ZEnsemble );
+
+    % smooth the reconstructed curves
+    XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
+                           pred.XHat, ...
+                           thisDataset.FDA.FdParamsTarget );
+    pred.XHatSmoothed = squeeze( ...
+                eval_fd( thisDataset.TSpan.Target, XHatFd ) );
+    
+    pred.XHatRegular = squeeze( ...
+                eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
+
+    % compute reconstruction loss
+    eval.ReconLoss = thisModel.getReconLoss( ...
+                                thisDataset.XTarget, pred.XHat );
+    eval.ReconLossSmoothed = ...
+        thisModel.getReconLoss( pred.XHatSmoothed, pred.XHat );
+
+    % compute reconstruction loss for the regularised curves
+    pred.XRegular = squeeze( thisDataset.XInputRegular );
+    eval.ReconLossRegular = ...
+        thisModel.getReconLoss( pred.XHatRegular, pred.XRegular );
+
+    % compute the mean squared error as a function of time
+    eval.ReconTimeMSE = ...
+        thisModel.getReconTemporalLoss( pred.XHatRegular, pred.XRegular );
+
+    figure(4);
+    hold on;
+    for i = 1:thisDataset.XChannels
+        plot( thisDataset.TSpan.Regular, eval.ReconTimeMSE(:,i) );
+    end
+
+    % compute the auxiliary loss using the model
+    [ pred.YHatEnsemble, pred.YHat ] = predictAux( thisModel, pred.ZEnsemble );
+    eval.AuxModelLoss = getPropCorrect( pred.YHat, thisDataset.Y );
+
+    if isa( thisModel, 'autoencoderModel' )
+        
+        % compute the comparator loss using the comparator network
+        [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
+                predictComparator( thisModel, ...
+                    thisDataset.getDLInput( thisModel.XDimLabels ), ...
+                    thisDataset.Y );
+
+        % compute the auxiliary loss using the network
+        [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                        predictAux( thisModel, pred.Z, thisDataset.Y );
+
+    else
+        pred.ComparatorYHat = [];
+        eval.ComparatorLoss = [];
+        pred.AuxNetworkYHat = [];
+        eval.AuxNetworkLoss = [];
 
     end
 
