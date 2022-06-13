@@ -83,7 +83,7 @@ classdef CompactRepresentationModel
 
 
         function [ XCReg, varProp, compVar ] = ...
-                                    genLatentComponents( self, thisDataset )
+                                    getLatentComponents( self, thisDataset )
             % Generate the latent components and
             % compute the explained variance
             arguments

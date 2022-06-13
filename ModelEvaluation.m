@@ -70,8 +70,6 @@ classdef ModelEvaluation < handle
                 disp('Model setup:')
                 disp( setup.model.class );
                 disp( setup.model.args );
-                disp('Trainer setup:')
-                disp( setup.trainer.args );
             end
 
             % train the model
@@ -168,7 +166,7 @@ classdef ModelEvaluation < handle
 
 
             % save the loss plots
-            if isa( self.Model, 'autoencoderModel' )
+            if isa( self.Model, 'FullAEModel' )
                 fullpath = strcat( path, '/loss/' );
                 if ~isfolder( fullpath )
                     mkdir( fullpath)
@@ -268,31 +266,9 @@ classdef ModelEvaluation < handle
             catch
                 argsCell = {};
             end
-            self.Model = setup.model.class( ...
-                            self.TrainingDataset.XInputDim, ...
-                            self.TrainingDataset.XTargetDim, ...
-                            self.TrainingDataset.XChannels, ...
-                            setup.model.args.ZDim, ...
-                            self.TrainingDataset.CDim, ...
-                            self.LossFcns{:}, ...
-                            argsCell{:} );
-
-            % initialize the trainer
-            try
-                argsCell = namedargs2cell( setup.trainer.args );
-            catch
-                argsCell = {};
-            end
-            self.Model = self.Model.initTrainer( argsCell{:} );
-
-            % initialize the optimizer
-            try
-                argsCell = namedargs2cell( setup.optimizer.args );
-            catch
-                argsCell = {};
-            end
-            self.Model = self.Model.initOptimizer( argsCell{:} );
-
+            self.Model = setup.model.class( self.TrainingDataset, ...
+                                            self.LossFcns{:}, ...
+                                            argsCell{:} );
 
         end
 
@@ -353,7 +329,7 @@ function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
     [ pred.YHatEnsemble, pred.YHat ] = predictAux( thisModel, pred.ZEnsemble );
     eval.AuxModelLoss = getPropCorrect( pred.YHat, thisDataset.Y );
 
-    if isa( thisModel, 'autoencoderModel' )
+    if isa( thisModel, 'FullAEModel' )
         
         % compute the comparator loss using the comparator network
         [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...

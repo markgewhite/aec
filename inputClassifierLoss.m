@@ -79,10 +79,10 @@ classdef inputClassifierLoss < lossFunction
             % Store the Z dimension input once known
             arguments
                 self            inputClassifierLoss
-                thisModel       autoencoderModel
+                thisModel       FullAEModel
             end
 
-            self.XDim = thisModel.XDim;
+            self.XDim = thisModel.XInputDim;
             self.CDim = thisModel.CDim;
             self.CLabels = categorical( 1:self.CDim );
 

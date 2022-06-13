@@ -57,7 +57,7 @@ classdef CompactPCAModel < CompactRepresentationModel
 
             % compute the components' explained variance
             [self.LatentComponents, self.VarProportion, self.ComponentVar] ...
-                            = self.genLatentComponents( self, thisTrnData );
+                            = self.getLatentComponents( self, thisTrnData );
 
             % generate the latent components
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );

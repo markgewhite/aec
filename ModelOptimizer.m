@@ -1,4 +1,4 @@
-classdef modelOptimizer 
+classdef ModelOptimizer 
     % Class defining the optimizer for the model's networks
 
     properties
@@ -11,7 +11,7 @@ classdef modelOptimizer
 
     methods
 
-        function self = modelOptimizer( netNames, args )
+        function self = ModelOptimizer( netNames, args )
             % Initialize the model
             arguments
                 netNames            string ...
@@ -72,7 +72,7 @@ classdef modelOptimizer
                                     grads, count, doTrainAE )
             % Update the network parameters
             arguments
-                self        modelOptimizer
+                self        ModelOptimizer
                 nets        struct
                 grads       struct
                 count       double
@@ -129,7 +129,7 @@ classdef modelOptimizer
         function self = updateLearningRates( self, doTrainAE )
             % Update learning rates
             arguments
-                self         modelOptimizer
+                self         ModelOptimizer
                 doTrainAE    logical
             end
 

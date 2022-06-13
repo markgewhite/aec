@@ -1,32 +1,20 @@
-% ************************************************************************
-% Class: autoencoderModel
-%
-% Subclass defining the framework for an autoencoder model
-%
-% ************************************************************************
-
-classdef autoencoderModel < representationModel
-
+classdef FullAEModel < FullRepresentationModel
+    % Subclass defining the framework for an autoencoder model
+    
     properties
-        XOutputDim     % output dimension (may differ from XInputDim)
-        Nets           % networks defined in this model (structure)
         NetNames       % names of the networks (for convenience)
+        AuxNetName     % name of the auxiliary network
         NumNetworks    % number of networks
         IsVAE          % flag indicating if variational autoencoder
         NumVAEDraws    % number of draws from encoder output distribution
-        LossFcns       % array of loss functions
+        LossFcns       % loss function objects
         LossFcnNames   % names of the loss functions
         LossFcnWeights % weights to be applied to the loss function
         LossFcnTbl     % convenient table summarising loss function details
         NumLoss        % number of computed losses
-        IsInitialized  % flag indicating if fully initialized
         HasSeqInput    % supports variable-length input
-        AuxNetwork     % name of auxiliary dlnetwork
-        AuxModelType   % type of auxiliary model to use
-        AuxModel       % auxiliary model itself
-
-        Trainer        % trainer object holding training parameters
-        Optimizer      % optimizer object
+        Trainer        % optional arguments for the trainer
+        Optimizer      % optional arguments for the optimizer
     end
 
     properties (Dependent = true)
@@ -36,69 +24,61 @@ classdef autoencoderModel < representationModel
 
     methods
 
-        function self = autoencoderModel( XDim, ...
-                                          XOutputDim, ...
-                                          XChannels, ...
-                                          ZDim, ...
-                                          CDim, ...
-                                          lossFcns, ...
-                                          superArgs, ...
-                                          args )
+        function self = FullAEModel( thisDataset, ...
+                                     lossFcns, ...
+                                     superArgs, ...
+                                     args )
             % Initialize the model
             arguments
-                XDim            double {mustBeInteger, mustBePositive}
-                XOutputDim      double {mustBeInteger, mustBePositive}
-                XChannels       double {mustBeInteger, mustBePositive}
-                ZDim            double {mustBeInteger, mustBePositive}
-                CDim            double {mustBeInteger, mustBePositive}
+                thisDataset         modelDataset
             end
             arguments (Repeating)
-                lossFcns      lossFunction
+                lossFcns            lossFunction
             end
             arguments
-                superArgs.?representationModel
+                superArgs.?FullRepresentationModel
                 args.hasSeqInput    logical = false
                 args.isVAE          logical = false
                 args.numVAEDraws    double ...
                     {mustBeInteger, mustBePositive} = 1
                 args.weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
-                args.auxModel       string ...
-                        {mustBeMember( args.auxModel, ...
-                           {'Logistic', 'Fisher', 'SVM'} )} = 'Logisitic'
+                args.trainer        struct = []
+                args.optimizer      struct = []
             end
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@representationModel( superArgsCell{:}, ...
-                                             ZDim = ZDim, ...
-                                             XChannels = XChannels, ...
-                                             NumCompLines = 8 );
+            self = self@FullRepresentationModel( thisDataset, ...
+                                                 superArgsCell{:}, ...
+                                                 NumCompLines = 8 );
 
-            self.XDim = XDim;
-            self.XOutputDim = XOutputDim;
-            self.CDim = CDim;
+            % check dataset is suitable
+            if thisDataset.isFixedLength == args.hasSeqInput
+                eid = 'FullAEModel:DatasetNotSuitable';
+                if thisDataset.isFixedLength
+                    msg = 'The dataset should have variable length for the model.';
+                else
+                    msg = 'The dataset should have fixed length for the model.';
+                end
+                throwAsCaller( MException(eid,msg) );
+            end
 
             % placeholders for subclasses to define
-            self.Nets.Encoder = [];
-            self.Nets.Decoder = [];
             self.NetNames = {'Encoder', 'Decoder'};
             self.NumNetworks = 2;
             self.IsVAE = args.isVAE;
             self.NumVAEDraws = args.numVAEDraws;
             self.HasSeqInput = args.hasSeqInput;
 
-            self.AuxModelType = args.auxModel;
-            self.AuxModel = [];
+            self.Trainer = args.trainer;
+            self.Optimizer = args.optimizer;
 
             % copy over the loss functions associated
             % and any networks with them for later training 
             self = addLossFcns( self, lossFcns{:}, weights = args.weights );
 
             self.NumLoss = sum( self.LossFcnTbl.NumLosses );
-
-            % indicate that further initialization is required
-            self.IsInitialized = false;
 
         end
 
@@ -138,9 +118,10 @@ classdef autoencoderModel < representationModel
                 self.LossFcns.(newFcns{i}.Name) = newFcns{i};
             end
 
-            % add networks, if required
+            % add details associated with the loss function networks
+            % but without initializing them
             self = addLossFcnNetworks( self, newFcns );
-          
+
             % store the loss functions' details 
             % and relevant details for easier access when training
             self = self.setLossInfoTbl;
@@ -163,76 +144,19 @@ classdef autoencoderModel < representationModel
             elseif sum( auxFcns ) == 1
                 % for convenience identify the auxiliary network
                 auxNet = (self.NetNames == self.LossFcnNames(auxFcns));
-                self.AuxNetwork = self.NetNames( auxNet );
+                self.AuxNetName = self.NetNames( auxNet );
             end
 
         end
 
 
-        function self = initTrainer( self, args )
+        function thisModel = initSubModel( self )
+            % Initialize a sub-model
             arguments
-                self
-                args.?modelTrainer
+                self            FullAEModel
             end
 
-            % set the trainer's properties
-            argsCell = namedargs2cell( args );
-            self.Trainer = modelTrainer( self.LossFcnTbl, ...
-                                         argsCell{:}, ...
-                                         showPlots = self.ShowPlots );
-
-            % confirm if initialization is complete
-            self.IsInitialized = ~isempty(self.Optimizer);
-
-        end
-        
-
-        function self = initOptimizer( self, args )
-            arguments
-                self
-                args.?modelOptimizer
-            end
-
-            % set the trainer's properties
-            argsCell = namedargs2cell( args );
-            self.Optimizer = modelOptimizer( self.NetNames, argsCell{:} );
-
-            % confirm if initialization is complete
-            self.IsInitialized = ~isempty(self.Trainer);
-
-        end
-
-
-        function self = train( self, thisDataset )
-            % Train the autoencoder model
-            arguments
-                self          autoencoderModel
-                thisDataset   modelDataset
-            end
-
-            if ~self.IsInitialized
-                eid = 'Autoencoder:NotInitialized';
-                msg = 'The trainer, optimizer or dataset parameters have not all been set.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            % check dataset is suitable
-            if thisDataset.isFixedLength == self.HasSeqInput
-                eid = 'aeModel:DatasetNotSuitable';
-                if thisDataset.isFixedLength
-                    msg = 'The dataset should have variable length for the model.';
-                else
-                    msg = 'The dataset should have fixed length for the model.';
-                end
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            % run the training loop
-            [ self, self.Optimizer ] = ...
-                            self.Trainer.runTraining( self, ...
-                                                      thisTrnSet, ...
-                                                      thisValSet );
-
+            thisModel = CompactAEModel( self );
 
         end
 
@@ -240,7 +164,7 @@ classdef autoencoderModel < representationModel
         function loss = getReconLoss( self, X, XHat )
             % Calculate the reconstruction loss
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 X     
                 XHat  
             end
@@ -254,7 +178,7 @@ classdef autoencoderModel < representationModel
         function loss = getReconTemporalLoss( self, X, XHat )
             % Calculate the reconstruction loss over time
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 X     
                 XHat  
             end
@@ -268,7 +192,7 @@ classdef autoencoderModel < representationModel
         function setScalingFactor( self, data )
             % Set the scaling factors for reconstructions
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 data            double
             end
             
@@ -287,7 +211,7 @@ classdef autoencoderModel < representationModel
         function labels = get.XDimLabels( self )
             % Get the X dimensional labels for dlarrays
             arguments
-                self            autoencoderModel
+                self            FullAEModel
             end
 
             if self.XChannels==1
@@ -310,7 +234,7 @@ classdef autoencoderModel < representationModel
         function labels = get.XNDimLabels( self )
             % Get the XN dimensional labels for dlarrays
             arguments
-                self            autoencoderModel
+                self            FullAEModel
             end
 
             if self.XChannels==1
@@ -329,7 +253,7 @@ classdef autoencoderModel < representationModel
             % efficient than calculating two components at strict
             % 2SD separation from the mean.
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 dlZ             
                 args.sampling   char ...
                     {mustBeMember(args.sampling, ...
@@ -414,7 +338,7 @@ classdef autoencoderModel < representationModel
         function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
             % Forward-run the autoencoder networks
             arguments
-                self        autoencoderModel
+                self        FullAEModel
                 encoder     dlnetwork
                 decoder     dlnetwork
                 dlX         dlarray
@@ -432,7 +356,7 @@ classdef autoencoderModel < representationModel
         function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 X
                 arg.convert     logical = true
             end
@@ -459,7 +383,7 @@ classdef autoencoderModel < representationModel
         function dlXHat = reconstruct( self, Z, arg )
             % Reconstruct X from Z using the model
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 Z
                 arg.convert     logical = true
             end
@@ -484,7 +408,7 @@ classdef autoencoderModel < representationModel
         function [ YHat, loss ] = predictAux( self, Z, Y )
             % Make prediction from Z using an auxiliary network
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 Z
                 Y
             end
@@ -531,7 +455,7 @@ classdef autoencoderModel < representationModel
         function [ YHat, loss ] = predictComparator( self, X, Y )
             % Make prediction from X using the comparator network
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 X
                 Y
             end
@@ -633,20 +557,16 @@ classdef autoencoderModel < representationModel
         function self = addLossFcnNetworks( self, newFcns )
             % Add one or more networks to the model
             arguments
-                self        autoencoderModel
+                self        FullAEModel
                 newFcns     cell
             end
 
             nFcns = length( newFcns );
-            k = length( self.Nets );
             for i = 1:nFcns
                 thisLossFcn = newFcns{i};
                 if thisLossFcn.HasNetwork
-                    k = k+1;
                     % set the data dimensions 
                     thisLossFcn = setDimensions( thisLossFcn, self );
-                    % add the network object
-                    self.Nets.(thisLossFcn.Name) = initNetwork( thisLossFcn );
                     % record its name
                     self.NetNames = [ string(self.NetNames) thisLossFcn.Name ];
                     % increment the counter

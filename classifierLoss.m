@@ -79,7 +79,7 @@ classdef classifierLoss < lossFunction
             % Store the Z dimension input once known
             arguments
                 self            classifierLoss
-                thisModel       autoencoderModel
+                thisModel       FullAEModel
             end
 
             self.ZDim = thisModel.ZDim;

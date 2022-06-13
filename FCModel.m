@@ -1,17 +1,10 @@
-% ************************************************************************
-% Class: fcModel
-%
-% Subclass defining a fully connected autoencoder model
-%
-% ************************************************************************
-
-classdef fcModel < autoencoderModel
-
+classdef FCModel < FullAEModel
+    % Subclass defining a fully connected autoencoder model
     properties
         NumHidden     % number of hidden layers
         NumFC         % number of nodes for widest layer
         FCFactor      % log2 scaling factor subsequent layers
-        Scale         % leaky ReLu scale factor
+        ReLuScale     % leaky ReLu scale factor
         InputDropout  % input dropout rate
         Dropout       % hidden layer dropout rate
 
@@ -19,21 +12,19 @@ classdef fcModel < autoencoderModel
 
     methods
 
-        function self = fcModel( XDim, XOutputDim, XChannels, ZDim, CDim, ...
-                                   lossFcns, superArgs, args )
+        function self = FCModel( thisDataset, ...
+                                 lossFcns, ...
+                                 superArgs, ...
+                                 args )
             % Initialize the model
             arguments
-                XDim            double {mustBeInteger, mustBePositive}
-                XOutputDim      double {mustBeInteger, mustBePositive}
-                XChannels       double {mustBeInteger, mustBePositive}
-                ZDim            double {mustBeInteger, mustBePositive}
-                CDim            double {mustBeInteger, mustBePositive}
+                thisDataset     modelDataset
             end
             arguments (Repeating)
-                lossFcns     lossFunction
+                lossFcns        lossFunction
             end
             arguments
-                superArgs.?autoencoderModel
+                superArgs.?FullAEModel
                 args.nHidden    double ...
                     {mustBeInteger, mustBePositive} = 2
                 args.nFC        double ...
@@ -50,37 +41,29 @@ classdef fcModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( XDim, ...
-                                          XOutputDim, ...
-                                          XChannels, ...
-                                          ZDim, ...
-                                          CDim, ...
-                                          lossFcns{:}, ...
-                                          superArgsCell{:}, ...
-                                          hasSeqInput = false );
+            self@FullAEModel( thisDataset, ...
+                              lossFcns{:}, ...
+                              superArgsCell{:}, ...
+                              hasSeqInput = false );
 
             % store this class's properties
             self.NumHidden = args.nHidden;
             self.NumFC = args.nFC;
             self.FCFactor = args.fcFactor;
-            self.Scale = args.scale;
+            self.ReLuScale = args.scale;
             self.InputDropout = args.inputDropout;
             self.Dropout = args.dropout;
-
-            % initialize the networks
-            self = initEncoder( self );
-            self = initDecoder( self );
-            
+           
         end
 
 
-        function self = initEncoder( self )
+        function net = initEncoder( self )
             % Initialize the encoder network
             arguments
-                self        fcModel
+                self        FCModel
             end
 
-            layersEnc = [ featureInputLayer( self.XDim*self.XChannels, ...
+            layersEnc = [ featureInputLayer( self.XInputDim*self.XChannels, ...
                                    'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 ) 
@@ -94,7 +77,7 @@ classdef fcModel < autoencoderModel
                 nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
 
                 [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
-                                    nNodes, self.Scale, self.Dropout );
+                                    nNodes, self.ReLuScale, self.Dropout );
 
             end
             
@@ -106,19 +89,19 @@ classdef fcModel < autoencoderModel
                                        lastLayer, 'out' );
 
             if self.IsVAE
-                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
+                net = dlnetworkVAE( lgraphEnc, ...
                                                   nDraws = self.NumVAEDraws );
             else
-                self.Nets.Encoder = dlnetwork( lgraphEnc );
+                net = dlnetwork( lgraphEnc );
             end
 
         end
 
 
-        function self = initDecoder( self )
+        function net = initDecoder( self )
             % Initialize the decoder network
             arguments
-                self        fcModel
+                self        FCModel
             end
 
             layersDec = featureInputLayer( self.ZDim, 'Name', 'in' );
@@ -131,16 +114,16 @@ classdef fcModel < autoencoderModel
                 nNodes = fix( self.NumFC*2^(self.FCFactor*(-self.NumHidden+i)) );
 
                 [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
-                                    nNodes, self.Scale, self.Dropout );
+                                    nNodes, self.ReLuScale, self.Dropout );
 
             end
 
-            outLayers = fullyConnectedLayer( self.XOutputDim*self.XChannels, ...
+            outLayers = fullyConnectedLayer( self.XTargetDim*self.XChannels, ...
                                                'Name', 'fcout' );
 
             if self.XChannels > 1
                 outLayers = [ outLayers; 
-                                reshapeLayer( [self.XOutputDim self.XChannels], ...
+                                reshapeLayer( [self.XTargetDim self.XChannels], ...
                                               'Name', 'reshape' ) ];
             end
             
@@ -148,7 +131,7 @@ classdef fcModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, 'fcout' );
 
-            self.Nets.Decoder = dlnetwork( lgraphDec );
+            net = dlnetwork( lgraphDec );
 
         end
 
@@ -157,7 +140,7 @@ classdef fcModel < autoencoderModel
             % Forward-run the fully-connected network
             % by first flattening the input array
             arguments
-                self        fcModel
+                self        FCModel
                 encoder     dlnetwork
                 decoder     dlnetwork
                 dlX         dlarray
@@ -185,7 +168,7 @@ classdef fcModel < autoencoderModel
             % Encode features Z from X using the model
             % by first flattening the input array
             arguments
-                self            autoencoderModel
+                self            FCModel
                 X
                 arg.convert     logical = true
             end

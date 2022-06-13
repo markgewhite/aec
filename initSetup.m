@@ -4,7 +4,7 @@ function setup = initSetup
     % dataset
     setup.data.class = @jumpGRFDataset;
     setup.data.args.normalization = 'PAD';
-    setup.data.args.hasNormalizedInput = false;
+    setup.data.args.hasNormalizedInput = true;
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = true;
     setup.data.args.resampleRate = 10;
@@ -81,10 +81,10 @@ function setup = initSetup
     setup.model.args.auxModel = 'Logistic';
     
     % training
-    setup.trainer.args.updateFreq = 10;
-    setup.trainer.args.valType = 'AuxModel';
-    setup.trainer.args.numEpochs = 100;
-    setup.trainer.args.batchSize = 40;
+    setup.model.args.trainer.updateFreq = 5;
+    setup.model.args.trainer.valType = 'AuxModel';
+    setup.model.args.trainer.numEpochs = 10;
+    setup.model.args.trainer.batchSize = 40;
 
 
 end

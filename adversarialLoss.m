@@ -70,7 +70,7 @@ classdef adversarialLoss < lossFunction
             % Store the Z dimension input once known
             arguments
                 self            adversarialLoss
-                thisModel       autoencoderModel
+                thisModel       FullAEModel
             end
 
             self.ZDim = thisModel.ZDim;

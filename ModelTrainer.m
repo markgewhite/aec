@@ -1,4 +1,4 @@
-classdef modelTrainer < handle
+classdef ModelTrainer < handle
     % Class defining a model trainer
 
     properties
@@ -29,7 +29,7 @@ classdef modelTrainer < handle
 
     methods
 
-        function self = modelTrainer( lossFcnTbl, args )
+        function self = ModelTrainer( lossFcnTbl, args )
             % Initialize the model
             arguments
                 lossFcnTbl          table
@@ -90,15 +90,12 @@ classdef modelTrainer < handle
         end
 
         
-        function [ thisModel, thisOptimizer ] = runTraining( ...
-                                                self, ...
-                                                thisModel, ...
-                                                thisTrnData, ...
-                                                thisValData )
+        function thisModel = runTraining( self, thisModel, ...
+                                          thisTrnData, thisValData )
             % Run the training loop for the model
             arguments
-                self            modelTrainer
-                thisModel       autoencoderModel
+                self            ModelTrainer
+                thisModel       CompactAEModel
                 thisTrnData     modelDataset
                 thisValData     modelDataset
             end
@@ -170,7 +167,7 @@ classdef modelTrainer < handle
                     end
 
                     % update network parameters
-                    [ thisOptimizer, thisModel.Nets ] = ...
+                    [ thisModel.Optimizer, thisModel.Nets ] = ...
                         thisModel.Optimizer.updateNets( thisModel.Nets, ...
                                                         grads, ...
                                                         j, ...
@@ -229,8 +226,8 @@ classdef modelTrainer < handle
             
                 if mod( epoch, self.LRFreq )==0
                     % update learning rates
-                    thisOptimizer = ...
-                        thisOptimizer.updateLearningRates( doTrainAE );
+                    thisModel.Optimizer = ...
+                        thisModel.Optimizer.updateLearningRates( doTrainAE );
                 end
 
             end
@@ -248,7 +245,7 @@ classdef modelTrainer < handle
                        lossTrn, epoch, args )
             % Report progress on training
             arguments
-                thisModel       autoencoderModel
+                thisModel       CompactAEModel
                 thisData        modelDataset
                 lossTrn         double
                 epoch           double
@@ -278,13 +275,14 @@ classdef modelTrainer < handle
             dlZ = thisModel.encode( dlX, convert = false );
 
             % compute the AE components
-            dlXC = thisModel.latentComponents( ...
+            [ dlXC, offsets ] = thisModel.latentComponents( ...
                             dlZ, ...
                             sampling = 'Fixed', ...
                             centre = false );
 
             % compute explained variance
-            varProp = thisModel.getExplainedVariance( thisData );            
+            varProp = thisModel.explainedVariance( thisModel, ...
+                                                   dlX, dlXC, offsets );
             fprintf('; VarProp = %5.3f (', sum(varProp) );
             for k = 1:length(varProp)
                 fprintf(' %5.3f', varProp(k) );
@@ -293,22 +291,22 @@ classdef modelTrainer < handle
 
 
             % plot them on specified axes
-            thisModel.plotLatentComp( ...
-                          dlXC, ...
-                          thisData.TSpan, ...
-                          thisData.FDA.FdParamsTarget, ...
-                          type = 'Smoothed', ...
-                          shading = true, ...
-                          plotTitle = thisData.Info.DatasetName, ...
-                          xAxisLabel = thisData.Info.TimeLabel, ...
-                          yAxisLabel = thisData.Info.ChannelLabels, ...
-                          yAxisLimits = thisData.Info.ChannelLimits );
+            plotLatentComp( thisModel,...
+                            dlXC, ...
+                            thisData.TSpan, ...
+                            thisData.FDA.FdParamsTarget, ...
+                            type = 'Smoothed', ...
+                            shading = true, ...
+                            plotTitle = thisData.Info.DatasetName, ...
+                            xAxisLabel = thisData.Info.TimeLabel, ...
+                            yAxisLabel = thisData.Info.ChannelLabels, ...
+                            yAxisLimits = thisData.Info.ChannelLimits );
         
             % plot the Z distributions
-            thisModel.plotZDist( dlZ );
+            plotZDist( thisModel, dlZ );
         
             % plot the Z clusters
-            thisModel.plotZClusters( dlZ, Y = dlY );
+            plotZClusters( thisModel, dlZ, Y = dlY );
         
             drawnow;
               
@@ -331,7 +329,7 @@ function [grad, state, loss] = gradients( nets, ...
     % (Model object not supplied so nets can be traced)
     arguments
         nets         struct   % networks, separate for traceability
-        thisModel    autoencoderModel % contains all other relevant info
+        thisModel    CompactAEModel % contains all other relevant info
         dlXIn        dlarray  % input to the encoder
         dlXOut       dlarray  % output target for the decoder
         dlY          dlarray  % auxiliary outcome variable
@@ -514,7 +512,7 @@ end
 function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
     % Validate the model so far
     arguments
-        thisModel       autoencoderModel
+        thisModel       CompactAEModel
         valType         string
         dlXVal          dlarray
         dlYVal          dlarray
