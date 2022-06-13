@@ -28,7 +28,7 @@ for i = 1:size( hyperparams, 2 )
 end
 
 % initialize and run the evaluation
-thisEvaluation = modelEvaluation;
+thisEvaluation = ModelEvaluation;
 try
     thisEvaluation = thisEvaluation.run( setup, false );
     constraint = -1;

@@ -1,4 +1,4 @@
-classdef modelEvaluation < handle
+classdef ModelEvaluation < handle
     % Class defining a model evaluation
 
     properties
@@ -16,7 +16,7 @@ classdef modelEvaluation < handle
 
     methods
 
-        function self = modelEvaluation
+        function self = ModelEvaluation
             % Construct a model evaluation object (placeholder)
 
         end
@@ -24,7 +24,7 @@ classdef modelEvaluation < handle
 
         function self = run( self, setup, verbose )
             arguments
-                self            modelEvaluation
+                self            ModelEvaluation
                 setup           struct
                 verbose         logical
             end
@@ -117,12 +117,12 @@ classdef modelEvaluation < handle
 
             if verbose
                 % plot latent space
-                self.Model.plotZDist( self.TestingPredictions.Z );
-                self.Model.plotZClusters( self.TestingPredictions.Z, ...
-                                          Y = self.TestingDataset.Y );
+                plotZDist( self.Model, self.TestingPredictions.Z );
+                plotZClusters( self.Model, self.TestingPredictions.Z, ...
+                                           Y = self.TestingDataset.Y );
     
                 % plot the components
-                self.Model.plotLatentComp( ...
+                plotLatentComp( self.Model, ...
                               self.Model.CVLatentComponents, ...
                               self.TestingDataset.TSpan, ...
                               self.TestingDataset.FDA.FdParamsTarget, ...
@@ -140,7 +140,7 @@ classdef modelEvaluation < handle
         function save( self, path, name )
             % Save the evaluation to a specified path
             arguments
-                self        modelEvaluation
+                self        ModelEvaluation
                 path        string {mustBeFolder}
                 name        string
             end
@@ -213,7 +213,7 @@ classdef modelEvaluation < handle
         function self = initPCAModel( self, setup )
             % Initialize a PCA model
             arguments
-                self    modelEvaluation
+                self    ModelEvaluation
                 setup   struct
             end
 
@@ -239,7 +239,7 @@ classdef modelEvaluation < handle
         function self = initAEModel( self, setup )
             % Initialize an autoencoder model
             arguments
-                self    modelEvaluation
+                self    ModelEvaluation
                 setup   struct
             end
 

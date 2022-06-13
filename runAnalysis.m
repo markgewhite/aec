@@ -14,4 +14,4 @@ path = [path '/results/'];
 parameters = [ "model.class" ];
 values = {{@pcaModel,@fcModel}};
 
-myInvestigation = investigation( name, path, parameters, values, setup );
+myInvestigation = Investigation( name, path, parameters, values, setup );

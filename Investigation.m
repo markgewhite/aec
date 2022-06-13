@@ -1,4 +1,4 @@
-classdef investigation
+classdef Investigation
     % Class defining a model evaluation
 
     properties
@@ -17,7 +17,7 @@ classdef investigation
 
     methods
 
-        function self = investigation( name, path, parameters, searchValues, setup )
+        function self = Investigation( name, path, parameters, searchValues, setup )
             % Construct an investigation comprised of evaluations
             arguments
                 name            string
@@ -41,7 +41,7 @@ classdef investigation
             
             nEval = prod( self.SearchDims );
             nDimsCell = num2cell( self.SearchDims );
-            initObj( nDimsCell{:} ) = modelEvaluation;
+            initObj( nDimsCell{:} ) = ModelEvaluation;
             self.Evaluations = initObj;
 
             if length( nDimsCell ) > 1
