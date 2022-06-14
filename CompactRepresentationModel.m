@@ -7,6 +7,9 @@ classdef CompactRepresentationModel
         ZDim            % Z dimension (number of features)
         CDim            % C dimension (number of classes)
         XChannels       % number of channels in X
+        TSpan           % time-spans used in fitting
+        FDA             % functional data parameters used in fitting
+        Info            % information about the dataset
         Scale           % scaling factor for reconstruction loss
         AuxModelType    % type of auxiliary model to use
         AuxModel        % auxiliary model
@@ -37,6 +40,9 @@ classdef CompactRepresentationModel
             self.ZDim = theFullModel.ZDim;
             self.CDim = theFullModel.CDim;
             self.XChannels = theFullModel.XChannels;
+            self.TSpan = theFullModel.TSpan;
+            self.FDA = theFullModel.FDA;
+            self.Info = theFullModel.Info;
             self.Scale = theFullModel.Scale;
             self.AuxModelType = theFullModel.AuxModelType;
             self.ShowPlots = theFullModel.ShowPlots;
@@ -57,10 +63,10 @@ classdef CompactRepresentationModel
             end
 
             [ self.Loss.Training, self.Predictions.Training ] = ...
-                                evaluateDataset( self, thisTrnSet );
+                                self.evaluateDataset( self, thisTrnSet );
 
             [ self.Loss.Validation, self.Predictions.Validation ] = ...
-                                evaluateDataset( self, thisValSet );
+                                self.evaluateDataset( self, thisValSet );
 
         end
 
@@ -97,6 +103,7 @@ classdef CompactRepresentationModel
             % generate the AE components, smoothing them, for storage
             XC = self.latentComponents( Z, ...
                                         sampling = 'Fixed', ...
+                                        centre = false, ...
                                         convert = true );
 
             XCFd = smooth_basis( thisDataset.TSpan.Target, ...
@@ -192,6 +199,52 @@ classdef CompactRepresentationModel
 
         end
 
+
+        function [ eval, pred ] = evaluateDataset( self, thisDataset )
+            % Evaluate the model with a specified dataset
+            arguments
+                self             CompactRepresentationModel
+                thisDataset      modelDataset
+            end
+        
+            % record the input
+            pred.XTarget = squeeze( thisDataset.XTarget );
+            pred.XRegular = squeeze( thisDataset.XInputRegular );
+            pred.Y = thisDataset.Y;
+        
+            % generate latent encoding using the trained model
+            pred.Z = self.encode( thisDataset );
+        
+            % reconstruct the curves
+            pred.XHat = squeeze( self.reconstruct( pred.Z ) );
+        
+            % smooth the reconstructed curves
+            XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
+                                   pred.XHat, ...
+                                   thisDataset.FDA.FdParamsTarget );
+            pred.XHatSmoothed = squeeze( ...
+                        eval_fd( thisDataset.TSpan.Target, XHatFd ) );
+            
+            pred.XHatRegular = squeeze( ...
+                        eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
+        
+            % compute reconstruction loss
+            eval.ReconLoss = self.getReconLoss( thisDataset.XTarget, pred.XHat );
+            eval.ReconLossSmoothed = self.getReconLoss( pred.XHatSmoothed, pred.XHat );
+        
+            % compute reconstruction loss for the regularised curves
+            eval.ReconLossRegular = self.getReconLoss( pred.XHatRegular, pred.XRegular );
+        
+            % compute the mean squared error as a function of time
+            eval.ReconTimeMSE = self.getReconTemporalLoss( pred.XHatRegular, pred.XRegular );
+        
+            % compute the auxiliary loss using the model
+            ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
+            pred.AuxModelYHat = predict( self.AuxModel, ZLong );
+            eval.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
+               
+        end
+
     end
 
 
@@ -210,67 +263,3 @@ classdef CompactRepresentationModel
 
 end
 
-
-function [ eval, pred ] = evaluateDataset( self, thisDataset )
-    % Evaluate the model with a specified dataset
-    arguments
-        self             CompactRepresentationModel
-        thisDataset      modelDataset
-    end
-
-    % record the input
-    pred.XTarget = squeeze( thisDataset.XTarget );
-    pred.XRegular = squeeze( thisDataset.XInputRegular );
-    pred.Y = thisDataset.Y;
-
-    % generate latent encoding using the trained model
-    pred.Z = self.encode( thisDataset );
-
-    % reconstruct the curves
-    pred.XHat = squeeze( self.reconstruct( pred.Z ) );
-
-    % smooth the reconstructed curves
-    XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
-                           pred.XHat, ...
-                           thisDataset.FDA.FdParamsTarget );
-    pred.XHatSmoothed = squeeze( ...
-                eval_fd( thisDataset.TSpan.Target, XHatFd ) );
-    
-    pred.XHatRegular = squeeze( ...
-                eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
-
-    % compute reconstruction loss
-    eval.ReconLoss = self.getReconLoss( thisDataset.XTarget, pred.XHat );
-    eval.ReconLossSmoothed = self.getReconLoss( pred.XHatSmoothed, pred.XHat );
-
-    % compute reconstruction loss for the regularised curves
-    eval.ReconLossRegular = self.getReconLoss( pred.XHatRegular, pred.XRegular );
-
-    % compute the mean squared error as a function of time
-    eval.ReconTimeMSE = self.getReconTemporalLoss( pred.XHatRegular, pred.XRegular );
-
-    % compute the auxiliary loss using the model
-    ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
-    pred.AuxModelYHat = predict( self.AuxModel, ZLong );
-    eval.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
-
-    if isa( self, 'autoencoderModel' )
-        
-        % compute the comparator loss using the comparator network
-        [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
-                    predictComparator( ...
-                            self, ...
-                            thisDataset.getDLInput( self.XDimLabels ), ...
-                            thisDataset.Y );
-
-        % compute the auxiliary loss using the network
-        [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                    predictAux( self, pred.Z, thisDataset.Y );
-
-    else
-        eval.ComparatorLoss = [];
-        eval.AuxNetworkLoss = [];
-
-    end
-
-end

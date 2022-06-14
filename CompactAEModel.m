@@ -475,6 +475,35 @@ classdef CompactAEModel < CompactRepresentationModel
     end
 
 
+    methods (Static)
+
+        function [ eval, pred ] = evaluateDataset( self, thisDataset )
+            % Evaluate the model with a specified dataset
+            % doing additional work to the superclass method
+            arguments
+                self             CompactAEModel
+                thisDataset      modelDataset
+            end
+
+            % call the superclass method
+            [ eval, pred ] = ...
+                evaluateDataset@CompactRepresentationModel( self, thisDataset );
+
+            % compute the comparator loss using the comparator network
+            [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
+                            predictCompNet( self, thisDataset ); 
+    
+            % compute the auxiliary loss using the network
+            [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                            predictAuxNet( self, pred.Z, thisDataset.Y );
+        
+        
+        end
+
+
+    end
+
+
 
     methods (Access = protected)
 

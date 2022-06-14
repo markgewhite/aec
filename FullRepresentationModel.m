@@ -7,12 +7,15 @@ classdef FullRepresentationModel
         ZDim            % Z dimension (number of features)
         CDim            % C dimension (number of classes)
         XChannels       % number of channels in X
+        TSpan           % time-spans used in fitting
+        FDA             % functional data parameters used in fitting
+        Info            % information about the dataset
         Scale           % scaling factor for reconstruction loss
         AuxModelType    % type of auxiliary model to use
         KFolds          % number of cross validation partitions
         Partitions      % logical array specifying the train/validation split
         SubModels       % array of trained models
-        CVLatentComponents % cross-validated latent components
+        LatentComponents % cross-validated latent components
         Loss            % collated losses from sub-models
         CVLoss          % aggregate cross-validated losses
         ShowPlots       % flag whether to show plots
@@ -43,6 +46,9 @@ classdef FullRepresentationModel
             self.XTargetDim = thisDataset.XTargetDim;
             self.CDim = thisDataset.CDim;
             self.XChannels = thisDataset.XChannels;
+            self.TSpan = thisDataset.TSpan;
+            self.FDA = thisDataset.FDA;
+            self.Info = thisDataset.Info;
 
             self.ZDim = args.ZDim;
             self.AuxModelType = args.auxModelType;
@@ -92,7 +98,7 @@ classdef FullRepresentationModel
             end
 
             % calculate the aggregated latent components
-            self = self.getLatentComponentsCV;
+            self = self.setLatentComponentsCV;
 
             % calculate the aggregate evaluation across all partitions
             self = self.evaluateCV;    
@@ -116,7 +122,7 @@ classdef FullRepresentationModel
         end
 
 
-        function self = getLatentComponentsCV( self )
+        function self = setLatentComponentsCV( self )
             % Calculate the cross-validated latent components
             % by averaging across the sub-models
             arguments
@@ -128,7 +134,7 @@ classdef FullRepresentationModel
                 XC = XC + self.SubModels{k}.LatentComponents;
             end
 
-            self.CVLatentComponents = XC/self.KFolds;
+            self.LatentComponents = XC/self.KFolds;
 
 
         end

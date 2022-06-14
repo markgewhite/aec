@@ -77,14 +77,14 @@ function setup = initSetup
     % model
     setup.model.class = @FCModel;
     setup.model.args.ZDim = 4;
-    setup.model.args.KFolds = 2;
+    setup.model.args.KFolds = 5;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 5;
+    setup.model.args.trainer.updateFreq = 20;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 1;
+    setup.model.args.trainer.numEpochs = 200;
     setup.model.args.trainer.batchSize = 40;
 
 

@@ -1,28 +1,37 @@
-function plotLatentComp( thisModel, XC, tSpan, fda, args )
+function plotLatentComp( thisModel, args )
     % Plot characteristic curves of the latent codings which are similar
     % in conception to the functional principal components
     arguments
         thisModel           {mustBeA( thisModel, ...
                                 { 'FullRepresentationModel', ...
                                   'CompactRepresentationModel' })}
-        XC                  {mustBeA( XC, { 'dlarray', 'double' })}
-        tSpan               struct
-        fda            
+        args.XC             {mustBeA( args.XC, { 'dlarray', 'double' })} = []
         args.nSample        double = 0
         args.type           char ...
             {mustBeMember(args.type, ...
                 {'Smoothed', 'Predicted', 'Both'} )} = 'Smoothed'
         args.shading        logical = false
         args.legend         logical = true
-        args.plotTitle      string = "<Dataset>"
-        args.xAxisLabel     string = "Time"
-        args.yAxisLabel     string = "<Channel>"
-        args.yAxisLimits    double
-
     end
     
-    if isa( XC, 'dlarray' )
-        XC = double( extractdata( XC ) );
+    if isempty( args.XC )
+        % use the pre-calculated latent components
+        XC = thisModel.LatentComponents;
+        % set the appropriate timespans and FD parameters
+        tSpanXC = thisModel.TSpan.Regular;
+        fdParams = thisModel.FDA.FdParamsRegular;
+
+    else
+        % use the latent components specified
+        if isa( args.XC, 'dlarray' )
+            XC = double( extractdata( args.XC ) );
+        else
+            XC = args.XC;
+        end
+        % set the appropriate timespans and FD parameters
+        tSpanXC = thisModel.TSpan.Target;
+        fdParams = thisModel.FDA.FdParamsTarget;
+        
     end
 
     % re-order the dimensions for FDA
@@ -31,8 +40,9 @@ function plotLatentComp( thisModel, XC, tSpan, fda, args )
     end
 
     % smooth and re-evaluate all curves
-    tSpanPlot = linspace( tSpan.Original(1), tSpan.Original(end), 101 );
-    XCFd = smooth_basis( tSpan.Target, XC, fda.FdParamsTarget );
+    tSpanPlot = linspace( thisModel.TSpan.Original(1), ...
+                          thisModel.TSpan.Original(end), 101 );
+    XCFd = smooth_basis( tSpanXC, XC, fdParams );
     XCsmth = eval_fd( tSpanPlot, XCFd );
 
     % set the colours from blue and red
@@ -143,15 +153,15 @@ function plotLatentComp( thisModel, XC, tSpan, fda, args )
                 title( axis, ['Component ' num2str(i)] );
             end
             if c==thisModel.XChannels
-                xlabel( axis, args.xAxisLabel );
+                xlabel( axis, thisModel.Info.TimeLabel );
             end
             if i==1
-                ylabel( axis, args.yAxisLabel(c) );
+                ylabel( axis, thisModel.Info.ChannelLabels(c) );
             end
             xlim( axis, [tSpanPlot(1) tSpanPlot(end)] );
 
-            if ~isempty( args.yAxisLimits )
-                ylim( axis, args.yAxisLimits(c,:) );
+            if ~isempty( thisModel.Info.ChannelLimits )
+                ylim( axis, thisModel.Info.ChannelLimits(c,:) );
             end               
 
             axis.YAxis.TickLabelFormat = '%.1f';
