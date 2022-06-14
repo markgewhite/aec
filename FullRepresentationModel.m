@@ -42,6 +42,7 @@ classdef FullRepresentationModel
                 args.ShowPlots      logical = true
             end
 
+            % set properties based on the data
             self.XInputDim = thisDataset.XInputDim;
             self.XTargetDim = thisDataset.XTargetDim;
             self.CDim = thisDataset.CDim;
@@ -49,6 +50,9 @@ classdef FullRepresentationModel
             self.TSpan = thisDataset.TSpan;
             self.FDA = thisDataset.FDA;
             self.Info = thisDataset.Info;
+            
+            % set the scaling factor(s) based on all X
+            self = self.setScalingFactor( thisDataset.XTarget );
 
             self.ZDim = args.ZDim;
             self.AuxModelType = args.auxModelType;
@@ -61,6 +65,19 @@ classdef FullRepresentationModel
                 [self.Figs, self.Axes] = ...
                         initializePlots( self.XChannels, self.ZDim );
             end
+
+        end
+
+
+        function self = setScalingFactor( self, data )
+            % Set the scaling factors for reconstructions
+            arguments
+                self            FullRepresentationModel
+                data            double
+            end
+            
+            % set the channel-wise scaling factor
+            self.Scale = squeeze(mean(var( data )))';
 
         end
 
@@ -94,7 +111,6 @@ classdef FullRepresentationModel
                 self.SubModels{k} = self.SubModels{k}.evaluate( ...
                                             thisTrnSet, thisValSet );
  
-
             end
 
             % calculate the aggregated latent components
@@ -139,31 +155,6 @@ classdef FullRepresentationModel
 
         end
 
-
-        function loss = getReconLoss( self, X, XHat )
-            % Calculate the reconstruction loss
-            arguments
-                self        FullRepresentationModel
-                X           double
-                XHat        double
-            end
-
-            loss = getReconLoss( self.SubModels{1}, X, XHat );
-    
-        end
-
-
-        function loss = getReconTemporalLoss( self, X, XHat )
-            % Calculate the reconstruction loss across time domain
-            arguments
-                self        FullRepresentationModel
-                X           double
-                XHat        double
-            end
-
-            loss = getReconTemporalLoss( self.SubModels{1}, X, XHat );
-    
-        end
 
 
         function [ ZFold, ZMean, ZSD ] = encode( self, thisDataset )
@@ -316,9 +307,10 @@ function cvLoss = calcCVLoss( subModels, set )
                                           aggr.(pairs{i,2}) );
         else
             % mean squared error loss
-            cvLoss.(pairs{i,2}) = getReconLoss( subModels{1}, ...
+            cvLoss.(pairs{i,2}) = reconLoss( ...
                                           aggr.(pairs{i,1}), ...
-                                          aggr.(pairs{i,2}) );
+                                          aggr.(pairs{i,2}), ...
+                                          subModels{k}.Scale );
         end
     
     end

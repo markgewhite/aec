@@ -1,11 +1,5 @@
-% ************************************************************************
-% Class: inputClassifierLoss
-%
-% Subclass for classifier loss with X as the input for comparison purposes
-%
-% ************************************************************************
-
-classdef inputClassifierLoss < lossFunction
+classdef InputClassifierLoss < LossFunction
+    % Subclass for classifier loss with X as the input for comparison purposes
 
     properties
         XDim                % input dimension size
@@ -23,11 +17,11 @@ classdef inputClassifierLoss < lossFunction
 
     methods
 
-        function self = inputClassifierLoss( name, superArgs, args )
+        function self = InputClassifierLoss( name, superArgs, args )
             % Initialize the loss function
             arguments
                 name            char {mustBeText}
-                superArgs.?lossFunction
+                superArgs.?LossFunction
                 args.modelType  char ...
                     {mustBeMember( args.modelType, ...
                                     {'Network', ...
@@ -53,7 +47,7 @@ classdef inputClassifierLoss < lossFunction
 
             isNet = strcmp( args.modelType, 'Network' );
 
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Comparator', ...
                                  input = 'X-Y', ...
                                  lossNets = netAssignments, ...
@@ -79,7 +73,7 @@ classdef inputClassifierLoss < lossFunction
         function self = setDimensions( self, thisModel )
             % Store the Z dimension input once known
             arguments
-                self            inputClassifierLoss
+                self            InputClassifierLoss
                 thisModel       FullAEModel
             end
 
@@ -94,7 +88,7 @@ classdef inputClassifierLoss < lossFunction
         function net = initNetwork( self )
             % Generate an initialized network
             arguments
-                self       inputClassifierLoss
+                self       InputClassifierLoss
             end
 
             if ~strcmp( self.ModelType, 'Network' )
@@ -135,7 +129,7 @@ classdef inputClassifierLoss < lossFunction
         function [ loss, state ] = calcLoss(  self, net, dlX, dlC )
             % Calculate the classifier loss
             arguments
-                self     inputClassifierLoss
+                self     InputClassifierLoss
                 net      dlnetwork
                 dlX      dlarray  % input distribtion
                 dlC      dlarray  % class distribution

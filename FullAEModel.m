@@ -34,7 +34,7 @@ classdef FullAEModel < FullRepresentationModel
                 thisDataset         modelDataset
             end
             arguments (Repeating)
-                lossFcns            lossFunction
+                lossFcns            LossFunction
             end
             arguments
                 superArgs.?FullRepresentationModel
@@ -92,7 +92,7 @@ classdef FullAEModel < FullRepresentationModel
                 self
             end
             arguments (Repeating)
-                newFcns   lossFunction
+                newFcns   LossFunction
             end
             arguments
                 args.weights double {mustBeNumeric,mustBeVector} = 1
@@ -131,6 +131,9 @@ classdef FullAEModel < FullRepresentationModel
             self.LossFcnTbl.Types = categorical( self.LossFcnTbl.Types );
             self.LossFcnTbl.Inputs = categorical( self.LossFcnTbl.Inputs );
 
+            % set loss function scaling factors if required
+            self = self.setLossScalingFactor;
+
             % check a reconstruction loss is present
             if ~any( self.LossFcnTbl.Types=='Reconstruction' )
                 eid = 'aeModel:NoReconstructionLoss';
@@ -164,46 +167,17 @@ classdef FullAEModel < FullRepresentationModel
         end
 
 
-        function loss = getReconLoss( self, X, XHat )
-            % Calculate the reconstruction loss
-            arguments
-                self            FullAEModel
-                X     
-                XHat  
-            end
-            
-            name = self.LossFcnTbl.Names( self.LossFcnTbl.Types=='Reconstruction' );
-            loss = self.LossFcns.(name).calcLoss( X, XHat );
-
-        end
-
-
-        function loss = getReconTemporalLoss( self, X, XHat )
-            % Calculate the reconstruction loss over time
-            arguments
-                self            FullAEModel
-                X     
-                XHat  
-            end
-            
-            name = self.LossFcnTbl.Names( self.LossFcnTbl.Types=='Reconstruction' );
-            loss = self.LossFcns.(name).calcTemporalLoss( X, XHat );
-
-        end
-
-
-        function setScalingFactor( self, data )
+        function self = setLossScalingFactor( self )
             % Set the scaling factors for reconstructions
             arguments
                 self            FullAEModel
-                data            double
             end
             
             for i = 1:size( self.LossFcnTbl, 1 )
                 
                 if ismember( self.LossFcnTbl.Inputs(i), {'X-XHat', 'XC', 'XHat'} )
                     name = self.LossFcnTbl.Names(i);
-                    self.LossFcns.(name).setScale( data );
+                    self.LossFcns.(name).Scale = self.Scale;
                 end
     
             end
@@ -387,55 +361,6 @@ classdef FullAEModel < FullRepresentationModel
                 [ ~, idx ] = max( votes );
                 YHatMaj(i) = grps( idx );
             end
-
-        end
-
-
-
-
-        function net = getNetwork( self, name )
-            arguments
-                self
-                name         string {mustBeNetName( self, name )}
-            end
-            
-            net = self.Nets.(name);
-            if isa( net, 'lossFunction' )
-                net = self.LossFcns.(name).net;
-            end
-
-        end
-
-        
-        function names = getNetworkNames( self )
-            arguments
-                self
-            end
-            
-            names = fieldnames( self.Nets );
-
-        end
-
-
-        function isValid = mustBeNetName( self, name )
-            arguments
-                self
-                name
-            end
-
-            isValid = ismember( name, self.names );
-
-        end
-
-
-        function [ dlYHat, state ] = forwardAux( auxNet, dlZ )
-            % Forward-run the auxiliary network
-            arguments
-                auxNet          dlnetwork
-                dlZ             dlarray
-            end
-
-            [ dlYHat, state] = forward( auxNet, dlZ );
 
         end
 

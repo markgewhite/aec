@@ -21,7 +21,7 @@ classdef FCModel < FullAEModel
                 thisDataset     modelDataset
             end
             arguments (Repeating)
-                lossFcns        lossFunction
+                lossFcns        LossFunction
             end
             arguments
                 superArgs.?FullAEModel

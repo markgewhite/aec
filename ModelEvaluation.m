@@ -46,7 +46,7 @@ classdef ModelEvaluation < handle
                     tSpan = self.TrainingDataset.TSpan.Input, ...
                     PaddingLength = self.TrainingDataset.Padding.Length );
 
-            if isequal( setup.model.class, @pcaModel )
+            if isequal( setup.model.class, @FullPCAModel )
                 % this is a PCA
                 if verbose
                     disp('********* PCA Model Evaluation *********');
@@ -296,19 +296,19 @@ function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
                 eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
 
     % compute reconstruction loss
-    eval.ReconLoss = thisModel.getReconLoss( ...
-                                thisDataset.XTarget, pred.XHat );
-    eval.ReconLossSmoothed = ...
-        thisModel.getReconLoss( pred.XHatSmoothed, pred.XHat );
+    eval.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, ...
+                                thisModel.Scale );
+    eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
+                                        thisModel.Scale );
 
     % compute reconstruction loss for the regularised curves
     pred.XRegular = squeeze( thisDataset.XInputRegular );
-    eval.ReconLossRegular = ...
-        thisModel.getReconLoss( pred.XHatRegular, pred.XRegular );
+    eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
+                                       thisModel.Scale );
 
     % compute the mean squared error as a function of time
-    eval.ReconTimeMSE = ...
-        thisModel.getReconTemporalLoss( pred.XHatRegular, pred.XRegular );
+    eval.ReconTimeMSE = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
+                                           thisModel.Scale );
 
     figure(4);
     hold on;

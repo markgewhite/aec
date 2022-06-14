@@ -1,11 +1,5 @@
-% ************************************************************************
-% Class: lossFunction
-%
-% Superclass for loss functions
-%
-% ************************************************************************
-
-classdef lossFunction < handle
+classdef LossFunction < handle
+    % Superclass for loss functions
 
     properties
         Name        % name of the function
@@ -21,7 +15,7 @@ classdef lossFunction < handle
 
     methods
 
-        function self = lossFunction( name, args )
+        function self = LossFunction( name, args )
             % Initialize the loss function manager
             arguments
                 name             string {mustBeText}

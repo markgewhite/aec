@@ -38,10 +38,10 @@ function setup = initSetup
     %setup.data.args.resampleRate = 1;
 
     % loss functions
-    setup.lossFcns.recon.class = @reconstructionLoss;
+    setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
 
-    setup.lossFcns.adv.class = @adversarialLoss;
+    setup.lossFcns.adv.class = @AdversarialLoss;
     setup.lossFcns.adv.name = 'Discriminator';
 
     %setup.lossFcns.mmd.class = @wassersteinLoss;
@@ -66,25 +66,25 @@ function setup = initSetup
     %setup.lossFcns.smooth.args.Lambda = 1E-2;
     %setup.lossFcns.smooth.args.useLoss = false;
 
-    setup.lossFcns.cls.class = @classifierLoss;
+    setup.lossFcns.cls.class = @ClassifierLoss;
     setup.lossFcns.cls.name = 'Classification';
     setup.lossFcns.cls.args.useLoss = true;
 
-    setup.lossFcns.xcls.class = @inputClassifierLoss;
+    setup.lossFcns.xcls.class = @InputClassifierLoss;
     setup.lossFcns.xcls.name = 'XClassification';
     setup.lossFcns.xcls.args.useLoss = true;
 
     % model
     setup.model.class = @FCModel;
     setup.model.args.ZDim = 4;
-    setup.model.args.KFolds = 5;
+    setup.model.args.KFolds = 2;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 20;
+    setup.model.args.trainer.updateFreq = 1;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 200;
+    setup.model.args.trainer.numEpochs = 2;
     setup.model.args.trainer.batchSize = 40;
 
 

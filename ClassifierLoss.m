@@ -1,11 +1,5 @@
-% ************************************************************************
-% Class: classifierLoss
-%
-% Subclass for classifier loss using an auxiliary network
-%
-% ************************************************************************
-
-classdef classifierLoss < lossFunction
+classdef ClassifierLoss < LossFunction
+    % Subclass for classifier loss using an auxiliary network
 
     properties
         ZDim                % latent codes dimension size
@@ -22,11 +16,11 @@ classdef classifierLoss < lossFunction
 
     methods
 
-        function self = classifierLoss( name, superArgs, args )
+        function self = ClassifierLoss( name, superArgs, args )
             % Initialize the loss function
             arguments
                 name            char {mustBeText}
-                superArgs.?lossFunction
+                superArgs.?LossFunction
                 args.modelType  char ...
                     {mustBeMember( args.modelType, ...
                                     {'Network', ...
@@ -52,7 +46,7 @@ classdef classifierLoss < lossFunction
 
             isNet = strcmp( args.modelType, 'Network' );
 
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Auxiliary', ...
                                  input = 'Z-Y', ...
                                  lossNets = netAssignments, ...
@@ -78,7 +72,7 @@ classdef classifierLoss < lossFunction
         function self = setDimensions( self, thisModel )
             % Store the Z dimension input once known
             arguments
-                self            classifierLoss
+                self            ClassifierLoss
                 thisModel       FullAEModel
             end
 
@@ -130,7 +124,7 @@ classdef classifierLoss < lossFunction
         function [ loss, state ] = calcLoss(  self, net, dlZGen, dlC )
             % Calculate the classifier loss
             arguments
-                self     classifierLoss
+                self     ClassifierLoss
                 net      dlnetwork
                 dlZGen   dlarray  % generated latent distribtion
                 dlC      dlarray  % actual distribution

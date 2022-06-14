@@ -1,11 +1,5 @@
-% ************************************************************************
-% Class: adversarialLoss
-%
-% Subclass for adversarial loss using a discriminator network
-%
-% ************************************************************************
-
-classdef adversarialLoss < lossFunction
+classdef AdversarialLoss < LossFunction
+    % Subclass for adversarial loss using a discriminator network
 
     properties
         ZDim                % latent codes dimension size  
@@ -20,11 +14,11 @@ classdef adversarialLoss < lossFunction
 
     methods
 
-        function self = adversarialLoss( name, superArgs, args )
+        function self = AdversarialLoss( name, superArgs, args )
             % Initialize the loss function
             arguments
                 name            char {mustBeText}
-                superArgs.?lossFunction
+                superArgs.?LossFunction
                 args.distribution  char ...
                     {mustBeMember( args.distribution, ...
                                     {'Gaussian', ...
@@ -46,7 +40,7 @@ classdef adversarialLoss < lossFunction
             superArgsCell = namedargs2cell( superArgs );
             netAssignments = { string({'Decoder',name}); {'Encoder'} };
 
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'Z', ...
                                  nLoss = 2, ...
@@ -69,7 +63,7 @@ classdef adversarialLoss < lossFunction
         function self = setDimensions( self, thisModel )
             % Store the Z dimension input once known
             arguments
-                self            adversarialLoss
+                self            AdversarialLoss
                 thisModel       FullAEModel
             end
 
@@ -114,7 +108,7 @@ classdef adversarialLoss < lossFunction
         function [ loss, state ] = calcLoss( self, net, dlZFake )
             % Calculate the adversarial loss
             arguments
-                self     adversarialLoss
+                self     AdversarialLoss
                 net      dlnetwork
                 dlZFake  dlarray  % generated distribution
             end

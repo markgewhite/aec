@@ -514,7 +514,7 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
     switch valType
         case 'Reconstruction'
             dlXValHat = thisModel.reconstruct( dlZVal );
-            lossVal = thisModel.getReconLoss( dlXVal, dlXValHat );
+            lossVal = reconLoss( dlXVal, dlXValHat, thisModel.Scale );
 
         case 'AuxNetwork'
             dlYHatVal = predict( thisModel.Nets.(thisModel.auxNetwork), dlZVal );

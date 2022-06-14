@@ -2,8 +2,8 @@ classdef FullPCAModel < FullRepresentationModel
     % Class defining a PCA model
 
     properties
-        FdParams              % functional data parameters
-        TSpan         double  % time span
+        PCAFdParams         % functional data parameters for PCA
+        PCATSpan            % time span specifically for PCA
     end
 
     methods
@@ -20,11 +20,8 @@ classdef FullPCAModel < FullRepresentationModel
                                           argsCell{:}, ...
                                           NumCompLines = 2 );
 
-            self.TSpan = thisDataset.TSpan.Regular;
-            self.FdParams = thisDataset.FDA.FdParamsRegular;
-
-            % set the scaling factor(s) based on all X
-            self = self.setScalingFactor( thisDataset.XTarget );
+            self.PCATSpan = thisDataset.TSpan.Target;
+            self.PCAFdParams = thisDataset.FDA.FdParamsTarget;
 
             self.SubModels = cell( self.KFolds, 1 );
 
@@ -38,19 +35,6 @@ classdef FullPCAModel < FullRepresentationModel
             end
 
             thisModel = CompactPCAModel( self );
-
-        end
-
-
-        function self = setScalingFactor( self, data )
-            % Set the scaling factors for reconstructions
-            arguments
-                self            FullPCAModel
-                data            double
-            end
-            
-            % set the channel-wise scaling factor
-            self.Scale = squeeze(mean(var( data )))';
 
         end
 

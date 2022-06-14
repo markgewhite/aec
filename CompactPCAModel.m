@@ -2,11 +2,11 @@ classdef CompactPCAModel < CompactRepresentationModel
     % Class defining an individual PCA model
 
     properties
-        FdParams              % functional data parameters
-        TSpan         double  % time span
+        PCAFdParams           % functional data parameters
+        PCATSpan              % time span
         MeanFd                % mean functional curve
         CompFd                % component functional curves
-        VarProp       double  % explained variance
+        VarProp               % explained variance
         ZStd                  % latent score standard deviation (scaling factor)
     end
 
@@ -20,8 +20,8 @@ classdef CompactPCAModel < CompactRepresentationModel
 
             self@CompactRepresentationModel( theFullModel );
          
-            self.TSpan = theFullModel.TSpan;
-            self.FdParams = theFullModel.FdParams;
+            self.PCATSpan = theFullModel.PCATSpan;
+            self.PCAFdParams = theFullModel.PCAFdParams;
 
             self.MeanFd = [];
             self.CompFd = [];
@@ -40,9 +40,9 @@ classdef CompactPCAModel < CompactRepresentationModel
             end
 
             % create a functional data object with fewer bases
-            XFd = smooth_basis( self.TSpan, ...
+            XFd = smooth_basis( self.TSpan.Regular, ...
                                 thisTrnData.XInputRegular, ...
-                                self.FdParams );
+                                self.FDA.FdParamsRegular );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
 
@@ -97,15 +97,16 @@ classdef CompactPCAModel < CompactRepresentationModel
             end
            
             if args.centre
-                XCMean = zeros( length(self.TSpan), 1 );
+                XCMean = zeros( length(self.PCATSpan), 1 );
             else
-                XCMean = eval_fd( self.TSpan, self.MeanFd );
+                XCMean = eval_fd( self.PCATSpan, self.MeanFd );
             end
 
-            XCStd = zeros( length(self.TSpan), self.ZDim, self.XChannels );
+            XCStd = zeros( length(self.PCATSpan), self.ZDim, self.XChannels );
+
             % compute the components
             for i = 1:self.ZDim
-                XC = squeeze(eval_fd( self.TSpan, self.CompFd(i) ));
+                XC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
                 for c = 1:self.XChannels
                     XCStd(:,i,c) = self.ZStd(i,c)*XC(:,c);
                 end
@@ -117,9 +118,9 @@ classdef CompactPCAModel < CompactRepresentationModel
             end
 
             if args.centre
-                XC = zeros( length(self.TSpan), self.XChannels, self.ZDim*nSample );
+                XC = zeros( length(self.PCATSpan), self.XChannels, self.ZDim*nSample );
             else
-                XC = zeros( length(self.TSpan), self.XChannels, self.ZDim*nSample+1 );
+                XC = zeros( length(self.PCATSpan), self.XChannels, self.ZDim*nSample+1 );
                 XC(:,:,end) = XCMean;
             end
             
@@ -141,42 +142,6 @@ classdef CompactPCAModel < CompactRepresentationModel
         end
 
 
-        function loss = getReconLoss( self, X, XHat )
-            % Calculate the reconstruction loss
-            arguments
-                self        CompactPCAModel
-                X           double
-                XHat        double
-            end
-
-            if size( X, 3 ) == 1
-                loss = mean( (X-XHat).^2, [1 2] )/self.Scale;
-            else
-                loss = mean(mean( (X-XHat).^2, [1 2] )./ ...
-                                    permute(self.Scale, [1 3 2]));
-            end
-    
-        end
-
-
-        function loss = getReconTemporalLoss( self, X, XHat )
-            % Calculate the reconstruction loss across time domain
-            arguments
-                self        CompactPCAModel
-                X           double
-                XHat        double
-            end
-
-            if size( X, 3 ) == 1
-                loss = squeeze(mean( (X-XHat).^2, 2 )/self.Scale);
-            else
-                loss = squeeze(mean( (X-XHat).^2, 2 )./ ...
-                                    permute(self.Scale, [1 3 2]));
-            end
-    
-        end
-
-
         function Z = encode( self, data )
             % Encode features Z from X using the model
             arguments
@@ -186,7 +151,7 @@ classdef CompactPCAModel < CompactRepresentationModel
 
             if isa( data, 'fd' )
                 % validity of the FD object
-                if ~isequal( self.FdParams, thisDataset.fda.XInputRegular )
+                if ~isequal( self.PCAFdParams, thisDataset.fda.XInputRegular )
                     eid = 'PCAModel:InvalidFDParam';
                     msg = 'The input FD parameters do not match the model''s FD parameters.';
                     throwAsCaller( MException(eid,msg) );
@@ -208,7 +173,8 @@ classdef CompactPCAModel < CompactRepresentationModel
 
                 end
                 % convert input to a functional data object
-                XFd = smooth_basis( self.TSpan, X, self.FdParams );
+                XFd = smooth_basis( self.TSpan.Regular, X, ...
+                                    self.FDA.FdParamsRegular );
 
             end
 
@@ -228,10 +194,10 @@ classdef CompactPCAModel < CompactRepresentationModel
             
             % create the set of points from the mean for each curve
             nRows = size( Z, 1 );
-            XHat = repmat( eval_fd( self.TSpan, self.MeanFd ), 1, nRows );
+            XHat = repmat( eval_fd( self.PCATSpan, self.MeanFd ), 1, nRows );
         
             % linearly combine the components, points-wise
-            XC = eval_fd( self.TSpan, self.CompFd );
+            XC = eval_fd( self.PCATSpan, self.CompFd );
             for k = 1:self.XChannels
                 for j = 1:self.ZDim        
                     for i = 1:nRows

@@ -93,53 +93,6 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function loss = getReconLoss( self, X, XHat )
-            % Calculate the reconstruction loss
-            arguments
-                self            CompactAEModel
-                X     
-                XHat  
-            end
-            
-            name = self.LossFcnTbl.Names( self.LossFcnTbl.Types=='Reconstruction' );
-            loss = self.LossFcns.(name).calcLoss( X, XHat );
-
-        end
-
-
-        function loss = getReconTemporalLoss( self, X, XHat )
-            % Calculate the reconstruction loss over time
-            arguments
-                self            CompactAEModel
-                X     
-                XHat  
-            end
-            
-            name = self.LossFcnTbl.Names( self.LossFcnTbl.Types=='Reconstruction' );
-            loss = self.LossFcns.(name).calcTemporalLoss( X, XHat );
-
-        end
-
-
-        function setScalingFactor( self, data )
-            % Set the scaling factors for reconstructions
-            arguments
-                self            CompactAEModel
-                data            double
-            end
-            
-            for i = 1:size( self.LossFcnTbl, 1 )
-                
-                if ismember( self.LossFcnTbl.Inputs(i), {'X-XHat', 'XC', 'XHat'} )
-                    name = self.LossFcnTbl.Names(i);
-                    self.LossFcns.(name).setScale( data );
-                end
-    
-            end
-
-        end
-
-
         function labels = get.XDimLabels( self )
             % Get the X dimensional labels for dlarrays
             arguments
@@ -425,30 +378,6 @@ classdef CompactAEModel < CompactRepresentationModel
 
 
 
-        function net = getNetwork( self, name )
-            arguments
-                self
-                name         string {mustBeNetName( self, name )}
-            end
-            
-            net = self.Nets.(name);
-            if isa( net, 'lossFunction' )
-                net = self.LossFcns.(name).net;
-            end
-
-        end
-
-        
-        function names = getNetworkNames( self )
-            arguments
-                self
-            end
-            
-            names = fieldnames( self.Nets );
-
-        end
-
-
         function isValid = mustBeNetName( self, name )
             arguments
                 self
@@ -456,18 +385,6 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             isValid = ismember( name, self.names );
-
-        end
-
-
-        function [ dlYHat, state ] = forwardAux( auxNet, dlZ )
-            % Forward-run the auxiliary network
-            arguments
-                auxNet          dlnetwork
-                dlZ             dlarray
-            end
-
-            [ dlYHat, state] = forward( auxNet, dlZ );
 
         end
 

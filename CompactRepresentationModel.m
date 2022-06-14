@@ -72,21 +72,8 @@ classdef CompactRepresentationModel
 
     end
 
+
     methods (Static)
-
-
-        function err = getReconLoss( self, X, XHat )
-            % Compute the reconstruction loss
-            arguments
-                self        CompactRepresentationModel
-                X           double
-                XHat        double
-            end
-
-            err = mean( (XHat-X).^2, 'all' );
-        
-        end
-
 
         function [ XCReg, varProp, compVar ] = ...
                                     getLatentComponents( self, thisDataset )
@@ -229,14 +216,18 @@ classdef CompactRepresentationModel
                         eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
         
             % compute reconstruction loss
-            eval.ReconLoss = self.getReconLoss( thisDataset.XTarget, pred.XHat );
-            eval.ReconLossSmoothed = self.getReconLoss( pred.XHatSmoothed, pred.XHat );
+            eval.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, ...
+                                        self.Scale );
+            eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
+                                                self.Scale );
         
             % compute reconstruction loss for the regularised curves
-            eval.ReconLossRegular = self.getReconLoss( pred.XHatRegular, pred.XRegular );
+            eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
+                                               self.Scale );
         
             % compute the mean squared error as a function of time
-            eval.ReconTimeMSE = self.getReconTemporalLoss( pred.XHatRegular, pred.XRegular );
+            eval.ReconTimeMSE = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
+                                                   self.Scale );
         
             % compute the auxiliary loss using the model
             ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
