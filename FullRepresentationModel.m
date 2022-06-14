@@ -32,7 +32,7 @@ classdef FullRepresentationModel
                 args.auxModelType   string ...
                         {mustBeMember( args.auxModelType, ...
                         {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
-                args.KFold      double ...
+                args.KFolds         double ...
                     {mustBeInteger, mustBePositive} = 5
                 args.NumCompLines   double...
                     {mustBeInteger, mustBePositive} = 8
@@ -46,7 +46,7 @@ classdef FullRepresentationModel
 
             self.ZDim = args.ZDim;
             self.AuxModelType = args.auxModelType;
-            self.KFolds = args.KFold;
+            self.KFolds = args.KFolds;
             self.NumCompLines = args.NumCompLines;
 
             self.ShowPlots = args.ShowPlots;
@@ -185,7 +185,7 @@ classdef FullRepresentationModel
             end
 
             isEnsemble = (size( Z, 3 ) > 1);
-            XHatFold = zeros( length(self.TSpan), size(Z,1), self.KFolds );
+            XHatFold = zeros( self.XTargetDim, size(Z,1), self.KFolds );
             for k = 1:self.KFolds
                 if isEnsemble
                     XHatFold( :, :, k ) = ...

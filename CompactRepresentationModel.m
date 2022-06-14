@@ -149,6 +149,7 @@ classdef CompactRepresentationModel
             end  
 
             % re-order the dimensions for FDA
+            % !!! Is there a problem here? !!!
             if size( XC, 3 ) > 1
                 X = permute( X, [1 3 2] );
                 XC = permute( XC, [1 3 2] );
@@ -156,6 +157,7 @@ classdef CompactRepresentationModel
 
             if mod( size( XC, 2 ), 2 )==1
                 % remove the XC mean curve at the end
+                % !!! or is there a problem here? !!!
                 if size( XC, 3 ) > 1
                     XC = XC( :, :, 1:end-1 );
                 else

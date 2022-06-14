@@ -1,4 +1,4 @@
-function plotLatentComp( thisModel, XC, tSpan, fdParams, args )
+function plotLatentComp( thisModel, XC, tSpan, fda, args )
     % Plot characteristic curves of the latent codings which are similar
     % in conception to the functional principal components
     arguments
@@ -7,7 +7,7 @@ function plotLatentComp( thisModel, XC, tSpan, fdParams, args )
                                   'CompactRepresentationModel' })}
         XC                  {mustBeA( XC, { 'dlarray', 'double' })}
         tSpan               struct
-        fdParams            
+        fda            
         args.nSample        double = 0
         args.type           char ...
             {mustBeMember(args.type, ...
@@ -32,7 +32,7 @@ function plotLatentComp( thisModel, XC, tSpan, fdParams, args )
 
     % smooth and re-evaluate all curves
     tSpanPlot = linspace( tSpan.Original(1), tSpan.Original(end), 101 );
-    XCFd = smooth_basis( tSpan.Target, XC, fdParams );
+    XCFd = smooth_basis( tSpan.Target, XC, fda.FdParamsTarget );
     XCsmth = eval_fd( tSpanPlot, XCFd );
 
     % set the colours from blue and red

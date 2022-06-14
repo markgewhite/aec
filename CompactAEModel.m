@@ -12,6 +12,7 @@ classdef CompactAEModel < CompactRepresentationModel
         LossFcnWeights % weights to be applied to the loss function
         LossFcnTbl     % convenient table summarising loss function details
         NumLoss        % number of computed losses
+        FlattenInput   % whether to flatten input
         HasSeqInput    % supports variable-length input
         AuxNetwork     % name of auxiliary dlnetwork
 
@@ -44,6 +45,7 @@ classdef CompactAEModel < CompactRepresentationModel
             self.LossFcnWeights = theFullModel.LossFcnWeights;
             self.LossFcnTbl = theFullModel.LossFcnTbl;
             self.NumLoss = theFullModel.NumLoss;
+            self.FlattenInput = theFullModel.FlattenInput;
             self.HasSeqInput = theFullModel.HasSeqInput;
 
             % initialize the encoder and decoder networks
@@ -274,6 +276,10 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlX         dlarray
             end
 
+            if self.FlattenInput && size( dlX, 3 ) > 1
+                dlX = flattenDLArray( dlX );
+            end
+
             % generate latent encodings
             [ dlZ, state.Encoder ] = forward( encoder, dlX );
     
@@ -287,18 +293,18 @@ classdef CompactAEModel < CompactRepresentationModel
             % Encode features Z from X using the model
             arguments
                 self            CompactAEModel
-                X
+                X               {mustBeA(X, {'modelDataset', 'dlarray'})}
                 arg.convert     logical = true
             end
 
             if isa( X, 'modelDataset' )
                 dlX = X.getDLInput( self.XDimLabels );
-            elseif isa( X, 'dlarray' )
-                dlX = X;
             else
-                eid = 'Autoencoder:NotValidX';
-                msg = 'The input data should be a modelDataset or a dlarray.';
-                throwAsCaller( MException(eid,msg) );
+                dlX = X;
+            end
+
+            if self.FlattenInput && size( dlX, 3 ) > 1
+                dlX = flattenDLArray( dlX );
             end
 
             dlZ = predict( self.Nets.Encoder, dlX );
@@ -314,7 +320,7 @@ classdef CompactAEModel < CompactRepresentationModel
             % Reconstruct X from Z using the model
             arguments
                 self            CompactAEModel
-                Z
+                Z               {mustBeA(Z, {'double', 'dlarray'})}
                 arg.convert     logical = true
             end
 
@@ -335,12 +341,12 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ YHat, loss ] = predictAux( self, Z, Y )
+        function [ YHat, loss ] = predictAuxNet( self, Z, Y )
             % Make prediction from Z using an auxiliary network
             arguments
                 self            CompactAEModel
-                Z
-                Y
+                Z               {mustBeA(Z, {'double', 'dlarray'})}
+                Y               {mustBeA(Y, {'double', 'dlarray'})}
             end
 
             if isa( Z, 'dlarray' )
@@ -350,9 +356,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             if isa( Y, 'dlarray' )
-                dlY = Y;
-            else
-                dlY = dlarray( Y, 'CB' );
+                Y = double(extractdata( Y ))';
             end
 
             auxNet = (self.LossFcnTbl.Types == 'Auxiliary');
@@ -372,34 +376,26 @@ classdef CompactAEModel < CompactRepresentationModel
 
             dlYHat = predict( self.Nets.(auxNetName), dlZ );
 
-            loss = calcLoss( self.LossFcns.(auxNetName), ...
-                             self.Nets.(auxNetName), ...
-                             dlZ, dlY );
-
             YHat = double(extractdata( dlYHat ))';
-            loss = double(extractdata( loss ));
+            CDim = size( YHat, 2 );
+            YHat = double(onehotdecode( YHat, 1:CDim, CDim ));
+
+            loss = getPropCorrect( Y, YHat );
 
         end
 
 
-        function [ YHat, loss ] = predictComparator( self, X, Y )
+        function [ YHat, loss ] = predictCompNet( self, thisDataset )
             % Make prediction from X using the comparator network
             arguments
                 self            CompactAEModel
-                X
-                Y
+                thisDataset     modelDataset
             end
 
-            if isa( X, 'dlarray' )
-                dlX = X;
-            else
-                dlX = dlarray( X', 'CB' );
-            end
+            dlX = thisDataset.getDLInput( self.XDimLabels );
 
-            if isa( Y, 'dlarray' )
-                dlY = Y;
-            else
-                dlY = dlarray( Y, 'CB' );
+            if self.FlattenInput && size( dlX, 3 ) > 1
+                dlX = flattenDLArray( dlX );
             end
 
             compNet = (self.LossFcnTbl.Types == 'Comparator');
@@ -419,12 +415,11 @@ classdef CompactAEModel < CompactRepresentationModel
 
             dlYHat = predict( self.Nets.(compNetName), dlX );
 
-            loss = calcLoss( self.LossFcns.(compNetName), ...
-                             self.Nets.(compNetName), ...
-                             dlX, dlY );
-
             YHat = double(extractdata( dlYHat ))';
-            loss = double(extractdata( loss ));
+            YHat = double(onehotdecode( YHat, ...
+                                1:thisDataset.CDim, thisDataset.CDim ));
+
+            loss = getPropCorrect( thisDataset.Y, YHat );
 
         end
 

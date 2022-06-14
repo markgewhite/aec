@@ -9,6 +9,7 @@ classdef inputClassifierLoss < lossFunction
 
     properties
         XDim                % input dimension size
+        XChannels           % input channels
         CDim                % number of possible classes
         NumHidden           % number of hidden layers
         NumFC               % number of fully connected nodes at widest
@@ -83,6 +84,7 @@ classdef inputClassifierLoss < lossFunction
             end
 
             self.XDim = thisModel.XInputDim;
+            self.XChannels = thisModel.XChannels;
             self.CDim = thisModel.CDim;
             self.CLabels = categorical( 1:self.CDim );
 
@@ -102,7 +104,7 @@ classdef inputClassifierLoss < lossFunction
             end 
 
             % create the input layer
-            layers = featureInputLayer( self.XDim, ...
+            layers = featureInputLayer( self.XDim*self.XChannels, ...
                                    'Name', 'in', ...
                                    'Normalization', 'zscore', ...
                                    'Mean', 0, 'StandardDeviation', 1 );
@@ -157,6 +159,11 @@ classdef inputClassifierLoss < lossFunction
     methods (Access = protected)
 
         function [ loss, state ] = networkLoss( self, net, dlX, dlC )
+
+            if size( dlX, 3 ) > 1
+                % flatten the input
+                dlX = flattenDLArray( dlX );
+            end
 
             % get the network's predicted class
             [ dlCGen, state ] = forward( net, dlX );

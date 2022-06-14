@@ -75,15 +75,16 @@ function setup = initSetup
     setup.lossFcns.xcls.args.useLoss = true;
 
     % model
-    setup.model.class = @fcModel;
+    setup.model.class = @FCModel;
     setup.model.args.ZDim = 4;
+    setup.model.args.KFolds = 2;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Logistic';
     
     % training
     setup.model.args.trainer.updateFreq = 5;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 10;
+    setup.model.args.trainer.numEpochs = 1;
     setup.model.args.trainer.batchSize = 40;
 
 

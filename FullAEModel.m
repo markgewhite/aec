@@ -12,6 +12,7 @@ classdef FullAEModel < FullRepresentationModel
         LossFcnWeights % weights to be applied to the loss function
         LossFcnTbl     % convenient table summarising loss function details
         NumLoss        % number of computed losses
+        FlattenInput   % whether to flatten inputs
         HasSeqInput    % supports variable-length input
         Trainer        % optional arguments for the trainer
         Optimizer      % optional arguments for the optimizer
@@ -37,10 +38,11 @@ classdef FullAEModel < FullRepresentationModel
             end
             arguments
                 superArgs.?FullRepresentationModel
-                args.hasSeqInput    logical = false
                 args.isVAE          logical = false
                 args.numVAEDraws    double ...
                     {mustBeInteger, mustBePositive} = 1
+                args.flattenInput   logical = false
+                args.hasSeqInput    logical = false
                 args.weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
                 args.trainer        struct = []
@@ -69,6 +71,7 @@ classdef FullAEModel < FullRepresentationModel
             self.NumNetworks = 2;
             self.IsVAE = args.isVAE;
             self.NumVAEDraws = args.numVAEDraws;
+            self.FlattenInput = args.flattenInput;
             self.HasSeqInput = args.hasSeqInput;
 
             self.Trainer = args.trainer;
@@ -335,168 +338,58 @@ classdef FullAEModel < FullRepresentationModel
         end
 
 
-        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
-            % Forward-run the autoencoder networks
-            arguments
-                self        FullAEModel
-                encoder     dlnetwork
-                decoder     dlnetwork
-                dlX         dlarray
-            end
-
-            % generate latent encodings
-            [ dlZ, state.Encoder ] = forward( encoder, dlX );
-    
-            % reconstruct curves from latent codes
-            [ dlXHat, state.Decoder ] = forward( decoder, dlZ );
-
-        end
-
-
-        function dlZ = encode( self, X, arg )
-            % Encode features Z from X using the model
+        function [ YHatFold, YHatMaj ] = predictAuxNet( self, Z, Y )
+            % Predict Y from Z using all trained auxiliary networks
             arguments
                 self            FullAEModel
-                X
-                arg.convert     logical = true
+                Z               {mustBeA(Z, {'double', 'dlarray'})}
+                Y               {mustBeA(Y, {'double', 'dlarray'})}
             end
 
-            if isa( X, 'modelDataset' )
-                dlX = X.getDLInput( self.XDimLabels );
-            elseif isa( X, 'dlarray' )
-                dlX = X;
-            else
-                eid = 'Autoencoder:NotValidX';
-                msg = 'The input data should be a modelDataset or a dlarray.';
-                throwAsCaller( MException(eid,msg) );
+            isEnsemble = (size( Z, 3 ) > 1);
+            nRows = size( Z, 1 );
+            YHatFold = zeros( nRows, self.KFolds );
+            for k = 1:self.KFolds
+                if isEnsemble
+                    YHatFold( :, k ) = ...
+                            predictAuxNet( self.SubModels{k}, Z(:,:,k), Y );
+                else
+                    YHatFold( :, k ) = ...
+                            predictAuxNet( self.SubModels{k}, Z, Y );
+                end
             end
 
-            dlZ = predict( self.Nets.Encoder, dlX );
-
-            if arg.convert
-                dlZ = double(extractdata( dlZ ))';
+            YHatMaj = zeros( nRows, 1 );
+            for i = 1:nRows
+                [votes, grps] = groupcounts( YHatFold(i,:)' );
+                [ ~, idx ] = max( votes );
+                YHatMaj(i) = grps( idx );
             end
 
         end
 
 
-        function dlXHat = reconstruct( self, Z, arg )
-            % Reconstruct X from Z using the model
+        function [ YHatFold, YHatMaj ] = predictCompNet( self, thisDataset )
+            % Predict Y from X using all comparator networks
             arguments
                 self            FullAEModel
-                Z
-                arg.convert     logical = true
+                thisDataset     modelDataset
             end
 
-            if isa( Z, 'dlarray' )
-                dlZ = Z;
-            else
-                dlZ = dlarray( Z', 'CB' );
+            YHatFold = zeros( thisDataset.NumObs, self.KFolds );
+            for k = 1:self.KFolds
+                YHatFold( :, k ) = predictCompNet( self.SubModels{k}, thisDataset );
             end
 
-            dlXHat = predict( self.Nets.Decoder, dlZ );
-
-            if arg.convert
-                dlXHat = double(extractdata( dlXHat ));
-                dlXHat = permute( dlXHat, [1 3 2] );
+            YHatMaj = zeros( thisDataset.NumObs, 1 );
+            for i = 1:thisDataset.NumObs
+                [votes, grps] = groupcounts( YHatFold(i,:)' );
+                [ ~, idx ] = max( votes );
+                YHatMaj(i) = grps( idx );
             end
-            
 
         end
 
-
-        function [ YHat, loss ] = predictAux( self, Z, Y )
-            % Make prediction from Z using an auxiliary network
-            arguments
-                self            FullAEModel
-                Z
-                Y
-            end
-
-            if isa( Z, 'dlarray' )
-                dlZ = Z;
-            else
-                dlZ = dlarray( Z', 'CB' );
-            end
-
-            if isa( Y, 'dlarray' )
-                dlY = Y;
-            else
-                dlY = dlarray( Y, 'CB' );
-            end
-
-            auxNet = (self.LossFcnTbl.Types == 'Auxiliary');
-            if ~any( auxNet )
-                eid = 'aeModel:NoAuxiliaryFunction';
-                msg = 'No auxiliary loss function specified in the model.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            if ~self.LossFcnTbl.HasNetwork( auxNet )
-                eid = 'aeModel:NoAuxiliaryNetwork';
-                msg = 'No auxiliary network specified in the model.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            auxNetName = self.LossFcnTbl.Names( auxNet );
-
-            dlYHat = predict( self.Nets.(auxNetName), dlZ );
-
-            loss = calcLoss( self.LossFcns.(auxNetName), ...
-                             self.Nets.(auxNetName), ...
-                             dlZ, dlY );
-
-            YHat = double(extractdata( dlYHat ))';
-            loss = double(extractdata( loss ));
-
-        end
-
-
-        function [ YHat, loss ] = predictComparator( self, X, Y )
-            % Make prediction from X using the comparator network
-            arguments
-                self            FullAEModel
-                X
-                Y
-            end
-
-            if isa( X, 'dlarray' )
-                dlX = X;
-            else
-                dlX = dlarray( X', 'CB' );
-            end
-
-            if isa( Y, 'dlarray' )
-                dlY = Y;
-            else
-                dlY = dlarray( Y, 'CB' );
-            end
-
-            compNet = (self.LossFcnTbl.Types == 'Comparator');
-            if ~any( compNet )
-                eid = 'aeModel:NoComparatorFunction';
-                msg = 'No comparator loss function specified in the model.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            if ~self.LossFcnTbl.HasNetwork( compNet )
-                eid = 'aeModel:NoComparatorNetwork';
-                msg = 'No comparator network specified in the model.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            compNetName = self.LossFcnTbl.Names( compNet );
-
-            dlYHat = predict( self.Nets.(compNetName), dlX );
-
-            loss = calcLoss( self.LossFcns.(compNetName), ...
-                             self.Nets.(compNetName), ...
-                             dlX, dlY );
-
-            YHat = double(extractdata( dlYHat ))';
-            loss = double(extractdata( loss ));
-
-        end
 
 
 

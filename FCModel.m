@@ -44,6 +44,7 @@ classdef FCModel < FullAEModel
             self@FullAEModel( thisDataset, ...
                               lossFcns{:}, ...
                               superArgsCell{:}, ...
+                              flattenInput = true, ...
                               hasSeqInput = false );
 
             % store this class's properties
@@ -66,7 +67,7 @@ classdef FCModel < FullAEModel
             layersEnc = [ featureInputLayer( self.XInputDim*self.XChannels, ...
                                    'Name', 'in', ...
                                    'Normalization', 'zscore', ...
-                                   'Mean', 0, 'StandardDeviation', 1 ) 
+                                   'Mean', 0, 'StandardDeviation', 1 )
                           dropoutLayer( self.InputDropout, 'Name', 'drop0' ) ];
 
             lgraphEnc = layerGraph( layersEnc );       
@@ -136,14 +137,19 @@ classdef FCModel < FullAEModel
         end
 
 
-        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
-            % Forward-run the fully-connected network
-            % by first flattening the input array
+        function dlZ = predict( encoder, X, arg )
+            % Override the predict function for a fully-connected network
+            % to flatten the input array
             arguments
-                self        FCModel
-                encoder     dlnetwork
-                decoder     dlnetwork
-                dlX         dlarray
+                encoder         dlnetwork
+                X               {mustBeA( X, {'dlarray', 'modelDataset'} )}
+                arg.convert     logical = true
+            end
+
+            if isa( X, 'modelDataset' )
+                dlX = X.getDLInput( self.XDimLabels );
+            else
+                dlX = X;
             end
 
             if size( dlX, 3 ) > 1
@@ -156,46 +162,14 @@ classdef FCModel < FullAEModel
             end
 
             % generate latent encodings
-            [ dlZ, state.Encoder ] = forward( encoder, dlX );
-    
-            % reconstruct curves from latent codes
-            [ dlXHat, state.Decoder ] = forward( decoder, dlZ );
-
-        end
-
-
-        function dlZ = encode( self, X, arg )
-            % Encode features Z from X using the model
-            % by first flattening the input array
-            arguments
-                self            FCModel
-                X
-                arg.convert     logical = true
-            end
-
-            if isa( X, 'modelDataset' )
-                dlX = X.getDLInput( self.XDimLabels );
-            elseif isa( X, 'dlarray' )
-                dlX = X;
-            else
-                eid = 'Autoencoder:NotValidX';
-                msg = 'The input data should be a modelDataset or a dlarray.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            if size( dlX, 3 ) > 1
-                % flatten the input array
-                dlX = reshape( dlX, size(dlX,1)*size(dlX,2), size(dlX,3) );
-                dlX = dlarray( dlX, 'CB' );
-            end
-
-            dlZ = predict( self.Nets.Encoder, dlX );
+            dlZ = predict( encoder, dlX );
 
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';
             end
 
         end
+
 
     end
 

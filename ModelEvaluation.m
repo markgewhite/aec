@@ -333,13 +333,11 @@ function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
         
         % compute the comparator loss using the comparator network
         [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
-                predictComparator( thisModel, ...
-                    thisDataset.getDLInput( thisModel.XDimLabels ), ...
-                    thisDataset.Y );
+                        predictCompNet( thisModel, thisDataset ); 
 
         % compute the auxiliary loss using the network
         [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                        predictAux( thisModel, pred.Z, thisDataset.Y );
+                        predictAuxNet( thisModel, pred.ZEnsemble, thisDataset.Y );
 
     else
         pred.ComparatorYHat = [];
