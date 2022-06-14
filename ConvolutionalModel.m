@@ -1,18 +1,12 @@
-% ************************************************************************
-% Class: convModel
-%
-% Subclass defining a convolutional autoencoder model
-%
-% ************************************************************************
-
-classdef convModel < autoencoderModel
+classdef ConvolutionalModel < FullAEModel
+    % Subclass defining a convolutional autoencoder model
 
     properties
         NumHidden     % number of hidden layers
         NumFilters    % number of filters aka kernels
         FilterSize    % length of the filters
         Stride        % filter step size
-        Scale         % leaky ReLu scale factor
+        ReLuScale     % leaky ReLu scale factor
         InputDropout  % initial dropout rate
         Dropout       % dropout rate
         Pooling       % pooling operator
@@ -20,21 +14,19 @@ classdef convModel < autoencoderModel
 
     methods
 
-        function self = convModel( XDim, XOutputDim, XChannels, ZDim, CDim, ...
-                                   lossFcns, superArgs, args )
+        function self = ConvolutionalModel( thisDataset, ...
+                                            lossFcns, ...
+                                            superArgs, ...
+                                            args )
             % Initialize the model
             arguments
-                XDim            double {mustBeInteger, mustBePositive}
-                XOutputDim      double {mustBeInteger, mustBePositive}
-                XChannels       double {mustBeInteger, mustBePositive}
-                ZDim            double {mustBeInteger, mustBePositive}
-                CDim            double {mustBeInteger, mustBePositive}
+                thisDataset         ModelDataset
             end
             arguments (Repeating)
-                lossFcns     lossFunction
+                lossFcns            LossFunction
             end
             arguments
-                superArgs.?autoencoderModel
+                superArgs.?FullAEModel
                 args.nHidden       double ...
                     {mustBeInteger, mustBePositive} = 2
                 args.nFilters      double ...
@@ -56,41 +48,34 @@ classdef convModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( XDim, ...
-                                          XOutputDim, ...
-                                          XChannels, ...
-                                          ZDim, ...
-                                          CDim, ...                                          lossFcns{:}, ...
-                                          lossFcns{:}, ...
-                                          superArgsCell{:}, ...
-                                          hasSeqInput = false );
+            self@FullAEModel( thisDataset, ...
+                              lossFcns{:}, ...
+                              superArgsCell{:}, ...
+                              flattenInput = true, ...
+                              hasSeqInput = false );
 
             % store this class's properties
             self.NumHidden = args.nHidden;
             self.NumFilters = args.nFilters*2.^(0:self.NumHidden-1);
             self.FilterSize = args.filterSize;
             self.Stride = args.stride;
-            self.Scale = args.scale;
+            self.ReLuScale = args.scale;
             self.InputDropout = args.inputDropout;
             self.Dropout = args.dropout;
             self.Pooling = args.pooling;
 
-            % initialize the networks
-            self = initEncoder( self );
-            self = initDecoder( self );
-
         end
 
 
-        function self = initEncoder( self )
+        function net = initEncoder( self )
             % Initialize the encoder network
             arguments
-                self        convModel
+                self        ConvolutionalModel
             end
             
             % define input layers
-            projectionSize = [ self.XDim 1 1 ];
-            layersEnc = [ featureInputLayer( self.XDim, 'Name', 'in', ...
+            projectionSize = [ self.XInputDim 1 1 ];
+            layersEnc = [ featureInputLayer( self.XInputDim, 'Name', 'in', ...
                               'Normalization', 'zscore', ...
                               'Mean', 0, 'StandardDeviation', 1 ) 
                           dropoutLayer( self.Dropout, 'Name', 'drop0' )
@@ -103,7 +88,7 @@ classdef convModel < autoencoderModel
             for i = 1:self.NumHidden
                 [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
                     self.FilterSize, self.NumFilters(i), ...
-                    self.Scale, self.Dropout, false );
+                    self.ReLuScale, self.Dropout, false );
             end
             
             % add the output layers
@@ -129,24 +114,23 @@ classdef convModel < autoencoderModel
         
         
             if self.IsVAE
-                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.NumVAEDraws );
+                net = VAEdlnetwork( lgraphEnc, numDraws = self.NumVAEDraws );
             else
-                self.Nets.Encoder = dlnetwork( lgraphEnc );
+                net = dlnetwork( lgraphEnc );
             end
 
         end
 
 
-        function self = initDecoder( self )
+        function net = initDecoder( self )
             % Initialize the decoder network
             arguments
-                self        convModel
+                self        ConvolutionalModel
             end
 
             % define input layers
             layersDec = [ featureInputLayer( self.ZDim, 'Name', 'in' )
-                          projectAndReshapeLayer( [self.XDim 1 self.XChannels ], ...
+                          projectAndReshapeLayer( [self.XInputDim 1 self.XChannels ], ...
                                         self.ZDim, 'Name', 'proj' ) ];
             
             lgraphDec = layerGraph( layersDec );
@@ -155,7 +139,7 @@ classdef convModel < autoencoderModel
             for i = 1:self.NumHidden
                 f = self.NumFilters( self.NumHidden-i+1 );
                 [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
-                    self.FilterSize, f, self.Scale, self.Dropout, true );
+                    self.FilterSize, f, self.ReLuScale, self.Dropout, true );
             end
             
             % add the output layers
@@ -172,18 +156,18 @@ classdef convModel < autoencoderModel
             end
             
             outLayers = [ outLayers; 
-                          fullyConnectedLayer( self.XOutputDim*self.XChannels, 'Name', 'fcout' ) ];
+                          fullyConnectedLayer( self.XTargetDim*self.XChannels, 'Name', 'fcout' ) ];
             
             if self.XChannels > 1
                 outLayers = [ outLayers; 
-                          reshapeLayer( [self.XOutputDim self.XChannels], 'Name', 'reshape' ) ];
+                          reshapeLayer( [self.XTargetDim self.XChannels], 'Name', 'reshape' ) ];
             end
             
             lgraphDec = addLayers( lgraphDec, outLayers );
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, poolingLayer );
             
-            self.Nets.Decoder = dlnetwork( lgraphDec );
+            net = dlnetwork( lgraphDec );
 
         end
 

@@ -80,8 +80,8 @@ classdef CompactAEModel < CompactRepresentationModel
             % Train the autoencoder
             arguments
                 self            CompactAEModel
-                thisTrnData     modelDataset
-                thisValData     modelDataset
+                thisTrnData     ModelDataset
+                thisValData     ModelDataset
             end
 
             self = self.Trainer.runTraining( self, thisTrnData, thisValData );
@@ -246,11 +246,11 @@ classdef CompactAEModel < CompactRepresentationModel
             % Encode features Z from X using the model
             arguments
                 self            CompactAEModel
-                X               {mustBeA(X, {'modelDataset', 'dlarray'})}
+                X               {mustBeA(X, {'ModelDataset', 'dlarray'})}
                 arg.convert     logical = true
             end
 
-            if isa( X, 'modelDataset' )
+            if isa( X, 'ModelDataset' )
                 dlX = X.getDLInput( self.XDimLabels );
             else
                 dlX = X;
@@ -342,7 +342,7 @@ classdef CompactAEModel < CompactRepresentationModel
             % Make prediction from X using the comparator network
             arguments
                 self            CompactAEModel
-                thisDataset     modelDataset
+                thisDataset     ModelDataset
             end
 
             dlX = thisDataset.getDLInput( self.XDimLabels );
@@ -377,18 +377,6 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-
-        function isValid = mustBeNetName( self, name )
-            arguments
-                self
-                name
-            end
-
-            isValid = ismember( name, self.names );
-
-        end
-
-
     end
 
 
@@ -399,20 +387,24 @@ classdef CompactAEModel < CompactRepresentationModel
             % doing additional work to the superclass method
             arguments
                 self             CompactAEModel
-                thisDataset      modelDataset
+                thisDataset      ModelDataset
             end
 
             % call the superclass method
             [ eval, pred ] = ...
                 evaluateDataset@CompactRepresentationModel( self, thisDataset );
 
-            % compute the comparator loss using the comparator network
-            [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
-                            predictCompNet( self, thisDataset ); 
+            if any(self.LossFcnTbl.Types == 'Comparator')
+                % compute the comparator loss using the comparator network
+                [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
+                                predictCompNet( self, thisDataset ); 
+            end
     
-            % compute the auxiliary loss using the network
-            [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                            predictAuxNet( self, pred.Z, thisDataset.Y );
+            if any(self.LossFcnTbl.Types == 'Auxiliary')
+                % compute the auxiliary loss using the network
+                [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                                predictAuxNet( self, pred.Z, thisDataset.Y );
+            end
         
         
         end

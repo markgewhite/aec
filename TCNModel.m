@@ -1,18 +1,12 @@
-% ************************************************************************
-% Class: tcnModel
-%
-% Subclass defining a temporal convolutional autoencoder model
-%
-% ************************************************************************
-
-classdef tcnModel < autoencoderModel
+classdef TCNModel < FullAEModel
+    % Subclass defining a temporal convolutional autoencoder model
 
     properties
         NumHidden     % number of hidden layers
         NumFilters    % number of filters aka kernels
         FilterSize    % length of the filters
         Dilations     % dilations
-        Scale         % leaky ReLu scale factor
+        ReLuScale     % leaky ReLu scale factor
         InputDropout  % initial dropout rate
         Dropout       % dropout rate
         Pooling       % pooling operator
@@ -22,21 +16,19 @@ classdef tcnModel < autoencoderModel
 
     methods
 
-        function self = tcnModel( XDim, XOutputDim, XChannels, ZDim, CDim, ...
-                                   lossFcns, superArgs, args )
+        function self = TCNModel( thisDataset, ...
+                                  lossFcns, ...
+                                  superArgs, ...
+                                  args )
             % Initialize the model
             arguments
-                XDim            double {mustBeInteger, mustBePositive}
-                XOutputDim      double {mustBeInteger, mustBePositive}
-                XChannels       double {mustBeInteger, mustBePositive}
-                ZDim            double {mustBeInteger, mustBePositive}
-                CDim            double {mustBeInteger, mustBePositive}
+                thisDataset        ModelDataset
             end
             arguments (Repeating)
-                lossFcns     lossFunction
+                lossFcns           LossFunction
             end
             arguments
-                superArgs.?autoencoderModel
+                superArgs.?FullAEModel
                 args.numHidden     double ...
                     {mustBeInteger, mustBePositive} = 2
                 args.numFilters    double ...
@@ -59,21 +51,17 @@ classdef tcnModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( XDim, ...
-                                          XOutputDim, ...
-                                          XChannels, ...
-                                          ZDim, ...
-                                          CDim, ...
-                                          lossFcns{:}, ...
-                                          superArgsCell{:}, ...
-                                          hasSeqInput = true );
+            self@FullAEModel( thisDataset, ...
+                              lossFcns{:}, ...
+                              superArgsCell{:}, ...
+                              hasSeqInput = true );
 
 
             % store this class's properties
             self.NumHidden = args.numHidden;
             self.FilterSize = args.filterSize;
 
-            self.Scale = args.scale;
+            self.ReLuScale = args.scale;
             self.InputDropout = args.inputDropout;
             self.Dropout = args.dropout;
             self.Pooling = args.pooling;
@@ -88,17 +76,13 @@ classdef tcnModel < autoencoderModel
             end
             self.Dilations = 2.^((0:self.NumHidden-1)*args.dilationFactor);
 
-            % initialize the networks
-            self = initEncoder( self );
-            self = initDecoder( self );
-
         end
 
 
-        function self = initEncoder( self )
+        function net = initEncoder( self )
             % Initialize the encoder network
             arguments
-                self        tcnModel
+                self        TCNModel
             end
 
             % define input layers
@@ -116,7 +100,7 @@ classdef tcnModel < autoencoderModel
                     lgraphEnc, i, lastLayer, ...
                     self.FilterSize, self.NumFilters(i), ...
                     self.Dilations(i), ...
-                    self.Scale, self.Dropout, self.UseSkips, false );
+                    self.ReLuScale, self.Dropout, self.UseSkips, false );
             end
             
             % add the output layers
@@ -139,24 +123,23 @@ classdef tcnModel < autoencoderModel
         
         
             if self.IsVAE
-                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.NumVAEDraws );
+                net = VAEdlnetwork( lgraphEnc, numDraws = self.NumVAEDraws );
             else
-                self.Nets.Encoder = dlnetwork( lgraphEnc );
+                net = dlnetwork( lgraphEnc );
             end
 
         end
 
 
-        function self = initDecoder( self )
+        function net = initDecoder( self )
             % Initialize the decoder network
             arguments
-                self        tcnModel
+                self        TCNModel
             end
 
             % define input layers
             layersDec = [ featureInputLayer( self.ZDim, 'Name', 'in' )
-                          projectAndReshapeLayer( [self.XDim 1 self.XChannels ], ...
+                          projectAndReshapeLayer( [self.XInputDim 1 self.XChannels ], ...
                                         self.ZDim, 'Name', 'proj' ) ];
             
             lgraphDec = layerGraph( layersDec );
@@ -168,7 +151,7 @@ classdef tcnModel < autoencoderModel
                     lgraphDec, i, lastLayer, ...
                     self.FilterSize, f, ...
                     self.Dilations(i), ...
-                    self.Scale, self.Dropout, self.UseSkips, true );
+                    self.ReLuScale, self.Dropout, self.UseSkips, true );
             end
             
             % add the output layers
@@ -182,12 +165,12 @@ classdef tcnModel < autoencoderModel
             end
             
             outLayers = [ outLayers; 
-                          fullyConnectedLayer( self.XOutputDim*self.XChannels, ...
+                          fullyConnectedLayer( self.XTargetDim*self.XChannels, ...
                                                'Name', 'fcout' ) ];
             
             if self.XChannels > 1
                 outLayers = [ outLayers; 
-                          reshapeLayer( [self.XOutputDim self.XChannels], ...
+                          reshapeLayer( [self.XTargetDim self.XChannels], ...
                                         'Name', 'reshape' ) ];
             end
             
@@ -195,7 +178,7 @@ classdef tcnModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, poolingLayer );
             
-            self.Nets.Decoder = dlnetwork( lgraphDec );
+            net = dlnetwork( lgraphDec );
 
         end
 

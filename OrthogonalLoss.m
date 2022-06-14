@@ -1,13 +1,6 @@
-% ************************************************************************
-% Class: orthogonalLoss
-%
-% Subclass for the Z othogonality loss (penalising correlated latent codes)
-%
-% Code adapted from https://github.com/WangDavey/COAE
-%
-% ************************************************************************
-
-classdef orthogonalLoss < lossFunction
+classdef OrthogonalLoss < LossFunction
+    % Subclass for the Z othogonality loss (penalising correlated latent codes)
+    % Code adapted from https://github.com/WangDavey/COAE
 
     properties
 
@@ -15,15 +8,15 @@ classdef orthogonalLoss < lossFunction
 
     methods
 
-        function self = orthogonalLoss( name, superArgs )
+        function self = OrthogonalLoss( name, superArgs )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                superArgs.?lossFunction
+                superArgs.?LossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'Z', ...
                                  lossNets = {'Encoder'} );

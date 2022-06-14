@@ -2,7 +2,7 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @jumpGRFDataset;
+    setup.data.class = @JumpGRFDataset;
     setup.data.args.normalization = 'PAD';
     setup.data.args.hasNormalizedInput = true;
     setup.data.args.normalizedPts = 51;
@@ -70,9 +70,9 @@ function setup = initSetup
     setup.lossFcns.cls.name = 'Classification';
     setup.lossFcns.cls.args.useLoss = true;
 
-    setup.lossFcns.xcls.class = @InputClassifierLoss;
-    setup.lossFcns.xcls.name = 'XClassification';
-    setup.lossFcns.xcls.args.useLoss = true;
+    %setup.lossFcns.xcls.class = @InputClassifierLoss;
+    %setup.lossFcns.xcls.name = 'XClassification';
+    %setup.lossFcns.xcls.args.useLoss = true;
 
     % model
     setup.model.class = @FCModel;

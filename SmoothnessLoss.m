@@ -1,11 +1,5 @@
-% ************************************************************************
-% Class: smoothnessLoss
-%
-% Subclass for the loss functions computed from AE components
-%
-% ************************************************************************
-
-classdef smoothnessLoss < lossFunction
+classdef SmoothnessLoss < LossFunction
+    % Subclass for the loss functions computed from AE components
 
     properties
         NumBasisFcns        % number of basis functions
@@ -19,7 +13,7 @@ classdef smoothnessLoss < lossFunction
 
     methods
 
-        function self = smoothnessLoss( name, args, superArgs )
+        function self = SmoothnessLoss( name, args, superArgs )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
@@ -31,11 +25,11 @@ classdef smoothnessLoss < lossFunction
                     {mustBeInteger,mustBePositive} = 1
                 args.Lambda          double ...
                     {mustBePositive} = 1E-2
-                superArgs.?lossFunction
+                superArgs.?LossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Output', ...
                                  input = 'XHat', ...
                                  lossNets = {'Encoder', 'Decoder'} );
@@ -63,7 +57,7 @@ classdef smoothnessLoss < lossFunction
         function self = setScale( self, data )
             % Set the scaling factor when calculating the loss
             arguments
-                self        smoothnessLoss
+                self        SmoothnessLoss
                 data        double
             end
 
@@ -76,7 +70,7 @@ classdef smoothnessLoss < lossFunction
         function loss = calcLoss( self, dlXHat )
             % Calculate the component loss
             arguments
-                self        smoothnessLoss
+                self        SmoothnessLoss
                 dlXHat      dlarray  % output
             end
 
@@ -88,24 +82,8 @@ classdef smoothnessLoss < lossFunction
             XHatFd = smooth_basis( tSpan, XHat, self.FdParams );
             XHatSmth = eval_fd( tSpan, XHatFd );
 
-            if isa( dlXHat, 'dlarray' )
-                % dimensions are Time x Channel x Batch
-                if size( XHat, 3 ) == 1
-                    loss = mean( (XHat-XHatSmth).^2, [1 2] )/self.Scale;
-                else
-                    loss = mean(mean( (XHat-XHatSmth).^2, [1 3] )./self.Scale);
-                end
-            else
-                % dimensions are Time x Batch x Channel
-                if size( XHat, 3 ) == 1
-                    loss = mean( (XHat-XHatSmth).^2, [1 2] )/self.Scale;
-                else
-                    loss = mean(mean( (XHat-XHatSmth).^2, [1 2] )./ ...
-                                        permute(self.Scale, [1 3 2]));
-                end
-            end
-
-            loss = 10*loss;
+            % calculate the MSE loss
+            loss = 10*reconLoss( XHat, XHatSmth, self.Scale );
 
         end
 

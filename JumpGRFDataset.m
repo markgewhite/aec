@@ -1,4 +1,4 @@
-classdef jumpGRFDataset < modelDataset
+classdef JumpGRFDataset < ModelDataset
     % Subclass for loading the countermovement jump VGRF dataset
 
     properties
@@ -7,17 +7,17 @@ classdef jumpGRFDataset < modelDataset
 
     methods
 
-        function self = jumpGRFDataset( set, args, superArgs )
+        function self = JumpGRFDataset( set, args, superArgs )
             % Load the countermovement jump GRF dataset
             arguments
                 set        char ...
                     {mustBeMember( set, ...
                                    {'Training', 'Testing'} )}
                 args.PaddingLength  double = 0
-                superArgs.?modelDataset
+                superArgs.?ModelDataset
             end
 
-            [ XRaw, Y, S ] = jumpGRFDataset.load( set );
+            [ XRaw, Y, S ] = JumpGRFDataset.load( set );
             Y = Y+1;
 
             % setup padding
@@ -42,7 +42,7 @@ classdef jumpGRFDataset < modelDataset
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            self = self@modelDataset( XRaw, Y, tSpan, ...
+            self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...
@@ -59,7 +59,7 @@ classdef jumpGRFDataset < modelDataset
         function unit = getPartitioningUnit( self )
             % Provide the SubjectID for partitioning (overriding parent)
             arguments
-                self    jumpGRFDataset
+                self    JumpGRFDataset
             end
 
             unit = self.SubjectID;

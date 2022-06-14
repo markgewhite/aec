@@ -1,4 +1,4 @@
-classdef fukuchiDataset < modelDataset
+classdef FukuchiDataset < ModelDataset
     % Subclass for loading the Fukuchi et al (2018) dataset
 
     properties
@@ -19,7 +19,7 @@ classdef fukuchiDataset < modelDataset
 
     methods
 
-        function self = fukuchiDataset( set, args, superArgs )
+        function self = FukuchiDataset( set, args, superArgs )
             % Load the data
             arguments
                 set                     char ...
@@ -42,7 +42,7 @@ classdef fukuchiDataset < modelDataset
                 args.HasFootAngles      logical = false
                 args.FromMatlabFile     logical = true
                 args.PaddingLength      double = 0
-                superArgs.?modelDataset
+                superArgs.?ModelDataset
             end
 
             if (args.HasGRF + args.HasCOP)==0
@@ -51,7 +51,7 @@ classdef fukuchiDataset < modelDataset
                 throwAsCaller( MException(eid,msg) );
             end
 
-            [ XRaw, Y, S, side, labels ] = fukuchiDataset.load( set, args );
+            [ XRaw, Y, S, side, labels ] = FukuchiDataset.load( set, args );
 
             % setup padding
             if args.PaddingLength==0
@@ -83,7 +83,7 @@ classdef fukuchiDataset < modelDataset
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            self = self@modelDataset( XRaw, Y, tSpan, ...
+            self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...
@@ -112,7 +112,7 @@ classdef fukuchiDataset < modelDataset
         function unit = getPartitioningUnit( self )
             % Provide the SubjectID for partitioning (overriding parent)
             arguments
-                self    fukuchiDataset
+                self    FukuchiDataset
             end
 
             unit = self.SubjectID;

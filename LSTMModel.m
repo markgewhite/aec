@@ -1,15 +1,9 @@
-% ************************************************************************
-% Class: lstmModel
-%
-% Subclass defining a long/short term memory autoencoder model
-%
-% ************************************************************************
-
-classdef lstmModel < autoencoderModel
+classdef LSTMModel < FullAEModel
+    % Subclass defining a long/short term memory autoencoder model
 
     properties
         NumHiddenUnits          % number LSTM nodes
-        Scale                   % leaky ReLu scale factor
+        ReLuScale               % leaky ReLu scale factor
         InputDropout            % initial dropout rate
         Dropout                 % dropout rate
         ReverseDecoding         % whether to reverse the order when decoding
@@ -20,21 +14,19 @@ classdef lstmModel < autoencoderModel
 
     methods
 
-        function self = lstmModel( XDim, XOutputDim, XChannels, ZDim, CDim, ...
-                                   lossFcns, superArgs, args )
+        function self = LSTMModel( thisDataset, ...
+                                   lossFcns, ...
+                                   superArgs, ...
+                                   args )
             % Initialize the model
             arguments
-                XDim            double {mustBeInteger, mustBePositive}
-                XOutputDim      double {mustBeInteger, mustBePositive}
-                XChannels       double {mustBeInteger, mustBePositive}
-                ZDim            double {mustBeInteger, mustBePositive}
-                CDim            double {mustBeInteger, mustBePositive}
+                thisDataset     ModelDataset
             end
             arguments (Repeating)
                 lossFcns     lossFunction
             end
             arguments
-                superArgs.?autoencoderModel
+                superArgs.?FullAEModel
                 args.numHiddenUnits     double ...
                     {mustBeInteger, mustBePositive} = 50
                 args.scale              double ...
@@ -52,20 +44,15 @@ classdef lstmModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( XDim, ...
-                                          XOutputDim, ...
-                                          XChannels, ...
-                                          ZDim, ...
-                                          CDim, ...
-                                          lossFcns{:}, ...
-                                          superArgsCell{:}, ...
-                                          hasSeqInput = true, ...
-                                          isVAE = false );
-
+            self@FullAEModel( thisDataset, ...
+                              lossFcns{:}, ...
+                              superArgsCell{:}, ...
+                              hasSeqInput = true, ...
+                              isVAE = false );
 
             % store this class's properties
             self.NumHiddenUnits = args.numHiddenUnits;
-            self.Scale = args.scale;
+            self.ReLuScale = args.scale;
             self.InputDropout = args.inputDropout;
             self.Dropout = args.dropout;
 
@@ -74,17 +61,13 @@ classdef lstmModel < autoencoderModel
             self.ScheduleSampling = args.scheduleSampling;
             self.SamplingRateIncrement = args.samplingRateIncrement;
 
-            % initialize the networks
-            self = initEncoder( self );
-            self = initDecoder( self );
-
         end
 
 
-        function self = initEncoder( self )
+        function net = initEncoder( self )
             % Initialize the encoder network
             arguments
-                self        lstmModel
+                self        LSTMModel
             end
 
             layersEnc = [ ...
@@ -112,15 +95,15 @@ classdef lstmModel < autoencoderModel
 
             lgraphEnc = layerGraph( layersEnc );
                    
-            self.Nets.Encoder = dlnetwork( lgraphEnc );
+            net = dlnetwork( lgraphEnc );
 
         end
 
 
-        function self = initDecoder( self )
+        function net = initDecoder( self )
             % Initialize the decoder network
             arguments
-                self        lstmModel
+                self        LSTMModel
             end
 
             layersDec = [ ...
@@ -155,7 +138,7 @@ classdef lstmModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, 'hidden', 'lstm/hidden' );
             lgraphDec = connectLayers( lgraphDec, 'cell', 'lstm/cell' );
             
-            self.Nets.Decoder = dlnetwork( lgraphDec );
+            net = dlnetwork( lgraphDec );
 
         end
 
@@ -163,7 +146,7 @@ classdef lstmModel < autoencoderModel
         function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
             % Forward-run the lstm network, overriding autoencoder method
             arguments
-                self        lstmModel
+                self        LSTMModel
                 encoder     dlnetwork
                 decoder     dlnetwork
                 dlX         dlarray
@@ -187,7 +170,7 @@ classdef lstmModel < autoencoderModel
             end
 
             seqInputLen = size( dlX, 3 );
-            seqOutputLen = self.XOutputDim;
+            seqOutputLen = self.XTargetDim;
 
             dlXHat = repmat( dlX, [1 1 2] );
             
@@ -246,13 +229,13 @@ classdef lstmModel < autoencoderModel
                 arg.convert     logical = true
             end
 
-            if isa( X, 'modelDataset' )
+            if isa( X, 'ModelDataset' )
                 dlX = X.getDLInput;
             elseif isa( X, 'dlarray' )
                 dlX = X;
             else
                 eid = 'Autoencoder:NotValidX';
-                msg = 'The input data should be a modelDataset or a dlarray.';
+                msg = 'The input data should be a ModelDataset or a dlarray.';
                 throwAsCaller( MException(eid,msg) );
             end
 

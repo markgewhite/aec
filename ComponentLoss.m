@@ -1,11 +1,5 @@
-% ************************************************************************
-% Class: componentLoss
-%
-% Subclass for the loss functions computed from AE components
-%
-% ************************************************************************
-
-classdef componentLoss < lossFunction
+classdef ComponentLoss < LossFunction
+    % Subclass for the loss functions computed from AE components
 
     properties
         Criterion     % criterion function for component loss
@@ -15,7 +9,7 @@ classdef componentLoss < lossFunction
 
     methods
 
-        function self = componentLoss( name, args, superArgs )
+        function self = ComponentLoss( name, args, superArgs )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
@@ -25,11 +19,11 @@ classdef componentLoss < lossFunction
                                         = 'Orthogonality'
                 args.nSample         double ...
                     {mustBeInteger, mustBePositive} = 10
-                superArgs.?lossFunction
+                superArgs.?LossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Component', ...
                                  input = 'XC', ...
                                  lossNets = {'Encoder', 'Decoder'} );
@@ -44,7 +38,7 @@ classdef componentLoss < lossFunction
         function self = setScale( self, data )
             % Set the scaling factor when calculating reconstruction loss
             arguments
-                self        componentLoss
+                self        ComponentLoss
                 data        double
             end
 

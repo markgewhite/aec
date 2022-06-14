@@ -1,26 +1,20 @@
-% ************************************************************************
-% Class: vaeNetwork
-%
-% Subclass the processing for the output of a variational autoencoder
-%
-% ************************************************************************
-
-classdef dlnetworkVAE < dlnetwork
+classdef VAEdlnetwork < dlnetwork
+    % Subclass the processing for the output of a variational autoencoder
 
     properties
-        nDraws     % number of draws from the distribution per row
-        useMean    % flag whether to use mean output in predictions
-        dlMeans    % last forward-output of means
-        dlLogVars  % last forward-output of log variance
+        NumDraws     % number of draws from the distribution per row
+        UseMean      % flag whether to use mean output in predictions
+        dlMeans      % last forward-output of means
+        dlLogVars    % last forward-output of log variance
     end
 
     methods
 
-        function self = dlnetworkVAE( lgraph, args, superArgs )
+        function self = VAEdlnetwork( lgraph, args, superArgs )
             % Initialize the variational autoencoder
             arguments
                 lgraph
-                args.nDraws   double {mustBeInteger,mustBePositive} = 1
+                args.numDraws   double {mustBeInteger,mustBePositive} = 1
                 args.useMean  logical = true
                 superArgs.?dlnetwork
             end
@@ -28,8 +22,8 @@ classdef dlnetworkVAE < dlnetwork
             superArgsCell = namedargs2cell( superArgs );
            
             self = self@dlnetwork( lgraph, superArgsCell{:} );
-            self.nDraws = args.nDraws;
-            self.useMean = args.useMean;
+            self.NumDraws = args.numDraws;
+            self.UseMean = args.useMean;
 
         end
 
@@ -51,7 +45,7 @@ classdef dlnetworkVAE < dlnetwork
 
             [ dlEncOutput, state ] = forward@dlnetwork( self, dlX{:}, superArgsCell{:} );
 
-            [ dlZ, dlMean, dlLogVars ] = reparameterize( dlEncOutput, self.nDraws );
+            [ dlZ, dlMean, dlLogVars ] = reparameterize( dlEncOutput, self.NumDraws );
 
         end
 
@@ -74,7 +68,7 @@ classdef dlnetworkVAE < dlnetwork
 
             [ dlZ, dlMean ] = reparameterize( dlEncOutput, 1 );
 
-            if self.useMean
+            if self.UseMean
                 dlZ = dlMean;
             end
 

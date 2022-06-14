@@ -58,8 +58,8 @@ classdef CompactRepresentationModel
             % It may be a full or compact model
             arguments
                 self            CompactRepresentationModel
-                thisTrnSet      modelDataset
-                thisValSet      modelDataset
+                thisTrnSet      ModelDataset
+                thisValSet      ModelDataset
             end
 
             [ self.Loss.Training, self.Predictions.Training ] = ...
@@ -81,7 +81,7 @@ classdef CompactRepresentationModel
             % compute the explained variance
             arguments
                 self            CompactRepresentationModel            
-                thisDataset     modelDataset
+                thisDataset     ModelDataset
             end
 
             % generate the latent encodings
@@ -191,7 +191,7 @@ classdef CompactRepresentationModel
             % Evaluate the model with a specified dataset
             arguments
                 self             CompactRepresentationModel
-                thisDataset      modelDataset
+                thisDataset      ModelDataset
             end
         
             % record the input

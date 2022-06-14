@@ -35,8 +35,8 @@ classdef CompactPCAModel < CompactRepresentationModel
             % Run FPCA for the encoder
             arguments
                 self            CompactPCAModel
-                thisTrnData     modelDataset
-                thisValData     modelDataset % redundant for PCA
+                thisTrnData     ModelDataset
+                thisValData     ModelDataset % redundant for PCA
             end
 
             % create a functional data object with fewer bases
@@ -159,7 +159,7 @@ classdef CompactPCAModel < CompactRepresentationModel
                 XFd = data;
 
             else
-                if isa( data, 'modelDataset' )
+                if isa( data, 'ModelDataset' )
                     X = data.XInputRegular;
                     %X = permute( X, [1 3 2] );
 
@@ -168,7 +168,7 @@ classdef CompactPCAModel < CompactRepresentationModel
 
                 else
                     eid = 'PCAModel:InvalidData';
-                    msg = 'The input data is not a class modelDataset or double.';
+                    msg = 'The input data is not a class ModelDataset or double.';
                     throwAsCaller( MException(eid,msg) );
 
                 end

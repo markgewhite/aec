@@ -1,4 +1,4 @@
-classdef modelDataset
+classdef ModelDataset
     % Class defining a dataset
 
     properties
@@ -47,7 +47,7 @@ classdef modelDataset
 
     methods
 
-        function self = modelDataset( XInputRaw, Y, tSpan, args )
+        function self = ModelDataset( XInputRaw, Y, tSpan, args )
             % Create and preprocess the data.
             % The calling function will be a data loader or
             % a function partitioning the data.
@@ -191,10 +191,10 @@ classdef modelDataset
 
 
         function thisSubset = partition( self, idx )
-            % Create the subset of this modelDataset
+            % Create the subset of this ModelDataset
             % using the indices specified
             arguments
-                self        modelDataset
+                self        ModelDataset
                 idx         logical 
             end
 
@@ -202,7 +202,7 @@ classdef modelDataset
             subY = self.Y( idx );
             subTSpan = self.TSpan.Original;
 
-            thisSubset = modelDataset( subXRaw, subY, subTSpan, ...
+            thisSubset = ModelDataset( subXRaw, subY, subTSpan, ...
                                        purpose = 'ForSubset' );
 
             thisSubset.XFd = splitFd( self.XFd, idx );
@@ -239,7 +239,7 @@ classdef modelDataset
         function isFixed = isFixedLength( self )
             % return whether data is time-normalized
             arguments
-                self    modelDataset
+                self    ModelDataset
             end
 
             isFixed = self.HasNormalizedInput;
@@ -251,7 +251,7 @@ classdef modelDataset
         function [ X, Y ] = getDLInput( self, labels, arg )
             % Convert X and Y into dl arrays
             arguments
-                self            modelDataset
+                self            ModelDataset
                 labels          char
                 arg.dlarray     logical = true
             end
@@ -275,7 +275,7 @@ classdef modelDataset
         function validateSmoothing( self )
             % Re-run smoothing with maximum flexibility
             arguments
-                self        modelDataset
+                self        ModelDataset
             end
 
             % pad the raw series for smoothing
@@ -337,7 +337,7 @@ classdef modelDataset
         function X = get.XInputRegular( self )
             % Generate the regularly-spaced input from XFd
             arguments
-                self    modelDataset
+                self    ModelDataset
             end
 
             XCell = processX( self.XFd, ...
@@ -357,7 +357,7 @@ classdef modelDataset
         function X = get.XInput( self )
             % Generate the adaptively-spaced input from XFd
             arguments
-                self    modelDataset
+                self    ModelDataset
             end
 
             X = processX(  self.XFd, ...
@@ -376,7 +376,7 @@ classdef modelDataset
             % Generate the adaptively-spaced input from XFd
             % producing an array of fixed length
             arguments
-                self    modelDataset
+                self    ModelDataset
             end
 
             if self.HasMatchingOutput
@@ -403,7 +403,7 @@ classdef modelDataset
             % Provide the variable to be unit for partitioning
             % Placeholder function that may be overridden by children
             arguments
-                self    modelDataset
+                self    ModelDataset
             end
 
             unit = 1:self.NumObs;
@@ -419,7 +419,7 @@ classdef modelDataset
         function selection = getCVPartition( self, args )
             % Generate a CV partition for the dataset
             arguments
-                self                modelDataset
+                self                ModelDataset
                 args.Holdout        double ...
                     {mustBeInRange(args.Holdout, 0, 1)}
                 args.KFold          double ...
@@ -471,7 +471,7 @@ classdef modelDataset
         function mbq = getMiniBatchQueue( self, batchSize, XLabels, XNLabels, args )
             % Create a minibatch queue
             arguments
-                self                modelDataset
+                self                ModelDataset
                 batchSize           double ...
                     {mustBeInteger, mustBePositive}
                 XLabels             char

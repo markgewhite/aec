@@ -18,7 +18,7 @@ classdef FCModel < FullAEModel
                                  args )
             % Initialize the model
             arguments
-                thisDataset     modelDataset
+                thisDataset     ModelDataset
             end
             arguments (Repeating)
                 lossFcns        LossFunction
@@ -90,8 +90,7 @@ classdef FCModel < FullAEModel
                                        lastLayer, 'out' );
 
             if self.IsVAE
-                net = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.NumVAEDraws );
+                net = VAEdlnetwork( lgraphEnc, numDraws = self.NumVAEDraws );
             else
                 net = dlnetwork( lgraphEnc );
             end
@@ -142,11 +141,11 @@ classdef FCModel < FullAEModel
             % to flatten the input array
             arguments
                 encoder         dlnetwork
-                X               {mustBeA( X, {'dlarray', 'modelDataset'} )}
+                X               {mustBeA( X, {'dlarray', 'ModelDataset'} )}
                 arg.convert     logical = true
             end
 
-            if isa( X, 'modelDataset' )
+            if isa( X, 'ModelDataset' )
                 dlX = X.getDLInput( self.XDimLabels );
             else
                 dlX = X;

@@ -274,7 +274,7 @@ function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
     % Calculate the aggregate evaluation using all sub-models
     arguments
         thisModel       FullRepresentationModel
-        thisDataset     modelDataset
+        thisDataset     ModelDataset
     end
 
     % generate latent encodings from all sub-models
@@ -322,13 +322,17 @@ function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
 
     if isa( thisModel, 'FullAEModel' )
         
-        % compute the comparator loss using the comparator network
-        [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
-                        predictCompNet( thisModel, thisDataset ); 
+        if any(thisModel.LossFcnTbl.Types == 'Comparator')
+            % compute the comparator loss using the comparator network
+            [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
+                            predictCompNet( thisModel, thisDataset ); 
+        end
 
-        % compute the auxiliary loss using the network
-        [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                        predictAuxNet( thisModel, pred.ZEnsemble, thisDataset.Y );
+        if any(thisModel.LossFcnTbl.Types == 'Auxiliary')
+            % compute the auxiliary loss using the network
+            [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                            predictAuxNet( thisModel, pred.ZEnsemble, thisDataset.Y );
+        end
 
     else
         pred.ComparatorYHat = [];

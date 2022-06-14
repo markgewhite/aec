@@ -11,7 +11,7 @@ classdef FullPCAModel < FullRepresentationModel
         function self = FullPCAModel( thisDataset, superArgs )
             % Initialize the model
             arguments
-                thisDataset     modelDataset
+                thisDataset     ModelDataset
                 superArgs.?FullRepresentationModel
             end
 

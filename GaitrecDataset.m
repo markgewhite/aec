@@ -1,4 +1,4 @@
-classdef gaitrecDataset < modelDataset
+classdef GaitrecDataset < ModelDataset
     % Subclass for loading the GaitRec dataset
 
     properties
@@ -19,7 +19,7 @@ classdef gaitrecDataset < modelDataset
 
     methods
 
-        function self = gaitrecDataset( set, args, superArgs )
+        function self = GaitrecDataset( set, args, superArgs )
             % Load the countermovement jump GRF dataset
             arguments
                 set                 char ...
@@ -49,7 +49,7 @@ classdef gaitrecDataset < modelDataset
                 args.HasDelta       logical = false
                 args.FromMatlabFile logical = true
                 args.PaddingLength  double = 0
-                superArgs.?modelDataset
+                superArgs.?ModelDataset
             end
 
             if (args.HasGRF + args.HasCOP)==0
@@ -58,7 +58,7 @@ classdef gaitrecDataset < modelDataset
                 throwAsCaller( MException(eid,msg) );
             end
 
-            [ XRaw, Y, S, labels ] = gaitrecDataset.load( set, args );
+            [ XRaw, Y, S, labels ] = GaitrecDataset.load( set, args );
 
             % setup padding
             if args.PaddingLength==0
@@ -82,7 +82,7 @@ classdef gaitrecDataset < modelDataset
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            self = self@modelDataset( XRaw, Y, tSpan, ...
+            self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...
@@ -111,7 +111,7 @@ classdef gaitrecDataset < modelDataset
         function unit = getPartitioningUnit( self )
             % Provide the SubjectID for partitioning (overriding parent)
             arguments
-                self    gaitrecDataset
+                self    GaitrecDataset
             end
 
             unit = self.SubjectID;

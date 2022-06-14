@@ -29,7 +29,7 @@ classdef FullRepresentationModel
         function self = FullRepresentationModel( thisDataset, args )
             % Initialize the model
             arguments
-                thisDataset         modelDataset
+                thisDataset         ModelDataset
                 args.ZDim           double ...
                     {mustBeInteger, mustBePositive}
                 args.auxModelType   string ...
@@ -86,7 +86,7 @@ classdef FullRepresentationModel
             % Train the model on the data provided using cross validation
             arguments
                 self            FullRepresentationModel
-                thisDataset     modelDataset
+                thisDataset     ModelDataset
             end
 
             % re-partition the data to create training and validation sets
@@ -161,7 +161,7 @@ classdef FullRepresentationModel
             % Encode aggregated features Z from X using all models
             arguments
                 self            FullRepresentationModel
-                thisDataset     modelDataset
+                thisDataset     ModelDataset
             end
 
             ZFold = zeros( thisDataset.NumObs, self.ZDim, self.KFolds );

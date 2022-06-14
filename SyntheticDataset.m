@@ -1,4 +1,4 @@
-classdef syntheticDataset < modelDataset
+classdef SyntheticDataset < ModelDataset
     % Subclass for generating a simulated (artificial) dataset
     % based originally on the method proposed by Hsieh et al. (2021).
     % Enhanced with option to have multiple basis levels.
@@ -18,7 +18,7 @@ classdef syntheticDataset < modelDataset
 
     methods
 
-        function self = syntheticDataset( set, args, superArgs )
+        function self = SyntheticDataset( set, args, superArgs )
             % Load the countermovement jump GRF dataset
             arguments
                 set                 char ...
@@ -37,12 +37,12 @@ classdef syntheticDataset < modelDataset
                 args.SharedLevel    double = 3
                 args.WarpLevel      double = 2
                 args.PaddingLength  double = 0
-                superArgs.?modelDataset
+                superArgs.?ModelDataset
             end
 
             args.tSpan = linspace( 0, 1024, args.NumPts );
 
-            [ XRaw, Y ] = syntheticDataset.genData( args.ClassSizes, args );
+            [ XRaw, Y ] = SyntheticDataset.genData( args.ClassSizes, args );
 
             % setup padding
             if args.PaddingLength==0
@@ -67,7 +67,7 @@ classdef syntheticDataset < modelDataset
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            self = self@modelDataset( XRaw, Y, tSpan, ...
+            self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...

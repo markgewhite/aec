@@ -1,4 +1,4 @@
-classdef exemplarDataset < modelDataset
+classdef ExemplarDataset < ModelDataset
     % Subclass for generating an exemplar dataset
     % for testing the capabilities of different models
 
@@ -22,7 +22,7 @@ classdef exemplarDataset < modelDataset
 
     methods
 
-        function self = exemplarDataset( set, args, superArgs )
+        function self = ExemplarDataset( set, args, superArgs )
             % Initialize the exemplar dataset
             arguments
                 set                     char ...
@@ -45,7 +45,7 @@ classdef exemplarDataset < modelDataset
                 args.HasVariableLength  logical = false
                 args.TerminationValue   double = 0
                 args.PaddingLength      double = 0
-                superArgs.?modelDataset
+                superArgs.?ModelDataset
             end
 
             args = validateArgs( args );
@@ -103,7 +103,7 @@ classdef exemplarDataset < modelDataset
 
             name = 'Exemplar Data';
 
-            self = self@modelDataset( X, Y, tSpan, ...
+            self = self@ModelDataset( X, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...

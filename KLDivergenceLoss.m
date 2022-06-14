@@ -1,11 +1,5 @@
-% ************************************************************************
-% Class: klDivergenceLoss
-%
-% Subclass for Kullback-Leibler divergence loss
-%
-% ************************************************************************
-
-classdef klDivergenceLoss < lossFunction
+classdef KLDivergenceLoss < LossFunction
+    % Subclass for Kullback-Leibler divergence loss
 
     properties
 
@@ -13,15 +7,15 @@ classdef klDivergenceLoss < lossFunction
 
     methods
 
-        function self = klDivergenceLoss( name, superArgs )
+        function self = KLDivergenceLoss( name, superArgs )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                superArgs.?lossFunction
+                superArgs.?LossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'Z', ...
                                  lossNets = {'Encoder'} );

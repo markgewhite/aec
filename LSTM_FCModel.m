@@ -1,12 +1,6 @@
-% ************************************************************************
-% Class: lstmfcModel
-%
-% Subclass defining a long/short term memory encoder
-% with a fully connected decoder model
-%
-% ************************************************************************
-
-classdef lstmfcModel < autoencoderModel
+classdef LSTM_FCModel < FullAEModel
+    % Subclass defining a long/short term memory encoder
+    % with a fully connected decoder model
 
     properties
         NumLSTMHidden           % number of LSTM hidden layers
@@ -15,7 +9,7 @@ classdef lstmfcModel < autoencoderModel
         NumFCHidden             % number of FC hidden layers
         NumFCNodes              % number of nodes for widest layer
         FCFactor                % log2 scaling factor subsequent layers
-        Scale                   % leaky ReLu scale factor
+        ReLuScale               % leaky ReLu scale factor
         InputDropout            % initial dropout rate
         Dropout                 % dropout rate
         Bidirectional           % if the network is bidirectional
@@ -23,21 +17,19 @@ classdef lstmfcModel < autoencoderModel
 
     methods
 
-        function self = lstmfcModel( XDim, XOutputDim, XChannels, ZDim, CDim, ...
-                                   lossFcns, superArgs, args )
+        function self = LSTM_FCModel( thisDataset, ...
+                                      lossFcns, ...
+                                      superArgs, ...
+                                      args )
             % Initialize the model
             arguments
-                XDim            double {mustBeInteger, mustBePositive}
-                XOutputDim      double {mustBeInteger, mustBePositive}
-                XChannels       double {mustBeInteger, mustBePositive}
-                ZDim            double {mustBeInteger, mustBePositive}
-                CDim            double {mustBeInteger, mustBePositive}
+                thisDataset     ModelDataset
             end
             arguments (Repeating)
-                lossFcns     lossFunction
+                lossFcns        LossFunction
             end
             arguments
-                superArgs.?autoencoderModel
+                superArgs.?FullAEModel
                 args.numLSTMHidden      double ...
                     {mustBeInteger, mustBePositive} = 3
                 args.numLSTMNodes       double ...
@@ -61,15 +53,11 @@ classdef lstmfcModel < autoencoderModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
-            self = self@autoencoderModel( XDim, ...
-                                          XOutputDim, ...
-                                          XChannels, ...
-                                          ZDim, ...
-                                          CDim, ...
-                                          lossFcns{:}, ...
-                                          superArgsCell{:}, ...
-                                          hasSeqInput = true, ...
-                                          isVAE = false );
+            self@FullAEModel( thisDataset, ...
+                              lossFcns{:}, ...
+                              superArgsCell{:}, ...
+                              hasSeqInput = true, ...
+                              isVAE = false );
 
 
             % store this class's properties
@@ -80,23 +68,19 @@ classdef lstmfcModel < autoencoderModel
             self.NumFCNodes = args.numFCNodes;
             self.FCFactor = args.fcFactor;
 
-            self.Scale = args.scale;
+            self.ReLuScale = args.scale;
             self.InputDropout = args.inputDropout;
             self.Dropout = args.dropout;
 
             self.Bidirectional = args.bidirectional;
 
-            % initialize the networks
-            self = initEncoder( self );
-            self = initDecoder( self );
-
         end
 
 
-        function self = initEncoder( self )
+        function net = initEncoder( self )
             % Initialize the encoder network
             arguments
-                self        lstmfcModel
+                self        LSTM_FCModel
             end
 
             layersEnc = [ ...
@@ -116,7 +100,7 @@ classdef lstmfcModel < autoencoderModel
 
                 [lgraphEnc, lastLayer] = addLSTMBlock( lgraphEnc, i, lastLayer, ...
                         nNodes, self.Bidirectional, ...
-                        self.Scale, self.Dropout, sequenceOutput );
+                        self.ReLuScale, self.Dropout, sequenceOutput );
 
             end
             
@@ -128,19 +112,18 @@ classdef lstmfcModel < autoencoderModel
                                        lastLayer, 'out' );
 
             if self.IsVAE
-                self.Nets.Encoder = dlnetworkVAE( lgraphEnc, ...
-                                                  nDraws = self.NumVAEDraws );
+                net = VAEdlnetwork( lgraphEnc, numDraws = self.NumVAEDraws );
             else
-                self.Nets.Encoder = dlnetwork( lgraphEnc );
+                net = dlnetwork( lgraphEnc );
             end
 
         end
 
 
-        function self = initDecoder( self )
+        function net = initDecoder( self )
             % Initialize the decoder network
             arguments
-                self        lstmfcModel
+                self        LSTM_FCModel
             end
 
             layersDec = featureInputLayer( self.ZDim, 'Name', 'in' );
@@ -153,16 +136,16 @@ classdef lstmfcModel < autoencoderModel
                 nNodes = fix( self.NumFCNodes*2^(self.FCFactor*(-self.NumFCHidden+i)) );
 
                 [lgraphDec, lastLayer] = addFCBlock( lgraphDec, i, lastLayer, ...
-                                    nNodes, self.Scale, self.Dropout );
+                                    nNodes, self.ReLuScale, self.Dropout );
 
             end
 
-            outLayers = fullyConnectedLayer( self.XOutputDim*self.XChannels, ...
+            outLayers = fullyConnectedLayer( self.XTargetDim*self.XChannels, ...
                                                'Name', 'fcout' );
 
             if self.XChannels > 1
                 outLayers = [ outLayers; 
-                                reshapeLayer( [self.XOutputDim self.XChannels], ...
+                                reshapeLayer( [self.XTargetDim self.XChannels], ...
                                               'Name', 'reshape' ) ];
             end
             
@@ -170,7 +153,7 @@ classdef lstmfcModel < autoencoderModel
             lgraphDec = connectLayers( lgraphDec, ...
                                        lastLayer, 'fcout' );
 
-            self.Nets.Decoder = dlnetwork( lgraphDec );
+            net = dlnetwork( lgraphDec );
 
         end
 
@@ -186,13 +169,13 @@ classdef lstmfcModel < autoencoderModel
                 arg.convert     logical = true
             end
 
-            if isa( X, 'modelDataset' )
+            if isa( X, 'ModelDataset' )
                 dlX = X.getDLInput( self.XDimLabels );
             elseif isa( X, 'dlarray' )
                 dlX = X;
             else
                 eid = 'Autoencoder:NotValidX';
-                msg = 'The input data should be a modelDataset or a dlarray.';
+                msg = 'The input data should be a ModelDataset or a dlarray.';
                 throwAsCaller( MException(eid,msg) );
             end
 

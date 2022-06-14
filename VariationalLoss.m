@@ -1,13 +1,7 @@
-% ************************************************************************
-% Class: variationalLoss
-%
-% Subclass for Kullback-Leibler divergence loss 
-% for variational autoencoders where the mean and variance are 
-% obtaine directly from the encoder network
-%
-% ************************************************************************
-
-classdef variationalLoss < lossFunction
+classdef VariationalLoss < LossFunction
+    % Subclass for Kullback-Leibler divergence loss 
+    % for variational autoencoders where the mean and variance are 
+    % obtaine directly from the encoder network
 
     properties
 
@@ -15,15 +9,15 @@ classdef variationalLoss < lossFunction
 
     methods
 
-        function self = variationalLoss( name, superArgs )
+        function self = VariationalLoss( name, superArgs )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                superArgs.?lossFunction
+                superArgs.?LossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'ZMu-ZLogVar', ...
                                  lossNets = {'Encoder'} );

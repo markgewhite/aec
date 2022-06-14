@@ -31,7 +31,7 @@ classdef FullAEModel < FullRepresentationModel
                                      args )
             % Initialize the model
             arguments
-                thisDataset         modelDataset
+                thisDataset         ModelDataset
             end
             arguments (Repeating)
                 lossFcns            LossFunction
@@ -347,7 +347,7 @@ classdef FullAEModel < FullRepresentationModel
             % Predict Y from X using all comparator networks
             arguments
                 self            FullAEModel
-                thisDataset     modelDataset
+                thisDataset     ModelDataset
             end
 
             YHatFold = zeros( thisDataset.NumObs, self.KFolds );

@@ -1,14 +1,8 @@
-% ************************************************************************
-% Class: wassersteinLoss
-%
-% Subclass for wasserstein loss based on the Maximum Mean Discrepancy 
-% distance between samples
-%
-% Code adapted from https://github.com/tolstikhin/wae
-%
-% ************************************************************************
-
-classdef wassersteinLoss < lossFunction
+classdef WassersteinLoss < LossFunction
+    % Subclass for wasserstein loss based on the 
+    % Maximum Mean Discrepancy distance between samples
+    
+    % Code adapted from https://github.com/tolstikhin/wae
 
     properties
         Kernel        % type of kernel to use
@@ -19,11 +13,11 @@ classdef wassersteinLoss < lossFunction
 
     methods
 
-        function self = wassersteinLoss( name, superArgs, args )
+        function self = WassersteinLoss( name, superArgs, args )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                superArgs.?lossFunction
+                superArgs.?LossFunction
                 args.kernel          char ...
                     {mustBeMember( args.kernel, {'RBF', 'IMQ'} )} = 'IMQ'
                 args.scale           double = 2
@@ -36,7 +30,7 @@ classdef wassersteinLoss < lossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            self = self@lossFunction( name, superArgsCell{:}, ...
+            self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'Z', ...
                                  lossNets = {'Encoder'} );

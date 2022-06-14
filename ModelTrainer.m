@@ -96,8 +96,8 @@ classdef ModelTrainer < handle
             arguments
                 self            ModelTrainer
                 thisModel       CompactAEModel
-                thisTrnData     modelDataset
-                thisValData     modelDataset
+                thisTrnData     ModelDataset
+                thisValData     ModelDataset
             end
 
             
@@ -246,7 +246,7 @@ classdef ModelTrainer < handle
             % Report progress on training
             arguments
                 thisModel       CompactAEModel
-                thisData        modelDataset
+                thisData        ModelDataset
                 lossTrn         double
                 epoch           double
                 args.nLines     double = 8
