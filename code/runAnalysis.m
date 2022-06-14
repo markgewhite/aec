@@ -4,8 +4,8 @@ setup = initSetup;
 
 % first investigation
 name = 'JumpsGRF(Adaptive-NoClassification)';
-path = fileparts( which('runAnalysis.m') );
-path = [path '/results/'];
+path = fileparts( which('code/runAnalysis.m') );
+path = [path '/../results/'];
 
 %parameters = [ "model.args.ZDim", ...
 %               "lossFcns.cls.args.useLoss" ];
