@@ -8,33 +8,36 @@ classdef FullPCAModel < FullRepresentationModel
 
     methods
 
-        function self = FullPCAModel( thisDataset, superArgs )
+        function self = FullPCAModel( thisDataset, superArgs, args )
             % Initialize the model
             arguments
                 thisDataset     ModelDataset
                 superArgs.?FullRepresentationModel
+                args.name           string
+                args.path           string
             end
 
-            argsCell = namedargs2cell(superArgs);
+            superArgsCell = namedargs2cell(superArgs);
+            argsCell = namedargs2cell(args);
             self@FullRepresentationModel( thisDataset, ...
+                                          superArgsCell{:}, ...
                                           argsCell{:}, ...
                                           NumCompLines = 2 );
 
-            self.PCATSpan = thisDataset.TSpan.Target;
-            self.PCAFdParams = thisDataset.FDA.FdParamsTarget;
-
-            self.SubModels = cell( self.KFolds, 1 );
+            self.PCATSpan = thisDataset.TSpan.Regular;
+            self.PCAFdParams = thisDataset.FDA.FdParamsRegular;
 
         end
 
 
-        function thisModel = initSubModel( self )
+        function thisModel = initSubModel( self, id )
             % Initialize a sub-model
             arguments
                 self            FullPCAModel
+                id              double
             end
 
-            thisModel = CompactPCAModel( self );
+            thisModel = CompactPCAModel( self, id );
 
         end
 

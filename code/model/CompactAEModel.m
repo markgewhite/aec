@@ -27,13 +27,14 @@ classdef CompactAEModel < CompactRepresentationModel
 
     methods
 
-        function self = CompactAEModel( theFullModel )
+        function self = CompactAEModel( theFullModel, fold )
             % Initialize the model
             arguments
                 theFullModel        FullAEModel
+                fold                double
             end
 
-            self@CompactRepresentationModel( theFullModel );
+            self@CompactRepresentationModel( theFullModel, fold );
 
             % copy over the full model's relevant properties
             self.NetNames = theFullModel.NetNames;
@@ -377,10 +378,20 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-    end
+        function save( self )
+            % Save the model plots and the object itself
+            arguments
+                self            CompactAEModel
+            end
 
+            plotObjects = self.Axes;
+            plotObjects.Components = self.Figs.Components;
+            plotObjects.Loss = self.Trainer.LossFig;
 
-    methods (Static)
+            savePlots( plotObjects, self.Info.Path, self.Info.Name );
+
+        end
+
 
         function [ eval, pred ] = evaluateDataset( self, thisDataset )
             % Evaluate the model with a specified dataset
@@ -406,9 +417,21 @@ classdef CompactAEModel < CompactRepresentationModel
                                 predictAuxNet( self, pred.Z, thisDataset.Y );
             end
         
-        
         end
 
+
+        function self = clearGraphics( self )
+            % Clear the graphics objects to save memory
+            % Including the loss lines figure
+            arguments
+                self            CompactAEModel
+            end
+
+            self = clearGraphics@CompactRepresentationModel( self );
+            self.Trainer.LossFig = [];
+            self.Trainer.LossLines = [];
+
+        end
 
     end
 

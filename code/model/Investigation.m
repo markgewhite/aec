@@ -28,22 +28,35 @@ classdef Investigation
 
             end
 
+            % create a folder for this investigation
+            path = fullfile( path, name );
+            if ~isfolder( path )
+                mkdir( path )
+            end
+
+            % initialize properties
             self.Name = name;
             self.Path = path;
+
+            % add the name and path to the model properties
+            setup.model.args.name = name;
+            setup.model.args.path = path;
 
             self.BaselineSetup = setup;
 
             self.Parameters = parameters;
             self.NumParameters = length( parameters );
 
+            % setup the grid search
             self.GridSearch = searchValues;
             self.SearchDims = cellfun( @length, self.GridSearch ); 
-            
+
             nEval = prod( self.SearchDims );
             nDimsCell = num2cell( self.SearchDims );
             initObj( nDimsCell{:} ) = ModelEvaluation;
             self.Evaluations = initObj;
 
+            % initialize evaluation arrays 
             if length( nDimsCell ) > 1
                 allocation = nDimsCell;
             else
@@ -56,7 +69,7 @@ classdef Investigation
 
             self.TestingResults = self.TrainingResults;
             
-
+            % run the evaluation loop
             for i = 1:nEval
 
                 setup = self.BaselineSetup;
@@ -74,6 +87,9 @@ classdef Investigation
                                                searchValues{j}(idx(j)) );
                 
                 end
+
+                % assign a folder for this evaluation
+                setup.model.args.path = folder( path, name, idx );
 
                 % carry out the evaluation
                 idxC = num2cell( idx );
@@ -106,31 +122,31 @@ classdef Investigation
                     thisEvaluation.TestingEvaluation.AuxModelLoss;
 
     
-                % save the plots
-                % in a folder specific to the evaluation
-                folder = strcat( name, '(' );
-                for j = 1:length(idx)
-                    folder = strcat( folder, num2str(idx(j)) );
-                    if j < length(idx)
-                        folder = strcat( folder, ',' );
-                    end
-                end
-                folder = strcat( folder, ')');
-
-                fullpath = fullfile(path, folder);
-
-                if ~isfolder( fullpath )
-                    mkdir( fullpath )
-                end
-
-                thisEvaluation.save( fullpath, name );
-
+                % save the evaluations
+                thisEvaluation.save( path, name );
 
             end
             
 
-
         end
+
+
+        function save( self )
+            % Save the investigation to a specified path
+            arguments
+                self        Investigation
+            end
+
+            % define a small structure for saving
+            report.BaselineSetup = self.BaselineSetup;
+            report.GridSearch = self.GridSearch;
+            report.TrainingResults = self.TrainingResults;
+            report.TestingResults = self.TestingResults;
+            
+            name = strcat( self.Name, "-Investigation" );
+            save( fullfile( self.Path, name ), 'report' );
+
+        end  
 
 
     end
@@ -177,19 +193,23 @@ function setup = updateDependencies( setup, parameter, value )
 
             switch func2str( value{1} )
 
-                case {'fcModel', 'convModel'}
+                case {'FCModel', 'ConvolutionalModel'}
 
                     dependency = 'data.args.hasNormalizedInput';
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
 
-                case 'lstmModel'
+                case {'LSTMModel', 'LSTM_FCModel'}
 
                     dependency = 'trainer.args.partialBatch';
                     reqValue = 'discard';
                     setup = applySetting( setup, dependency, reqValue );
 
-                case 'pcaModel'
+                    dependency = 'data.args.hasNormalizedInput';
+                    reqValue = false;
+                    setup = applySetting( setup, dependency, reqValue );
+
+                case 'FullPCAModel'
 
                     dependency = 'data.args.hasNormalizedInput';
                     reqValue = true;
@@ -201,6 +221,26 @@ function setup = updateDependencies( setup, parameter, value )
 
             end
 
+    end
+
+end
+
+
+function fullpath = folder( path, name, idx )
+    % Create folder specific for the evaluation in question
+
+    folder = strcat( name, '-Eval(' );
+    for j = 1:length(idx)
+        folder = strcat( folder, num2str(idx(j)) );
+        if j < length(idx)
+            folder = strcat( folder, ',' );
+        end
+    end
+    folder = strcat( folder, ')');
+
+    fullpath = fullfile(path, folder);
+    if ~isfolder( fullpath )
+        mkdir( fullpath )
     end
 
 end

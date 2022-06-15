@@ -2,7 +2,7 @@ classdef ModelEvaluation < handle
     % Class defining a model evaluation
 
     properties
-        Setup               % structure recording the setup
+        BespokeSetup        % structure recording the bespoke setup
         TrainingDataset     % training dataset object
         TestingDataset      % testing dataset object
         Model               % trained model object
@@ -30,7 +30,7 @@ classdef ModelEvaluation < handle
             end
 
             % store the specified setup
-            self.Setup = setup;
+            self.BespokeSetup = setup;
 
             % prepare data
             try
@@ -112,20 +112,35 @@ classdef ModelEvaluation < handle
                     num2str( self.TestingEvaluation.AuxModelLoss, '%.3f' )]);
             end
 
+        end
 
-            if verbose
+
+        function plotModel( self )
+            % Display the full model plots
+            arguments
+                self        ModelEvaluation
+            end
+
+            if ~empty( self.Model.Figs ) && ~empty( self.Model.Axes )
+
                 % plot latent space
                 plotZDist( self.Model, self.TestingPredictions.Z );
                 plotZClusters( self.Model, self.TestingPredictions.Z, ...
                                            Y = self.TestingDataset.Y );
-    
                 % plot the components
                 plotLatentComp( self.Model, type = 'Smoothed', shading = true );
+            
+            else
+                % graphics objects must have been cleared
+                eid = 'Evaluation:NoGrahicsObjects';
+                msg = 'There are no graphics objects specified in the model.';
+                throwAsCaller( MException(eid,msg) );
+
             end
 
         end
 
-
+        
         function save( self, path, name )
             % Save the evaluation to a specified path
             arguments
@@ -134,63 +149,13 @@ classdef ModelEvaluation < handle
                 name        string
             end
 
-            % save the Z distribution plot
-            fullname = strcat( name, '.pdf' );
-            fullpath = strcat( path, '/zdist/' );
-            if ~isfolder( fullpath )
-                mkdir( fullpath)
-            end
-            exportgraphics( self.Model.Axes.ZDistribution, ...
-                            fullfile( fullpath, fullname ), ...
-                            ContentType= 'vector', ...
-                            Resolution = 300 );
-
-            % save the Z clustering plot
-            fullpath = strcat( path, '/zclust/' );
-            if ~isfolder( fullpath )
-                mkdir( fullpath)
-            end
-            exportgraphics( self.Model.Axes.ZClustering, ...
-                            fullfile( fullpath, fullname ), ...
-                            ContentType= 'vector', ...
-                            Resolution = 300 );
-
-
-            % save the loss plots
-            if isa( self.Model, 'FullAEModel' )
-                fullpath = strcat( path, '/loss/' );
-                if ~isfolder( fullpath )
-                    mkdir( fullpath)
-                end
-                exportgraphics( self.Model.Trainer.LossFig, ...
-                            fullfile( fullpath, fullname ), ...
-                            ContentType= 'vector', ...
-                            Resolution = 300 );
-            end
-
-            % save the components (as a whole and individually)
-            fullpath = strcat( path, '/comp/' );
-            if ~isfolder( fullpath )
-                mkdir( fullpath)
-            end
-
-            % all components
-            exportgraphics( self.Model.Figs.Components, ...
-                            fullfile( fullpath, fullname ), ...
-                            ContentType= 'vector', ...
-                            Resolution = 300 );
-
-            % individual components
-            for i = 1:length(self.Model.Axes.Comp)
-
-                fullname = strcat( name, num2str(i), '.pdf' );
-                exportgraphics( self.Model.Axes.Comp(i), ...
-                            fullfile( fullpath, fullname ), ...
-                            ContentType= 'vector', ...
-                            Resolution = 300 );
-
-
-            end
+            % define a small structure for saving
+            evaluation.BespokeSetup = self.BespokeSetup;
+            evaluation.TrainingEvaluation = self.TrainingEvaluation;
+            evaluation.TestingEvaluation = self.TestingEvaluation;
+            
+            name = strcat( name, "-OverallEvaluation" );
+            save( fullfile( path, name ), 'evaluation' );
 
         end         
 
@@ -206,12 +171,12 @@ classdef ModelEvaluation < handle
                 setup   struct
             end
 
-            % limit the arguments to two possible fields
-            if isfield( setup.model.args, 'ZDim' )
-                args.ZDim = setup.model.args.ZDim;
-            end
-            if isfield( setup.model.args, 'auxModel' )
-                args.auxModel = setup.model.args.auxModel;
+            % limit the arguments to relevant fields
+            pcaFields = {'ZDim', 'auxModel', 'name', 'path'};
+            for i = 1:length(pcaFields)
+                if isfield( setup.model.args, pcaFields{i} )
+                    args.(pcaFields{i}) = setup.model.args.(pcaFields{i});
+                end
             end
 
             try
@@ -344,3 +309,5 @@ function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
 
 
 end
+
+

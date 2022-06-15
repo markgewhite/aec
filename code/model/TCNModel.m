@@ -19,16 +19,19 @@ classdef TCNModel < FullAEModel
         function self = TCNModel( thisDataset, ...
                                   lossFcns, ...
                                   superArgs, ...
+                                  superArgs2, ...
                                   args )
             % Initialize the model
             arguments
-                thisDataset        ModelDataset
+                thisDataset     ModelDataset
             end
             arguments (Repeating)
-                lossFcns           LossFunction
+                lossFcns        LossFunction
             end
             arguments
                 superArgs.?FullAEModel
+                superArgs2.name    string
+                superArgs2.path    string
                 args.numHidden     double ...
                     {mustBeInteger, mustBePositive} = 2
                 args.numFilters    double ...
@@ -51,9 +54,12 @@ classdef TCNModel < FullAEModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
+            superArgs2Cell = namedargs2cell( superArgs2 );
+
             self@FullAEModel( thisDataset, ...
                               lossFcns{:}, ...
                               superArgsCell{:}, ...
+                              superArgs2Cell{:}, ...
                               hasSeqInput = true );
 
 

@@ -4,7 +4,7 @@ function setup = initSetup
     % dataset
     setup.data.class = @JumpGRFDataset;
     setup.data.args.normalization = 'PAD';
-    setup.data.args.hasNormalizedInput = true;
+    setup.data.args.hasNormalizedInput = false;
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = true;
     setup.data.args.resampleRate = 10;

@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'JumpsGRF(Adaptive-NoClassification)';
+name = 'JumpsGRF(Test-Conv)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
@@ -12,6 +12,6 @@ path = [path '/../results/'];
 %values = [ {2:6} {{false, true}} ];
 
 parameters = [ "model.class" ];
-values = {{@FCModel}};
+values = {{@TCNModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );

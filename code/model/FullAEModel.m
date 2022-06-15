@@ -28,6 +28,7 @@ classdef FullAEModel < FullRepresentationModel
         function self = FullAEModel( thisDataset, ...
                                      lossFcns, ...
                                      superArgs, ...
+                                     superArgs2, ...
                                      args )
             % Initialize the model
             arguments
@@ -38,6 +39,8 @@ classdef FullAEModel < FullRepresentationModel
             end
             arguments
                 superArgs.?FullRepresentationModel
+                superArgs2.name     string
+                superArgs2.path     string
                 args.isVAE          logical = false
                 args.numVAEDraws    double ...
                     {mustBeInteger, mustBePositive} = 1
@@ -51,8 +54,10 @@ classdef FullAEModel < FullRepresentationModel
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
+            superArgs2Cell = namedargs2cell( superArgs2 );
             self = self@FullRepresentationModel( thisDataset, ...
                                                  superArgsCell{:}, ...
+                                                 superArgs2Cell{:}, ...
                                                  NumCompLines = 8 );
 
             % check dataset is suitable
@@ -156,13 +161,14 @@ classdef FullAEModel < FullRepresentationModel
         end
 
 
-        function thisModel = initSubModel( self )
+        function thisModel = initSubModel( self, id )
             % Initialize a sub-model
             arguments
                 self            FullAEModel
+                id              double
             end
 
-            thisModel = CompactAEModel( self );
+            thisModel = CompactAEModel( self, id );
 
         end
 

@@ -158,7 +158,11 @@ classdef ModelDataset
             end
 
             self.XInputDim = length( self.TSpan.Input );
-            self.XTargetDim = self.NormalizedPts;
+            if self.HasMatchingOutput
+                self.XTargetDim = self.XInputDim;
+            else
+                self.XTargetDim = self.NormalizedPts;
+            end
 
             % set the FD parameters for regular spacing
             self.FDA.FdParamsRegular = setFDAParameters( ...

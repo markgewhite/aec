@@ -12,13 +12,14 @@ classdef CompactPCAModel < CompactRepresentationModel
 
     methods
 
-        function self = CompactPCAModel( theFullModel )
+        function self = CompactPCAModel( theFullModel, fold )
             % Initialize the model
             arguments
                 theFullModel        FullPCAModel
+                fold                double
             end
 
-            self@CompactRepresentationModel( theFullModel );
+            self@CompactRepresentationModel( theFullModel, fold );
          
             self.PCATSpan = theFullModel.PCATSpan;
             self.PCAFdParams = theFullModel.PCAFdParams;

@@ -40,6 +40,8 @@ classdef FullRepresentationModel
                 args.NumCompLines   double...
                     {mustBeInteger, mustBePositive} = 8
                 args.ShowPlots      logical = true
+                args.name           string = "[ModelName]"
+                args.path           string = ""
             end
 
             % set properties based on the data
@@ -50,6 +52,8 @@ classdef FullRepresentationModel
             self.TSpan = thisDataset.TSpan;
             self.FDA = thisDataset.FDA;
             self.Info = thisDataset.Info;
+            self.Info.Name = args.name;
+            self.Info.Path = args.path;
             
             % set the scaling factor(s) based on all X
             self = self.setScalingFactor( thisDataset.XTarget );
@@ -57,6 +61,8 @@ classdef FullRepresentationModel
             self.ZDim = args.ZDim;
             self.AuxModelType = args.auxModelType;
             self.KFolds = args.KFolds;
+            self.SubModels = cell( self.KFolds, 1 );
+
             self.NumCompLines = args.NumCompLines;
 
             self.ShowPlots = args.ShowPlots;
@@ -101,7 +107,7 @@ classdef FullRepresentationModel
                 thisValSet = thisDataset.partition( ~self.Partitions(:,k) );
                 
                 % initialize the sub-model
-                self.SubModels{k} = self.initSubModel;
+                self.SubModels{k} = self.initSubModel( k );
 
                 % train the sub-model
                 self.SubModels{k} = self.SubModels{k}.train( ...
@@ -110,19 +116,28 @@ classdef FullRepresentationModel
                 % evaluate the sub-model
                 self.SubModels{k} = self.SubModels{k}.evaluate( ...
                                             thisTrnSet, thisValSet );
+
+                % save the model
+                self.SubModels{k}.save;
+
+                % clear graphics objects to save memory
+                self.SubModels{k} = self.SubModels{k}.clearGraphics;
  
             end
 
             % calculate the aggregated latent components
-            self = self.setLatentComponentsCV;
+            self = self.setLatentComponents;
 
-            % calculate the aggregate evaluation across all partitions
-            self = self.evaluateCV;    
+            % calculate the cross-validated losses
+            self = self.computeLosses;
+
+            % save the full model
+            self.save;
 
         end
 
 
-        function self = evaluateCV( self )
+        function self = computeLosses( self )
             % Calculate the cross-validated losses
             % using predictions from the sub-models
             arguments
@@ -138,7 +153,7 @@ classdef FullRepresentationModel
         end
 
 
-        function self = setLatentComponentsCV( self )
+        function self = setLatentComponents( self )
             % Calculate the cross-validated latent components
             % by averaging across the sub-models
             arguments
@@ -155,6 +170,36 @@ classdef FullRepresentationModel
 
         end
 
+
+        function save( self )
+            % Save the model plots and the object itself
+            arguments
+                self            FullRepresentationModel
+            end
+
+            plotObjects = self.Axes;
+            plotObjects.Components = self.Figs.Components;
+
+            savePlots( plotObjects, self.Info.Path, self.Info.Name );
+
+            model = self.clearGraphics;
+
+            filename = strcat( self.Info.Name, "-FullModel" );
+            save( fullfile( self.Info.Path, filename ), 'model' );
+
+        end
+
+
+        function obj = clearGraphics( obj )
+            % Clear the graphics objects to save memory
+            arguments
+                obj            FullRepresentationModel
+            end
+
+            obj.Figs = [];
+            obj.Axes = [];
+
+        end
 
 
         function [ ZFold, ZMean, ZSD ] = encode( self, thisDataset )
