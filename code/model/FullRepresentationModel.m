@@ -14,6 +14,7 @@ classdef FullRepresentationModel
         AuxModelType    % type of auxiliary model to use
         KFolds          % number of cross validation partitions
         Partitions      % logical array specifying the train/validation split
+        IdenticalPartitions % flag for special case of identical partitions
         SubModels       % array of trained models
         LatentComponents % cross-validated latent components
         Loss            % collated losses from sub-models
@@ -40,6 +41,7 @@ classdef FullRepresentationModel
                 args.NumCompLines   double...
                     {mustBeInteger, mustBePositive} = 8
                 args.ShowPlots      logical = true
+                args.IdenticalPartitions logical = false
                 args.name           string = "[ModelName]"
                 args.path           string = ""
             end
@@ -61,6 +63,7 @@ classdef FullRepresentationModel
             self.ZDim = args.ZDim;
             self.AuxModelType = args.auxModelType;
             self.KFolds = args.KFolds;
+            self.IdenticalPartitions = args.IdenticalPartitions;
             self.SubModels = cell( self.KFolds, 1 );
 
             self.NumCompLines = args.NumCompLines;
@@ -96,8 +99,9 @@ classdef FullRepresentationModel
             end
 
             % re-partition the data to create training and validation sets
-            self.Partitions = thisDataset.getCVPartition( thisDataset, ...
-                                        KFold = self.KFolds );
+            self.Partitions = thisDataset.getCVPartition( ...
+                                        KFold = self.KFolds, ...
+                                        Identical = self.IdenticalPartitions );
             
             % run the cross validation loop
             for k = 1:self.KFolds

@@ -415,11 +415,6 @@ classdef ModelDataset
         end
         
 
-    end
-
-
-    methods (Static)
-
         function selection = getCVPartition( self, args )
             % Generate a CV partition for the dataset
             arguments
@@ -428,6 +423,7 @@ classdef ModelDataset
                     {mustBeInRange(args.Holdout, 0, 1)}
                 args.KFold          double ...
                     {mustBeInteger, mustBePositive}
+                args.Identical      logical = false
             end
 
             if ~isfield( args, 'Holdout' ) && ~isfield( args, 'KFold' )
@@ -460,8 +456,14 @@ classdef ModelDataset
                     % partitioning unit is a grouping variable
                     selection = false( self.NumObs, args.KFold );
                     for k = 1:args.KFold
+                        if args.Identical
+                            % special case - make all partitions the same
+                            f = 1;
+                        else
+                            f = k;
+                        end
                         selection( :, k ) = ismember( unit, ...
-                                        uniqueUnit( training(cvpart,k) ));
+                                        uniqueUnit( training(cvpart,f) ));
                     end
                 else
                     selection = training( cvpart );
