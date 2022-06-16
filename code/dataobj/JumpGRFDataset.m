@@ -37,7 +37,7 @@ classdef JumpGRFDataset < ModelDataset
             % setup fda
             paramsFd.BasisOrder = 4;
             paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = 1E5; % 1E2
+            paramsFd.Lambda = 1E0; % 1E5 1E2
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -49,7 +49,7 @@ classdef JumpGRFDataset < ModelDataset
                             datasetName = "Jumps VGRF Data", ...
                             channelLabels = "VGRF (BW)", ...
                             timeLabel = "Time (ms)", ...
-                            channelLimits = [0 2.5] );
+                            channelLimits = [0 3] );
 
             self.SubjectID = S;
 

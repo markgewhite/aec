@@ -114,15 +114,38 @@ classdef CompactRepresentationModel
             eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
                                                self.Scale );
         
-            % compute the mean squared error as a function of time
-            eval.ReconTimeMSE = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
-                                                   self.Scale );
-        
             % compute the auxiliary loss using the model
             ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
             pred.AuxModelYHat = predict( self.AuxModel, ZLong );
             eval.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
                
+            
+            % compute the mean squared error as a function of time
+            eval.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, ...
+                                                   self.Scale );
+
+            % compute the mean error (bias) as a function of time
+            eval.ReconTimeBias = reconTemporalBias( pred.XHat, pred.XTarget, ...
+                                                   self.Scale );
+
+            % compute the variance as a function of time
+            eval.ReconTimeVar = reconTemporalLoss( ...
+                            pred.XHat - eval.ReconTimeBias, ...
+                            pred.XTarget, self.Scale );
+
+            % compute the mean squared error as a function of time
+            eval.ReconTimeMSERegular = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
+                                                   self.Scale );
+
+            % compute the mean error (bias) as a function of time
+            eval.ReconTimeBiasRegular = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
+                                                   self.Scale );
+
+            % compute the variance as a function of time
+            eval.ReconTimeVarRegular = reconTemporalLoss( ...
+                            pred.XHatRegular - eval.ReconTimeBiasRegular, ...
+                            pred.XRegular, self.Scale );
+        
         end
 
 

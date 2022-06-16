@@ -276,6 +276,10 @@ function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
     eval.ReconTimeMSE = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
                                            thisModel.Scale );
 
+    % compute the mean error (bias) as a function of time
+    eval.ReconTimeBias = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
+                                           thisModel.Scale );
+
     figure(4);
     hold on;
     for i = 1:thisDataset.XChannels

@@ -291,17 +291,18 @@ function aggrLoss = collateLosses( subModels, set )
     end
 
     nModels = length( subModels );
-    thisAggrLoss = zeros( nModels, 1 );
     fields = fieldnames( subModels{1}.Loss.(set) );
     nFields = length( fields );
 
     for i = 1:nFields
-        if length( subModels{1}.Loss.(set).(fields{i}) ) == 1
-            for k = 1:nModels
-               thisAggrLoss(k) = subModels{k}.Loss.(set).(fields{i});
-            end
-            aggrLoss.(fields{i}) = thisAggrLoss;
+
+        fldDim = size( subModels{1}.Loss.(set).(fields{i}) );
+        thisAggrLoss = zeros( [nModels fldDim] );
+        for k = 1:nModels
+           thisAggrLoss(k,:,:) = subModels{k}.Loss.(set).(fields{i});
         end
+        aggrLoss.(fields{i}) = thisAggrLoss;
+
     end
 
 end
@@ -344,22 +345,35 @@ function cvLoss = calcCVLoss( subModels, set )
             aggr.(fields{i}) = [ aggr.(fields{i}); data ];
 
         end
+
     end
 
+    scale = mean(cellfun( @(m) m.Scale, subModels ));
 
     for i = 1:nPairs
 
+        A = aggr.(pairs{i,1});
+        AHat = aggr.(pairs{i,2});
+
         if ismember( pairs{i,2}, fieldsForAuxLoss )
             % cross entropy loss
-            cvLoss.(pairs{i,2}) = getPropCorrect( ...
-                                          aggr.(pairs{i,1}), ...
-                                          aggr.(pairs{i,2}) );
+            cvLoss.(pairs{i,2}) = getPropCorrect( A, AHat );
         else
             % mean squared error loss
-            cvLoss.(pairs{i,2}) = reconLoss( ...
-                                          aggr.(pairs{i,1}), ...
-                                          aggr.(pairs{i,2}), ...
-                                          subModels{k}.Scale );
+            cvLoss.(pairs{i,2}) = reconLoss( A, AHat, scale );
+            % temporal mean squared error loss
+            cvLoss.([pairs{i,2} 'TemporalMSE']) = ...
+                                    reconTemporalLoss( A', AHat', scale );
+
+            % temporal bias
+            cvLoss.([pairs{i,2} 'TemporalBias']) = ...
+                                    reconTemporalBias( A', AHat', scale );
+
+            % temporal bias
+            A0 = AHat' - cvLoss.([pairs{i,2} 'TemporalBias']);
+            cvLoss.([pairs{i,2} 'TemporalVar']) = ...
+                                    reconTemporalLoss( A', A0, scale );
+        
         end
     
     end

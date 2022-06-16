@@ -1,4 +1,4 @@
-classdef ModelDataset
+classdef ModelDataset < handle
     % Class defining a dataset
 
     properties
@@ -276,24 +276,39 @@ classdef ModelDataset
         end
 
 
-        function validateSmoothing( self )
+        function validateSmoothing( self, args )
             % Re-run smoothing with maximum flexibility
             arguments
-                self        ModelDataset
+                self            ModelDataset
+                args.X          double = []
+                args.TSpan      double = []
             end
 
-            % pad the raw series for smoothing
-            X = padData( self.XInputRaw, ...
-                         self.Padding.length, ...
-                         self.Padding.Value, ...
-                         Same = self.Padding.Same, ...
-                         Location = self.Padding.Location, ...
-                         Anchoring = self.Padding.Anchoring );
+            if isempty( args.X )
+                % default: use the raw input series
+                % pad the raw series for smoothing
+                X = padData( self.XInputRaw, ...
+                             self.Padding.Length, ...
+                             self.Padding.Value, ...
+                             Same = self.Padding.Same, ...
+                             Location = self.Padding.Location, ...
+                             Anchoring = self.Padding.Anchoring );
+            else
+                % use the specified X
+                X = args.X;
 
-            % create a time span with maximum detail
-            thisTSpan = linspace( self.TSpan.Original(1),...
+            end
+
+            if isempty( args.TSpan )
+                % default: use the orginal time series
+                % create a time span with maximum detail
+                thisTSpan = linspace( self.TSpan.Original(1),...
                               self.TSpan.Original(end), ...
                               size( X, 1 ) );
+            else
+                % use the specified timespan
+                thisTSpan = args.TSpan;
+            end
 
             % create a new basis with maximum number of functions
             basis = create_bspline_basis( [thisTSpan(1) thisTSpan(end)], ...
@@ -302,7 +317,7 @@ classdef ModelDataset
             
             % Find minimum GCV value of lambda
             % search for the best value for lambda, the roughness penalty
-            logLambda   = -12:1:6;
+            logLambda   = -10:1:10;
             gcvSave = zeros( length(logLambda), self.XChannels );
             dfSave  = zeros( length(logLambda), 1 );
             

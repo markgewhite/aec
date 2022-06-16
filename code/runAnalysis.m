@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'JumpsGRF(Test)';
+name = 'JumpsGRF(ReliabilityTest3)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 

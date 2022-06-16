@@ -8,6 +8,7 @@ function setup = initSetup
     setup.data.args.normalizedPts = 51;
     setup.data.args.hasAdaptiveTimeSpan = true;
     setup.data.args.resampleRate = 10;
+    setup.data.args.OverSmoothing = 1E3;
         
     %setup.data.class = @fukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
@@ -16,7 +17,7 @@ function setup = initSetup
     %setup.data.args.HasPelvis = true;
     %setup.data.args.HasHip = true;
     %setup.data.args.HasKnee = true;
-    %setup.data.args.OverSmoothing = 1E5;
+    
 
     %setup.data.class = @exemplarDataset;   
     %setup.data.args.ClassSizes = 500;
@@ -44,24 +45,24 @@ function setup = initSetup
     setup.lossFcns.adv.class = @AdversarialLoss;
     setup.lossFcns.adv.name = 'Discriminator';
 
-    %setup.lossFcns.mmd.class = @wassersteinLoss;
+    %setup.lossFcns.mmd.class = @WassersteinLoss;
     %setup.lossFcns.mmd.name = 'MMDDiscriminator';
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
-    %setup.lossFcns.orth.class = @componentLoss;
-    %setup.lossFcns.orth.name = 'Orthogonality';
-    %setup.lossFcns.orth.args.nSample = 100;
-    %setup.lossFcns.orth.args.criterion = 'Orthogonality';
-    %setup.lossFcns.var.args.useLoss = true;
+    setup.lossFcns.orth.class = @ComponentLoss;
+    setup.lossFcns.orth.name = 'Orthogonality';
+    setup.lossFcns.orth.args.nSample = 100;
+    setup.lossFcns.orth.args.criterion = 'Orthogonality';
+    setup.lossFcns.orth.args.useLoss = true;
 
-    %setup.lossFcns.var.class = @componentLoss;
+    %setup.lossFcns.var.class = @ComponentLoss;
     %setup.lossFcns.var.name = 'ExplainedVariance';
     %setup.lossFcns.var.args.nSample = 100;
     %setup.lossFcns.var.args.criterion = 'ExplainedVariance';
     %setup.lossFcns.var.args.useLoss = false;
 
-    %setup.lossFcns.smooth.class = @smoothnessLoss;
+    %setup.lossFcns.smooth.class = @SmoothnessLoss;
     %setup.lossFcns.smooth.name = 'Roughness';
     %setup.lossFcns.smooth.args.Lambda = 1E-2;
     %setup.lossFcns.smooth.args.useLoss = false;
@@ -77,15 +78,15 @@ function setup = initSetup
     % model
     setup.model.class = @FCModel;
     setup.model.args.ZDim = 4;
-    setup.model.args.KFolds = 3;
+    setup.model.args.KFolds = 5;
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.isVAE = false;
     setup.model.args.auxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 20;
+    setup.model.args.trainer.updateFreq = 50;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 100;
+    setup.model.args.trainer.numEpochs = 200;
     setup.model.args.trainer.batchSize = 40;
 
 
