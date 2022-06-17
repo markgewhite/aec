@@ -139,7 +139,7 @@ classdef CompactAEModel < CompactRepresentationModel
             % 2SD separation from the mean.
             arguments
                 self            CompactAEModel
-                dlZ             
+                dlZ             {mustBeA( dlZ, {'dlarray', 'double'} )}
                 args.sampling   char ...
                     {mustBeMember(args.sampling, ...
                         {'Random', 'Fixed'} )} = 'Random'
@@ -150,52 +150,16 @@ classdef CompactAEModel < CompactRepresentationModel
                 args.convert    logical = false
             end
 
-            if args.nSample > 0
-                nSample = args.nSample;
-            else
-                nSample = self.NumCompLines;
+            if isa( dlZ, 'dlarray' )
+                Z = double(extractdata( dlZ ));
             end
 
-            if ~isa( dlZ, 'dlarray' )
-                dlZ = dlarray( dlZ', 'CB' );
-            end
-
-            ZDim = size( dlZ, 1 );
-            
-            % compute the mean and SD across the batch
-            dlZMean = mean( dlZ, 2 );
-            
-            % initialise the components' Z codes at the mean
-            % include an extra one that will be preserved
-            dlZC = repmat( dlZMean, 1, ZDim*nSample+1 );
-
-            % convert to double to speed up processing
-            % provided dlZC can trace back to original dlZ
-            Z = double(extractdata( dlZ ));
-            
-            % define the offset spacing, which must sum to zero
-            switch args.sampling
-                case 'Random'
-                    % generate centred uniform distribution
-                    offsets = 2*args.range*(rand( nSample, 1 )-0.5);
-
-                case 'Fixed'
-                    offsets = linspace( -args.range, args.range, nSample );
-            end
-            % convert the z-scores (offsets) to percentiles
-            % giving a preponderance of values at the tails
-            prc = 100*normcdf( offsets );
-
-            for j = 1:nSample
-                
-                for i =1:ZDim
-                    % vary ith component randomly about its mean
-                    dlZC(i,(i-1)*nSample+j) = prctile( Z(i,:), prc(j) );
-                end
-
-            end
+            [ ZC, offsets ] = self.componentEncodings( Z, ...
+                                        sampling = args.sampling, ...    
+                                        nSample = args.nSample );
 
             % generate all the component curves using the decoder
+            dlZC = dlarray( ZC, 'CB' );
             if args.forward
                 dlXC = forward( self.Nets.Decoder, dlZC );
             else
@@ -222,6 +186,8 @@ classdef CompactAEModel < CompactRepresentationModel
 
         function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
             % Forward-run the autoencoder networks
+            % dlnetworks are provided for tracing purposes 
+            % rather than using the object's network definitions
             arguments
                 self        CompactAEModel
                 encoder     dlnetwork

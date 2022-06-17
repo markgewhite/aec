@@ -58,6 +58,62 @@ classdef CompactRepresentationModel
         end
 
 
+        function [ ZC, offsets ] = componentEncodings( self, Z, args )
+            % Calculate the funtional components from the latent codes
+            % using the decoder network. For each component, the relevant 
+            % code is varied randomly about the mean. This is more 
+            % efficient than calculating two components at strict
+            % 2SD separation from the mean.
+            arguments
+                self            CompactRepresentationModel
+                Z               double             
+                args.sampling   char ...
+                                {mustBeMember(args.sampling, ...
+                                    {'Random', 'Fixed'} )} = 'Random'
+                args.nSample    double {mustBeInteger} = 0
+                args.range      double {mustBePositive} = 2.0
+            end
+
+            if args.nSample > 0
+                nSample = args.nSample;
+            else
+                nSample = self.NumCompLines;
+            end
+            
+            % compute the mean and SD across the batch
+            ZMean = mean( Z, 2 );
+            
+            % initialise the components' Z codes at the mean
+            % include an extra one that will be preserved
+            ZC = repmat( ZMean, 1, self.ZDim*nSample+1 );
+            
+            % generate the Z offset factors about the mean
+            switch args.sampling
+                case 'Random'
+                    % generate centred uniform distribution
+                    offsets = 2*args.range*(rand( nSample, 1 )-0.5);
+        
+                case 'Fixed'
+                    offsets = linspace( -args.range, args.range, nSample );
+            end
+
+            % convert the z-scores (offsets) to percentiles
+            % giving a preponderance of values at the tails
+            prc = 100*normcdf( offsets );
+
+            for j = 1:nSample
+                
+                for i =1:self.ZDim
+                    % vary ith component randomly about its mean
+                    ZC(i,(i-1)*nSample+j) = prctile( Z(i,:), prc(j) );
+                end
+
+            end
+
+        end
+
+
+
         function self = evaluate( self, thisTrnSet, thisValSet )
             % Evaluate the model with a specified dataset
             % It may be a full or compact model

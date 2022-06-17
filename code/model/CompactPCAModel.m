@@ -90,53 +90,25 @@ classdef CompactPCAModel < CompactRepresentationModel
                 args.convert    logical = false % redundant
             end
 
-            if args.nSample > 0
-                nSample = args.nSample;
-            else
-                nSample = self.NumCompLines;
-            end
-           
-            if args.centre
-                XCMean = zeros( length(self.PCATSpan), 1 );
-            else
-                XCMean = eval_fd( self.PCATSpan, self.MeanFd );
-            end
-
-            XCStd = zeros( length(self.PCATSpan), self.ZDim, self.XChannels );
+            [ ZC, offsets ] = self.componentEncodings( Z', ...
+                                        sampling = args.sampling, ...    
+                                        nSample = args.nSample );
+            nSample = length( offsets );
 
             % compute the components
-            for i = 1:self.ZDim
-                XC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
+            XC = zeros( length(self.PCATSpan), self.XChannels, nSample );
+            for i =1:self.ZDim
+                FPC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
                 for c = 1:self.XChannels
-                    XCStd(:,i,c) = self.ZStd(i,c)*XC(:,c);
+                    for j = 1:nSample
+                        XC(:,c,(i-1)*nSample+j) = offsets(j)*ZC(i,j)*FPC(:,:,c);
+                    end
                 end
             end
 
-            if strcmp( args.sampling, 'Fixed' )
-                % define the offset spacing
-                offsets = linspace( -args.range, args.range, nSample );
-            end
-
-            if args.centre
-                XC = zeros( length(self.PCATSpan), self.XChannels, self.ZDim*nSample );
-            else
-                XC = zeros( length(self.PCATSpan), self.XChannels, self.ZDim*nSample+1 );
-                XC(:,:,end) = XCMean;
-            end
-            
-            for j = 1:nSample
-                
-                switch args.sampling
-                    case 'Random'
-                        offset = args.range*rand;
-                    case 'Fixed'
-                        offset = offsets(j);
-                end
-
-                for i =1:self.ZDim
-                    XC(:,:,(i-1)*nSample+j) = XCMean + offset*XCStd(:,i,:);
-                end
-
+            if ~args.centre
+                % add the mean curve
+                XC = XC + eval_fd( self.PCATSpan, self.MeanFd );
             end
 
         end
