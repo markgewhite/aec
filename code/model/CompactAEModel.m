@@ -393,33 +393,6 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ eval, pred ] = evaluateDataset( self, thisDataset )
-            % Evaluate the model with a specified dataset
-            % doing additional work to the superclass method
-            arguments
-                self             CompactAEModel
-                thisDataset      ModelDataset
-            end
-
-            % call the superclass method
-            [ eval, pred ] = ...
-                evaluateDataset@CompactRepresentationModel( self, thisDataset );
-
-            if any(self.LossFcnTbl.Types == 'Comparator')
-                % compute the comparator loss using the comparator network
-                [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
-                                predictCompNet( self, thisDataset ); 
-            end
-    
-            if any(self.LossFcnTbl.Types == 'Auxiliary')
-                % compute the auxiliary loss using the network
-                [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                                predictAuxNet( self, pred.Z, thisDataset.Y );
-            end
-        
-        end
-
-
         function self = clearGraphics( self )
             % Clear the graphics objects to save memory
             % Including the loss lines figure
@@ -434,7 +407,6 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
     end
-
 
 
     methods (Access = protected)
@@ -456,6 +428,37 @@ classdef CompactAEModel < CompactRepresentationModel
 
         end
 
+
+    end
+
+
+    methods (Static)
+
+        function [ eval, pred ] = evaluateSet( self, thisDataset )
+            % Evaluate the model with a specified dataset
+            % doing additional work to the superclass method
+            arguments
+                self             CompactAEModel
+                thisDataset      ModelDataset
+            end
+
+            % call the superclass method
+            [ eval, pred ] = ...
+                evaluateSet@CompactRepresentationModel( self, thisDataset );
+
+            if any(self.LossFcnTbl.Types == 'Comparator')
+                % compute the comparator loss using the comparator network
+                [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
+                                predictCompNet( self, thisDataset ); 
+            end
+    
+            if any(self.LossFcnTbl.Types == 'Auxiliary')
+                % compute the auxiliary loss using the network
+                [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
+                                predictAuxNet( self, pred.Z, thisDataset.Y );
+            end
+        
+        end
 
     end
 

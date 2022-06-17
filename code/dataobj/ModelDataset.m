@@ -464,24 +464,32 @@ classdef ModelDataset < handle
               
             else
                 % K-fold partitioning
-                cvpart = cvpartition( length( uniqueUnit ), ...
-                                      KFold = args.KFold );
-                
-                if length( uniqueUnit ) < length( unit )
-                    % partitioning unit is a grouping variable
-                    selection = false( self.NumObs, args.KFold );
-                    for k = 1:args.KFold
-                        if args.Identical
-                            % special case - make all partitions the same
-                            f = 1;
-                        else
-                            f = k;
+                if args.KFold > 1
+
+                    cvpart = cvpartition( length( uniqueUnit ), ...
+                                          KFold = args.KFold );
+                    
+                    if length( uniqueUnit ) < length( unit )
+                        % partitioning unit is a grouping variable
+                        selection = false( self.NumObs, args.KFold );
+                        for k = 1:args.KFold
+                            if args.Identical
+                                % special case - make all partitions the same
+                                f = 1;
+                            else
+                                f = k;
+                            end
+                            selection( :, k ) = ismember( unit, ...
+                                            uniqueUnit( training(cvpart,f) ));
                         end
-                        selection( :, k ) = ismember( unit, ...
-                                        uniqueUnit( training(cvpart,f) ));
+                    else
+                        selection = training( cvpart );
                     end
+
                 else
-                    selection = training( cvpart );
+                    % no partitioning - select all
+                    selection = true( self.NumObs, 1 );
+
                 end
 
             end

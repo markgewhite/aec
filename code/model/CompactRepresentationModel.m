@@ -68,84 +68,11 @@ classdef CompactRepresentationModel
             end
 
             [ self.Loss.Training, self.Predictions.Training ] = ...
-                                self.evaluateDataset( thisTrnSet );
+                                self.evaluateSet( self, thisTrnSet );
 
             [ self.Loss.Validation, self.Predictions.Validation ] = ...
-                                self.evaluateDataset( thisValSet );
+                                self.evaluateSet( self, thisValSet );
 
-        end
-
-
-        function [ eval, pred ] = evaluateDataset( self, thisDataset )
-            % Evaluate the model with a specified dataset
-            arguments
-                self             CompactRepresentationModel
-                thisDataset      ModelDataset
-            end
-        
-            % record the input
-            pred.XTarget = squeeze( thisDataset.XTarget );
-            pred.XRegular = squeeze( thisDataset.XInputRegular );
-            pred.Y = thisDataset.Y;
-        
-            % generate latent encoding using the trained model
-            pred.Z = self.encode( thisDataset );
-        
-            % reconstruct the curves
-            pred.XHat = squeeze( self.reconstruct( pred.Z ) );
-        
-            % smooth the reconstructed curves
-            XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
-                                   pred.XHat, ...
-                                   thisDataset.FDA.FdParamsTarget );
-            pred.XHatSmoothed = squeeze( ...
-                        eval_fd( thisDataset.TSpan.Target, XHatFd ) );
-            
-            pred.XHatRegular = squeeze( ...
-                        eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
-        
-            % compute reconstruction loss
-            eval.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, ...
-                                        self.Scale );
-            eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
-                                                self.Scale );
-        
-            % compute reconstruction loss for the regularised curves
-            eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
-                                               self.Scale );
-        
-            % compute the auxiliary loss using the model
-            ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
-            pred.AuxModelYHat = predict( self.AuxModel, ZLong );
-            eval.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
-               
-            
-            % compute the mean squared error as a function of time
-            eval.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, ...
-                                                   self.Scale );
-
-            % compute the mean error (bias) as a function of time
-            eval.ReconTimeBias = reconTemporalBias( pred.XHat, pred.XTarget, ...
-                                                   self.Scale );
-
-            % compute the variance as a function of time
-            eval.ReconTimeVar = reconTemporalLoss( ...
-                            pred.XHat - eval.ReconTimeBias, ...
-                            pred.XTarget, self.Scale );
-
-            % compute the mean squared error as a function of time
-            eval.ReconTimeMSERegular = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
-                                                   self.Scale );
-
-            % compute the mean error (bias) as a function of time
-            eval.ReconTimeBiasRegular = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
-                                                   self.Scale );
-
-            % compute the variance as a function of time
-            eval.ReconTimeVarRegular = reconTemporalLoss( ...
-                            pred.XHatRegular - eval.ReconTimeBiasRegular, ...
-                            pred.XRegular, self.Scale );
-        
         end
 
 
@@ -290,6 +217,83 @@ classdef CompactRepresentationModel
 
         end
 
+
+    end
+
+
+    methods (Static)
+
+        function [loss, pred] = evaluateSet( thisModel, thisDataset )
+            % Evaluate the model with a specified dataset
+            arguments
+                thisModel       CompactRepresentationModel
+                thisDataset     ModelDataset
+            end
+        
+            % record the input
+            pred.XTarget = squeeze( thisDataset.XTarget );
+            pred.XRegular = squeeze( thisDataset.XInputRegular );
+            pred.Y = thisDataset.Y;
+        
+            % generate latent encoding using the trained model
+            pred.Z = thisModel.encode( thisDataset );
+        
+            % reconstruct the curves
+            pred.XHat = squeeze( thisModel.reconstruct( pred.Z ) );
+        
+            % smooth the reconstructed curves
+            XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
+                                   pred.XHat, ...
+                                   thisDataset.FDA.FdParamsTarget );
+            pred.XHatSmoothed = squeeze( ...
+                        eval_fd( thisDataset.TSpan.Target, XHatFd ) );
+            
+            pred.XHatRegular = squeeze( ...
+                        eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
+        
+            % compute reconstruction loss
+            loss.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, ...
+                                        thisModel.Scale );
+            loss.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
+                                                thisModel.Scale );
+        
+            % compute reconstruction loss for the regularised curves
+            loss.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
+                                               thisModel.Scale );
+        
+            % compute the auxiliary loss using the model
+            ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
+            pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
+            loss.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
+               
+            
+            % compute the mean squared error as a function of time
+            loss.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, ...
+                                                   thisModel.Scale );
+        
+            % compute the mean error (bias) as a function of time
+            loss.ReconTimeBias = reconTemporalBias( pred.XHat, pred.XTarget, ...
+                                                   thisModel.Scale );
+        
+            % compute the variance as a function of time
+            loss.ReconTimeVar = reconTemporalLoss( ...
+                            pred.XHat - loss.ReconTimeBias, ...
+                            pred.XTarget, thisModel.Scale );
+        
+            % compute the mean squared error as a function of time
+            loss.ReconTimeMSERegular = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
+                                                   thisModel.Scale );
+        
+            % compute the mean error (bias) as a function of time
+            loss.ReconTimeBiasRegular = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
+                                                   thisModel.Scale );
+        
+            % compute the variance as a function of time
+            loss.ReconTimeVarRegular = reconTemporalLoss( ...
+                            pred.XHatRegular - loss.ReconTimeBiasRegular, ...
+                            pred.XRegular, thisModel.Scale );
+        
+        end
 
     end
 

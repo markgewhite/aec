@@ -83,12 +83,10 @@ classdef ModelEvaluation < handle
 
             % evaluate the trained model
             [ self.TrainingEvaluation, self.TrainingPredictions ] ...
-                    = ensembleEvaluation( ...
-                                    self.Model, self.TrainingDataset );
+                    = self.Model.evaluateSet( self.TrainingDataset );
 
             [ self.TestingEvaluation, self.TestingPredictions ] ...
-                    = ensembleEvaluation( ...
-                                    self.Model, self.TestingDataset );
+                    = self.Model.evaluateSet( self.TestingDataset );
 
             if verbose
                 disp('Training evaluation:');
@@ -234,85 +232,3 @@ classdef ModelEvaluation < handle
 
 
 end
-
-
-function [ eval, pred ] = ensembleEvaluation( thisModel, thisDataset )
-    % Calculate the aggregate evaluation using all sub-models
-    arguments
-        thisModel       FullRepresentationModel
-        thisDataset     ModelDataset
-    end
-
-    % generate latent encodings from all sub-models
-    [ pred.ZEnsemble, pred.Z, pred.ZStd ]= ...
-                        thisModel.encode( thisDataset );
-
-    % reconstruct the curves
-    [ pred.XHatEnsemble, pred.XHat, pred.XHatStd ] = ...
-                        thisModel.reconstruct( pred.ZEnsemble );
-
-    % smooth the reconstructed curves
-    XHatFd = smooth_basis( thisDataset.TSpan.Target, ...
-                           pred.XHat, ...
-                           thisDataset.FDA.FdParamsTarget );
-    pred.XHatSmoothed = squeeze( ...
-                eval_fd( thisDataset.TSpan.Target, XHatFd ) );
-    
-    pred.XHatRegular = squeeze( ...
-                eval_fd( thisDataset.TSpan.Regular, XHatFd ) );
-
-    % compute reconstruction loss
-    eval.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, ...
-                                thisModel.Scale );
-    eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
-                                        thisModel.Scale );
-
-    % compute reconstruction loss for the regularised curves
-    pred.XRegular = squeeze( thisDataset.XInputRegular );
-    eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
-                                       thisModel.Scale );
-
-    % compute the mean squared error as a function of time
-    eval.ReconTimeMSE = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
-                                           thisModel.Scale );
-
-    % compute the mean error (bias) as a function of time
-    eval.ReconTimeBias = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
-                                           thisModel.Scale );
-
-    figure(4);
-    hold on;
-    for i = 1:thisDataset.XChannels
-        plot( thisDataset.TSpan.Regular, eval.ReconTimeMSE(:,i) );
-    end
-
-    % compute the auxiliary loss using the model
-    [ pred.YHatEnsemble, pred.YHat ] = predictAux( thisModel, pred.ZEnsemble );
-    eval.AuxModelLoss = getPropCorrect( pred.YHat, thisDataset.Y );
-
-    if isa( thisModel, 'FullAEModel' )
-        
-        if any(thisModel.LossFcnTbl.Types == 'Comparator')
-            % compute the comparator loss using the comparator network
-            [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
-                            predictCompNet( thisModel, thisDataset ); 
-        end
-
-        if any(thisModel.LossFcnTbl.Types == 'Auxiliary')
-            % compute the auxiliary loss using the network
-            [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                            predictAuxNet( thisModel, pred.ZEnsemble, thisDataset.Y );
-        end
-
-    else
-        pred.ComparatorYHat = [];
-        eval.ComparatorLoss = [];
-        pred.AuxNetworkYHat = [];
-        eval.AuxNetworkLoss = [];
-
-    end
-
-
-end
-
-
