@@ -73,10 +73,12 @@ function plotLatentComp( thisModel, args )
             pltObj = gobjects( 3, 1 );
 
             l = 0; % legend counter
-            s = 1; % sign/colour counter
 
             % plot the gradations
             for j = 1:nSample
+
+                % set the sign/colour counter
+                s = round( j/nSample, 0 ) + 1;
                 
                 % next sample
                 k = k+1;
@@ -125,11 +127,6 @@ function plotLatentComp( thisModel, args )
                                           LineWidth = width );
                     end
 
-                end
-
-                if mod( j, nSample/2 )==0
-                    % next colour
-                    s = s+1;
                 end
 
             end
