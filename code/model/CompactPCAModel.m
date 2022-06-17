@@ -32,17 +32,16 @@ classdef CompactPCAModel < CompactRepresentationModel
         end
 
 
-        function self = train( self, thisTrnData, thisValData )
+        function self = train( self, thisData )
             % Run FPCA for the encoder
             arguments
                 self            CompactPCAModel
-                thisTrnData     ModelDataset
-                thisValData     ModelDataset % redundant for PCA
+                thisData     ModelDataset
             end
 
             % create a functional data object with fewer bases
             XFd = smooth_basis( self.TSpan.Regular, ...
-                                thisTrnData.XInputRegular, ...
+                                thisData.XInputRegular, ...
                                 self.FDA.FdParamsRegular );
 
             pcaStruct = pca_fd( XFd, self.ZDim );
@@ -58,7 +57,7 @@ classdef CompactPCAModel < CompactRepresentationModel
 
             % compute the components' explained variance
             [self.LatentComponents, self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentComponents( self, thisTrnData );
+                            = self.getLatentComponents( self, thisData );
 
             % generate the latent components
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
@@ -66,12 +65,12 @@ classdef CompactPCAModel < CompactRepresentationModel
             % train the auxiliary model
             switch self.AuxModelType
                 case 'Logistic'
-                    self.AuxModel = fitclinear( Z, thisTrnData.Y, ...
+                    self.AuxModel = fitclinear( Z, thisData.Y, ...
                                                 Learner = "logistic");
                 case 'Fisher'
-                    self.AuxModel = fitcdiscr( Z, thisTrnData.Y );
+                    self.AuxModel = fitcdiscr( Z, thisData.Y );
                 case 'SVM'
-                    self.AuxModel = fitcecoc( Z, thisTrnData.Y );
+                    self.AuxModel = fitcecoc( Z, thisData.Y );
             end
 
         end

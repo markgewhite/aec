@@ -114,8 +114,7 @@ classdef FullRepresentationModel
                 self.SubModels{k} = self.initSubModel( k );
 
                 % train the sub-model
-                self.SubModels{k} = self.SubModels{k}.train( ...
-                                            thisTrnSet, thisValSet );
+                self.SubModels{k} = self.SubModels{k}.train( thisTrnSet );
 
                 % evaluate the sub-model
                 self.SubModels{k} = self.SubModels{k}.evaluate( ...
@@ -149,10 +148,12 @@ classdef FullRepresentationModel
             end
 
             self.Loss.Training = collateLosses( self.SubModels, 'Training' );
-            self.Loss.Validation = collateLosses( self.SubModels, 'Validation' );
-
             self.CVLoss.Training = calcCVLoss( self.SubModels, 'Training' );
-            self.CVLoss.Validation = calcCVLoss( self.SubModels, 'Validation' );
+
+            if isfield( self.SubModels{1}.Loss, 'Validation' )
+                self.Loss.Validation = collateLosses( self.SubModels, 'Validation' );
+                self.CVLoss.Validation = calcCVLoss( self.SubModels, 'Validation' );
+            end
 
         end
 

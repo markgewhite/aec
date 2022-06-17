@@ -70,8 +70,10 @@ classdef CompactRepresentationModel
             [ self.Loss.Training, self.Predictions.Training ] = ...
                                 self.evaluateSet( self, thisTrnSet );
 
-            [ self.Loss.Validation, self.Predictions.Validation ] = ...
-                                self.evaluateSet( self, thisValSet );
+            if thisValSet.NumObs > 0
+                [ self.Loss.Validation, self.Predictions.Validation ] = ...
+                                    self.evaluateSet( self, thisValSet );
+            end
 
         end
 

@@ -8,6 +8,7 @@ classdef ModelTrainer < handle
         BatchSize        % minibatch size
         PartialBatch     % what to do with an incomplete batch
 
+        Holdout          % proportion of the dataset for validation
         ValFreq          % validation frequency in epochs
         UpdateFreq       % update frequency in epochs
         LRFreq           % learning rate update frequency
@@ -42,6 +43,8 @@ classdef ModelTrainer < handle
                 args.partialBatch   char ...
                     {mustBeMember(args.partialBatch, ...
                         {'discard', 'return'} )} = 'discard'
+                args.holdout        double ...
+                    {mustBeInRange( args.holdout, 0, 0.5 )} = 0.2
                 args.valFreq        double ...
                     {mustBeInteger, mustBePositive} = 5; 
                 args.updateFreq     double ...
@@ -66,6 +69,7 @@ classdef ModelTrainer < handle
             self.BatchSize = args.batchSize;
             self.PartialBatch = args.partialBatch;
 
+            self.Holdout = args.holdout;
             self.ValFreq = args.valFreq;
             self.UpdateFreq = args.updateFreq;
             self.LRFreq = args.lrFreq;
@@ -90,17 +94,21 @@ classdef ModelTrainer < handle
         end
 
         
-        function thisModel = runTraining( self, thisModel, ...
-                                          thisTrnData, thisValData )
+        function thisModel = runTraining( self, thisModel, thisDataset )
             % Run the training loop for the model
             arguments
                 self            ModelTrainer
                 thisModel       CompactAEModel
-                thisTrnData     ModelDataset
-                thisValData     ModelDataset
+                thisDataset     ModelDataset
             end
 
             
+            % re-partition the data to create training and validation sets
+            trainObs = thisDataset.getCVPartition( Holdout = self.Holdout );
+            
+            thisTrnData = thisDataset.partition( trainObs );
+            thisValData = thisDataset.partition( ~trainObs );
+
             % setup the minibatch queues
             mbqTrn = thisTrnData.getMiniBatchQueue( ...
                                         self.BatchSize, ...
@@ -108,9 +116,11 @@ classdef ModelTrainer < handle
                                         thisModel.XNDimLabels, ...
                                         partialBatch = self.PartialBatch );
 
-            % get the validation data (one-time only)
-            [ dlXVal, dlYVal ] = thisValData.getDLInput( thisModel.XDimLabels );
-            
+            if self.Holdout > 0
+                % get the validation data (one-time only)
+                [ dlXVal, dlYVal ] = thisValData.getDLInput( thisModel.XDimLabels );
+            end
+
             % setup whole training set
             [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput( thisModel.XDimLabels );
 
@@ -191,7 +201,8 @@ classdef ModelTrainer < handle
                
 
                 if ~self.PreTraining ...
-                        && mod( epoch, self.ValFreq )==0
+                        && mod( epoch, self.ValFreq )==0 ...
+                        && self.Holdout > 0
                     
                     % run a validation check
                     v = v + 1;
@@ -274,9 +285,10 @@ classdef ModelTrainer < handle
             % generate the latent encodings
             dlZ = thisModel.encode( dlX, convert = false );
 
-            % compute the AE components
+            % compute the AE components for variance calculation
             [ dlXC, offsets ] = thisModel.latentComponents( ...
                             dlZ, ...
+                            nSample = 100, ...
                             sampling = 'Fixed', ...
                             centre = false );
 
@@ -289,6 +301,12 @@ classdef ModelTrainer < handle
             end
             fprintf(' )\n');
 
+
+            % compute the AE components for plotting
+            dlXC = thisModel.latentComponents( ...
+                            dlZ, ...
+                            sampling = 'Fixed', ...
+                            centre = false );
 
             % plot them on specified axes
             plotLatentComp( thisModel, XC = dlXC, ...

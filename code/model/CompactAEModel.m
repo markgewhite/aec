@@ -77,19 +77,18 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function self = train( self, thisTrnData, thisValData )
+        function self = train( self, thisData )
             % Train the autoencoder
             arguments
                 self            CompactAEModel
-                thisTrnData     ModelDataset
-                thisValData     ModelDataset
+                thisData        ModelDataset
             end
 
-            self = self.Trainer.runTraining( self, thisTrnData, thisValData );
+            self = self.Trainer.runTraining( self, thisData );
 
             % compute the components' explained variance
             [self.LatentComponents, self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentComponents( self, thisTrnData );
+                            = self.getLatentComponents( self, thisData );
 
         end
 
