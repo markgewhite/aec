@@ -16,6 +16,7 @@ classdef FullRepresentationModel
         Partitions      % logical array specifying the train/validation split
         IdenticalPartitions % flag for special case of identical partitions
         SubModels       % array of trained models
+        ComponentType   % type of components generated (Mean or PDP)
         LatentComponents % cross-validated latent components
         Loss            % collated losses from sub-models
         CVLoss          % aggregate cross-validated losses
@@ -38,6 +39,9 @@ classdef FullRepresentationModel
                         {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
                 args.KFolds         double ...
                     {mustBeInteger, mustBePositive} = 5
+                args.componentType  char ...
+                    {mustBeMember(args.componentType, ...
+                        {'Mean', 'PDP'} )} = 'PDP'
                 args.NumCompLines   double...
                     {mustBeInteger, mustBePositive} = 8
                 args.ShowPlots      logical = true
@@ -66,6 +70,7 @@ classdef FullRepresentationModel
             self.IdenticalPartitions = args.IdenticalPartitions;
             self.SubModels = cell( self.KFolds, 1 );
 
+            self.ComponentType = args.componentType;
             self.NumCompLines = args.NumCompLines;
 
             self.ShowPlots = args.ShowPlots;

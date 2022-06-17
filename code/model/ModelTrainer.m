@@ -293,8 +293,7 @@ classdef ModelTrainer < handle
                             centre = false );
 
             % compute explained variance
-            varProp = thisModel.explainedVariance( thisModel, ...
-                                                   dlX, dlXC, offsets );
+            varProp = thisModel.explainedVariance( dlX, dlXC, offsets );
             fprintf('; VarProp = %5.3f (', sum(varProp) );
             for k = 1:length(varProp)
                 fprintf(' %5.3f', varProp(k) );

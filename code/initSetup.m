@@ -52,7 +52,7 @@ function setup = initSetup
 
     setup.lossFcns.orth.class = @ComponentLoss;
     setup.lossFcns.orth.name = 'Orthogonality';
-    setup.lossFcns.orth.args.nSample = 100;
+    setup.lossFcns.orth.args.nSample = 20;
     setup.lossFcns.orth.args.criterion = 'Orthogonality';
     setup.lossFcns.orth.args.useLoss = true;
 
@@ -84,9 +84,9 @@ function setup = initSetup
     setup.model.args.auxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 10;
+    setup.model.args.trainer.updateFreq = 25;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 50;
+    setup.model.args.trainer.numEpochs = 200;
     setup.model.args.trainer.batchSize = 40;
     setup.mdoel.args.trainer.holdout = 0;
 

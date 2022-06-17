@@ -88,7 +88,7 @@ classdef CompactAEModel < CompactRepresentationModel
 
             % compute the components' explained variance
             [self.LatentComponents, self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentComponents( self, thisData );
+                            = self.getLatentComponents( thisData );
 
         end
 
@@ -167,6 +167,12 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlXC = forward( self.Nets.Decoder, dlZC );
             else
                 dlXC = predict( self.Nets.Decoder, dlZC );
+            end
+
+            if strcmp( self.ComponentType, 'PDP' )
+                % take the mean across the subsets
+                dlXC = reshape( dlXC, size(dlXC,1), size(dlZ,2), [] );
+                dlXC = squeeze( mean( dlXC, 2 ) );
             end
 
             XDim = size( dlXC );

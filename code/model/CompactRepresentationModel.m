@@ -19,7 +19,9 @@ classdef CompactRepresentationModel
         Axes            % axes for plotting latent space and components
         NumCompLines    % number of lines in the component plot
 
+        ComponentType   % type of components generated (Mean or PDP)
         LatentComponents % computed components across partitions
+        
         ComponentVar     % component variance of each ompoent
         VarProportion    % proportion total variance explained by each component
 
@@ -50,6 +52,7 @@ classdef CompactRepresentationModel
             self.ShowPlots = theFullModel.ShowPlots;
             self.Figs = theFullModel.Figs;
             self.Axes = theFullModel.Axes;
+            self.ComponentType = theFullModel.ComponentType;
             self.NumCompLines = theFullModel.NumCompLines;
 
             self.Info.Name = strcat( self.Info.Name, "-Fold", ...
@@ -65,13 +68,13 @@ classdef CompactRepresentationModel
             % efficient than calculating two components at strict
             % 2SD separation from the mean.
             arguments
-                self            CompactRepresentationModel
-                Z               {mustBeA( Z, {'dlarray', 'double'} )}             
-                args.sampling   char ...
-                                {mustBeMember(args.sampling, ...
-                                    {'Random', 'Fixed'} )} = 'Random'
-                args.nSample    double {mustBeInteger} = 0
-                args.range      double {mustBePositive} = 2.0
+                self                CompactRepresentationModel
+                Z                   {mustBeA( Z, {'dlarray', 'double'} )}
+                args.sampling       char ...
+                                    {mustBeMember(args.sampling, ...
+                                        {'Random', 'Fixed'} )} = 'Random'
+                args.nSample        double {mustBeInteger} = 0
+                args.range          double {mustBePositive} = 2.0
             end
 
             if args.nSample > 0
@@ -94,12 +97,23 @@ classdef CompactRepresentationModel
             % giving a preponderance of values at the tails
             prc = 100*normcdf( offsets );
 
-            % compute the mean and SD across the batch
-            ZMean = mean( Z, 2 );
-            
-            % initialise the components' Z codes at the mean
-            % include an extra one that will be preserved
-            ZC = repmat( ZMean, 1, self.ZDim*nSample+1 );
+
+            switch self.ComponentType
+
+                case 'Mean'
+                    % initialise the components' Z codes at the mean
+                    % include an extra one that will be preserved
+                    ZMean = mean( Z, 2 );                    
+                    ZC = repmat( ZMean, 1, self.ZDim*nSample+1 );
+                    nRepeats = 1;
+
+                case 'PDP'
+                    % initialize with Z codes duplicated to be
+                    % overriden below
+                    ZC = repmat( Z, 1, self.ZDim*nSample+1 );
+                    nRepeats = size( Z, 2 );
+
+            end
 
             if isa( Z, 'dlarray' )
                 % convert to double for speed
@@ -109,8 +123,9 @@ classdef CompactRepresentationModel
             for j = 1:nSample
                 
                 for i =1:self.ZDim
-                    % vary ith component randomly about its mean
-                    ZC(i,(i-1)*nSample+j) = prctile( Z(i,:), prc(j) );
+                    colStart = ((i-1)*nSample+j-1)*nRepeats+1;
+                    colEnd = colStart + nRepeats - 1;
+                    ZC( i, colStart:colEnd ) = prctile( Z(i,:), prc(j) );
                 end
 
             end
@@ -164,10 +179,6 @@ classdef CompactRepresentationModel
 
         end
 
-    end
-
-
-    methods (Static)
 
         function [ XCReg, varProp, compVar ] = ...
                                     getLatentComponents( self, thisDataset )
@@ -214,7 +225,7 @@ classdef CompactRepresentationModel
 
             % compute the components' explained variance
             [varProp, compVar] = self.explainedVariance( ...
-                                        self, XReg, XCFineReg, offsets );    
+                                        XReg, XCFineReg, offsets );    
 
         end
 
