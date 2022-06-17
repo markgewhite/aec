@@ -92,10 +92,10 @@ function plotLatentComp( thisModel, args )
                                         compColours(s,:), ...
                                         name = names(s) );
                     end
-                    width = 1.5;
+                    width = 1.0;
                 
                 else
-                    width = 1.0;
+                    width = 0.5;
                 end
 
                 % plot gradation curve
@@ -139,7 +139,7 @@ function plotLatentComp( thisModel, args )
             pltObj(l) = plot( axis, ...
                               tSpanPlot, XCsmth( :, end, c ), ...
                               Color = black, ...
-                              LineWidth = 1.5, ...
+                              LineWidth = 1.0, ...
                               DisplayName = 'Mean' );
 
             hold( axis, 'off' );

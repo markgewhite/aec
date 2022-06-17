@@ -63,18 +63,4 @@ function savePlots( gObjs, path, name )
 
     end
 
-    if isfield( gObjs, 'Comp' )
-        % individual components
-        for i = 1:length(gObjs.Comp)
-    
-            fullname = strcat( name, '-C', num2str(i,'%02d'), '.pdf' );
-            exportgraphics( gObjs.Comp(i), ...
-                        fullfile( fullpath, fullname ), ...
-                        ContentType= 'vector', ...
-                        Resolution = 300 );
-    
-    
-        end
-    end
-
 end   
