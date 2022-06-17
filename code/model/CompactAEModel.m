@@ -150,16 +150,19 @@ classdef CompactAEModel < CompactRepresentationModel
                 args.convert    logical = false
             end
 
-            if isa( dlZ, 'dlarray' )
-                Z = double(extractdata( dlZ ));
+            if size( dlZ, 1 ) ~= self.ZDim
+                dlZ = dlZ';
             end
 
-            [ ZC, offsets ] = self.componentEncodings( Z, ...
+            [ dlZC, offsets ] = self.componentEncodings( dlZ, ...
                                         sampling = args.sampling, ...    
                                         nSample = args.nSample );
 
             % generate all the component curves using the decoder
-            dlZC = dlarray( ZC, 'CB' );
+            if isa( dlZC, 'double' )
+                dlZC = dlarray( dlZC, 'CB' );
+            end
+
             if args.forward
                 dlXC = forward( self.Nets.Decoder, dlZC );
             else

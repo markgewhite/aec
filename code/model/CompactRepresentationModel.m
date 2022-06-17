@@ -66,7 +66,7 @@ classdef CompactRepresentationModel
             % 2SD separation from the mean.
             arguments
                 self            CompactRepresentationModel
-                Z               double             
+                Z               {mustBeA( Z, {'dlarray', 'double'} )}             
                 args.sampling   char ...
                                 {mustBeMember(args.sampling, ...
                                     {'Random', 'Fixed'} )} = 'Random'
@@ -79,13 +79,6 @@ classdef CompactRepresentationModel
             else
                 nSample = self.NumCompLines;
             end
-            
-            % compute the mean and SD across the batch
-            ZMean = mean( Z, 2 );
-            
-            % initialise the components' Z codes at the mean
-            % include an extra one that will be preserved
-            ZC = repmat( ZMean, 1, self.ZDim*nSample+1 );
             
             % generate the Z offset factors about the mean
             switch args.sampling
@@ -100,6 +93,18 @@ classdef CompactRepresentationModel
             % convert the z-scores (offsets) to percentiles
             % giving a preponderance of values at the tails
             prc = 100*normcdf( offsets );
+
+            % compute the mean and SD across the batch
+            ZMean = mean( Z, 2 );
+            
+            % initialise the components' Z codes at the mean
+            % include an extra one that will be preserved
+            ZC = repmat( ZMean, 1, self.ZDim*nSample+1 );
+
+            if isa( Z, 'dlarray' )
+                % convert to double for speed
+                Z = double(extractdata( Z ));
+            end
 
             for j = 1:nSample
                 

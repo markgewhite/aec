@@ -84,9 +84,9 @@ function setup = initSetup
     setup.model.args.auxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 1;
+    setup.model.args.trainer.updateFreq = 10;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 2;
+    setup.model.args.trainer.numEpochs = 50;
     setup.model.args.trainer.batchSize = 40;
     setup.mdoel.args.trainer.holdout = 0;
 
