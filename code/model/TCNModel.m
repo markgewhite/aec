@@ -1,17 +1,13 @@
-classdef TCNModel < FullAEModel
+classdef TCNModel < FCModel
     % Subclass defining a temporal convolutional autoencoder model
 
     properties
-        NumHidden     % number of hidden layers
         NumFilters    % number of filters aka kernels
         FilterSize    % length of the filters
         Dilations     % dilations
-        ReLuScale     % leaky ReLu scale factor
-        InputDropout  % initial dropout rate
-        Dropout       % dropout rate
         Pooling       % pooling operator
         UseSkips      % whether to include short circuit paths
-
+        HasFCDecoder  % whether the decoder inherits the fully-connected design
     end
 
     methods
@@ -23,64 +19,53 @@ classdef TCNModel < FullAEModel
                                   args )
             % Initialize the model
             arguments
-                thisDataset     ModelDataset
+                thisDataset         ModelDataset
             end
             arguments (Repeating)
-                lossFcns        LossFunction
+                lossFcns            LossFunction
             end
             arguments
-                superArgs.?FullAEModel
-                superArgs2.name    string
-                superArgs2.path    string
-                args.numHidden     double ...
-                    {mustBeInteger, mustBePositive} = 2
-                args.numFilters    double ...
+                superArgs.?FCModel
+                superArgs2.name     string
+                superArgs2.path     string
+                args.NumFilters     double ...
                     {mustBeInteger, mustBePositive} = 16
-                args.filterSize    double ...
+                args.FilterSize     double ...
                     {mustBeInteger, mustBePositive} = 5
-                args.dilationFactor  double ...
+                args.DilationFactor double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.scale         double ...
-                    {mustBeInRange(args.scale, 0, 1)} = 0.2
-                args.inputDropout  double ...
-                    {mustBeInRange(args.inputDropout, 0, 1)} = 0.10
-                args.dropout       double ...
-                    {mustBeInRange(args.dropout, 0, 1)} = 0.05
-                args.pooling       char ...
-                    {mustBeMember(args.pooling, ...
+                args.Pooling        char ...
+                    {mustBeMember(args.Pooling, ...
                       {'GlobalMax', 'GlobalAvg'} )} = 'GlobalMax'
-                args.useSkips      logical = true
+                args.UseSkips       logical = true
+                args.HasFCDecoder   logical = false
             end
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
 
-            self@FullAEModel( thisDataset, ...
-                              lossFcns{:}, ...
-                              superArgsCell{:}, ...
-                              superArgs2Cell{:}, ...
-                              hasSeqInput = true );
+            self@FCModel( thisDataset, ...
+                          lossFcns{:}, ...
+                          superArgsCell{:}, ...
+                          superArgs2Cell{:}, ...
+                          HasSeqInput = true );
 
 
             % store this class's properties
-            self.NumHidden = args.numHidden;
-            self.FilterSize = args.filterSize;
-
-            self.ReLuScale = args.scale;
-            self.InputDropout = args.inputDropout;
-            self.Dropout = args.dropout;
-            self.Pooling = args.pooling;
-            self.UseSkips = args.useSkips;
+            self.FilterSize = args.FilterSize;
+            self.Pooling = args.Pooling;
+            self.UseSkips = args.UseSkips;
+            self.HasFCDecoder = args.HasFCDecoder;
 
             if self.UseSkips
                 % must use the same number of filters in each block
-                self.NumFilters = args.numFilters*ones( self.NumHidden, 1 );
+                self.NumFilters = args.NumFilters*ones( self.NumHidden, 1 );
             else
                 % progressively double filters
-                self.NumFilters = args.numFilters*2.^(0:self.NumHidden-1);
+                self.NumFilters = args.NumFilters*2.^(0:self.NumHidden-1);
             end
-            self.Dilations = 2.^((0:self.NumHidden-1)*args.dilationFactor);
+            self.Dilations = 2.^((0:self.NumHidden-1)*args.DilationFactor);
 
         end
 
@@ -143,6 +128,11 @@ classdef TCNModel < FullAEModel
                 self        TCNModel
             end
 
+            if self.HasFCDecoder
+                net = initDecoder@FCModel( self );
+                return
+            end
+
             % define input layers
             layersDec = [ featureInputLayer( self.ZDim, 'Name', 'in' )
                           projectAndReshapeLayer( [self.XInputDim 1 self.XChannels ], ...
@@ -188,6 +178,18 @@ classdef TCNModel < FullAEModel
 
         end
 
+
+        function dlZ = predict( encoder, X, arg )
+            % Override the predict function of a fully-connected network
+            arguments
+                encoder         dlnetwork
+                X               {mustBeA( X, {'dlarray', 'ModelDataset'} )}
+                arg.convert     logical = true
+            end
+
+            dlZ = predict@FullAEModel( encoder, X, arg );
+
+        end
 
     end
 

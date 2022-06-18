@@ -1,15 +1,13 @@
-classdef LSTMModel < FullAEModel
+classdef LSTMModel < FCModel
     % Subclass defining a long/short term memory autoencoder model
 
     properties
         NumHiddenUnits          % number LSTM nodes
-        ReLuScale               % leaky ReLu scale factor
-        InputDropout            % initial dropout rate
-        Dropout                 % dropout rate
         ReverseDecoding         % whether to reverse the order when decoding
         Bidirectional           % if the network is bidirectional
         ScheduleSampling        % whether to perform schedule sampling
         SamplingRateIncrement   % sampling rate increment per epoch
+        HasFCDecoder            % whether the decoder inherits the fully-connected design
     end
 
     methods
@@ -21,51 +19,43 @@ classdef LSTMModel < FullAEModel
                                    args )
             % Initialize the model
             arguments
-                thisDataset     ModelDataset
+                thisDataset             ModelDataset
             end
             arguments (Repeating)
-                lossFcns        LossFunction
+                lossFcns                LossFunction
             end
             arguments
-                superArgs.?FullAEModel
+                superArgs.?FCModel
                 superArgs2.name         string
                 superArgs2.path         string
-                args.numHiddenUnits     double ...
+                args.NumHiddenUnits     double ...
                     {mustBeInteger, mustBePositive} = 50
-                args.scale              double ...
-                    {mustBeInRange(args.scale, 0, 1)} = 0.2
-                args.inputDropout       double ...
-                    {mustBeInRange(args.inputDropout, 0, 1)} = 0.10
-                args.dropout            double ...
-                    {mustBeInRange(args.dropout, 0, 1)} = 0.05
-                args.reverseDecoding    logical = true
-                args.bidirectional      logical = false
-                args.scheduleSampling   logical = true
-                args.samplingRateIncrement double ...
+                args.ReverseDecoding    logical = true
+                args.Bidirectional      logical = false
+                args.ScheduleSampling   logical = true
+                args.SamplingRateIncrement double ...
                     {mustBePositive} = 0.005
+                args.HasFCDecoder       logical = false
             end
 
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
 
-            self@FullAEModel( thisDataset, ...
-                              lossFcns{:}, ...
-                              superArgsCell{:}, ...
-                              superArgs2Cell{:}, ...
-                              hasSeqInput = true, ...
-                              isVAE = false );
+            self@FCModel( thisDataset, ...
+                          lossFcns{:}, ...
+                          superArgsCell{:}, ...
+                          superArgs2Cell{:}, ...
+                          HasSeqInput = true, ...
+                          IsVAE = false );
 
             % store this class's properties
-            self.NumHiddenUnits = args.numHiddenUnits;
-            self.ReLuScale = args.scale;
-            self.InputDropout = args.inputDropout;
-            self.Dropout = args.dropout;
-
-            self.ReverseDecoding = args.reverseDecoding;
-            self.Bidirectional = args.bidirectional;
-            self.ScheduleSampling = args.scheduleSampling;
-            self.SamplingRateIncrement = args.samplingRateIncrement;
+            self.NumHiddenUnits = args.NumHiddenUnits;
+            self.ReverseDecoding = args.ReverseDecoding;
+            self.Bidirectional = args.Bidirectional;
+            self.ScheduleSampling = args.ScheduleSampling;
+            self.SamplingRateIncrement = args.SamplingRateIncrement;
+            self.HasFCDecoder = args.HasFCDecoder;
 
         end
 
@@ -110,6 +100,11 @@ classdef LSTMModel < FullAEModel
             % Initialize the decoder network
             arguments
                 self        LSTMModel
+            end
+
+            if self.HasFCDecoder
+                net = initDecoder@FCModel( self );
+                return
             end
 
             layersDec = [ ...
@@ -218,6 +213,19 @@ classdef LSTMModel < FullAEModel
             % (tracing will be taken care of in recon loss calculation)
             dlXHat = double(extractdata( dlXHat ));
             dlXHat = permute( dlXHat, [3 2 1] );
+
+        end
+
+
+        function dlZ = predict( encoder, X, arg )
+            % Override the predict function of a fully-connected network
+            arguments
+                encoder         dlnetwork
+                X               {mustBeA( X, {'dlarray', 'ModelDataset'} )}
+                arg.convert     logical = true
+            end
+
+            dlZ = predict@FullAEModel( encoder, X, arg );
 
         end
 

@@ -7,7 +7,6 @@ classdef FCModel < FullAEModel
         ReLuScale     % leaky ReLu scale factor
         InputDropout  % input dropout rate
         Dropout       % hidden layer dropout rate
-
     end
 
     methods
@@ -28,18 +27,19 @@ classdef FCModel < FullAEModel
                 superArgs.?FullAEModel
                 superArgs2.name     string
                 superArgs2.path     string
-                args.nHidden    double ...
+                args.NumHidden      double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.nFC        double ...
+                args.NumFC          double ...
                     {mustBeInteger, mustBePositive} = 64
-                args.fcFactor   double ...
+                args.FCFactor       double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.scale      double ...
-                    {mustBeInRange(args.scale, 0, 1)} = 0.2
-                args.inputDropout   double ...
-                    {mustBeInRange(args.inputDropout, 0, 1)} = 0.2
-                args.dropout    double ...
-                    {mustBeInRange(args.dropout, 0, 1)} = 0.05
+                args.ReLuScale      double ...
+                    {mustBeInRange(args.ReLuScale, 0, 1)} = 0.2
+                args.InputDropout   double ...
+                    {mustBeInRange(args.InputDropout, 0, 1)} = 0.2
+                args.Dropout    double ...
+                    {mustBeInRange(args.Dropout, 0, 1)} = 0.05
+                args.HasSeqInput    logical = false
             end
 
             % set the superclass's properties
@@ -51,15 +51,15 @@ classdef FCModel < FullAEModel
                               superArgsCell{:}, ...
                               superArgs2Cell{:}, ...
                               flattenInput = true, ...
-                              hasSeqInput = false );
+                              HasSeqInput = args.HasSeqInput );
 
             % store this class's properties
-            self.NumHidden = args.nHidden;
-            self.NumFC = args.nFC;
-            self.FCFactor = args.fcFactor;
-            self.ReLuScale = args.scale;
-            self.InputDropout = args.inputDropout;
-            self.Dropout = args.dropout;
+            self.NumHidden = args.NumHidden;
+            self.NumFC = args.NumFC;
+            self.FCFactor = args.FCFactor;
+            self.ReLuScale = args.ReLuScale;
+            self.InputDropout = args.InputDropout;
+            self.Dropout = args.Dropout;
            
         end
 

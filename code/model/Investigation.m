@@ -195,27 +195,27 @@ function setup = updateDependencies( setup, parameter, value )
 
                 case {'FCModel', 'ConvolutionalModel'}
 
-                    dependency = 'data.args.hasNormalizedInput';
+                    dependency = 'data.args.HasNormalizedInput';
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
 
-                case {'LSTMModel', 'LSTM_FCModel'}
+                case 'LSTMModel'
 
-                    dependency = 'trainer.args.partialBatch';
+                    dependency = 'model.args.trainer.partialBatch';
                     reqValue = 'discard';
                     setup = applySetting( setup, dependency, reqValue );
 
-                    dependency = 'data.args.hasNormalizedInput';
+                    dependency = 'data.args.HasNormalizedInput';
                     reqValue = false;
                     setup = applySetting( setup, dependency, reqValue );
 
                 case 'FullPCAModel'
 
-                    dependency = 'data.args.hasNormalizedInput';
+                    dependency = 'data.args.HasNormalizedInput';
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
                     
-                    dependency = 'data.args.hasMatchingOutput';
+                    dependency = 'data.args.HasMatchingOutput';
                     reqValue = true;
                     setup = applySetting( setup, dependency, reqValue );
 

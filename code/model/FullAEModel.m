@@ -41,15 +41,15 @@ classdef FullAEModel < FullRepresentationModel
                 superArgs.?FullRepresentationModel
                 superArgs2.name     string
                 superArgs2.path     string
-                args.isVAE          logical = false
-                args.numVAEDraws    double ...
+                args.IsVAE          logical = false
+                args.NumVAEDraws    double ...
                     {mustBeInteger, mustBePositive} = 1
-                args.flattenInput   logical = false
-                args.hasSeqInput    logical = false
-                args.weights        double ...
+                args.FlattenInput   logical = false
+                args.HasSeqInput    logical = false
+                args.Weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
-                args.trainer        struct = []
-                args.optimizer      struct = []
+                args.Trainer        struct = []
+                args.Optimizer      struct = []
             end
 
             % set the superclass's properties
@@ -61,7 +61,7 @@ classdef FullAEModel < FullRepresentationModel
                                                  NumCompLines = 9 );
 
             % check dataset is suitable
-            if thisDataset.isFixedLength == args.hasSeqInput
+            if thisDataset.isFixedLength == args.HasSeqInput
                 eid = 'FullAEModel:DatasetNotSuitable';
                 if thisDataset.isFixedLength
                     msg = 'The dataset should have variable length for the model.';
@@ -74,17 +74,17 @@ classdef FullAEModel < FullRepresentationModel
             % placeholders for subclasses to define
             self.NetNames = {'Encoder', 'Decoder'};
             self.NumNetworks = 2;
-            self.IsVAE = args.isVAE;
-            self.NumVAEDraws = args.numVAEDraws;
-            self.FlattenInput = args.flattenInput;
-            self.HasSeqInput = args.hasSeqInput;
+            self.IsVAE = args.IsVAE;
+            self.NumVAEDraws = args.NumVAEDraws;
+            self.FlattenInput = args.FlattenInput;
+            self.HasSeqInput = args.HasSeqInput;
 
-            self.Trainer = args.trainer;
-            self.Optimizer = args.optimizer;
+            self.Trainer = args.Trainer;
+            self.Optimizer = args.Optimizer;
 
             % copy over the loss functions associated
             % and any networks with them for later training 
-            self = addLossFcns( self, lossFcns{:}, weights = args.weights );
+            self = addLossFcns( self, lossFcns{:}, weights = args.Weights );
 
             self.NumLoss = sum( self.LossFcnTbl.NumLosses );
 
