@@ -145,75 +145,14 @@ classdef LSTMModel < FCModel
         end
 
 
-        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
-            % Forward-run the lstm network, overriding autoencoder method
+        function thisModel = initSubModel( self, id )
+            % Initialize a sub-model
             arguments
-                self        LSTMModel
-                encoder     dlnetwork
-                decoder     dlnetwork
-                dlX         dlarray
+                self            LSTMModel
+                id              double
             end
 
-            % generate latent encodings
-            [ dlZ, state.Encoder ] = forward( encoder, dlX );
-
-            % initialize the hidden states (HS) and cell states (CS)
-            dlHS = dlZ;
-            dlCS = dlarray( zeros(size(dlZ), 'like', dlZ), 'CB' );
-            
-            if self.Bidirectional
-                dlHS = repmat( dlHS, [2 1] );
-                dlCS = repmat( dlCS, [2 1]);
-            end
-
-            % reconstruct curves using teacher forcing/free running
-            if self.ReverseDecoding
-                dlX = flip( dlX, 3 );
-            end
-
-            seqInputLen = size( dlX, 3 );
-            seqOutputLen = self.XTargetDim;
-
-            dlXHat = repmat( dlX, [1 1 2] );
-            
-            if self.ScheduleSampling
-                rate = min( self.Trainer.CurrentEpoch...
-                                *self.SamplingRateIncrement, 1 );
-                mask = rand( seqOutputLen, 1 ) < rate;
-            end
-            
-            for i = 1:seqOutputLen
-
-                if i > 1
-                    if (self.ScheduleSampling && mask(i)) ...
-                            || i > seqInputLen
-                        % free running: last prediction
-                        dlNextX = dlXHat(:,:,i-1);
-                    else
-                        % teacher forcing: ground truth
-                        dlNextX = dlX(:,:,i-1);
-                    end
-                else
-                    dlNextX = 0*dlX(:,:,1);
-                end
-
-                [ dlCS, dlHS, dlXHat(:,:,i), state.dec ] = ...
-                                  forward( decoder, dlNextX, dlHS, dlCS );
-                
-                decoder.State = state.dec;
-
-            end
-
-            % align sequences correctly
-            dlXHat = dlXHat(:,:,1:seqOutputLen);
-            %if self.reverseDecoding
-            %    dlXHat = flip( dlXHat, 3 );
-            %end
-            
-            % permute to match dlXOut
-            % (tracing will be taken care of in recon loss calculation)
-            dlXHat = double(extractdata( dlXHat ));
-            dlXHat = permute( dlXHat, [3 2 1] );
+            thisModel = LSTMCompactModel( self, id );
 
         end
 
@@ -227,52 +166,6 @@ classdef LSTMModel < FCModel
             end
 
             dlZ = predict@FullAEModel( encoder, X, arg );
-
-        end
-
-    end
-
-    methods (Static)
-
-        function dlZ = encode( self, X, arg )
-            % Encode features Z from X using the model
-            % overriding the autoencoder encode method
-            % which must have inputs in the trained batch size
-            arguments
-                self            FullAEModel
-                X
-                arg.convert     logical = true
-            end
-
-            if isa( X, 'ModelDataset' )
-                dlX = X.getDLInput;
-            elseif isa( X, 'dlarray' )
-                dlX = X;
-            else
-                eid = 'Autoencoder:NotValidX';
-                msg = 'The input data should be a ModelDataset or a dlarray.';
-                throwAsCaller( MException(eid,msg) );
-            end
-
-            batchSize = size( self.Nets.Encoder.State.Value{1}, 2 );
-            nObs = size( dlX, 2 );
-            nBatches = fix(nObs/batchSize);
-            dlZ = dlarray( zeros( self.ZDim, nObs), 'CB' );
-
-            j = 1;
-            % make predictions in batches
-            for i = 1:nBatches
-                dlZ(:,j:j+batchSize-1) = predict( self.Nets.Encoder, ...
-                                dlX( :, j:j+batchSize-1, :)  );
-                j = j+batchSize;
-            end
-            % cover the remainder
-            dlZ( :, end-batchSize+1:end ) = predict( self.Nets.Encoder, ...
-                                dlX( :, end-batchSize+1:end, : ) );
-
-            if arg.convert
-                dlZ = double(extractdata( dlZ ))';
-            end
 
         end
 
