@@ -46,6 +46,7 @@ classdef LSTMModel < FCModel
                           lossFcns{:}, ...
                           superArgsCell{:}, ...
                           superArgs2Cell{:}, ...
+                          FlattenInput = false, ...
                           HasSeqInput = true, ...
                           IsVAE = false );
 
@@ -238,7 +239,7 @@ classdef LSTMModel < FCModel
             % overriding the autoencoder encode method
             % which must have inputs in the trained batch size
             arguments
-                self            autoencoderModel
+                self            FullAEModel
                 X
                 arg.convert     logical = true
             end

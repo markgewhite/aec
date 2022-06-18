@@ -77,7 +77,7 @@ function setup = initSetup
 
     % model
     setup.model.class = @FCModel;
-    setup.model.args.HasFCDecoder = true;
+    %setup.model.args.HasFCDecoder = true;
     setup.model.args.ZDim = 4;
     setup.model.args.KFolds = 1;
     setup.model.args.IdenticalPartitions = true;
