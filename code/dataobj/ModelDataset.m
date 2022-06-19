@@ -457,10 +457,16 @@ classdef ModelDataset < handle
             uniqueUnit = unique( unit );
 
             if isfield( args, 'Holdout' )
-                % holdout partitioning
-                cvpart = cvpartition( length( uniqueUnit ), ...
-                                      Holdout = args.Holdout );
-                selection = ismember( unit, uniqueUnit( training(cvpart) ));
+
+                if args.Holdout > 0
+                    % holdout partitioning
+                    cvpart = cvpartition( length( uniqueUnit ), ...
+                                              Holdout = args.Holdout );
+                    selection = ismember( unit, uniqueUnit( training(cvpart) ));
+                else
+                    % no partitioning - select all
+                    selection = true( self.NumObs, 1 );
+                end
               
             else
                 % K-fold partitioning

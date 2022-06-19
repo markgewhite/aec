@@ -76,7 +76,6 @@ function setup = initSetup
     setup.lossFcns.xcls.args.useLoss = true;
 
     % model
-    setup.model.class = @ConvolutionalModel;
     setup.model.args.HasFCDecoder = true;
     setup.model.args.ZDim = 4;
     setup.model.args.KFolds = 1;
@@ -89,7 +88,7 @@ function setup = initSetup
     setup.model.args.trainer.valType = 'AuxModel';
     setup.model.args.trainer.numEpochs = 100;
     setup.model.args.trainer.batchSize = 40;
-    setup.mdoel.args.trainer.holdout = 0;
+    setup.model.args.trainer.holdout = 0;
 
 
 end
