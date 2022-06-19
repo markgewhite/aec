@@ -14,8 +14,6 @@ classdef CompactAEModel < CompactRepresentationModel
         NumLoss        % number of computed losses
         FlattenInput   % whether to flatten input
         HasSeqInput    % supports variable-length input
-        AuxNetwork     % name of auxiliary dlnetwork
-
         Trainer        % trainer object holding training parameters
         Optimizer      % optimizer object
     end
@@ -418,8 +416,14 @@ classdef CompactAEModel < CompactRepresentationModel
             for i = 1:length( self.LossFcnNames )
                 thisName = self.LossFcnNames{i};
                 thisLossFcn = self.LossFcns.(thisName);
+                thisType = self.LossFcnTbl.Types(self.LossFcnTbl.Names == thisName);
                 if thisLossFcn.HasNetwork
-                    self.Nets.(thisName) = thisLossFcn.initNetwork;
+                    if thisType == 'Comparator' %#ok<BDSCA> 
+                        self.Nets.(thisName) = thisLossFcn.initNetwork( ...
+                                                self.Nets.Encoder );
+                    else
+                        self.Nets.(thisName) = thisLossFcn.initNetwork;
+                    end
                 end
             end
 

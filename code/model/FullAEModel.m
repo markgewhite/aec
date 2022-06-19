@@ -3,7 +3,6 @@ classdef FullAEModel < FullRepresentationModel
     
     properties
         NetNames       % names of the networks (for convenience)
-        AuxNetName     % name of the auxiliary network
         NumNetworks    % number of networks
         IsVAE          % flag indicating if variational autoencoder
         NumVAEDraws    % number of draws from encoder output distribution
@@ -149,13 +148,17 @@ classdef FullAEModel < FullRepresentationModel
             % check there is no more than one auxiliary network, if at all
             auxFcns = self.LossFcnTbl.Types=='Auxiliary';
             if sum( auxFcns ) > 1
-                eid = 'aeModel:MulitpleAuxiliaryFunction';
+                eid = 'FullAEModel:MultipleAuxiliaryFunction';
                 msg = 'There is more than one auxiliary loss function.';
                 throwAsCaller( MException(eid,msg) );
-            elseif sum( auxFcns ) == 1
-                % for convenience identify the auxiliary network
-                auxNet = (self.NetNames == self.LossFcnNames(auxFcns));
-                self.AuxNetName = self.NetNames( auxNet );
+            end
+
+            % identify the comparator network, if present
+            comparatorFcns = self.LossFcnTbl.Types=='Comparator';
+            if sum( comparatorFcns ) > 1
+                eid = 'FullAEModel:MultipleComparatorFunction';
+                msg = 'There is more than one comparator loss function.';
+                throwAsCaller( MException(eid,msg) );
             end
 
         end

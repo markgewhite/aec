@@ -71,13 +71,13 @@ function setup = initSetup
     setup.lossFcns.cls.name = 'Classification';
     setup.lossFcns.cls.args.useLoss = true;
 
-    %setup.lossFcns.xcls.class = @InputClassifierLoss;
-    %setup.lossFcns.xcls.name = 'XClassification';
-    %setup.lossFcns.xcls.args.useLoss = true;
+    setup.lossFcns.xcls.class = @InputClassifierLoss;
+    setup.lossFcns.xcls.name = 'XClassification';
+    setup.lossFcns.xcls.args.useLoss = true;
 
     % model
-    setup.model.class = @FCModel;
-    %setup.model.args.HasFCDecoder = true;
+    setup.model.class = @ConvolutionalModel;
+    setup.model.args.HasFCDecoder = true;
     setup.model.args.ZDim = 4;
     setup.model.args.KFolds = 1;
     setup.model.args.IdenticalPartitions = true;
@@ -85,9 +85,9 @@ function setup = initSetup
     setup.model.args.AuxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 1;
+    setup.model.args.trainer.updateFreq = 20;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 2;
+    setup.model.args.trainer.numEpochs = 100;
     setup.model.args.trainer.batchSize = 40;
     setup.mdoel.args.trainer.holdout = 0;
 

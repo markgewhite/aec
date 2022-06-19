@@ -85,42 +85,21 @@ classdef InputClassifierLoss < LossFunction
         end
         
         
-        function net = initNetwork( self )
+        function net = initNetwork( self, encoder )
             % Generate an initialized network
             arguments
-                self       InputClassifierLoss
+                self        InputClassifierLoss
+                encoder     dlnetwork
             end
 
-            if ~strcmp( self.ModelType, 'Network' )
-                eid = 'classifierLoss:NotNetwork';
-                msg = 'This classifier function does not use a network.';
-                throwAsCaller( MException(eid,msg) );
-            end 
+            lgraph = layerGraph( encoder );
+            lastName = lgraph.Layers(end).Name;
+           
+            % define replacement layers
+            newLayers = [ fullyConnectedLayer( self.CDim, 'Name', 'fcout' )
+                          sigmoidLayer( 'Name', 'out' ) ];
 
-            % create the input layer
-            layers = featureInputLayer( self.XDim*self.XChannels, ...
-                                   'Name', 'in', ...
-                                   'Normalization', 'zscore', ...
-                                   'Mean', 0, 'StandardDeviation', 1 );
-            
-            % create the hidden layers
-            for i = 1:self.NumHidden
-                nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
-                layers = [ layers; ...
-                    fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
-                    batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( self.Scale, 'Name', ['relu' num2str(i)] )
-                    dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
-                    ]; %#ok<AGROW> 
-            end
-            
-            % create final layers
-            layers = [ layers; ...    
-                            fullyConnectedLayer( self.CDim, 'Name', 'fcout' )
-                            sigmoidLayer( 'Name', 'out' )
-                            ];
-            
-            lgraph = layerGraph( layers );
+            lgraph = replaceLayer( lgraph, lastName, newLayers );
             net = dlnetwork( lgraph );
             
         end
