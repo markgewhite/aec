@@ -221,13 +221,14 @@ classdef ModelTrainer < handle
             
                 % update progress on screen
                 if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots
-                    if self.PreTraining
-                        % exclude validation
-                        lossValArg = [];
-                    else
+                    if ~self.PreTraining && self.Holdout > 0
                         % include validation
                         lossValArg = self.LossVal( v );
-                    end                       
+                    else
+                        % exclude validation
+                        lossValArg = [];
+                    end
+                     
                     self.reportProgress( thisModel, ...
                                          thisTrnData, ...
                                          self.LossTrn( j-nIter+1:j, : ), ...
