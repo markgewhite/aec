@@ -188,7 +188,7 @@ classdef CompactAEModel < CompactRepresentationModel
                 end
             end
 
-            if args.convert
+            if isa( dlXC, 'dlarray' ) && args.convert
                 dlXC = double(extractdata( dlXC ));
             end
 
@@ -263,7 +263,9 @@ classdef CompactAEModel < CompactRepresentationModel
             dlXHat = decodeDispatcher( self, dlZ, forward = false );
 
             if arg.convert
-                dlXHat = double(extractdata( dlXHat ));
+                if isa( dlXHat, 'dlarray' )
+                    dlXHat = double(extractdata( dlXHat ));
+                end
                 dlXHat = permute( dlXHat, [1 3 2] );
             end
             

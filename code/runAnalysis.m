@@ -12,6 +12,6 @@ path = [path '/../results/'];
 %values = [ {2:6} {{false, true}} ];
 
 parameters = [ "model.class" ];
-values = {{@LSTMModel}};
+values = {{@FCModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );

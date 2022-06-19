@@ -59,7 +59,7 @@ classdef LSTMCompactModel < CompactAEModel
                 dlX = self.forwardDecoder( self.Nets.Decoder, ...
                                        dlZ, args.dlX );
             else
-                dlX = predict( self.Nets.Decoder, dlZ );
+                dlX = self.predictDecoder( self.Nets.Decoder, dlZ );
             end
 
         end
@@ -76,7 +76,7 @@ classdef LSTMCompactModel < CompactAEModel
             end
 
             if isa( X, 'ModelDataset' )
-                dlX = X.getDLInput;
+                dlX = X.getDLInput( self.XDimLabels );
             elseif isa( X, 'dlarray' )
                 dlX = X;
             else
@@ -104,31 +104,6 @@ classdef LSTMCompactModel < CompactAEModel
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';
             end
-
-        end
-
-
-        function dlXHat = reconstruct( self, Z, arg )
-            % Reconstruct X from Z using the model
-            arguments
-                self            LSTMCompactModel
-                Z               {mustBeA(Z, {'double', 'dlarray'})}
-                arg.convert     logical = true
-            end
-
-            if isa( Z, 'dlarray' )
-                dlZ = Z;
-            else
-                dlZ = dlarray( Z', 'CB' );
-            end
-
-            dlXHat = predict( self.Nets.Decoder, dlZ );
-
-            if arg.convert
-                dlXHat = double(extractdata( dlXHat ));
-                dlXHat = permute( dlXHat, [1 3 2] );
-            end
-            
 
         end
 
@@ -205,6 +180,51 @@ classdef LSTMCompactModel < CompactAEModel
         
         end
 
+
+        function dlXHat = predictDecoder( self, decoder, dlHS )
+            % Forward-run the lstm decoder network
+            arguments
+                self            LSTMCompactModel
+                decoder         dlnetwork
+                dlHS            dlarray
+            end
+        
+            % initialize the hidden states (HS) and cell states (CS)
+            dlCS = dlarray( zeros(size(dlHS), 'like', dlHS), 'CB' );
+            
+            if self.Bidirectional
+                dlHS = repmat( dlHS, [2 1] );
+                dlCS = repmat( dlCS, [2 1]);
+            end
+               
+            seqOutputLen = self.XTargetDim;
+            dlNextX = dlarray( zeros( self.XChannels, size(dlHS,2) ), 'CBT' );
+            dlXHat = dlarray( zeros( self.XChannels, size(dlHS,2), ...
+                                     seqOutputLen), 'CBT' );
+            
+            for i = 1:seqOutputLen
+        
+                [ dlCS, dlHS, dlXHat(:,:,i) ] = ...
+                                  forward( decoder, dlNextX, dlHS, dlCS );
+                
+                dlNextX = dlXHat(:,:,i);
+
+            end
+        
+            % align sequences correctly
+            dlXHat = dlXHat(:,:,1:seqOutputLen);
+            
+            % permute to match dlXOut
+            % (tracing will be taken care of in recon loss calculation)
+            dlXHat = double(extractdata( dlXHat ));
+            dlXHat = permute( dlXHat, [3 2 1] );
+        
+        end
+
+
     end
+
+
+    
 
 end
