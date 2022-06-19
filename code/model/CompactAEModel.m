@@ -146,8 +146,9 @@ classdef CompactAEModel < CompactRepresentationModel
                 args.centre     logical = true
                 args.nSample    double {mustBeInteger} = 0
                 args.range      double {mustBePositive} = 2.0
-                args.forward    logical = false
                 args.convert    logical = false
+                args.forward    logical = false
+                args.dlX        {mustBeA( args.dlX, {'dlarray', 'double'} )}
             end
 
             if size( dlZ, 1 ) ~= self.ZDim
@@ -163,11 +164,12 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlZC = dlarray( dlZC, 'CB' );
             end
 
-            if args.forward
-                dlXC = forward( self.Nets.Decoder, dlZC );
-            else
-                dlXC = predict( self.Nets.Decoder, dlZC );
+            dispatchArgs.forward = args.forward;
+            if isfield( args, 'dlX' )
+                dispatchArgs.dlX = repmat( args.dlX, 1, self.ZDim*args.nSample+1 );
             end
+            dispatchArgsCell = namedargs2cell( dispatchArgs );
+            dlXC = self.decodeDispatcher( dlZC, dispatchArgsCell{:} );
 
             if strcmp( self.ComponentType, 'PDP' )
                 % take the mean across the subsets
@@ -258,13 +260,32 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlZ = dlarray( Z', 'CB' );
             end
 
-            dlXHat = predict( self.Nets.Decoder, dlZ );
+            dlXHat = decodeDispatcher( self, dlZ, forward = false );
 
             if arg.convert
                 dlXHat = double(extractdata( dlXHat ));
                 dlXHat = permute( dlXHat, [1 3 2] );
             end
             
+
+        end
+
+
+        function dlX = decodeDispatcher( self, dlZ, args )
+            % Generate X from Z either using forward or predict
+            % Subclasses can override
+            arguments
+                self            CompactAEModel
+                dlZ             dlarray
+                args.forward    logical = false
+                args.dlX        dlarray % redundant here
+            end
+
+            if args.forward
+                dlX = forward( self.Nets.Decoder, dlZ );
+            else
+                dlX = predict( self.Nets.Decoder, dlZ );
+            end
 
         end
 

@@ -39,70 +39,31 @@ classdef LSTMCompactModel < CompactAEModel
             % generate latent encodings
             [ dlZ, state.Encoder ] = forward( encoder, dlX );
 
-            % initialize the hidden states (HS) and cell states (CS)
-            dlHS = dlZ;
-            dlCS = dlarray( zeros(size(dlZ), 'like', dlZ), 'CB' );
-            
-            if self.Bidirectional
-                dlHS = repmat( dlHS, [2 1] );
-                dlCS = repmat( dlCS, [2 1]);
-            end
-
-            % reconstruct curves using teacher forcing/free running
-            if self.ReverseDecoding
-                dlX = flip( dlX, 3 );
-            end
-
-            seqInputLen = size( dlX, 3 );
-            seqOutputLen = self.XTargetDim;
-
-            dlXHat = repmat( dlX, [1 1 2] );
-            
-            if self.ScheduleSampling
-                rate = min( self.Trainer.CurrentEpoch...
-                                *self.SamplingRateIncrement, 1 );
-                mask = rand( seqOutputLen, 1 ) < rate;
-            end
-            
-            for i = 1:seqOutputLen
-
-                if i > 1
-                    if (self.ScheduleSampling && mask(i)) ...
-                            || i > seqInputLen
-                        % free running: last prediction
-                        dlNextX = dlXHat(:,:,i-1);
-                    else
-                        % teacher forcing: ground truth
-                        dlNextX = dlX(:,:,i-1);
-                    end
-                else
-                    dlNextX = 0*dlX(:,:,1);
-                end
-
-                [ dlCS, dlHS, dlXHat(:,:,i), state.dec ] = ...
-                                  forward( decoder, dlNextX, dlHS, dlCS );
-                
-                decoder.State = state.dec;
-
-            end
-
-            % align sequences correctly
-            dlXHat = dlXHat(:,:,1:seqOutputLen);
-            %if self.reverseDecoding
-            %    dlXHat = flip( dlXHat, 3 );
-            %end
-            
-            % permute to match dlXOut
-            % (tracing will be taken care of in recon loss calculation)
-            dlXHat = double(extractdata( dlXHat ));
-            dlXHat = permute( dlXHat, [3 2 1] );
+            % reconstruct curves from latent codes
+            [ dlXHat, state.Decoder ] = self.forwardDecoder( decoder, dlZ, dlX );
 
         end
 
-    end
 
+        function dlX = decodeDispatcher( self, dlZ, args )
+            % Generate X from Z either using forward or predict
+            % Overrides the autoencoder method
+            arguments
+                self                LSTMCompactModel
+                dlZ                 dlarray
+                args.forward        logical = false
+                args.dlX            dlarray
+            end
 
-    methods (Static)
+            if args.forward
+                dlX = self.forwardDecoder( self.Nets.Decoder, ...
+                                       dlZ, args.dlX );
+            else
+                dlX = predict( self.Nets.Decoder, dlZ );
+            end
+
+        end
+
 
         function dlZ = encode( self, X, arg )
             % Encode features Z from X using the model
@@ -110,7 +71,7 @@ classdef LSTMCompactModel < CompactAEModel
             % which must have inputs in the trained batch size
             arguments
                 self            LSTMCompactModel
-                X
+                X               
                 arg.convert     logical = true
             end
 
@@ -144,6 +105,104 @@ classdef LSTMCompactModel < CompactAEModel
                 dlZ = double(extractdata( dlZ ))';
             end
 
+        end
+
+
+        function dlXHat = reconstruct( self, Z, arg )
+            % Reconstruct X from Z using the model
+            arguments
+                self            LSTMCompactModel
+                Z               {mustBeA(Z, {'double', 'dlarray'})}
+                arg.convert     logical = true
+            end
+
+            if isa( Z, 'dlarray' )
+                dlZ = Z;
+            else
+                dlZ = dlarray( Z', 'CB' );
+            end
+
+            dlXHat = predict( self.Nets.Decoder, dlZ );
+
+            if arg.convert
+                dlXHat = double(extractdata( dlXHat ));
+                dlXHat = permute( dlXHat, [1 3 2] );
+            end
+            
+
+        end
+
+    end
+
+
+    methods (Access = private)
+
+        function [ dlXHat, state ] = forwardDecoder( self, decoder, dlHS, dlX )
+            % Forward-run the lstm decoder network
+            arguments
+                self            LSTMCompactModel
+                decoder         dlnetwork
+                dlHS            dlarray
+                dlX             dlarray
+            end
+        
+            % initialize the hidden states (HS) and cell states (CS)
+            dlCS = dlarray( zeros(size(dlHS), 'like', dlHS), 'CB' );
+            
+            if self.Bidirectional
+                dlHS = repmat( dlHS, [2 1] );
+                dlCS = repmat( dlCS, [2 1]);
+            end
+        
+            % reconstruct curves using teacher forcing/free running
+            if self.ReverseDecoding
+                dlX = flip( dlX, 3 );
+            end
+        
+            seqInputLen = size( dlX, 3 );
+            seqOutputLen = self.XTargetDim;
+        
+            dlXHat = repmat( dlX, [1 1 2] );
+            
+            if self.ScheduleSampling
+                rate = min( self.Trainer.CurrentEpoch...
+                                *self.SamplingRateIncrement, 1 );
+                mask = rand( seqOutputLen, 1 ) < rate;
+            end
+            
+            for i = 1:seqOutputLen
+        
+                if i > 1
+                    if (self.ScheduleSampling && mask(i)) ...
+                            || i > seqInputLen
+                        % free running: last prediction
+                        dlNextX = dlXHat(:,:,i-1);
+                    else
+                        % teacher forcing: ground truth
+                        dlNextX = dlX(:,:,i-1);
+                    end
+                else
+                    dlNextX = 0*dlX(:,:,1);
+                end
+
+                [ dlCS, dlHS, dlXHat(:,:,i), state ] = ...
+                                  forward( decoder, dlNextX, dlHS, dlCS );
+
+                decoder.State = state;
+        
+            end
+        
+            % align sequences correctly
+            dlXHat = dlXHat(:,:,1:seqOutputLen);
+            %if self.reverseDecoding
+            %    dlXHat = flip( dlXHat, 3 );
+            %end
+            
+            % permute to match dlXOut
+            % (tracing will be taken care of in recon loss calculation)
+            dlXHat = double(extractdata( dlXHat ));
+            dlXHat = permute( dlXHat, [3 2 1] );
+        
         end
 
     end
