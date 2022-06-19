@@ -153,7 +153,7 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlZ = dlZ';
             end
 
-            [ dlZC, offsets ] = self.componentEncodings( dlZ, ...
+            [ dlZC, offsets, nObs ] = self.componentEncodings( dlZ, ...
                                         sampling = args.sampling, ...    
                                         nSample = args.nSample );
 
@@ -171,7 +171,7 @@ classdef CompactAEModel < CompactRepresentationModel
 
             if strcmp( self.ComponentType, 'PDP' )
                 % take the mean across the subsets
-                dlXC = reshape( dlXC, size(dlXC,1), size(dlZ,2), [] );
+                dlXC = reshape( dlXC, size(dlXC,1), nObs, [] );
                 dlXC = squeeze( mean( dlXC, 2 ) );
             end
 
@@ -379,12 +379,14 @@ classdef CompactAEModel < CompactRepresentationModel
                 self            CompactAEModel
             end
 
-            plotObjects = self.Axes;
-            plotObjects.Components = self.Figs.Components;
-            plotObjects.Loss = self.Trainer.LossFig;
-
-            savePlots( plotObjects, self.Info.Path, self.Info.Name );
-
+            if self.ShowPlots
+                plotObjects = self.Axes;
+                plotObjects.Components = self.Figs.Components;
+                plotObjects.Loss = self.Trainer.LossFig;
+    
+                savePlots( plotObjects, self.Info.Path, self.Info.Name );
+            end
+            
         end
 
 

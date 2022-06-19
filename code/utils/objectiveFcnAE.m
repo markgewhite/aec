@@ -25,6 +25,8 @@ for i = 1:size( hyperparams, 2 )
     hpName = strrep( hpName, "_", "." );
     setup = applySetting( setup, hpName, hpValue );
 
+    setup = updateDependencies( setup, hpName, hpValue );
+
 end
 
 % initialize and run the evaluation

@@ -61,7 +61,7 @@ classdef CompactRepresentationModel
         end
 
 
-        function [ ZC, offsets ] = componentEncodings( self, Z, args )
+        function [ ZC, offsets, nObs ] = componentEncodings( self, Z, args )
             % Calculate the funtional components from the latent codes
             % using the decoder network. For each component, the relevant 
             % code is varied randomly about the mean. This is more 
@@ -75,6 +75,7 @@ classdef CompactRepresentationModel
                                         {'Random', 'Fixed'} )} = 'Random'
                 args.nSample        double {mustBeInteger} = 0
                 args.range          double {mustBePositive} = 2.0
+                args.ZSizeMax       double = 100
             end
 
             if args.nSample > 0
@@ -82,6 +83,8 @@ classdef CompactRepresentationModel
             else
                 nSample = self.NumCompLines;
             end
+
+            nObs = size( Z, 2 );
             
             % generate the Z offset factors about the mean
             switch args.sampling
@@ -108,8 +111,12 @@ classdef CompactRepresentationModel
                     nRepeats = 1;
 
                 case 'PDP'
-                    % initialize with Z codes duplicated to be
-                    % overriden below
+                    % initialize with all Z codes duplicated
+                    % but limit the total size
+                    if nObs > args.ZSizeMax
+                        Z = Z( :, randsample( nObs, args.ZSizeMax ) );
+                        nObs = args.ZSizeMax;
+                    end
                     ZC = repmat( Z, 1, self.ZDim*nSample+1 );
                     nRepeats = size( Z, 2 );
 
@@ -208,7 +215,7 @@ classdef CompactRepresentationModel
             [ XCFine, offsets ] = self.latentComponents( ...
                                             Z, ...
                                             sampling = 'Fixed', ...
-                                            nSample = 100, ...
+                                            nSample = 10, ...
                                             centre = false, ...
                                             convert = true );
     

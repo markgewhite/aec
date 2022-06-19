@@ -10,21 +10,14 @@ clear;
 setup = initSetup;
 setup.opt.objective = 'ReconLoss';
 setup.model.args.ShowPlots = false;
-setup.trainer.args.nEpochs = 50;
+setup.model.args.trainer.numEpochs = 100;
+setup.model.args.trainer.updateFreq = 1E4;
+setup.model.class = @FCModel;
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'model_args_ZDim', ...
-        [1 15], ...
-        'Type', 'integer', 'Optimize', false );
-
-varDef(2) = optimizableVariable( 'model_args_nLSTMHidden', ...
-        [1 4], ...
+        [1 30], ...
         'Type', 'integer', 'Optimize', true );
-
-varDef(3) = optimizableVariable( 'model_args_lstmFactor', ...
-        [-1 1], ...
-        'Type', 'integer', 'Optimize', true );
-
 
 
 % setup objective function
