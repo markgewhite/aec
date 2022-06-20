@@ -7,7 +7,7 @@ clear;
 
 
 % initalise setup
-setup = initSetup;
+setup = initSetupPC;
 setup.opt.objective = 'ReconLossRegular';
 setup.model.args.ShowPlots = false;
 setup.model.args.trainer.numEpochs = 100;

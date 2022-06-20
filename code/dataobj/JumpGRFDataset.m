@@ -74,8 +74,13 @@ classdef JumpGRFDataset < ModelDataset
 
             if ismac
                 rootpath = '/Users/markgewhite/Google Drive/';
-            else 
-                rootpath = 'C:\Users\m.g.e.white\My Drive\';
+            else
+                [~, dir] = dos('cd');
+                if strcmp( dir(1:14), 'C:\Users\markg' )
+                    rootpath = 'C:\Users\markg\Google Drive\';
+                else
+                    rootpath = 'C:\Users\m.g.e.white\My Drive\';
+                end
             end
 
             dataFolder = 'Academia/Postdoc/Datasets/Jumps';
