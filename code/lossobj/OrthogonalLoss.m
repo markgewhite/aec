@@ -23,39 +23,47 @@ classdef OrthogonalLoss < LossFunction
 
         end
 
-    end
-
-    methods (Static)
 
         function loss = calcLoss( self, dlZ )
             % Calculate the orthogonality loss
-            if self.DoCalcLoss
+            arguments
+                self        OrthogonalLoss
+                dlZ         dlarray
+            end
                 
-                orth = dlVectorSq( dlZ );
-                loss.orth = ...
-                    sqrt(sum(orth.^2,'all') - sum(diag(orth).^2))/ ...
-                                sum(dlZ.^2,'all');
-    
-            else
-                loss = 0;
-            end
+            dlVSq = dlVectorSq( dlZ );
+            dlVSqDiag = dlDiag( dlVSq );
+            loss = 0.01*mean( (dlVSq - dlVSqDiag).^2, 'all' );
 
         end
 
-        function dlVSq = dlVectorSq( dlV )
-            % Calculate dlV*dlV' (transpose)
-            % and preserve the dlarray
-            r = size( dlV, 1 );
-            dlVSq = dlarray( zeros(r,r), 'CB' );
-            for i = 1:r
-                for j = 1:r
-                    dlVSq(i,j) = sum( dlV(i,:).*dlV(j,:) );
-                end
-            end
-
-        end
 
     end
 
+
+end
+
+
+function dlVSq = dlVectorSq( dlV )
+    % Calculate dlV*dlV' (transpose)
+    % and preserve the dlarray
+    r = size( dlV, 1 );
+    dlVSq = dlarray( zeros(r,r), 'CB' );
+    for i = 1:r
+        for j = 1:r
+            dlVSq(i,j) = sum( dlV(i,:).*dlV(j,:) );
+        end
+    end
+
+end
+
+
+function dlVDiag = dlDiag( dlV )
+    % Extract the diagonal of a dlarray
+    r = size( dlV, 1 );
+    dlVDiag = dlarray( zeros(r,r), 'CB' );
+    for i = 1:r
+        dlVDiag(i,i) = dlV(i,i);
+    end
 
 end

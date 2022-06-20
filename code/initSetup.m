@@ -50,9 +50,13 @@ function setup = initSetup
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
+    setup.lossFcns.zorth.class = @OrthogonalLoss;
+    setup.lossFcns.zorth.name = 'ZOrthogonality';
+    setup.lossFcns.zorth.args.useLoss = true;
+
     %setup.lossFcns.orth.class = @ComponentLoss;
     %setup.lossFcns.orth.name = 'Orthogonality';
-    %setup.lossFcns.orth.args.nSample = 20;
+    %setup.lossFcns.orth.args.nSample = 2;
     %setup.lossFcns.orth.args.criterion = 'Orthogonality';
     %setup.lossFcns.orth.args.useLoss = true;
 
@@ -86,7 +90,7 @@ function setup = initSetup
     % training
     setup.model.args.trainer.updateFreq = 25;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 100;
+    setup.model.args.trainer.numEpochs = 400;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 
