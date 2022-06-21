@@ -42,22 +42,22 @@ function setup = initSetupPC
     setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
 
-    %setup.lossFcns.adv.class = @AdversarialLoss;
-    %setup.lossFcns.adv.name = 'Discriminator';
+    setup.lossFcns.adv.class = @AdversarialLoss;
+    setup.lossFcns.adv.name = 'Discriminator';
 
-    setup.lossFcns.zorth.class = @OrthogonalLoss;
-    setup.lossFcns.zorth.name = 'ZOrthogonality';
+    %setup.lossFcns.zorth.class = @OrthogonalLoss;
+    %setup.lossFcns.zorth.name = 'ZOrthogonality';
     
     %setup.lossFcns.mmd.class = @WassersteinLoss;
     %setup.lossFcns.mmd.name = 'MMDDiscriminator';
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
-    %setup.lossFcns.orth.class = @ComponentLoss;
-    %setup.lossFcns.orth.name = 'Orthogonality';
-    %setup.lossFcns.orth.args.nSample = 2;
-    %setup.lossFcns.orth.args.criterion = 'Orthogonality';
-    %setup.lossFcns.orth.args.useLoss = true;
+    setup.lossFcns.orth.class = @ComponentLoss;
+    setup.lossFcns.orth.name = 'Orthogonality';
+    setup.lossFcns.orth.args.nSample = 4;
+    setup.lossFcns.orth.args.criterion = 'Orthogonality';
+    setup.lossFcns.orth.args.useLoss = true;
 
     %setup.lossFcns.var.class = @ComponentLoss;
     %setup.lossFcns.var.name = 'ExplainedVariance';
@@ -70,15 +70,16 @@ function setup = initSetupPC
     %setup.lossFcns.smooth.args.Lambda = 1E-2;
     %setup.lossFcns.smooth.args.useLoss = false;
 
-    %setup.lossFcns.cls.class = @ClassifierLoss;
-    %setup.lossFcns.cls.name = 'Classification';
-    %setup.lossFcns.cls.args.useLoss = true;
+    setup.lossFcns.cls.class = @ClassifierLoss;
+    setup.lossFcns.cls.name = 'Classification';
+    setup.lossFcns.cls.args.useLoss = true;
 
-    %setup.lossFcns.xcls.class = @InputClassifierLoss;
-    %setup.lossFcns.xcls.name = 'XClassification';
-    %setup.lossFcns.xcls.args.useLoss = true;
+    setup.lossFcns.xcls.class = @InputClassifierLoss;
+    setup.lossFcns.xcls.name = 'XClassification';
+    setup.lossFcns.xcls.args.useLoss = true;
 
     % model
+    setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.KFolds = 1;
@@ -87,9 +88,9 @@ function setup = initSetupPC
     setup.model.args.AuxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 25;
+    setup.model.args.trainer.updateFreq = 20;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 100;
+    setup.model.args.trainer.numEpochs = 200;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 

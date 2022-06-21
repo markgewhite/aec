@@ -24,6 +24,7 @@ classdef FullRepresentationModel
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
         NumCompLines    % number of lines in the component plot
+        RandomSeed      % for reproducibility
     end
 
     methods
@@ -39,6 +40,8 @@ classdef FullRepresentationModel
                         {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
                 args.KFolds         double ...
                     {mustBeInteger, mustBePositive} = 5
+                args.randomSeed     double ...
+                    {mustBeInteger, mustBePositive}
                 args.componentType  char ...
                     {mustBeMember(args.componentType, ...
                         {'Mean', 'PDP'} )} = 'PDP'
@@ -58,9 +61,7 @@ classdef FullRepresentationModel
             self.TSpan = thisDataset.TSpan;
             self.FDA = thisDataset.FDA;
             self.Info = thisDataset.Info;
-            self.Info.Name = args.name;
-            self.Info.Path = args.path;
-            
+
             % set the scaling factor(s) based on all X
             self = self.setScalingFactor( thisDataset.XTarget );
 
@@ -69,6 +70,10 @@ classdef FullRepresentationModel
             self.KFolds = args.KFolds;
             self.IdenticalPartitions = args.IdenticalPartitions;
             self.SubModels = cell( self.KFolds, 1 );
+            self.RandomSeed = args.randomSeed;
+
+            self.Info.Name = args.name;
+            self.Info.Path = args.path;
 
             self.ComponentType = args.componentType;
             self.NumCompLines = args.NumCompLines;
@@ -101,6 +106,11 @@ classdef FullRepresentationModel
             arguments
                 self            FullRepresentationModel
                 thisDataset     ModelDataset
+            end
+
+            if ~isempty( self.RandomSeed )
+                % set random seed for reproducibility
+                rng( self.RandomSeed );
             end
 
             % re-partition the data to create training and validation sets

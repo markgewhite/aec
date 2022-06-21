@@ -1,17 +1,13 @@
 % Run the analysis
 
-setup = initSetup;
+setup = initSetupPC;
 
 % first investigation
-name = 'JumpsGRF(DemoA)';
+name = 'JumpsGRF(DemoB)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-%parameters = [ "model.args.ZDim", ...
-%               "lossFcns.cls.args.useLoss" ];
-%values = [ {2:6} {{false, true}} ];
-
 parameters = [ "lossFcns.cls.args.useLoss" ];
-values = {{false,false}};
+values = {{true}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );

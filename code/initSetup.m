@@ -87,11 +87,12 @@ function setup = initSetup
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.IsVAE = false;
     setup.model.args.AuxModel = 'Logistic';
+    setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 50;
+    setup.model.args.trainer.updateFreq = 1;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 400;
+    setup.model.args.trainer.numEpochs = 10;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 

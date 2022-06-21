@@ -102,7 +102,6 @@ classdef ModelTrainer < handle
                 thisDataset     ModelDataset
             end
 
-            
             % re-partition the data to create training and validation sets
             trainObs = thisDataset.getCVPartition( Holdout = self.Holdout );
             
