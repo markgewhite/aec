@@ -16,6 +16,18 @@ function setup = applySetting( setup, parameter, value )
                 setup.(var).(remainder) = value;
             case 'cell'
                 setup.(var).(remainder) = value{1};
+            case {'categorical'}
+                if value=='false' %#ok<BDSCA> 
+                    setup.(var).(remainder) = false;
+                elseif value=='true' %#ok<BDSCA> 
+                    setup.(var).(remainder) = true;
+                else
+                    setup.(var).(remainder) = value;
+                end
+            otherwise
+                msg = strcat( "Value type for setup.", ...
+                        var, ".", remainder, " not recognised.");
+                error( msg );
         end
     end
 
