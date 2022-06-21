@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'JumpsGRF(Test)';
+name = 'JumpsGRF(DemoA)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
@@ -11,7 +11,7 @@ path = [path '/../results/'];
 %               "lossFcns.cls.args.useLoss" ];
 %values = [ {2:6} {{false, true}} ];
 
-parameters = [ "model.class" ];
-values = {{@FCModel}};
+parameters = [ "lossFcns.cls.args.useLoss" ];
+values = {{false,true}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );

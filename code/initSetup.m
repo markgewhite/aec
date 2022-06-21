@@ -50,9 +50,9 @@ function setup = initSetup
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
-    setup.lossFcns.zorth.class = @OrthogonalLoss;
-    setup.lossFcns.zorth.name = 'ZOrthogonality';
-    setup.lossFcns.zorth.args.useLoss = true;
+    %setup.lossFcns.zorth.class = @OrthogonalLoss;
+    %setup.lossFcns.zorth.name = 'ZOrthogonality';
+    %setup.lossFcns.zorth.args.useLoss = true;
 
     %setup.lossFcns.orth.class = @ComponentLoss;
     %setup.lossFcns.orth.name = 'Orthogonality';
@@ -71,15 +71,16 @@ function setup = initSetup
     %setup.lossFcns.smooth.args.Lambda = 1E-2;
     %setup.lossFcns.smooth.args.useLoss = false;
 
-    %setup.lossFcns.cls.class = @ClassifierLoss;
-    %setup.lossFcns.cls.name = 'Classification';
-    %setup.lossFcns.cls.args.useLoss = true;
+    setup.lossFcns.cls.class = @ClassifierLoss;
+    setup.lossFcns.cls.name = 'Classification';
+    setup.lossFcns.cls.args.useLoss = false;
 
     %setup.lossFcns.xcls.class = @InputClassifierLoss;
     %setup.lossFcns.xcls.name = 'XClassification';
     %setup.lossFcns.xcls.args.useLoss = true;
 
     % model
+    setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.KFolds = 1;
@@ -88,7 +89,7 @@ function setup = initSetup
     setup.model.args.AuxModel = 'Logistic';
     
     % training
-    setup.model.args.trainer.updateFreq = 25;
+    setup.model.args.trainer.updateFreq = 50;
     setup.model.args.trainer.valType = 'AuxModel';
     setup.model.args.trainer.numEpochs = 400;
     setup.model.args.trainer.batchSize = 40;

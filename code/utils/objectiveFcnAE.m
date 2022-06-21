@@ -49,7 +49,7 @@ switch setup.opt.objective
     case 'ReconLossRegular'
         obj = thisEvaluation.TestingEvaluation.ReconLossRegular;
     case 'AuxLoss'
-        obj = thisEvaluation.TestingEvaluation.AuxModeLoss;
+        obj = thisEvaluation.TestingEvaluation.AuxModelLoss;
 end
 
 
