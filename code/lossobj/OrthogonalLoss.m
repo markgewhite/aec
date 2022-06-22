@@ -30,40 +30,22 @@ classdef OrthogonalLoss < LossFunction
                 self        OrthogonalLoss
                 dlZ         dlarray
             end
-                
-            dlVSq = dlVectorSq( dlZ );
-            dlVSqDiag = dlDiag( dlVSq );
-            loss = 0.01*mean( (dlVSq - dlVSqDiag).^2, 'all' );
+            
+            % convert to double for speed
+            % (other loss functions will ensure tracing)
+            Z = double(extractdata( dlZ ));
+
+            % use Pearson's product moment correlation
+            R = corr( Z' );
+
+            % calculate the loss by removing the diagonal
+            d = length(R);
+            loss = sum( ( R-eye(d) ).^2, 'all' )/(d*(d-1));
 
         end
 
 
     end
 
-
-end
-
-
-function dlVSq = dlVectorSq( dlV )
-    % Calculate dlV*dlV' (transpose)
-    % and preserve the dlarray
-    r = size( dlV, 1 );
-    dlVSq = dlarray( zeros(r,r), 'CB' );
-    for i = 1:r
-        for j = 1:r
-            dlVSq(i,j) = sum( dlV(i,:).*dlV(j,:) );
-        end
-    end
-
-end
-
-
-function dlVDiag = dlDiag( dlV )
-    % Extract the diagonal of a dlarray
-    r = size( dlV, 1 );
-    dlVDiag = dlarray( zeros(r,r), 'CB' );
-    for i = 1:r
-        dlVDiag(i,i) = dlV(i,i);
-    end
 
 end

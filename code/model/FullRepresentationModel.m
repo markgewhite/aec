@@ -70,7 +70,12 @@ classdef FullRepresentationModel
             self.KFolds = args.KFolds;
             self.IdenticalPartitions = args.IdenticalPartitions;
             self.SubModels = cell( self.KFolds, 1 );
-            self.RandomSeed = args.randomSeed;
+
+            if isfield( args, 'randomSeed' )
+                self.RandomSeed = args.randomSeed;
+            else
+                self.RandomSeed = [];
+            end
 
             self.Info.Name = args.name;
             self.Info.Path = args.path;

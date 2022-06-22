@@ -3,12 +3,13 @@ function setup = initSetup
 
     % dataset
     setup.data.class = @JumpGRFDataset;
-    setup.data.args.normalization = 'PAD';
-    setup.data.args.hasNormalizedInput = true;
-    setup.data.args.normalizedPts = 51;
-    setup.data.args.hasAdaptiveTimeSpan = true;
-    setup.data.args.resampleRate = 10;
+    setup.data.args.Normalization = 'PAD';
+    setup.data.args.HasNormalizedInput = true;
+    setup.data.args.NormalizedPts = 51;
+    setup.data.args.HasAdaptiveTimeSpan = true;
+    setup.data.args.ResampleRate = 10;
     setup.data.args.OverSmoothing = 1E3;
+    setup.data.args.HasMatchingOutput = false;
         
     %setup.data.class = @fukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
@@ -50,13 +51,13 @@ function setup = initSetup
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
-    %setup.lossFcns.zorth.class = @OrthogonalLoss;
-    %setup.lossFcns.zorth.name = 'ZOrthogonality';
-    %setup.lossFcns.zorth.args.useLoss = true;
+    setup.lossFcns.zorth.class = @OrthogonalLoss;
+    setup.lossFcns.zorth.name = 'ZOrthogonality';
+    setup.lossFcns.zorth.args.useLoss = true;
 
     %setup.lossFcns.orth.class = @ComponentLoss;
     %setup.lossFcns.orth.name = 'Orthogonality';
-    %setup.lossFcns.orth.args.nSample = 2;
+    %setup.lossFcns.orth.args.nSample = 20;
     %setup.lossFcns.orth.args.criterion = 'Orthogonality';
     %setup.lossFcns.orth.args.useLoss = true;
 
@@ -90,9 +91,9 @@ function setup = initSetup
     setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 1;
+    setup.model.args.trainer.updateFreq = 50;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 10;
+    setup.model.args.trainer.numEpochs = 400;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 
