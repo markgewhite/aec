@@ -54,38 +54,31 @@ classdef ComponentLoss < LossFunction
                 self
                 dlXC  dlarray  % generated AE components
             end
-
-            % for speed convert to ordinary numeric array
-            % tracing is maintained through the mandatory reconstruction loss
-            XC = double(extractdata( dlXC ));
         
-            if size( XC, 3 ) == 1
-                XC = permute( XC, [1 3 2] );
+            if size( dlXC, 3 ) == 1
+                dlXC = permute( dlXC, [1 3 2] );
             end
-            nComp = size( XC, 3 )/self.NumSamples;
-            nChannels = size( XC, 2 );
+            [nPts, nChannels, nComp] = size( dlXC );
+            nComp = nComp/self.NumSamples;
         
-            XC = reshape( XC, size(XC,1), nChannels, self.NumSamples, nComp );
-        
-            % re-centre by component
-            XC = XC - mean( XC, 3 );
+            dlXC = reshape( dlXC, nPts, nChannels, self.NumSamples, nComp );
 
             switch self.Criterion
                 case 'Orthogonality'
                     % compute the inner product as a test
                     % of component orthogonality
-                    loss = innerProduct( XC, nChannels, nComp, ...
-                                         self.NumSamples );
+                    loss = innerProduct( dlXC, nChannels, nComp, ...
+                                         self.NumSamples, self.Scale );
 
                 case 'Varimax'
                     % compute the component variance across 
                     % its length, penalising low variance
-                    loss = varimax( XC );
+                    loss = varimax( dlXC );
 
                 case 'ExplainedVariance'
                     % compute the component variance across 
                     % its length, penalising high variance
-                    loss = explainedVariance( XC, nChannels, nComp, ...
+                    loss = explainedVariance( dlXC, nChannels, nComp, ...
                                          self.NumSamples, self.Scale );
 
             end
@@ -97,19 +90,24 @@ classdef ComponentLoss < LossFunction
 end
 
 
-function loss = innerProduct( XC, nChannels, nComps, nSamples )
+function loss = innerProduct( XC, nChannels, nComps, nSamples, scale )
     % Calculate the inner product
 
-    orth = zeros( 1, nChannels );
+    orth = dlarray( zeros(1, nChannels), 'CB' );
 
     for c = 1:nChannels
         for k = 1:nSamples
-            R = corr( squeeze(XC(:,c,k,:)) );
-            orth(c) = orth(c) + sum( ( R-eye(nComps) ).^2, 'all' );
+            for i = 1:nComps
+                for j = i+1:nComps
+                    orth(c) = orth(c) + mean(XC(:,c,k,i).*XC(:,c,k,j))^2;
+                end
+            end
         end
     end
 
-    loss = mean(orth)/(nSamples*nComps*(nComps-1));
+    orth = orth./scale;
+
+    loss = 1E3*mean(orth)/(nSamples*nComps*(nComps-1));
 
 end
 
