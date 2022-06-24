@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'JumpsGRF(ReliabilityTest5PCA)';
+name = 'JumpsGRF(Test)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
@@ -11,7 +11,10 @@ path = [path '/../results/'];
 %               "lossFcns.cls.args.useLoss" ];
 %values = [ {2:6} {{false, true}} ];
 
-parameters = [ "lossFcns.cls.args.useLoss" ];
-values = {{false,true}};
+%parameters = [ "model.class" "lossFcns.cls.args.useLoss" ];
+%values = [{@FullPCAModel,@FCModel}, {false,true}];
+
+parameters = [ "model.class" ];
+values = {{@FCModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );

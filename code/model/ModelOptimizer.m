@@ -69,25 +69,19 @@ classdef ModelOptimizer
 
 
         function [ self, nets ] = updateNets( self, nets, ...
-                                    grads, count, doTrainAE )
+                                    grads, count )
             % Update the network parameters
             arguments
-                self        ModelOptimizer
-                nets        struct
-                grads       struct
-                count       double
-                doTrainAE   logical
+                self            ModelOptimizer
+                nets            struct
+                grads           struct
+                count           double
             end
 
             nNets = length( self.NetNames );
             for i = 1:nNets
 
                 thisName = self.NetNames{i};
-                if any(strcmp( thisName, {'Encoder','Decoder'} )) ...
-                    && not(doTrainAE)
-                    % skip training for the AE
-                    continue
-                end
 
                 if ~isfield( grads, thisName )
                     % skip as no gradient information
@@ -126,19 +120,19 @@ classdef ModelOptimizer
         end
 
 
-        function self = updateLearningRates( self, doTrainAE )
+        function self = updateLearningRates( self, preTraining )
             % Update learning rates
             arguments
-                self         ModelOptimizer
-                doTrainAE    logical
+                self            ModelOptimizer
+                preTraining     logical
             end
 
             for i = 1:length( self.NetNames )
 
                 thisName = self.NetNames{i};
-                if any(strcmp( thisName, {'Encoder','Decoder'} )) ...
-                    && not(doTrainAE)
-                    % skip training for the AE
+                if preTraining ...
+                    && ~any(strcmp( thisName, {'Encoder','Decoder'} )) 
+                    % skip update of any other networks if pretraining
                     continue
                 end
 

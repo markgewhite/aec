@@ -37,7 +37,8 @@ classdef ModelTrainer < handle
                 args.numEpochs      double ...
                     {mustBeInteger, mustBePositive} = 2000;
                 args.numEpochsPreTrn  double ...
-                    {mustBeInteger, mustBePositive} = 10;
+                    {mustBeInteger, ...
+                     mustBeGreaterThanOrEqual(args.numEpochsPreTrn,0) } = 10;
                 args.batchSize      double ...
                     {mustBeInteger, mustBePositive} = 40;
                 args.partialBatch   char ...
@@ -139,7 +140,11 @@ classdef ModelTrainer < handle
 
                 % Pre-training
                 self.PreTraining = (epoch<=self.NumEpochsPreTrn);
-                doTrainAE = (self.PostTraining || self.PreTraining);
+                if self.PreTraining
+                    nLoss = 1;
+                else
+                    nLoss = thisModel.NumLoss;
+                end
             
                 if thisTrnData.isFixedLength
                     % reset with a shuffled order
@@ -158,14 +163,14 @@ classdef ModelTrainer < handle
                     [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
                     
                     % evaluate the model gradients 
-                    [ grads, states, self.LossTrn(j,:) ] = ...
+                    [ grads, states, self.LossTrn(j,1:nLoss) ] = ...
                                       dlfeval(  @gradients, ...
                                                 thisModel.Nets, ...
                                                 thisModel, ...
                                                 dlXTTrn, ...
                                                 dlXNTrn, ...
                                                 dlYTrn, ...
-                                                doTrainAE );
+                                                self.PreTraining );
 
                     % store revised network states
                     for m = 1:thisModel.NumNetworks
@@ -179,8 +184,7 @@ classdef ModelTrainer < handle
                     [ thisModel.Optimizer, thisModel.Nets ] = ...
                         thisModel.Optimizer.updateNets( thisModel.Nets, ...
                                                         grads, ...
-                                                        j, ...
-                                                        doTrainAE );
+                                                        j );
 
                     if self.ShowPlots
                         % update loss plots
@@ -238,7 +242,7 @@ classdef ModelTrainer < handle
                 if mod( epoch, self.LRFreq )==0
                     % update learning rates
                     thisModel.Optimizer = ...
-                        thisModel.Optimizer.updateLearningRates( doTrainAE );
+                        thisModel.Optimizer.updateLearningRates( self.PreTraining );
                 end
 
             end
@@ -333,7 +337,7 @@ function [grad, state, loss] = gradients( nets, ...
                                           dlXIn, ...
                                           dlXOut, ... 
                                           dlY, ...
-                                          doTrainAE )
+                                          preTraining )
     % Compute the model gradients
     % (Model object not supplied so nets can be traced)
     arguments
@@ -342,31 +346,27 @@ function [grad, state, loss] = gradients( nets, ...
         dlXIn        dlarray  % input to the encoder
         dlXOut       dlarray  % output target for the decoder
         dlY          dlarray  % auxiliary outcome variable
-        doTrainAE    logical  % whether to train the AE
+        preTraining  logical  % flag indicating if pretraining phase
     end
 
-   
-    if doTrainAE
-        % autoencoder training
-        [ dlXGen, dlZGen, state ] = ...
-                forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
-    
-        if thisModel.IsVAE
-            % duplicate X & Y to match VAE's multiple draws
-            nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
-            dlXOut = repmat( dlXOut, 1, nDraws );
-            dlY = repmat( dlY, 1, nDraws );
-        end
-        
-    else
-        % no autoencoder training
-        dlZGen = predict( nets.Encoder, dlXIn );
-    
-    end
+    % autoencoder training
+    [ dlXGen, dlZGen, state ] = ...
+            forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
 
+    if thisModel.IsVAE
+        % duplicate X & Y to match VAE's multiple draws
+        nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
+        dlXOut = repmat( dlXOut, 1, nDraws );
+        dlY = repmat( dlY, 1, nDraws );
+    end
 
     % select the active loss functions
-    isActive = thisModel.LossFcnTbl.DoCalcLoss;
+    if preTraining
+        isActive = thisModel.LossFcnTbl.Types=='Reconstruction';
+    else
+        isActive = thisModel.LossFcnTbl.DoCalcLoss;
+    end
+
     activeFcns = thisModel.LossFcnTbl( isActive, : );
 
     compLossFcnIdx = find( activeFcns.Types=='Component', 1 );

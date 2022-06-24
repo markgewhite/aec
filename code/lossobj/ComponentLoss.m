@@ -67,8 +67,7 @@ classdef ComponentLoss < LossFunction
                 case 'Orthogonality'
                     % compute the inner product as a test
                     % of component orthogonality
-                    loss = innerProduct( dlXC, nChannels, nComp, ...
-                                         self.NumSamples, self.Scale );
+                    loss = innerProduct( dlXC, nChannels, self.NumSamples );
 
                 case 'Varimax'
                     % compute the component variance across 
@@ -90,24 +89,22 @@ classdef ComponentLoss < LossFunction
 end
 
 
-function loss = innerProduct( XC, nChannels, nComps, nSamples, scale )
+function loss = innerProduct( dlXC, nChannels, nSamples )
     % Calculate the inner product
 
     orth = dlarray( zeros(1, nChannels), 'CB' );
 
     for c = 1:nChannels
         for k = 1:nSamples
-            for i = 1:nComps
-                for j = i+1:nComps
-                    orth(c) = orth(c) + mean(XC(:,c,k,i).*XC(:,c,k,j))^2;
-                end
-            end
+            dlXCsample = squeeze( dlXC(:,c,k,:) );
+            dlXCsample = permute( dlXCsample, [2 1] );
+            dlCorr = dlCorrelation( dlXCsample );
+            loss = mean( ( dlCorr - eye(size(dlCorr,1)) ).^2, 'all' );
+            orth(c) = orth(c) + loss;
         end
     end
 
-    orth = orth./scale;
-
-    loss = 1E3*mean(orth)/(nSamples*nComps*(nComps-1));
+    loss = mean(orth)/nSamples;
 
 end
 
