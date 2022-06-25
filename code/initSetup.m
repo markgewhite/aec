@@ -51,15 +51,15 @@ function setup = initSetup
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
-    %setup.lossFcns.zorth.class = @OrthogonalLoss;
-    %setup.lossFcns.zorth.name = 'ZOrthogonality';
-    %setup.lossFcns.zorth.args.useLoss = false;
+    setup.lossFcns.zorth.class = @OrthogonalLoss;
+    setup.lossFcns.zorth.name = 'ZOrthogonality';
+    setup.lossFcns.zorth.args.useLoss = true;
 
-    setup.lossFcns.orth.class = @ComponentLoss;
-    setup.lossFcns.orth.name = 'Orthogonality';
-    setup.lossFcns.orth.args.nSample = 2;
-    setup.lossFcns.orth.args.criterion = 'Orthogonality';
-    setup.lossFcns.orth.args.useLoss = true;
+    %setup.lossFcns.orth.class = @ComponentLoss;
+    %setup.lossFcns.orth.name = 'Orthogonality';
+    %setup.lossFcns.orth.args.nSample = 2;
+    %setup.lossFcns.orth.args.criterion = 'Orthogonality';
+    %setup.lossFcns.orth.args.useLoss = true;
 
     %setup.lossFcns.var.class = @ComponentLoss;
     %setup.lossFcns.var.name = 'ExplainedVariance';
@@ -84,14 +84,14 @@ function setup = initSetup
     setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
-    setup.model.args.KFolds = 1;
+    setup.model.args.KFolds = 10;
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.IsVAE = false;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 25;
+    setup.model.args.trainer.updateFreq = 50;
     setup.model.args.trainer.valType = 'AuxModel';
     setup.model.args.trainer.numEpochs = 400;
     setup.model.args.trainer.numEpochsPreTrn = 100;

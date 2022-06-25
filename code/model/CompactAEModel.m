@@ -16,6 +16,7 @@ classdef CompactAEModel < CompactRepresentationModel
         HasSeqInput    % supports variable-length input
         Trainer        % trainer object holding training parameters
         Optimizer      % optimizer object
+        ZDimActive     % number of dimensions currently active
     end
 
     properties (Dependent = true)
@@ -46,6 +47,7 @@ classdef CompactAEModel < CompactRepresentationModel
             self.NumLoss = theFullModel.NumLoss;
             self.FlattenInput = theFullModel.FlattenInput;
             self.HasSeqInput = theFullModel.HasSeqInput;
+            self.ZDimActive = 1;
 
             % initialize the encoder and decoder networks
             self.Nets.Encoder = theFullModel.initEncoder;
@@ -157,6 +159,9 @@ classdef CompactAEModel < CompactRepresentationModel
                                         sampling = args.sampling, ...    
                                         nSample = args.nSample );
 
+            % mask Z based on number of active dimensions
+            dlZC = self.maskZ( dlZC );
+
             % generate all the component curves using the decoder
             if isa( dlZC, 'double' )
                 dlZC = dlarray( dlZC, 'CB' );
@@ -211,6 +216,9 @@ classdef CompactAEModel < CompactRepresentationModel
             % generate latent encodings
             [ dlZ, state.Encoder ] = forward( encoder, dlX );
     
+            % mask Z based on number of active dimensions
+            dlZ = self.maskZ( dlZ );
+
             % reconstruct curves from latent codes
             [ dlXHat, state.Decoder ] = forward( decoder, dlZ );
 
@@ -369,6 +377,31 @@ classdef CompactAEModel < CompactRepresentationModel
                                 1:thisDataset.CDim, thisDataset.CDim ));
 
             loss = getPropCorrect( thisDataset.Y, YHat );
+
+        end
+
+
+        function self = incrementActiveZDim( self )
+            % Increment the number of active dimensions
+            arguments
+                self            CompactAEModel
+            end
+
+            self.ZDimActive = min( self.ZDimActive + 1, self.ZDim );
+
+        end
+
+
+        function dlZ = maskZ( self, dlZ )
+            % Mask latent codes based on the number of active dimensions
+            arguments
+                self            CompactAEModel
+                dlZ             dlarray
+            end
+
+            for i = self.ZDimActive+1:self.ZDim
+                dlZ(i,:) = 0;
+            end
 
         end
 

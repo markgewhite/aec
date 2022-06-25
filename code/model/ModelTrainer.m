@@ -12,6 +12,7 @@ classdef ModelTrainer < handle
         ValFreq          % validation frequency in epochs
         UpdateFreq       % update frequency in epochs
         LRFreq           % learning rate update frequency
+        ActiveZFreq      % active Z dimensions update frequency
 
         ValPatience      % validation patience in valFreq units
         ValType          % validation function name
@@ -38,7 +39,7 @@ classdef ModelTrainer < handle
                     {mustBeInteger, mustBePositive} = 2000;
                 args.numEpochsPreTrn  double ...
                     {mustBeInteger, ...
-                     mustBeGreaterThanOrEqual(args.numEpochsPreTrn,0) } = 10;
+                     mustBeGreaterThanOrEqual(args.numEpochsPreTrn,0) } = 100;
                 args.batchSize      double ...
                     {mustBeInteger, mustBePositive} = 40;
                 args.partialBatch   char ...
@@ -51,8 +52,10 @@ classdef ModelTrainer < handle
                 args.updateFreq     double ...
                     {mustBeInteger, mustBePositive} = 50;
                 args.lrFreq         double ...
-                    {mustBeInteger, mustBePositive} = 150;
+                    {mustBeInteger, mustBePositive} = 200;
                 args.valPatience    double ...
+                    {mustBeInteger, mustBePositive} = 25;
+                args.activeZFreq    double ...
                     {mustBeInteger, mustBePositive} = 25;
                 args.postTraining   logical = true;
                 args.valType        char ...
@@ -74,6 +77,7 @@ classdef ModelTrainer < handle
             self.ValFreq = args.valFreq;
             self.UpdateFreq = args.updateFreq;
             self.LRFreq = args.lrFreq;
+            self.ActiveZFreq = args.activeZFreq;
 
             self.ValPatience = args.valPatience;
             self.ValType = args.valType;
@@ -202,6 +206,11 @@ classdef ModelTrainer < handle
                                             dlZTrnAll, ...
                                             dlYTrnAll );
                
+                % update the number of dimensions, if required
+                if mod( epoch, self.ActiveZFreq )==0
+                    thisModel = thisModel.incrementActiveZDim;
+                end
+
 
                 if ~self.PreTraining ...
                         && mod( epoch, self.ValFreq )==0 ...
@@ -346,7 +355,7 @@ function [grad, state, loss] = gradients( nets, ...
         dlXIn        dlarray  % input to the encoder
         dlXOut       dlarray  % output target for the decoder
         dlY          dlarray  % auxiliary outcome variable
-        preTraining  logical  % flag indicating if pretraining phase
+        preTraining  logical  % flag indicating if in pretraining mode
     end
 
     % autoencoder training

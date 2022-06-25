@@ -4,11 +4,16 @@ function dlR = dlCorrelation( dlZ )
         dlZ         dlarray
     end
     
-    % centre dlZ
-    dlZ = dlZ - mean( dlZ, 2 );
+    % remove zero rows
+    dlZSum = sum( dlZ, 2 );
+    dlZ = dlZ( dlZSum~=0, : );
 
-    % dlZ*dlZ'
-    d = size( dlZ, 1 );            
+    [d, n] = size( dlZ );    
+
+    % centre dlZ
+    dlZ = dlZ - dlZSum( 1:d )/n;
+
+    % dlZ*dlZ'       
     dlR = dlVectorSq( dlZ, d );
 
     % extract the trace
