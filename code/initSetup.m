@@ -91,7 +91,7 @@ function setup = initSetup
     setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 50;
+    setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.valType = 'AuxModel';
     setup.model.args.trainer.numEpochs = 400;
     setup.model.args.trainer.numEpochsPreTrn = 100;

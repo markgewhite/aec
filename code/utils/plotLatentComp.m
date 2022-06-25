@@ -12,6 +12,7 @@ function plotLatentComp( thisModel, args )
                 {'Smoothed', 'Predicted', 'Both'} )} = 'Smoothed'
         args.shading        logical = false
         args.legend         logical = true
+        args.axes           = []
     end
     
     if isempty( args.XC )
@@ -59,13 +60,28 @@ function plotLatentComp( thisModel, args )
         nSample = thisModel.NumCompLines;
     end
 
+    % set the plot axes
+    if isempty( args.axes )
+        axes = thisModel.Axes.Comp;
+    else
+        axesDim = size( args.axes );
+        if axesDim(1) == thisModel.XChannels ...
+                && axesDim(2) == thisModel.ZDim
+            axes = args.axes;
+        else
+            eid = 'Plot:AxesDimsIncorrect';
+            msg = 'The specifies axes array does not have correct dimensions.';
+            throwAsCaller( MException(eid,msg) );
+        end
+    end
+
     for c = 1:thisModel.XChannels
 
         k = 0; % sample counter
 
         for i = 1:thisModel.ZDim
 
-            axis = thisModel.Axes.Comp(c,i);
+            axis = axes(c,i);
 
             cla( axis );
             hold( axis, 'on' );

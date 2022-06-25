@@ -154,6 +154,10 @@ classdef FullRepresentationModel
             % calculate the cross-validated losses
             self = self.computeLosses;
 
+            if self.ShowPlots
+                self.plotAllLatentComponents;
+            end
+            
             % save the full model
             self.save;
 
@@ -192,6 +196,48 @@ classdef FullRepresentationModel
 
             self.LatentComponents = XC/self.KFolds;
 
+
+        end
+
+
+        function self = plotAllLatentComponents( self )
+            % Plot all the latent components from the sub-models
+            arguments
+                self        FullRepresentationModel
+            end
+
+            figs = gobjects( self.KFolds, 1 );
+            axes = gobjects( self.XChannels, self.ZDim, self.KFolds );
+            for c = 1:self.XChannels
+
+                % create a temporary large figure
+                figs(c) = figure;
+                figs(c).Position(3) = figs(c).Position(3)*2;
+                figs(c).Position(4) = figs(c).Position(4)*2;
+                
+                % create all subplots
+                for k = 1:self.KFolds
+                    for d = 1:self.ZDim
+                        axes( c, d, k ) = ...
+                            subplot( self.KFolds, self.ZDim, ...
+                                 (k-1)*self.ZDim + d );
+                    end
+                end
+
+            end
+
+            % plot all the components across figures
+            for k = 1:self.KFolds
+                plotLatentComp( self.SubModels{k}, axes = axes(:,:,k) );
+            end
+
+            % save the figures and then close
+            name = strcat( self.Info.Name, 'AllKFolds' );
+            for c = 1:self.XChannels
+                figComp.Components = figs(c);
+                savePlots( figComp, self.Info.Path, name );
+                close( figs(c) );
+            end
 
         end
 
