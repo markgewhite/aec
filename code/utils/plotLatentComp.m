@@ -10,8 +10,11 @@ function plotLatentComp( thisModel, args )
         args.type           char ...
             {mustBeMember(args.type, ...
                 {'Smoothed', 'Predicted', 'Both'} )} = 'Smoothed'
-        args.shading        logical = false
-        args.legend         logical = true
+        args.shading        logical = true
+        args.showLegend     logical = true
+        args.showTitle      logical = true
+        args.showXAxis      logical = true
+        args.showYAxis      logical = true
         args.axes           = []
     end
     
@@ -158,26 +161,31 @@ function plotLatentComp( thisModel, args )
             hold( axis, 'off' );
 
             % finalise the plot with formatting, etc
-            if args.legend && c==1 && i==1
+            if args.showLegend && c==1 && i==1
                 legend( axis, pltObj, Location = 'best' );
             end
             
-            if c==1
+            if args.showTitle && c==1
                 title( axis, ['Component ' num2str(i)] );
             end
-            if c==thisModel.XChannels
+            
+            if args.showXAxis && c==thisModel.XChannels
                 xlabel( axis, thisModel.Info.TimeLabel );
+                xlim( axis, [tSpanPlot(1) tSpanPlot(end)] );
+            else
+                axis.XAxis.TickLabels = [];
             end
-            if i==1
+
+            if args.showYAxis && i==1
                 ylabel( axis, thisModel.Info.ChannelLabels(c) );
+                axis.YAxis.TickLabelFormat = '%.1f';
+            else
+                axis.YAxis.TickLabels = [];
             end
-            xlim( axis, [tSpanPlot(1) tSpanPlot(end)] );
 
             if ~isempty( thisModel.Info.ChannelLimits )
                 ylim( axis, thisModel.Info.ChannelLimits(c,:) );
             end               
-
-            axis.YAxis.TickLabelFormat = '%.1f';
 
             finalisePlot( axis );
 

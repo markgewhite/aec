@@ -212,9 +212,10 @@ classdef FullRepresentationModel
 
                 % create a temporary large figure
                 figs(c) = figure;
-                figs(c).Position(3) = figs(c).Position(3)*2;
-                figs(c).Position(4) = figs(c).Position(4)*2;
-                
+                figs(c).Visible = false;
+                figs(c).Position(3) = 100 + self.ZDim*250;
+                figs(c).Position(4) = 50 + self.KFolds*200;
+
                 % create all subplots
                 for k = 1:self.KFolds
                     for d = 1:self.ZDim
@@ -228,7 +229,11 @@ classdef FullRepresentationModel
 
             % plot all the components across figures
             for k = 1:self.KFolds
-                plotLatentComp( self.SubModels{k}, axes = axes(:,:,k) );
+                plotLatentComp( self.SubModels{k}, ...
+                                axes = axes(:,:,k), ...
+                                showTitle = (k==1), ...
+                                showLegend = false, ...
+                                showXAxis = (k==self.KFolds) );
             end
 
             % save the figures and then close

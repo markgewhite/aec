@@ -1,4 +1,3 @@
-
 function obj = plotShadedArea( ax, t, y1, y2, colour, args )
     % Plot a shaded area
     arguments
@@ -16,7 +15,7 @@ function obj = plotShadedArea( ax, t, y1, y2, colour, args )
     yRev = [ y1; flipud(y2) ];
         
     % draw shaded region
-    obj = fill( ax, tRev, yRev, colour, ...
+    obj = patch( ax, tRev, yRev, colour, ...
                     'FaceAlpha', args.alpha, ...
                     'EdgeColor', 'none', ...
                     'DisplayName', args.name );
