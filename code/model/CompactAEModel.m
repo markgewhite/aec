@@ -161,12 +161,11 @@ classdef CompactAEModel < CompactRepresentationModel
 
             % mask Z based on number of active dimensions
             dlZC = self.maskZ( dlZC );
-
-            % generate all the component curves using the decoder
             if isa( dlZC, 'double' )
                 dlZC = dlarray( dlZC, 'CB' );
             end
 
+            % generate all the component curves using the decoder
             dispatchArgs.forward = args.forward;
             if isfield( args, 'dlX' )
                 dispatchArgs.dlX = repmat( args.dlX, 1, self.ZDim*args.nSample+1 );
@@ -180,11 +179,9 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlXC = squeeze( mean( dlXC, 2 ) );
             end
 
-            XDim = size( dlXC );
-
             if args.centre
                 % centre about the mean curve (last curve)
-                if length( XDim )==2
+                if length( size(dlXC) )==2
                     dlXC = dlXC( :, 1:end-1 ) - dlXC( :, end );
                 else
                     dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );

@@ -55,22 +55,11 @@ function setup = initSetup
     setup.lossFcns.zorth.name = 'ZOrthogonality';
     setup.lossFcns.zorth.args.useLoss = true;
 
-    %setup.lossFcns.orth.class = @ComponentLoss;
-    %setup.lossFcns.orth.name = 'Orthogonality';
-    %setup.lossFcns.orth.args.nSample = 2;
-    %setup.lossFcns.orth.args.criterion = 'Orthogonality';
-    %setup.lossFcns.orth.args.useLoss = true;
-
-    %setup.lossFcns.var.class = @ComponentLoss;
-    %setup.lossFcns.var.name = 'ExplainedVariance';
-    %setup.lossFcns.var.args.nSample = 100;
-    %setup.lossFcns.var.args.criterion = 'ExplainedVariance';
-    %setup.lossFcns.var.args.useLoss = false;
-
-    %setup.lossFcns.smooth.class = @SmoothnessLoss;
-    %setup.lossFcns.smooth.name = 'Roughness';
-    %setup.lossFcns.smooth.args.Lambda = 1E-2;
-    %setup.lossFcns.smooth.args.useLoss = false;
+    setup.lossFcns.orth.class = @ComponentLoss;
+    setup.lossFcns.orth.name = 'Orthogonality';
+    setup.lossFcns.orth.args.nSample = 10;
+    setup.lossFcns.orth.args.criterion = 'Orthogonality';
+    setup.lossFcns.orth.args.useLoss = false;
 
     %setup.lossFcns.cls.class = @ClassifierLoss;
     %setup.lossFcns.cls.name = 'Classification';
@@ -84,17 +73,18 @@ function setup = initSetup
     setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
-    setup.model.args.KFolds = 10;
+    setup.model.args.KFolds = 5;
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.IsVAE = false;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 100;
+    setup.model.args.trainer.updateFreq = 50;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 400;
-    setup.model.args.trainer.numEpochsPreTrn = 100;
+    setup.model.args.trainer.numEpochs = 1000;
+    setup.model.args.trainer.numEpochsPreTrn = 500;
+    setup.model.args.trainer.activeZFreq = 50;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 

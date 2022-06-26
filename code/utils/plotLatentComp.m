@@ -46,8 +46,9 @@ function plotLatentComp( thisModel, args )
     % smooth and re-evaluate all curves
     tSpanPlot = linspace( thisModel.TSpan.Original(1), ...
                           thisModel.TSpan.Original(end), 101 );
-    XCFd = smooth_basis( tSpanXC, XC, fdParams );
-    XCsmth = eval_fd( tSpanPlot, XCFd );
+
+    XCsmth = smoothSeries( XC, tSpanXC, tSpanPlot, fdParams );
+
 
     % set the colours from blue and red
     compColours = [ 0.0000 0.4470 0.7410; ...
