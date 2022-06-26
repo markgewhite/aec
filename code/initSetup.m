@@ -43,23 +43,18 @@ function setup = initSetup
     setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
 
-    %setup.lossFcns.adv.class = @AdversarialLoss;
-    %setup.lossFcns.adv.name = 'Discriminator';
+    setup.lossFcns.adv.class = @AdversarialLoss;
+    setup.lossFcns.adv.name = 'Discriminator';
+    setup.lossFcns.adv.args.useLoss = false;
 
     %setup.lossFcns.mmd.class = @WassersteinLoss;
     %setup.lossFcns.mmd.name = 'MMDDiscriminator';
     %setup.lossFcns.mmd.args.kernel = 'IMQ';
     %setup.lossFcns.mmd.args.useLoss = false;
 
-    setup.lossFcns.zorth.class = @OrthogonalLoss;
-    setup.lossFcns.zorth.name = 'ZOrthogonality';
-    setup.lossFcns.zorth.args.useLoss = true;
-
-    setup.lossFcns.orth.class = @ComponentLoss;
-    setup.lossFcns.orth.name = 'Orthogonality';
-    setup.lossFcns.orth.args.nSample = 10;
-    setup.lossFcns.orth.args.criterion = 'Orthogonality';
-    setup.lossFcns.orth.args.useLoss = false;
+    %setup.lossFcns.orth.class = @OrthogonalLoss;
+    %setup.lossFcns.orth.name = 'ZOrthogonality';
+    %setup.lossFcns.orth.args.useLoss = true;
 
     %setup.lossFcns.cls.class = @ClassifierLoss;
     %setup.lossFcns.cls.name = 'Classification';
@@ -74,17 +69,17 @@ function setup = initSetup
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.KFolds = 5;
-    setup.model.args.IdenticalPartitions = true;
+    setup.model.args.IdenticalPartitions = false;
     setup.model.args.IsVAE = false;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 50;
+    setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 1000;
-    setup.model.args.trainer.numEpochsPreTrn = 500;
-    setup.model.args.trainer.activeZFreq = 50;
+    setup.model.args.trainer.numEpochs = 400;
+    setup.model.args.trainer.numEpochsPreTrn = 100;
+    setup.model.args.trainer.activeZFreq = 25;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 

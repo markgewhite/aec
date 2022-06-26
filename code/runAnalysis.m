@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'JumpsGRF(ReliabilityTest7)';
+name = 'JumpsGRF(VAE&AdvTest)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
@@ -14,7 +14,9 @@ path = [path '/../results/'];
 %parameters = [ "model.class" "lossFcns.cls.args.useLoss" ];
 %values = [{@FullPCAModel,@FCModel}, {false,true}];
 
-parameters = [ "model.class" ];
-values = {{@FCModel}};
+parameters = [ "model.args.IsVAE", "lossFcns.adv.args.useLoss" ];
+values = {{false,true},{false,true}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
+
+myInvestigation.save;

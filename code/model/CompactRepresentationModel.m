@@ -27,6 +27,7 @@ classdef CompactRepresentationModel
 
         Predictions      % training and validation predictions
         Loss             % training and validation losses
+        Correlations     % training and validation correlations
     end
 
     methods
@@ -150,11 +151,15 @@ classdef CompactRepresentationModel
                 thisValSet      ModelDataset
             end
 
-            [ self.Loss.Training, self.Predictions.Training ] = ...
+            [ self.Loss.Training, ...
+                self.Predictions.Training, ...
+                    self.Correlations.Training ] = ...
                                 self.evaluateSet( self, thisTrnSet );
 
             if thisValSet.NumObs > 0
-                [ self.Loss.Validation, self.Predictions.Validation ] = ...
+                [ self.Loss.Validation, ...
+                    self.Predictions.Validation, ...
+                        self.Correlations.Validation ] = ...
                                     self.evaluateSet( self, thisValSet );
             end
 
@@ -297,7 +302,7 @@ classdef CompactRepresentationModel
 
     methods (Static)
 
-        function [loss, pred] = evaluateSet( thisModel, thisDataset )
+        function [loss, pred, cor] = evaluateSet( thisModel, thisDataset )
             % Evaluate the model with a specified dataset
             arguments
                 thisModel       CompactRepresentationModel
@@ -367,6 +372,17 @@ classdef CompactRepresentationModel
             loss.ReconTimeVarRegular = reconTemporalLoss( ...
                             pred.XHatRegular - loss.ReconTimeBiasRegular, ...
                             pred.XRegular, thisModel.Scale );
+
+            % compute the latent code correlation matrix
+            cor.ZCorrelation = latentCodeCorrelation( pred.Z, summary = true );
+            cor.ZCorrelationMatrix = latentCodeCorrelation( pred.Z );
+
+            % compute the latent component correlation matrix
+            cor.XCCorrelation = latentComponentCorrelation( ...
+                    thisModel.LatentComponents, thisModel.NumCompLines, ...
+                    summary = true );
+            cor.XCCorrelationMatrix = latentComponentCorrelation( ...
+                    thisModel.LatentComponents, thisModel.NumCompLines );
         
         end
 

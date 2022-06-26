@@ -467,7 +467,7 @@ classdef CompactAEModel < CompactRepresentationModel
 
     methods (Static)
 
-        function [ eval, pred ] = evaluateSet( self, thisDataset )
+        function [ eval, pred, cor ] = evaluateSet( self, thisDataset )
             % Evaluate the model with a specified dataset
             % doing additional work to the superclass method
             arguments
@@ -476,7 +476,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             % call the superclass method
-            [ eval, pred ] = ...
+            [ eval, pred, cor ] = ...
                 evaluateSet@CompactRepresentationModel( self, thisDataset );
 
             if any(self.LossFcnTbl.Types == 'Comparator')

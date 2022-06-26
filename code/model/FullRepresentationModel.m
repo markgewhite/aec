@@ -20,6 +20,7 @@ classdef FullRepresentationModel
         LatentComponents % cross-validated latent components
         Loss            % collated losses from sub-models
         CVLoss          % aggregate cross-validated losses
+        Correlation     % mean correlation matrices
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
@@ -154,6 +155,9 @@ classdef FullRepresentationModel
             % calculate the cross-validated losses
             self = self.computeLosses;
 
+            % summarise correlation matrices
+            self = self.computeCorrelations;
+
             if self.ShowPlots
                 self.plotAllLatentComponents;
             end
@@ -177,6 +181,21 @@ classdef FullRepresentationModel
             if isfield( self.SubModels{1}.Loss, 'Validation' )
                 self.Loss.Validation = collateLosses( self.SubModels, 'Validation' );
                 self.CVLoss.Validation = calcCVLoss( self.SubModels, 'Validation' );
+            end
+
+        end
+
+
+        function self = computeCorrelations( self )
+            % Average the correlation matrices across sub-models
+            arguments
+                self        FullRepresentationModel
+            end
+
+            self.Correlation.Training = averageCorrelations( self.SubModels, 'Training' );
+
+            if isfield( self.SubModels{1}.Loss, 'Validation' )
+                self.Correlation.Validation = averageCorrelations( self.SubModels, 'Validation' );
             end
 
         end
@@ -350,14 +369,14 @@ classdef FullRepresentationModel
         end
 
 
-        function [ eval, pred ] = evaluateSet( self, thisData )
+        function [ eval, pred, cor ] = evaluateSet( self, thisData )
             % Evaluate the full model using the routines in compact model
             arguments
                 self            FullRepresentationModel
                 thisData        ModelDataset
             end
 
-            [ eval, pred ] = self.SubModels{1}.evaluateSet( ...
+            [ eval, pred,cor ] = self.SubModels{1}.evaluateSet( ...
                                     self.SubModels{1}, thisData );
 
         end
@@ -466,6 +485,32 @@ function cvLoss = calcCVLoss( subModels, set )
     end
 
 
+
+end
+
+
+function aggrCorr = averageCorrelations( subModels, set )
+    % Average the correlation matrices over the submodels
+    arguments
+        subModels       cell
+        set             char ...
+            {mustBeMember( set, {'Training', 'Validation'} )}
+    end
+
+    nModels = length( subModels );
+    fields = fieldnames( subModels{1}.Correlations.(set) );
+    nFields = length( fields );
+
+    for i = 1:nFields
+
+        fldDim = size( subModels{1}.Correlations.(set).(fields{i}) );
+        R = zeros( fldDim );
+        for k = 1:nModels
+           R = R + subModels{k}.Correlations.(set).(fields{i});
+        end
+        aggrCorr.(fields{i}) = R/nModels;
+
+    end
 
 end
 

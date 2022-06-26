@@ -21,6 +21,11 @@ classdef ModelTrainer < handle
         LossTrn          % record of training losses
         LossVal          % record of validation losses
 
+        CorrelationZTrn  % record of training Z correlation
+        CorrelationZVal  % record of training Z correlation
+        CorrelationXCTrn % record of training XC correlation
+        CorrelationXCVal % record of training XC correlation
+        
         PreTraining      % flag to indicate AE training
         PostTraining     % flag to indicate whether to continue training
 
@@ -86,6 +91,11 @@ classdef ModelTrainer < handle
             self.LossTrn = [];
             self.LossVal = [];
 
+            self.CorrelationZTrn = [];
+            self.CorrelationZVal = [];
+            self.CorrelationXCTrn = [];
+            self.CorrelationXCVal = [];
+
             self.PreTraining = true;
             self.PostTraining = args.postTraining;
 
@@ -134,9 +144,18 @@ classdef ModelTrainer < handle
             v = 0;
             vp = self.ValPatience;
             
-            self.LossTrn = zeros( nIter*self.NumEpochs, thisModel.NumLoss );
-            self.LossVal = zeros( ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
-                                        /self.ValFreq ), 1 );
+            % initialize logs
+            nTrnLogs = self.NumEpochs;
+            nValLogs = ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
+                                        /self.ValFreq );
+            self.LossTrn = zeros( nIter*nTrnLogs, thisModel.NumLoss );
+            self.LossVal = zeros( nValLogs, 1 );
+
+            self.CorrelationZTrn = zeros( nTrnLogs, 1 );
+            self.CorrelationZVal = zeros( nValLogs, 1 );
+            self.CorrelationXCTrn = zeros( nTrnLogs, 1 );
+            self.CorrelationXCVal = zeros( nValLogs, 1 );
+
             
             for epoch = 1:self.NumEpochs
                 
@@ -197,30 +216,42 @@ classdef ModelTrainer < handle
 
                 end
 
-                % train the auxiliary model
-                dlZTrnAll = thisModel.encode( dlXTrnAll, ...
-                                              convert = false );
+                % generate full-set encoding
+                dlZTrnAll = thisModel.encode( dlXTrnAll, convert = false );
 
+                % record latent codes correlation
+                self.CorrelationZTrn( epoch ) = ...
+                        latentCodeCorrelation( dlZTrnAll, summary = true );
+
+                % train the auxiliary model
                 thisModel.AuxModel = trainAuxModel( ...
                                             thisModel.AuxModelType, ...
                                             dlZTrnAll, ...
                                             dlYTrnAll );
-               
-                % update the number of dimensions, if required
-                if mod( epoch, self.ActiveZFreq )==0
-                    thisModel = thisModel.incrementActiveZDim;
-                end
-
-
+                               
                 if ~self.PreTraining ...
                         && mod( epoch, self.ValFreq )==0 ...
                         && self.Holdout > 0
                     
                     % run a validation check
                     v = v + 1;
-                    self.LossVal( v ) = validationCheck( thisModel, ...
+
+                    % generate validation encoding
+                    dlZVal = thisModel.encode( dlXVal, convert = false );
+
+                    % record the validation Z correlation
+                    self.CorrelationZVal( v ) = ...
+                        latentCodeCorrelation( dlZVal, summary = true );
+
+                    % calculate the validation XC metrics
+                    [self.CorrelationXCVal( v ), varProp ] = ...
+                        calcXCMetrics( thisModel, dlZVal, dlXVal );
+
+
+                    % compute relevant loss
+                    self.LossVal(v) = validationCheck( thisModel, ...
                                                     self.ValType, ...
-                                                    dlXVal, dlYVal );
+                                                    dlZVal, dlYVal );
                     if v > 2*vp-1
                         if mean(self.LossVal(v-2*vp+1:v-vp)) ...
                                 < mean(self.LossVal(v-vp+1:v))
@@ -233,6 +264,7 @@ classdef ModelTrainer < handle
             
                 % update progress on screen
                 if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots
+                    
                     if ~self.PreTraining && self.Holdout > 0
                         % include validation
                         lossValArg = self.LossVal( v );
@@ -240,14 +272,23 @@ classdef ModelTrainer < handle
                         % exclude validation
                         lossValArg = [];
                     end
-                     
+                    
+                    self.CorrelationXCTrn( epoch/self.UpdateFreq ) = ...
+                        calcXCMetrics( thisModel, dlZTrnAll, dlXTrnAll );
+
                     self.reportProgress( thisModel, ...
-                                         thisTrnData, ...
+                                         dlZTrnAll, ...
+                                         thisTrnData.Y, ...
                                          self.LossTrn( j-nIter+1:j, : ), ...
                                          epoch, ...
                                          lossVal = lossValArg );
                 end
             
+                % update the number of dimensions, if required
+                if mod( epoch, self.ActiveZFreq )==0
+                    thisModel = thisModel.incrementActiveZDim;
+                end
+
                 if mod( epoch, self.LRFreq )==0
                     % update learning rates
                     thisModel.Optimizer = ...
@@ -259,18 +300,19 @@ classdef ModelTrainer < handle
 
         end
 
-
-    end
+            
+    end      
 
 
     methods (Static)
 
-        function reportProgress( thisModel, thisData, ...
+        function reportProgress( thisModel, dlZ, dlY, ...
                        lossTrn, epoch, args )
             % Report progress on training
             arguments
                 thisModel       CompactAEModel
-                thisData        ModelDataset
+                dlZ             dlarray
+                dlY             dlarray
                 lossTrn         double
                 epoch           double
                 args.nLines     double = 8
@@ -292,27 +334,7 @@ classdef ModelTrainer < handle
             else
                 fprintf('        ');
             end
-        
-            [dlX, dlY] = thisData.getDLInput( thisModel.XDimLabels );
-        
-            % generate the latent encodings
-            dlZ = thisModel.encode( dlX, convert = false );
-
-            % compute the AE components for variance calculation
-            [ dlXC, offsets ] = thisModel.latentComponents( ...
-                            dlZ, ...
-                            nSample = 10, ...
-                            sampling = 'Fixed', ...
-                            centre = false );
-
-            % compute explained variance
-            varProp = thisModel.explainedVariance( dlX, dlXC, offsets );
-            fprintf('; VarProp = %5.3f (', sum(varProp) );
-            for k = 1:length(varProp)
-                fprintf(' %5.3f', varProp(k) );
-            end
-            fprintf(' )\n');
-
+            fprintf('\n');
 
             % compute the AE components for plotting
             dlXC = thisModel.latentComponents( ...
@@ -502,6 +524,32 @@ function lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx )
 end
 
 
+
+function [r, varProp ] = calcXCMetrics( thisModel, dlZ, dlX )
+    % Compute various supporting metrics
+    arguments
+        thisModel   CompactAEModel
+        dlZ         dlarray
+        dlX         dlarray
+    end
+
+    % generate validation components
+    [ dlXC, offsets ] = thisModel.latentComponents( ...
+                    dlZ, ...
+                    nSample = 10, ...
+                    sampling = 'Fixed', ...
+                    centre = true );
+
+    % record latent codes correlation
+    r = latentComponentCorrelation( dlXC, 10, summary = true );
+
+    % compute explained variance
+    %varProp = thisModel.explainedVariance( dlX, dlXC, offsets );
+    varProp = 0;
+
+end
+
+
 function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
     % Train a non-network auxiliary model
     arguments
@@ -528,16 +576,15 @@ function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
 end
  
 
-function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
+function lossVal = validationCheck( thisModel, valType, dlZVal, dlYVal )
     % Validate the model so far
     arguments
         thisModel       CompactAEModel
         valType         string
-        dlXVal          dlarray
+        dlZVal          dlarray
         dlYVal          dlarray
     end
 
-    dlZVal = thisModel.encode( dlXVal, convert = false );
     switch valType
         case 'Reconstruction'
             dlXValHat = thisModel.reconstruct( dlZVal );

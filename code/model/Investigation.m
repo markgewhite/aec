@@ -66,6 +66,8 @@ classdef Investigation
             self.TrainingResults.ReconLoss = zeros( allocation{:} );
             self.TrainingResults.ReconLossSmoothed = zeros( allocation{:} );
             self.TrainingResults.AuxModelLoss = zeros( allocation{:} );
+            self.TrainingResults.ZCorrelation = zeros( allocation{:} );
+            self.TrainingResults.XCCorrelation = zeros( allocation{:} );
 
             self.TestingResults = self.TrainingResults;
             
@@ -116,10 +118,25 @@ classdef Investigation
                 self.TestingResults.ReconLossSmoothed( idxC{:} ) = ...
                     thisEvaluation.TestingEvaluation.ReconLossSmoothed;
 
+                self.TrainingResults.ReconLossRegular( idxC{:} ) = ...
+                    thisEvaluation.TrainingEvaluation.ReconLossRegular;
+                self.TestingResults.ReconLossRegular( idxC{:} ) = ...
+                    thisEvaluation.TestingEvaluation.ReconLossRegular;
+                
                 self.TrainingResults.AuxModelLoss( idxC{:} ) = ...
                     thisEvaluation.TrainingEvaluation.AuxModelLoss;
                 self.TestingResults.AuxModelLoss( idxC{:} ) = ...
                     thisEvaluation.TestingEvaluation.AuxModelLoss;
+
+                self.TrainingResults.ZCorrelation( idxC{:} ) = ...
+                    thisEvaluation.TrainingCorrelations.ZCorrelation;
+                self.TestingResults.ZCorrelation( idxC{:} ) = ...
+                    thisEvaluation.TestingCorrelations.ZCorrelation;
+
+                self.TrainingResults.XCCorrelation( idxC{:} ) = ...
+                    thisEvaluation.TrainingCorrelations.XCCorrelation;
+                self.TestingResults.XCCorrelation( idxC{:} ) = ...
+                    thisEvaluation.TestingCorrelations.XCCorrelation;
 
     
                 % save the evaluations
@@ -145,6 +162,9 @@ classdef Investigation
             
             name = strcat( self.Name, "-Investigation" );
             save( fullfile( self.Path, name ), 'report' );
+
+            name = strcat( self.Name, "-InvestigationObject" );           
+            save( fullfile( self.Path, name ), 'self' );
 
         end  
 
