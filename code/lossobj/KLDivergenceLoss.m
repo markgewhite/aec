@@ -2,40 +2,40 @@ classdef KLDivergenceLoss < LossFunction
     % Subclass for Kullback-Leibler divergence loss
 
     properties
-
+        Beta        % loss scaling factor
     end
 
     methods
 
-        function self = KLDivergenceLoss( name, superArgs )
+        function self = KLDivergenceLoss( name, superArgs, args )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
                 superArgs.?LossFunction
+                args.Beta            double = 1
             end
 
             superArgsCell = namedargs2cell( superArgs );
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'Z', ...
+                                 input = 'ZMu-ZLogVar', ...
                                  lossNets = {'Encoder'} );
+
+            self.Beta = args.Beta;
 
         end
 
-    end
 
-    methods (Static)
-
-        function loss = calcLoss( dlZ )
+        function loss = calcLoss( self, dlMu, dlLogVar )
             % Calculate the KL divergence
             arguments
-                dlZ   dlarray
+                self        KLDivergenceLoss
+                dlMu        dlarray
+                dlLogVar    dlarray
             end
 
-            dlZSigma = std( dlZ );
-            dlZMu = mean( dlZ );
-            
-            loss = 0.5*sum( dlZSigma.^2 + dlZMu.^2 - 1 - log(dlZSigma.^2) );
+            loss = -0.5*sum( 1 + dlLogVar - dlMu.^2 - exp(dlLogVar) );
+            loss = self.Beta*mean( loss );
 
         end
 

@@ -42,19 +42,15 @@ function setup = initSetup
     % loss functions
     setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
+    
+    setup.lossFcns.kl.class = @KLDivergenceLoss;
+    setup.lossFcns.kl.name = 'KLDivergence';
+    setup.lossFcns.kl.args.beta = 0.1;
+    setup.lossFcns.kl.args.useLoss = true;
 
     setup.lossFcns.adv.class = @AdversarialLoss;
     setup.lossFcns.adv.name = 'Discriminator';
     setup.lossFcns.adv.args.useLoss = false;
-
-    %setup.lossFcns.mmd.class = @WassersteinLoss;
-    %setup.lossFcns.mmd.name = 'MMDDiscriminator';
-    %setup.lossFcns.mmd.args.kernel = 'IMQ';
-    %setup.lossFcns.mmd.args.useLoss = false;
-
-    %setup.lossFcns.orth.class = @OrthogonalLoss;
-    %setup.lossFcns.orth.name = 'ZOrthogonality';
-    %setup.lossFcns.orth.args.useLoss = true;
 
     %setup.lossFcns.cls.class = @ClassifierLoss;
     %setup.lossFcns.cls.name = 'Classification';
@@ -75,11 +71,11 @@ function setup = initSetup
     setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 50;
+    setup.model.args.trainer.updateFreq = 25;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 200;
-    setup.model.args.trainer.numEpochsPreTrn = 100;
-    setup.model.args.trainer.activeZFreq = 25;
+    setup.model.args.trainer.numEpochs = 400;
+    setup.model.args.trainer.numEpochsPreTrn = 40;
+    setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 

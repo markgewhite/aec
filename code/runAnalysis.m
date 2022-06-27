@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'JumpsGRF(Test)';
+name = 'JumpsGRF(VAEKLAdvTest)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
@@ -11,11 +11,15 @@ path = [path '/../results/'];
 %               "lossFcns.cls.args.useLoss" ];
 %values = [ {2:6} {{false, true}} ];
 
-%parameters = [ "model.class" "lossFcns.cls.args.useLoss" ];
-%values = [{@FullPCAModel,@FCModel}, {false,true}];
+%parameters = [ "model.class" ];
+%values = {{@FCModel}};
 
-parameters = [ "model.args.IsVAE", "lossFcns.adv.args.useLoss" ];
-values = {{false,true},{false,true}};
+parameters = [ "model.args.IsVAE", ...
+               "lossFcns.kl.args.useLoss", ...
+               "lossFcns.adv.args.useLoss" ];
+values = { {true,true}, ...
+           {false,true}, ...
+           {false,true} };
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 

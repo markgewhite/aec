@@ -195,14 +195,13 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
-            % Forward-run the autoencoder networks
+        function [ dlZ, state, dlMean, dlLogVar ] = forwardEncoder( self, encoder, dlX )
+            % Forward-run the encoder network
             % dlnetworks are provided for tracing purposes 
             % rather than using the object's network definitions
             arguments
                 self        CompactAEModel
                 encoder     dlnetwork
-                decoder     dlnetwork
                 dlX         dlarray
             end
 
@@ -211,13 +210,38 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             % generate latent encodings
-            [ dlZ, state.Encoder ] = forward( encoder, dlX );
+            [ dlEncOutput, state ] = forward( encoder, dlX );
+
+            if self.IsVAE
+                % variational autoencoder
+                [ dlZ, dlMean, dlLogVar ] = ...
+                    reparameterize( dlEncOutput, self.NumVAEDraws );
+            else
+                % standard encoder
+                dlZ = dlEncOutput;
+                dlMean = mean( dlZ, 2 );
+                dlLogVar = log( var( dlZ, 2 ) );
+            end
     
             % mask Z based on number of active dimensions
             dlZ = self.maskZ( dlZ );
 
+        end
+
+
+
+        function [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ )
+            % Forward-run the decoder network
+            % dlnetworks are provided for tracing purposes 
+            % rather than using the object's network definitions
+            arguments
+                self        CompactAEModel
+                decoder     dlnetwork
+                dlZ         dlarray
+            end
+
             % reconstruct curves from latent codes
-            [ dlXHat, state.Decoder ] = forward( decoder, dlZ );
+            [ dlXHat, state ] = forward( decoder, dlZ );
 
         end
 
@@ -240,8 +264,14 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlX = flattenDLArray( dlX );
             end
 
-            dlZ = predict( self.Nets.Encoder, dlX );
+            dlEncOutput = predict( self.Nets.Encoder, dlX );
 
+            if self.IsVAE
+                dlZ = dlEncOutput( 1:self.ZDim, : );
+            else
+                dlZ = dlEncOutput;
+            end
+            
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';
             end

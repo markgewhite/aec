@@ -96,11 +96,7 @@ classdef FCModel < FullAEModel
             lgraphEnc = connectLayers( lgraphEnc, ...
                                        lastLayer, 'out' );
 
-            if self.IsVAE
-                net = VAEdlnetwork( lgraphEnc, numDraws = self.NumVAEDraws );
-            else
-                net = dlnetwork( lgraphEnc );
-            end
+            net = dlnetwork( lgraphEnc );
 
         end
 
