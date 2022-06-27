@@ -31,10 +31,13 @@ classdef OrthogonalLoss < LossFunction
                 dlZ         dlarray
             end
             
-            % get the correlation matrix
-            dlR = dlCorrelation( dlZ ); 
+            % get the variance and covariance
+            [ dlVar, dlCoVar ] = dlVarianceCovariance( dlZ );
 
-            loss = mean( ( dlR - eye(size(dlR,1)) ).^2, 'all' );
+            % penalise high covariance
+            loss = mean( dlCoVar.^2, 'all' );
+            % and variation in variance between components
+            % loss = loss + var( dlVar );
 
         end
 
