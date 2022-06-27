@@ -49,25 +49,27 @@ classdef WassersteinLoss < LossFunction
                 dlZQ  dlarray  % generated distribution
             end
 
-            [ ZSize, batchSize ] = size( dlZQ );
-
-            % switch to non-dlarrays for faster processing
-            % do I need to do this?
-            ZQ = double(extractdata( dlZQ ) )';
+            [ ZDim, batchSize ] = size( dlZQ );
 
             % generate a target distribution
             switch self.Distribution
                 case 'Gaussian'
-                    ZP = randn( ZSize, batchSize )';
+                    ZP = randn( ZDim, batchSize );
                 case 'Categorical'
-                    ZP = randi( ZSize, batchSize )';
+                    ZP = randi( ZDim, batchSize );
             end
+            dlZP = dlarray( ZP, 'CB' );
+
+            [dlDistPP, dlDistQQ, dlDistPQ] = mmd( dlZP, dlZQ ); 
 
             switch self.Kernel
                 case 'RBF'
-                    loss = mmdLossRBF( ZP, ZQ );
+                    loss = mmdLossRBF( dlDistPP, dlDistQQ, dlDistPQ, ...
+                                       batchSize );
                 case 'IMQ'
-                    loss = mmdLossIMQ( ZP, ZQ, self.Scale, self.BaseType );
+                    loss = mmdLossIMQ( dlDistPP, dlDistQQ, dlDistPQ, ...
+                                       batchSize, ZDim, ...
+                                       self.Scale, self.BaseType );
             end
 
         end
@@ -77,15 +79,8 @@ classdef WassersteinLoss < LossFunction
 
 end
 
-function loss = mmdLossRBF( ZP, ZQ )
+function loss = mmdLossRBF( dlDistPP, dlDistQQ, dlDistPQ, nObs )
     % Calculate the MMD loss using a RBF kernel
-
-    nObs = size( ZQ, 1 );
-
-    % calculate the maximum mean distances between points
-    distPP = pdist2( ZP, ZP ).^2;
-    distQQ = pdist2( ZQ, ZQ ).^2;
-    distPQ = pdist2( ZQ, ZP ).^2;
 
     % median heuristic for the sigma^2 of Gaussian kernel
     % modified from tolstikhin/wae:
@@ -93,10 +88,10 @@ function loss = mmdLossRBF( ZP, ZQ )
     % and then use it to standardize the distances;
     % originally, it doubled these combined median values
     % - could this be why their RBF did not work so well?
-    sigma2_k = (median( distPQ, 'all' ) + median( distQQ, 'all' ))/2; 
+    sigma2_k = (median( dlDistPQ, 'all' ) + median( dlDistQQ, 'all' ))/2; 
 
-    res1 = exp( -distQQ/sigma2_k );
-    res1 = res1 + exp( -distPP/sigma2_k );
+    res1 = exp( -dlDistQQ/sigma2_k );
+    res1 = res1 + exp( -dlDistPP/sigma2_k );
     res1 = res1.*(ones(nObs) - eye(nObs));
     res1 = sum( res1, 'all' )/(nObs*nObs-nObs);
 
@@ -108,16 +103,11 @@ function loss = mmdLossRBF( ZP, ZQ )
 end
 
 
-function loss = mmdLossIMQ( ZP, ZQ, scale, baseType )
+function loss = mmdLossIMQ( dlDistPP, dlDistQQ, dlDistPQ, ...
+                            nObs, ZDim, scale, baseType )
     % Calculate the MMD loss using an IMQ kernel
 
     sigma2_p = scale^2;
-    [ nObs, ZDim ] = size( ZQ );
-
-    % calculate the maximum mean distances between points
-    distPP = pdist2( ZP, ZP ).^2;
-    distQQ = pdist2( ZQ, ZQ ).^2;
-    distPQ = pdist2( ZQ, ZP ).^2;
 
     switch baseType
         case 'Normal'
@@ -136,12 +126,12 @@ function loss = mmdLossIMQ( ZP, ZQ, scale, baseType )
         
         C = Cbase*scale(i);
         
-        res1 = C./(C + distQQ);
-        res1 = res1 + C./(C + distPP);
+        res1 = C./(C + dlDistQQ);
+        res1 = res1 + C./(C + dlDistPP);
         res1 = res1.*mask;
         res1 = sum( res1, 'all' )/(nObs*nObs-nObs);
 
-        res2 = C./(C + distPQ);
+        res2 = C./(C + dlDistPQ);
         res2 = sum( res2, 'all' )*2/(nObs*nObs);
 
         loss = loss + res1 - res2;
@@ -150,4 +140,57 @@ function loss = mmdLossIMQ( ZP, ZQ, scale, baseType )
 
 end
 
+
+function [ dlPPDist, dlQQDist, dlPQDist ] = mmd( dlP, dlQ )
+    % Calculate the maximum mean squared distance between points
+    arguments
+        dlP     dlarray
+        dlQ     dlarray
+    end
+    
+    dlPPNorm = sum( dlP.^2 );
+    dlPPDotProd = dlMultiply( dlP, dlP );
+    dlPPDist = dlPPNorm + dlTranspose( dlPPNorm ) - 2*dlPPDotProd;
+
+    dlQQNorm = sum( dlQ.^2 );
+    dlQQDotProd = dlMultiply( dlQ, dlQ );
+    dlQQDist = dlQQNorm + dlTranspose( dlQQNorm ) - 2*dlQQDotProd;
+    
+    dlPQDotProd = dlMultiply( dlP, dlQ );
+    dlPQDist = dlQQNorm + dlTranspose( dlPPNorm ) - 2*dlPQDotProd;
+
+end
+
+
+function dlM = dlMultiply( dlV, dlW )
+    % Calculate dlV*dlV' (transpose)
+    % and preserve the dlarray
+    [ r, c ]= size( dlV );
+    dlM = dlarray( zeros(c,c), 'CB' );
+    for i = 1:c
+        for j = 1:c
+            dlM(i,j) = sum( dlV(:,i).*dlW(:,j) );
+        end
+    end
+
+end
+
+
+
+function dlVT = dlTranspose( dlV )
+    % Take the transpose of a dlarray
+    arguments
+        dlV     dlarray
+    end
+
+    d = size( dlV );
+
+    dlVT = dlarray( zeros( d(2), d(1) ) );
+    for i = 1:d(2)
+        for j = 1:d(1)
+            dlVT(i,j) = dlV(j,i);
+        end
+    end
+
+end
 
