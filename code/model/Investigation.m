@@ -62,15 +62,17 @@ classdef Investigation
             else
                 allocation = [ nDimsCell,1 ];
             end
-            self.TrainingResults.LossTrace = cell( allocation{:} );
             self.TrainingResults.ReconLoss = zeros( allocation{:} );
             self.TrainingResults.ReconLossSmoothed = zeros( allocation{:} );
             self.TrainingResults.AuxModelLoss = zeros( allocation{:} );
             self.TrainingResults.ZCorrelation = zeros( allocation{:} );
             self.TrainingResults.XCCorrelation = zeros( allocation{:} );
-
-            self.TestingResults = self.TrainingResults;
+            self.TrainingResults.ZCovariance = zeros( allocation{:} );
+            self.TrainingResults.XCCovariance = zeros( allocation{:} );
             
+            self.TestingResults = self.TrainingResults;
+
+
             % run the evaluation loop
             for i = 1:nEval
 
@@ -137,6 +139,16 @@ classdef Investigation
                     thisEvaluation.TrainingCorrelations.XCCorrelation;
                 self.TestingResults.XCCorrelation( idxC{:} ) = ...
                     thisEvaluation.TestingCorrelations.XCCorrelation;
+
+                self.TrainingResults.ZCovariance( idxC{:} ) = ...
+                    thisEvaluation.TrainingCorrelations.ZCovariance;
+                self.TestingResults.ZCovariance( idxC{:} ) = ...
+                    thisEvaluation.TestingCorrelations.ZCovariance;
+
+                self.TrainingResults.XCCovariance( idxC{:} ) = ...
+                    thisEvaluation.TrainingCorrelations.XCCovariance;
+                self.TestingResults.XCCovariance( idxC{:} ) = ...
+                    thisEvaluation.TestingCorrelations.XCCovariance;
 
     
                 % save the evaluations

@@ -1,5 +1,6 @@
-function R = latentCodeCorrelation( Z, arg )
+function [ R, C ] = latentCodeCorrelation( Z, arg )
     % Calculate the Pearson correlation between latent codes
+    % and the covariance matrix
     arguments
         Z               {mustBeA( Z, {'dlarray', 'double'} )}
         arg.summary     logical = false
@@ -9,12 +10,15 @@ function R = latentCodeCorrelation( Z, arg )
         Z = double(extractdata( Z ))';
     end
 
-    % get the correlation matrix
+    % get the correlation and covariance matrices
     R = corr( Z );
+    C = cov( Z );
 
     if arg.summary
-        % summarise to a single mean value
-        R = mean( ( R - eye(size(R,1)) ).^2, 'all' );
+        % summarise to a single mean square value
+        d = size(R,1);
+        R = sum( ( R - eye(d) ).^2, 'all' )/(d*(d-1));
+        C = sum( ( C - eye(d) ).^2, 'all' )/(d*(d-1));
     end
 
 end

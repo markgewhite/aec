@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'JumpsGRF(VAE&AdvTest)';
+name = 'JumpsGRF(Test)';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 

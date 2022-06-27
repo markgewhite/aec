@@ -21,10 +21,7 @@ classdef ModelTrainer < handle
         LossTrn          % record of training losses
         LossVal          % record of validation losses
 
-        CorrelationZTrn  % record of training Z correlation
-        CorrelationZVal  % record of training Z correlation
-        CorrelationXCTrn % record of training XC correlation
-        CorrelationXCVal % record of training XC correlation
+        Metrics          % record of training metrics
         
         PreTraining      % flag to indicate AE training
         PostTraining     % flag to indicate whether to continue training
@@ -91,11 +88,6 @@ classdef ModelTrainer < handle
             self.LossTrn = [];
             self.LossVal = [];
 
-            self.CorrelationZTrn = [];
-            self.CorrelationZVal = [];
-            self.CorrelationXCTrn = [];
-            self.CorrelationXCVal = [];
-
             self.PreTraining = true;
             self.PostTraining = args.postTraining;
 
@@ -145,18 +137,24 @@ classdef ModelTrainer < handle
             vp = self.ValPatience;
             
             % initialize logs
-            nTrnLogs = self.NumEpochs;
+            nTrnLogs = nIter*self.NumEpochs;
             nValLogs = ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
                                         /self.ValFreq );
-            self.LossTrn = zeros( nIter*nTrnLogs, thisModel.NumLoss );
+            self.LossTrn = zeros( nTrnLogs, thisModel.NumLoss );
             self.LossVal = zeros( nValLogs, 1 );
 
-            self.CorrelationZTrn = zeros( nTrnLogs, 1 );
-            self.CorrelationZVal = zeros( nValLogs, 1 );
-            self.CorrelationXCTrn = zeros( nTrnLogs, 1 );
-            self.CorrelationXCVal = zeros( nValLogs, 1 );
+            nMetricLogs = nTrnLogs/(nIter*self.UpdateFreq);
+            self.Metrics = table( ...
+                zeros( nMetricLogs, 1 ), ...
+                zeros( nMetricLogs, 1 ), ...
+                zeros( nMetricLogs, 1 ), ...
+                zeros( nMetricLogs, 1 ), ...
+                zeros( nMetricLogs, thisModel.ZDim ), ...
+                VariableNames = {'ZCorrelation', 'XCCorrelation', ...
+                                 'ZCovariance', 'XCCovariance', ...
+                                 'VarianceProportion'} );
 
-            
+
             for epoch = 1:self.NumEpochs
                 
                 self.CurrentEpoch = epoch;
@@ -215,19 +213,6 @@ classdef ModelTrainer < handle
                     end
 
                 end
-
-                % generate full-set encoding
-                dlZTrnAll = thisModel.encode( dlXTrnAll, convert = false );
-
-                % record latent codes correlation
-                self.CorrelationZTrn( epoch ) = ...
-                        latentCodeCorrelation( dlZTrnAll, summary = true );
-
-                % train the auxiliary model
-                thisModel.AuxModel = trainAuxModel( ...
-                                            thisModel.AuxModelType, ...
-                                            dlZTrnAll, ...
-                                            dlYTrnAll );
                                
                 if ~self.PreTraining ...
                         && mod( epoch, self.ValFreq )==0 ...
@@ -235,18 +220,6 @@ classdef ModelTrainer < handle
                     
                     % run a validation check
                     v = v + 1;
-
-                    % generate validation encoding
-                    dlZVal = thisModel.encode( dlXVal, convert = false );
-
-                    % record the validation Z correlation
-                    self.CorrelationZVal( v ) = ...
-                        latentCodeCorrelation( dlZVal, summary = true );
-
-                    % calculate the validation XC metrics
-                    [self.CorrelationXCVal( v ), varProp ] = ...
-                        calcXCMetrics( thisModel, dlZVal, dlXVal );
-
 
                     % compute relevant loss
                     self.LossVal(v) = validationCheck( thisModel, ...
@@ -272,10 +245,12 @@ classdef ModelTrainer < handle
                         % exclude validation
                         lossValArg = [];
                     end
-                    
-                    self.CorrelationXCTrn( epoch/self.UpdateFreq ) = ...
-                        calcXCMetrics( thisModel, dlZTrnAll, dlXTrnAll );
 
+                    % record relevant metrics
+                    [ self.Metrics( epoch/self.UpdateFreq, : ), ...
+                        dlZTrnAll ] = calcMetrics( thisModel, dlXTrnAll );
+
+                    % report 
                     self.reportProgress( thisModel, ...
                                          dlZTrnAll, ...
                                          thisTrnData.Y, ...
@@ -296,6 +271,14 @@ classdef ModelTrainer < handle
                 end
 
             end
+
+
+            % train the auxiliary model
+            dlZTrnAll = thisModel.encode( dlXTrnAll, convert = false );
+            thisModel.AuxModel = trainAuxModel( ...
+                                        thisModel.AuxModelType, ...
+                                        dlZTrnAll, ...
+                                        dlYTrnAll );
 
 
         end
@@ -525,27 +508,37 @@ end
 
 
 
-function [r, varProp ] = calcXCMetrics( thisModel, dlZ, dlX )
+function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
     % Compute various supporting metrics
     arguments
         thisModel   CompactAEModel
-        dlZ         dlarray
         dlX         dlarray
     end
+
+    % generate full-set encoding
+    dlZ = thisModel.encode( dlX, convert = false );
+
+    % record latent codes correlation
+    [ metric.ZCorrelation, metric.ZCovariance ] = ...
+                    latentCodeCorrelation( dlZ, summary = true );
 
     % generate validation components
     [ dlXC, offsets ] = thisModel.latentComponents( ...
                     dlZ, ...
-                    nSample = 10, ...
-                    sampling = 'Fixed', ...
+                    nSample = 100, ...
+                    sampling = 'Random', ...
                     centre = true );
 
     % record latent codes correlation
-    r = latentComponentCorrelation( dlXC, 10, summary = true );
+    [ metric.XCCorrelation, metric.XCCovariance ] = ...
+                latentComponentCorrelation( dlXC, 100, summary = true );
 
     % compute explained variance
-    %varProp = thisModel.explainedVariance( dlX, dlXC, offsets );
-    varProp = 0;
+    metric.VarianceProportionXC = ...
+                        thisModel.explainedVariance( dlX, dlXC, offsets );
+
+    % convert to table
+    metric = struct2table( metric );
 
 end
 
