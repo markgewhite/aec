@@ -370,12 +370,12 @@ function [grad, state, loss] = gradients( nets, ...
     [ dlXGen, state.Decoder ] = ...
             forwardDecoder( thisModel, nets.Decoder, dlZGen );
 
-    %if thisModel.IsVAE
+    if thisModel.IsVAE
         % duplicate X & Y to match VAE's multiple draws
-    %    nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
-    %    dlXOut = repmat( dlXOut, 1, nDraws );
-    %    dlY = repmat( dlY, 1, nDraws );
-    %end
+        nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
+        dlXOut = repmat( dlXOut, 1, nDraws );
+        dlY = repmat( dlY, 1, nDraws );
+    end
 
     % select the active loss functions
     if preTraining

@@ -9,11 +9,9 @@ function [dlZ, dlMu, dlLogVar] = reparameterize( dlOutput, nDraws )
     
     ZDim = size( dlOutput, 1 )/2;
     
-    %dlMu = repmat( dlOutput( 1:ZDim, : ), 1, nDraws );
-    dlMu = dlOutput( 1:ZDim, : );
+    dlMu = repmat( dlOutput( 1:ZDim, : ), 1, nDraws );
 
-    %dlLogVar = repmat( dlOutput( ZDim+1:end, : ), 1, nDraws );
-    dlLogVar = dlOutput( ZDim+1:end, : );
+    dlLogVar = repmat( dlOutput( ZDim+1:end, : ), 1, nDraws );
 
     dlSigma = exp( 0.5*dlLogVar );
     

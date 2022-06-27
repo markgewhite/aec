@@ -220,7 +220,7 @@ classdef CompactAEModel < CompactRepresentationModel
                 % standard encoder
                 dlZ = dlEncOutput;
                 dlMean = mean( dlZ, 2 );
-                dlLogVar = log( var( dlZ, 2 ) );
+                dlLogVar = log( var( dlZ, [], 2 ) );
             end
     
             % mask Z based on number of active dimensions
