@@ -2,6 +2,7 @@ classdef ModelEvaluation < handle
     % Class defining a model evaluation
 
     properties
+        Name                % name of the evaluation
         BespokeSetup        % structure recording the bespoke setup
         TrainingDataset     % training dataset object
         TestingDataset      % testing dataset object
@@ -18,18 +19,17 @@ classdef ModelEvaluation < handle
 
     methods
 
-        function self = ModelEvaluation
-            % Construct a model evaluation object (placeholder)
 
-        end
-
-
-        function self = run( self, setup, verbose )
+        function self = ModelEvaluation( name, setup, verbose )
+            % Construct and run a model evaluation object
             arguments
-                self            ModelEvaluation
+                name            string
                 setup           struct
                 verbose         logical
             end
+
+            % store the name for this evaluation
+            self.Name = name;
 
             % store the specified setup
             self.BespokeSetup = setup;
@@ -162,12 +162,16 @@ classdef ModelEvaluation < handle
             end
 
             % define a small structure for saving
-            evaluation.BespokeSetup = self.BespokeSetup;
-            evaluation.TrainingEvaluation = self.TrainingEvaluation;
-            evaluation.TestingEvaluation = self.TestingEvaluation;
+            output.BespokeSetup = self.BespokeSetup;
+            output.TrainingEvaluation = self.TrainingEvaluation;
+            output.TestingEvaluation = self.TestingEvaluation;
+            output.TrainingPredictions = self.TrainingPredictions;
+            output.TestingPredictions = self.TestingPredictions;
+            output.TrainingCorrelations = self.TrainingCorrelations;
+            output.TestingCorrelations = self.TestingCorrelations;
             
             name = strcat( name, "-OverallEvaluation" );
-            save( fullfile( path, name ), 'evaluation' );
+            save( fullfile( path, name ), 'output' );
 
         end         
 

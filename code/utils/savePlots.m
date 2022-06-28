@@ -8,18 +8,14 @@ function savePlots( gObjs, path, name )
         name        string
     end
 
-    fullname = strcat( name, '.pdf' );
-
     if isfield( gObjs, 'ZDistribution' )
         % save the Z distribution plot
         fullpath = strcat( path, '/zdist/' );
         if ~isfolder( fullpath )
             mkdir( fullpath)
         end
-        exportgraphics( gObjs.ZDistribution, ...
-                        fullfile( fullpath, fullname ), ...
-                        ContentType= 'vector', ...
-                        Resolution = 300 );
+        saveGraphicsObject( gObjs.ZDistribution, ...
+                            fullfile( fullpath, name ) );
     end
 
     if isfield( gObjs, 'ZClustering' )
@@ -28,10 +24,8 @@ function savePlots( gObjs, path, name )
         if ~isfolder( fullpath )
             mkdir( fullpath)
         end
-        exportgraphics( gObjs.ZClustering, ...
-                        fullfile( fullpath, fullname ), ...
-                        ContentType= 'vector', ...
-                        Resolution = 300 );
+        saveGraphicsObject( gObjs.ZClustering, ...
+                            fullfile( fullpath, name ) );
     end
 
 
@@ -42,10 +36,8 @@ function savePlots( gObjs, path, name )
         if ~isfolder( fullpath )
             mkdir( fullpath)
         end
-        exportgraphics( gObjs.LossFig, ...
-                    fullfile( fullpath, fullname ), ...
-                    ContentType= 'vector', ...
-                    Resolution = 300 );
+        saveGraphicsObject( gObjs.LossFig, ...
+                            fullfile( fullpath, name ) );
         
     end
 
@@ -56,11 +48,28 @@ function savePlots( gObjs, path, name )
     end
     if isfield( gObjs, 'Components' )
 
-        exportgraphics( gObjs.Components, ...
-                        fullfile( fullpath, fullname ), ...
-                        ContentType= 'vector', ...
-                        Resolution = 300 );
+        saveGraphicsObject( gObjs.Components, ...
+                            fullfile( fullpath, name ) );
 
     end
 
 end   
+
+
+function saveGraphicsObject( obj, filename )
+
+    exportgraphics( obj, ...
+                    strcat( filename, '.pdf' ), ...
+                    ContentType= 'vector', ...
+                    Resolution = 300 );
+
+    if isa( obj, 'matlab.graphics.axis.Axes' )
+        fig = obj.Parent;
+    else
+        fig = obj;
+    end
+
+    savefig( fig, strcat( filename, '.fig' ) );
+
+
+end

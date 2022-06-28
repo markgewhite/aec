@@ -51,29 +51,27 @@ classdef Investigation
             self.GridSearch = searchValues;
             self.SearchDims = cellfun( @length, self.GridSearch ); 
 
-            nEval = prod( self.SearchDims );
-            nDimsCell = num2cell( self.SearchDims );
-            initObj( nDimsCell{:} ) = ModelEvaluation;
-            self.Evaluations = initObj;
-
             % initialize evaluation arrays 
-            if length( nDimsCell ) > 1
-                allocation = nDimsCell;
+            if length( self.SearchDims ) > 1
+                allocation = self.SearchDims;
             else
-                allocation = [ nDimsCell,1 ];
+                allocation = [ self.SearchDims, 1 ];
             end
-            self.TrainingResults.ReconLoss = zeros( allocation{:} );
-            self.TrainingResults.ReconLossSmoothed = zeros( allocation{:} );
-            self.TrainingResults.ReconLossRegular = zeros( allocation{:} );
-            self.TrainingResults.AuxModelLoss = zeros( allocation{:} );
-            self.TrainingResults.ZCorrelation = zeros( allocation{:} );
-            self.TrainingResults.XCCorrelation = zeros( allocation{:} );
-            self.TrainingResults.ZCovariance = zeros( allocation{:} );
-            self.TrainingResults.XCCovariance = zeros( allocation{:} );
+
+            self.Evaluations = cell( allocation );
+            
+            self.TrainingResults.ReconLoss = zeros( allocation );
+            self.TrainingResults.ReconLossSmoothed = zeros( allocation );
+            self.TrainingResults.ReconLossRegular = zeros( allocation );
+            self.TrainingResults.AuxModelLoss = zeros( allocation );
+            self.TrainingResults.ZCorrelation = zeros( allocation );
+            self.TrainingResults.XCCorrelation = zeros( allocation );
+            self.TrainingResults.ZCovariance = zeros( allocation );
+            self.TrainingResults.XCCovariance = zeros( allocation );
             
             self.TestingResults = self.TrainingResults;
 
-
+            nEval = prod( self.SearchDims );
             % run the evaluation loop
             for i = 1:nEval
 
@@ -98,18 +96,12 @@ classdef Investigation
 
                 % carry out the evaluation
                 idxC = num2cell( idx );
-                self.Evaluations( idxC{:} ) = ...
-                        run( self.Evaluations( idxC{:} ), setup, true );
+                evalName = strcat( name, constructName(idx) );
+                self.Evaluations{ idxC{:} } = ...
+                                ModelEvaluation( evalName, setup, true );
 
                 % record results
-                thisEvaluation = self.Evaluations( idxC{:} );
-
-                if isfield( thisEvaluation.Model, 'trainer' )
-                    self.TrainingResults.LossTrace{ idxC{:} } = ...
-                        thisEvaluation.Model.trainer.lossTrn;
-                    self.TestingResults.LossTrace{ idxC{:} } = ...
-                        thisEvaluation.Model.trainer.lossVal;
-                end
+                thisEvaluation = self.Evaluations{ idxC{:} };
                 
                 self.TrainingResults.ReconLoss( idxC{:} ) = ...
                     thisEvaluation.TrainingEvaluation.ReconLoss;
@@ -156,6 +148,8 @@ classdef Investigation
                 thisEvaluation.save( path, name );
 
             end
+
+            self.save;
             
 
         end
@@ -175,9 +169,6 @@ classdef Investigation
             
             name = strcat( self.Name, "-Investigation" );
             save( fullfile( self.Path, name ), 'report' );
-
-            name = strcat( self.Name, "-InvestigationObject" );           
-            save( fullfile( self.Path, name ), 'self' );
 
         end  
 
@@ -221,18 +212,25 @@ end
 function fullpath = folder( path, name, idx )
     % Create folder specific for the evaluation in question
 
-    folder = strcat( name, '-Eval(' );
-    for j = 1:length(idx)
-        folder = strcat( folder, num2str(idx(j)) );
-        if j < length(idx)
-            folder = strcat( folder, ',' );
-        end
-    end
-    folder = strcat( folder, ')');
-
+    folder = strcat( name, '-Eval', constructName(idx) );
     fullpath = fullfile(path, folder);
     if ~isfolder( fullpath )
         mkdir( fullpath )
     end
+
+end
+
+
+function name = constructName( idx )
+    % Construct a name from the indices
+
+    name = '(';
+    for j = 1:length(idx)
+        name = strcat( name, num2str(idx(j)) );
+        if j < length(idx)
+            name = strcat( name, ',' );
+        end
+    end
+    name = strcat( name, ')');
 
 end

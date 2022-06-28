@@ -272,14 +272,6 @@ classdef FullRepresentationModel
                 self            FullRepresentationModel
             end
 
-            if self.ShowPlots
-
-                plotObjects = self.Axes;
-                plotObjects.Components = self.Figs.Components;   
-                savePlots( plotObjects, self.Info.Path, self.Info.Name );
-
-            end
-
             model = self.clearGraphics;
             filename = strcat( self.Info.Name, "-FullModel" );
             save( fullfile( self.Info.Path, filename ), 'model' );

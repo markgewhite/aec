@@ -64,7 +64,7 @@ function setup = initSetup
     setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
-    setup.model.args.KFolds = 5;
+    setup.model.args.KFolds = 1;
     setup.model.args.IdenticalPartitions = false;
     setup.model.args.IsVAE = true;
     setup.model.args.numVAEDraws = 2;
@@ -74,7 +74,7 @@ function setup = initSetup
     % training
     setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 400;
+    setup.model.args.trainer.numEpochs = 1;
     setup.model.args.trainer.numEpochsPreTrn = 40;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;
