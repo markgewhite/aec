@@ -27,24 +27,6 @@ classdef LSTMCompactModel < CompactAEModel
         end
 
 
-        function [ dlXHat, dlZ, state ] = forward( self, encoder, decoder, dlX )
-            % Forward-run the lstm network, overriding autoencoder method
-            arguments
-                self        LSTMCompactModel
-                encoder     dlnetwork
-                decoder     dlnetwork
-                dlX         dlarray
-            end
-
-            % generate latent encodings
-            [ dlZ, state.Encoder ] = forward( encoder, dlX );
-
-            % reconstruct curves from latent codes
-            [ dlXHat, state.Decoder ] = self.forwardDecoder( decoder, dlZ, dlX );
-
-        end
-
-
         function dlX = decodeDispatcher( self, dlZ, args )
             % Generate X from Z either using forward or predict
             % Overrides the autoencoder method
@@ -107,10 +89,7 @@ classdef LSTMCompactModel < CompactAEModel
 
         end
 
-    end
 
-
-    methods (Access = private)
 
         function [ dlXHat, state ] = forwardDecoder( self, decoder, dlHS, dlX )
             % Forward-run the lstm decoder network

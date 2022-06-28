@@ -105,12 +105,7 @@ classdef ConvolutionalModel < FCModel
             lgraphEnc = connectLayers( lgraphEnc, ...
                                        lastLayer, poolingLayer );
         
-        
-            if self.IsVAE
-                net = VAEdlnetwork( lgraphEnc, numDraws = self.NumVAEDraws );
-            else
-                net = dlnetwork( lgraphEnc );
-            end
+            net = dlnetwork( lgraphEnc );
 
         end
 
