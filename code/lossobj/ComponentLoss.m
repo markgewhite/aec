@@ -15,7 +15,8 @@ classdef ComponentLoss < LossFunction
                 name                 char {mustBeText}
                 args.criterion       char ...
                     {mustBeMember( args.criterion, ...
-                        {'Orthogonality', 'Varimax', 'ExplainedVariance'} )} ...
+                        {'InnerProduct', 'Orthogonality', ...
+                         'Varimax', 'ExplainedVariance'} )} ...
                                         = 'Orthogonality'
                 args.nSample         double ...
                     {mustBeInteger, mustBePositive} = 10
@@ -64,10 +65,15 @@ classdef ComponentLoss < LossFunction
             dlXC = reshape( dlXC, nPts, nChannels, self.NumSamples, nComp );
 
             switch self.Criterion
+                case 'InnerProduct'
+                    % compute the inner product as a test
+                    % of component orthogonality
+                    loss = innerProduct( dlXC, nChannels, self.NumSamples, nComp );
+
                 case 'Orthogonality'
                     % compute the inner product as a test
                     % of component orthogonality
-                    loss = innerProduct( dlXC, nChannels, self.NumSamples );
+                    loss = orthogonality( dlXC, nChannels, self.NumSamples );
 
                 case 'Varimax'
                     % compute the component variance across 
@@ -89,8 +95,29 @@ classdef ComponentLoss < LossFunction
 end
 
 
-function loss = innerProduct( dlXC, nChannels, nSamples )
+function loss = innerProduct( dlXC, nChannels, nSamples, nComp )
     % Calculate the inner product
+
+    orth = dlarray( zeros(1, nChannels), 'CB' );
+
+    for c = 1:nChannels
+        for k = 1:nSamples
+            for i = 1:nComp
+                for j = i+1:nComp
+                    orth(c) = orth(c) + mean(dlXC(:,c,k,i).*dlXC(:,c,k,j)).^2;
+                end
+            end
+        end
+    end
+
+    loss = mean(orth)/nSamples;
+
+end
+
+
+
+function loss = orthogonality( dlXC, nChannels, nSamples )
+    % Calculate a pseudo orthogonality
 
     orth = dlarray( zeros(1, nChannels), 'CB' );
 
@@ -98,8 +125,9 @@ function loss = innerProduct( dlXC, nChannels, nSamples )
         for k = 1:nSamples
             dlXCsample = squeeze( dlXC(:,c,k,:) );
             dlXCsample = permute( dlXCsample, [2 1] );
-            dlCorr = dlCorrelation( dlXCsample );
-            loss = mean( ( dlCorr - eye(size(dlCorr,1)) ).^2, 'all' );
+            [dlVar, dlCov] = dlVarianceCovariance( dlXCsample );
+            loss = mean( dlCov.^2, 'all' );
+            loss = loss + var(dlVar);
             orth(c) = orth(c) + loss;
         end
     end
