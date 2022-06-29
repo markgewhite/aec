@@ -35,7 +35,7 @@ classdef CompactPCAModel < CompactRepresentationModel
         function self = train( self, thisData )
             % Run FPCA for the encoder
             arguments
-                self            CompactPCAModel
+                self         CompactPCAModel
                 thisData     ModelDataset
             end
 
@@ -55,10 +55,6 @@ classdef CompactPCAModel < CompactRepresentationModel
             end
             self.ZStd = squeeze( std(pcaStruct.harmscr) );
 
-            % compute the components' explained variance
-            [self.LatentComponents, self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentComponents( thisData );
-
             % generate the latent components
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
 
@@ -73,10 +69,25 @@ classdef CompactPCAModel < CompactRepresentationModel
                     self.AuxModel = fitcecoc( Z, thisData.Y );
             end
 
+
+            % compute the components' explained variance
+            [self.LatentComponents, self.MeanCurve, ...
+                self.VarProportion, self.ComponentVar] ...
+                            = self.getLatentComponents( thisData );
+            
+            % plot them on specified axes
+            plotLatentComp( self, type = 'Smoothed', shading = true );
+        
+            % plot the Z distributions
+            plotZDist( self, Z );
+        
+            % plot the Z clusters
+            plotZClusters( self, Z, Y = thisData.Y );
+
         end
 
 
-        function [ XC, offsets ] = latentComponents( self, Z, args )
+        function [ XC, XMean, offsets ] = calcLatentComponents( self, Z, args )
             % Present the FPCs in form consistent with autoencoder model
             arguments
                 self            CompactPCAModel
@@ -106,10 +117,7 @@ classdef CompactPCAModel < CompactRepresentationModel
                 end
             end
 
-            if ~args.centre
-                % add the mean curve
-                XC = XC + eval_fd( self.PCATSpan, self.MeanFd );
-            end
+            XMean = squeeze(eval_fd( self.PCATSpan, self.MeanFd ));
 
         end
 

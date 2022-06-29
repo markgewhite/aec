@@ -16,6 +16,7 @@ classdef FullRepresentationModel
         Partitions      % logical array specifying the train/validation split
         IdenticalPartitions % flag for special case of identical partitions
         SubModels       % array of trained models
+        MeanCurve       % estimated mean curve
         ComponentType   % type of components generated (Mean or PDP)
         LatentComponents % cross-validated latent components
         Loss            % collated losses from sub-models

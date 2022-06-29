@@ -47,7 +47,7 @@ classdef CompactAEModel < CompactRepresentationModel
             self.NumLoss = theFullModel.NumLoss;
             self.FlattenInput = theFullModel.FlattenInput;
             self.HasSeqInput = theFullModel.HasSeqInput;
-            self.ZDimActive = 1;
+            self.ZDimActive = theFullModel.InitZDimActive;
 
             % initialize the encoder and decoder networks
             self.Nets.Encoder = theFullModel.initEncoder;
@@ -87,7 +87,8 @@ classdef CompactAEModel < CompactRepresentationModel
             self = self.Trainer.runTraining( self, thisData );
 
             % compute the components' explained variance
-            [self.LatentComponents, self.VarProportion, self.ComponentVar] ...
+            [self.LatentComponents, self.MeanCurve, ...
+                self.VarProportion, self.ComponentVar] ...
                             = self.getLatentComponents( thisData );
 
         end
@@ -131,7 +132,7 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ dlXC, offsets ] = latentComponents( self, dlZ, args )
+        function [ dlXC, dlXMean, offsets ] = calcLatentComponents( self, dlZ, args )
             % Calculate the funtional components from the latent codes
             % using the decoder network. For each component, the relevant 
             % code is varied randomly about the mean. This is more 
@@ -143,7 +144,6 @@ classdef CompactAEModel < CompactRepresentationModel
                 args.sampling   char ...
                     {mustBeMember(args.sampling, ...
                         {'Random', 'Fixed'} )} = 'Random'
-                args.centre     logical = true
                 args.nSample    double {mustBeInteger} = 0
                 args.range      double {mustBePositive} = 2.0
                 args.convert    logical = false
@@ -179,17 +179,21 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlXC = squeeze( mean( dlXC, 2 ) );
             end
 
-            if args.centre
-                % centre about the mean curve (last curve)
-                if length( size(dlXC) )==2
-                    dlXC = dlXC( :, 1:end-1 ) - dlXC( :, end );
-                else
-                    dlXC = dlXC( :, :, 1:end-1 ) - dlXC( :, :, end );
-                end
+            % extract the mean curve from the end
+            if length( size(dlXC) )==2
+                dlXMean = dlXC( :, end );
+                dlXC = dlXC( :, 1:end-1 );
+            else
+                dlXMean = dlXC( :, :, end );
+                dlXC = dlXC( :, :, 1:end-1 );
             end
+           
+            % centre about the mean curve (last curve)
+            dlXC = dlXC - dlXMean;
 
             if isa( dlXC, 'dlarray' ) && args.convert
                 dlXC = double(extractdata( dlXC ));
+                dlXMean = double(extractdata( dlXMean ));
             end
 
         end

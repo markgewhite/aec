@@ -17,7 +17,7 @@ function [ R, C ] = latentComponentCorrelation( XC, nSamples, arg )
     end
 
     [nPts, nChannels, nComp] = size( XC );
-    if mod( nComp, 2 )==1
+    if mod( nComp, nSamples )~=0
         % odd number: last component must be the mean
         % centre the components
         XC = XC( :,:,1:nComp-1 ) - XC( :,:,end );
@@ -26,7 +26,7 @@ function [ R, C ] = latentComponentCorrelation( XC, nSamples, arg )
 
     nComp = nComp/nSamples;
 
-    XC = reshape( XC, nPts, nChannels, nSamples, nComp );
+    XC = reshape( XC, nPts, nChannels, [], nComp );
 
     % calculate the correlation matrics across samples and channels
     R = zeros( nComp, nComp, nChannels);

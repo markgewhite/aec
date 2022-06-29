@@ -5,6 +5,7 @@ function plotLatentComp( thisModel, args )
         thisModel           {mustBeA( thisModel, ...
                                 { 'FullRepresentationModel', ...
                                   'CompactRepresentationModel' })}
+        args.XMean          {mustBeA( args.XMean, { 'dlarray', 'double' })} = []
         args.XC             {mustBeA( args.XC, { 'dlarray', 'double' })} = []
         args.nSample        double = 0
         args.type           char ...
@@ -18,24 +19,38 @@ function plotLatentComp( thisModel, args )
         args.axes           = []
     end
     
+    if isempty( args.XMean )
+        % use the pre-calculated mean curve
+        XMean = thisModel.MeanCurve;
+    else
+        % use the mean curve specified
+        if isa( args.XMean, 'dlarray' )
+            XMean = double( extractdata( args.XMean ) );
+        else
+            XMean = args.XMean;
+        end
+    end
+
     if isempty( args.XC )
         % use the pre-calculated latent components
         XC = thisModel.LatentComponents;
-        % set the appropriate timespans and FD parameters
-        tSpanXC = thisModel.TSpan.Regular;
-        fdParams = thisModel.FDA.FdParamsRegular;
-
     else
         % use the latent components specified
         if isa( args.XC, 'dlarray' )
             XC = double( extractdata( args.XC ) );
         else
             XC = args.XC;
-        end
+        end        
+    end
+
+    if isempty( args.XMean ) || isempty( args.XC )
+        % set the appropriate timespans and FD parameters
+        tSpanXC = thisModel.TSpan.Regular;
+        fdParams = thisModel.FDA.FdParamsRegular;
+    else
         % set the appropriate timespans and FD parameters
         tSpanXC = thisModel.TSpan.Target;
         fdParams = thisModel.FDA.FdParamsTarget;
-        
     end
 
     % re-order the dimensions for FDA
@@ -47,7 +62,8 @@ function plotLatentComp( thisModel, args )
     tSpanPlot = linspace( thisModel.TSpan.Original(1), ...
                           thisModel.TSpan.Original(end), 101 );
 
-    XCsmth = smoothSeries( XC, tSpanXC, tSpanPlot, fdParams );
+    XMeanSmth = smoothSeries( XMean, tSpanXC, tSpanPlot, fdParams );
+    XCsmth = XMeanSmth + smoothSeries( XC, tSpanXC, tSpanPlot, fdParams );
 
 
     % set the colours from blue and red
@@ -97,8 +113,8 @@ function plotLatentComp( thisModel, args )
             % plot the gradations
             for j = 1:nSample
 
-                % set the sign/colour counter
-                s = round( j/nSample, 0 ) + 1;
+                % first half blue, second half red
+                s = (j > 0.5*nSample) + 1;
                 
                 % next sample
                 k = k+1;
@@ -110,7 +126,7 @@ function plotLatentComp( thisModel, args )
                         plotShadedArea( axis, ...
                                         tSpanPlot, ...
                                         XCsmth( :, k, c ), ...
-                                        XCsmth( :, end, c ), ...
+                                        XMeanSmth( :, 1, c ), ...
                                         compColours(s,:), ...
                                         name = names(s) );
                     end
@@ -154,7 +170,7 @@ function plotLatentComp( thisModel, args )
             % plot the mean curve
             l = l+1;
             pltObj(l) = plot( axis, ...
-                              tSpanPlot, XCsmth( :, end, c ), ...
+                              tSpanPlot, XMeanSmth( :, 1, c ), ...
                               Color = black, ...
                               LineWidth = 1.0, ...
                               DisplayName = 'Mean' );

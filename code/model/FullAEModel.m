@@ -15,6 +15,7 @@ classdef FullAEModel < FullRepresentationModel
         HasSeqInput    % supports variable-length input
         Trainer        % optional arguments for the trainer
         Optimizer      % optional arguments for the optimizer
+        InitZDimActive % initial number of Z dimensions active
     end
 
     properties (Dependent = true)
@@ -45,6 +46,8 @@ classdef FullAEModel < FullRepresentationModel
                     {mustBeInteger, mustBePositive} = 1
                 args.FlattenInput   logical = false
                 args.HasSeqInput    logical = false
+                args.InitZDimActive double ...
+                    {mustBeInteger} = 1
                 args.Weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
                 args.Trainer        struct = []
@@ -77,6 +80,12 @@ classdef FullAEModel < FullRepresentationModel
             self.NumVAEDraws = args.NumVAEDraws;
             self.FlattenInput = args.FlattenInput;
             self.HasSeqInput = args.HasSeqInput;
+
+            if args.InitZDimActive==0
+                self.InitZDimActive = self.ZDim;
+            else
+                self.InitZDimActive = min( args.InitZDimActive, self.ZDim );
+            end
 
             self.Trainer = args.Trainer;
             self.Optimizer = args.Optimizer;

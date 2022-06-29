@@ -69,6 +69,9 @@ function plotZClusters( thisModel, Z, args )
     
     % plot true classes (large dots)
     colours = lines( length(classes) );
+    if size(ZT,2)==1
+        ZT = [ZT ZT];
+    end
     gscatter( axis, ZT(:,1), ZT(:,2), Y, colours, '.', dotSize );
     
     hold( axis, 'off' );
