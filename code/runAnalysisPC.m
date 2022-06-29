@@ -3,11 +3,12 @@
 setup = initSetupPC;
 
 % first investigation
-name = 'JumpsGRF(DemoB)';
+name = 'JumpsGRF-003-ReliabilityTestWithZOrth';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-parameters = [ "lossFcns.cls.args.useLoss" ];
-values = {{true}};
+parameters = [ "model.class" ];
+values = {{@FCModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
+

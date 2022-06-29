@@ -7,12 +7,11 @@ name = 'JumpsGRF-Test';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-%parameters = [ "model.args.ZDim", ...
-%               "lossFcns.cls.args.useLoss" ];
-%values = [ {2:6} {{false, true}} ];
+parameters = "model.args.ZDim";
+values = {[1:6]};
 
-parameters = [ "model.class" ];
-values = {{@FCModel}};
+%parameters = [ "model.class" ];
+%values = {{@FullPCAModel,@FCModel}};
 
 %parameters = [ "model.args.IsVAE", ...
 %               "lossFcns.kl.args.useLoss", ...

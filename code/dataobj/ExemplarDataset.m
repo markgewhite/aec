@@ -34,7 +34,7 @@ classdef ExemplarDataset < ModelDataset
                 args.ClassSizes         double ...
                         {mustBeInteger, mustBePositive} = 500
                 args.ClassElements      double ...
-                        {mustBeInteger, mustBePositive} = 2
+                        {mustBeInteger, mustBePositive} = 1
                 args.ClassMeans         double
                 args.ClassSDs           double
                 args.ClassPeaks         double
@@ -54,7 +54,7 @@ classdef ExemplarDataset < ModelDataset
             switch args.FeatureType
                 case 'Gaussian'
                     featureFcn = @(x, ampl, mu, sigma) ...
-                        (ampl/sqrt((2*pi))*exp(-0.5*((x-mu)/sigma).^2));
+                                    (ampl*exp(-0.5*((x-mu)/sigma).^2));
             end
 
             % setup the timespan
@@ -96,7 +96,7 @@ classdef ExemplarDataset < ModelDataset
             % setup fda
             paramsFd.BasisOrder = 4;
             paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = 1E-2;
+            paramsFd.Lambda = 1E-10;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -110,7 +110,7 @@ classdef ExemplarDataset < ModelDataset
                             datasetName = name, ...
                             channelLabels = "Y (no units)", ...
                             timeLabel = "Time (no units)", ...
-                            channelLimits = [0 2] );
+                            channelLimits = [0 6] );
 
             self.FeatureType = args.FeatureType;
             self.ClassSizes = args.ClassSizes;
@@ -124,6 +124,9 @@ classdef ExemplarDataset < ModelDataset
             self.Noise = args.Noise;
             self.HasVariableLength = args.HasVariableLength;
             self.TerminationValue = args.TerminationValue;
+
+            figure(4);
+            plot( self.TSpan.Target, self.XTarget );
 
         end
 
@@ -150,17 +153,20 @@ function [ X, Y ] = generateData( c, fcn, args )
     end
 
     % generate the parameters according to mean and covariance
-    ampl  = mvnrnd( args.ClassPeaks( c, : ), ...
-                    args.PeakCovariance{c}, ...
-                    nObs );
+    ampl  = mvnrndChi2( args.ClassPeaks( c, : ), ...
+                        args.PeakCovariance{c}, ...
+                        nObs, 4 );
+
     mu    = mvnrnd( args.ClassMeans( c, : ), ...
                     args.MeanCovariance{c}, ...
                     nObs );
-    sigma = mvnrnd( args.ClassSDs( c, : ), ...
-                    args.SDCovariance{c}, ...
-                    nObs );
+
+    sigma = mvnrndChi2( args.ClassSDs( c, : ), ...
+                        args.SDCovariance{c}, ...
+                        nObs, 4 );  
+
     % produce the curves by layering on feature elements
-    for j = 1:args.ClassElements(c)
+    for j = 1:args.ClassElements
 
         for i = 1:nObs
 
@@ -196,6 +202,22 @@ function [ X, Y ] = generateData( c, fcn, args )
 end
 
 
+function y = mvnrndChi2( mu, cov, n, df )
+    % Multivariate Chi-squared distribution
+    arguments
+        mu      double
+        cov     double
+        n       double {mustBeInteger, mustBePositive}
+        df      double {mustBeInteger, mustBePositive} = 4
+    end
+
+    y = zeros( n, length(mu), df );
+    for k = 1:df
+        y(:,:,k) = mvnrnd( mu, cov, n );
+    end
+    y = sqrt( sum( y.^2, 3 )/df );
+
+end
 
 
 function args = validateArgs( args )

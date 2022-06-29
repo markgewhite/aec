@@ -3,12 +3,13 @@ function setup = initSetupPC
 
     % dataset
     setup.data.class = @JumpGRFDataset;
-    setup.data.args.normalization = 'PAD';
-    setup.data.args.hasNormalizedInput = true;
-    setup.data.args.normalizedPts = 51;
-    setup.data.args.hasAdaptiveTimeSpan = true;
-    setup.data.args.resampleRate = 10;
+    setup.data.args.Normalization = 'PAD';
+    setup.data.args.HasNormalizedInput = true;
+    setup.data.args.NormalizedPts = 51;
+    setup.data.args.HasAdaptiveTimeSpan = true;
+    setup.data.args.ResampleRate = 10;
     setup.data.args.OverSmoothing = 1E3;
+    setup.data.args.HasMatchingOutput = false;
         
     %setup.data.class = @fukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
@@ -41,56 +42,39 @@ function setup = initSetupPC
     % loss functions
     setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
-
+    
     setup.lossFcns.adv.class = @AdversarialLoss;
     setup.lossFcns.adv.name = 'Discriminator';
-
-    %setup.lossFcns.zorth.class = @OrthogonalLoss;
-    %setup.lossFcns.zorth.name = 'ZOrthogonality';
+    setup.lossFcns.adv.args.useLoss = true;
     
-    %setup.lossFcns.mmd.class = @WassersteinLoss;
-    %setup.lossFcns.mmd.name = 'MMDDiscriminator';
-    %setup.lossFcns.mmd.args.kernel = 'IMQ';
-    %setup.lossFcns.mmd.args.useLoss = false;
-
-    setup.lossFcns.orth.class = @ComponentLoss;
-    setup.lossFcns.orth.name = 'Orthogonality';
-    setup.lossFcns.orth.args.nSample = 4;
-    setup.lossFcns.orth.args.criterion = 'Orthogonality';
+    setup.lossFcns.orth.class = @OrthogonalLoss;
+    setup.lossFcns.orth.name = 'ZOrthogonality';
     setup.lossFcns.orth.args.useLoss = true;
 
-    %setup.lossFcns.var.class = @ComponentLoss;
-    %setup.lossFcns.var.name = 'ExplainedVariance';
-    %setup.lossFcns.var.args.nSample = 100;
-    %setup.lossFcns.var.args.criterion = 'ExplainedVariance';
-    %setup.lossFcns.var.args.useLoss = false;
+    %setup.lossFcns.cls.class = @ClassifierLoss;
+    %setup.lossFcns.cls.name = 'Classification';
+    %setup.lossFcns.cls.args.useLoss = true;
 
-    %setup.lossFcns.smooth.class = @SmoothnessLoss;
-    %setup.lossFcns.smooth.name = 'Roughness';
-    %setup.lossFcns.smooth.args.Lambda = 1E-2;
-    %setup.lossFcns.smooth.args.useLoss = false;
-
-    setup.lossFcns.cls.class = @ClassifierLoss;
-    setup.lossFcns.cls.name = 'Classification';
-    setup.lossFcns.cls.args.useLoss = true;
-
-    setup.lossFcns.xcls.class = @InputClassifierLoss;
-    setup.lossFcns.xcls.name = 'XClassification';
-    setup.lossFcns.xcls.args.useLoss = true;
+    %setup.lossFcns.xcls.class = @InputClassifierLoss;
+    %setup.lossFcns.xcls.name = 'XClassification';
+    %setup.lossFcns.xcls.args.useLoss = true;
 
     % model
     setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
-    setup.model.args.KFolds = 1;
+    setup.model.args.KFolds = 5;
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.IsVAE = false;
     setup.model.args.AuxModel = 'Logistic';
+    setup.model.args.randomSeed = 1234;
     
     % training
-    setup.model.args.trainer.updateFreq = 20;
+    setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.valType = 'AuxModel';
-    setup.model.args.trainer.numEpochs = 200;
+    setup.model.args.trainer.numEpochs = 400;
+    setup.model.args.trainer.numEpochsPreTrn = 100;
+    setup.model.args.trainer.activeZFreq = 25;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
 
