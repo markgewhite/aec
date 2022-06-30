@@ -30,14 +30,14 @@ classdef FullPCAModel < FullRepresentationModel
         end
 
 
-        function thisModel = initSubModel( self, id )
+        function self = initSubModel( self, k )
             % Initialize a sub-model
             arguments
                 self            FullPCAModel
-                id              double
+                k               double
             end
 
-            thisModel = CompactPCAModel( self, id );
+            self.SubModel{k} = CompactPCAModel( self, k );
 
         end
 

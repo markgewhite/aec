@@ -3,7 +3,7 @@
 setup = initSetupPC;
 
 % first investigation
-name = 'JumpsGRF-003-ReliabilityTestWithZOrth';
+name = 'JumpsGRF-Test';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 

@@ -21,7 +21,7 @@ classdef Investigation
             % Construct an investigation comprised of evaluations
             arguments
                 name            string
-                path            string {mustBeFolder}
+                path            string
                 parameters      string
                 searchValues
                 setup           struct

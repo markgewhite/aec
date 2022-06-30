@@ -398,7 +398,7 @@ classdef ModelDataset < handle
                     cvpart = cvpartition( length( uniqueUnit ), ...
                                           KFold = args.KFold );
                     
-                    if length( uniqueUnit ) < length( unit )
+                    if length( uniqueUnit ) <= length( unit )
                         % partitioning unit is a grouping variable
                         selection = false( self.NumObs, args.KFold );
                         for k = 1:args.KFold

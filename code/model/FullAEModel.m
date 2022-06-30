@@ -4,6 +4,8 @@ classdef FullAEModel < FullRepresentationModel
     properties
         NetNames       % names of the networks (for convenience)
         NumNetworks    % number of networks
+        IdenticalNetInit % wherther to use same initialized networks
+        InitializedNets% initialized networks before training
         IsVAE          % flag indicating if variational autoencoder
         NumVAEDraws    % number of draws from encoder output distribution
         LossFcns       % loss function objects
@@ -41,6 +43,7 @@ classdef FullAEModel < FullRepresentationModel
                 superArgs.?FullRepresentationModel
                 superArgs2.name     string
                 superArgs2.path     string
+                args.IdenticalNetInit logical = false
                 args.IsVAE          logical = false
                 args.NumVAEDraws    double ...
                     {mustBeInteger, mustBePositive} = 1
@@ -76,6 +79,7 @@ classdef FullAEModel < FullRepresentationModel
             % placeholders for subclasses to define
             self.NetNames = {'Encoder', 'Decoder'};
             self.NumNetworks = 2;
+            self.IdenticalNetInit = args.IdenticalNetInit; 
             self.IsVAE = args.IsVAE;
             self.NumVAEDraws = args.NumVAEDraws;
             self.FlattenInput = args.FlattenInput;
@@ -173,14 +177,17 @@ classdef FullAEModel < FullRepresentationModel
         end
 
 
-        function thisModel = initSubModel( self, id )
+        function self = initSubModel( self, k )
             % Initialize a sub-model
             arguments
                 self            FullAEModel
-                id              double
+                k               double
             end
 
-            thisModel = CompactAEModel( self, id );
+            self.SubModels{k} = CompactAEModel( self, k );
+            if self.IdenticalNetInit && k==1
+                self.InitializedNets = self.SubModels{k}.Nets;
+            end
 
         end
 

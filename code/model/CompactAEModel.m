@@ -49,12 +49,20 @@ classdef CompactAEModel < CompactRepresentationModel
             self.HasSeqInput = theFullModel.HasSeqInput;
             self.ZDimActive = theFullModel.InitZDimActive;
 
-            % initialize the encoder and decoder networks
-            self.Nets.Encoder = theFullModel.initEncoder;
-            self.Nets.Decoder = theFullModel.initDecoder;
+            if theFullModel.IdenticalNetInit ...
+                    && ~isempty( theFullModel.InitializedNets )
+                % use the common network initializtion
+                self.Nets = theFullModel.InitializedNets;
 
-            % initialize the loss function networks, if required
-            self = self.initLossFcnNetworks;
+            else
+                % perform a network initialization unique to this object
+                % initialize the encoder and decoder networks
+                self.Nets.Encoder = theFullModel.initEncoder;
+                self.Nets.Decoder = theFullModel.initDecoder;
+    
+                % initialize the loss function networks, if required
+                self = self.initLossFcnNetworks;
+            end
 
             % initialize the trainer
             try
@@ -73,6 +81,29 @@ classdef CompactAEModel < CompactRepresentationModel
                 argsCell = {};
             end
             self.Optimizer = ModelOptimizer( self.NetNames, argsCell{:} );
+
+        end
+
+
+        function self = initLossFcnNetworks( self )
+            % Initialize the loss function networks
+            arguments
+                self        CompactAEModel
+            end
+
+            for i = 1:length( self.LossFcnNames )
+                thisName = self.LossFcnNames{i};
+                thisLossFcn = self.LossFcns.(thisName);
+                thisType = self.LossFcnTbl.Types(self.LossFcnTbl.Names == thisName);
+                if thisLossFcn.HasNetwork
+                    if thisType == 'Comparator' %#ok<BDSCA> 
+                        self.Nets.(thisName) = thisLossFcn.initNetwork( ...
+                                                self.Nets.Encoder );
+                    else
+                        self.Nets.(thisName) = thisLossFcn.initNetwork;
+                    end
+                end
+            end
 
         end
 
@@ -466,35 +497,6 @@ classdef CompactAEModel < CompactRepresentationModel
             self.Trainer.LossLines = [];
 
         end
-
-    end
-
-
-    methods (Access = protected)
-
-
-        function self = initLossFcnNetworks( self )
-            % Initialize the loss function networks
-            arguments
-                self        CompactAEModel
-            end
-
-            for i = 1:length( self.LossFcnNames )
-                thisName = self.LossFcnNames{i};
-                thisLossFcn = self.LossFcns.(thisName);
-                thisType = self.LossFcnTbl.Types(self.LossFcnTbl.Names == thisName);
-                if thisLossFcn.HasNetwork
-                    if thisType == 'Comparator' %#ok<BDSCA> 
-                        self.Nets.(thisName) = thisLossFcn.initNetwork( ...
-                                                self.Nets.Encoder );
-                    else
-                        self.Nets.(thisName) = thisLossFcn.initNetwork;
-                    end
-                end
-            end
-
-        end
-
 
     end
 

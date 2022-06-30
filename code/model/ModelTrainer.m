@@ -7,6 +7,8 @@ classdef ModelTrainer < handle
         CurrentEpoch     % epoch counter
         BatchSize        % minibatch size
         PartialBatch     % what to do with an incomplete batch
+        MiniBatchShuffle % flag indicating if minibatches are shuffled
+        RandomStatePreservedOnShuffle % flag whether to preserve state on minibatch shuffle so model is unaffected
 
         Holdout          % proportion of the dataset for validation
         ValFreq          % validation frequency in epochs
@@ -47,6 +49,8 @@ classdef ModelTrainer < handle
                 args.partialBatch   char ...
                     {mustBeMember(args.partialBatch, ...
                         {'discard', 'return'} )} = 'discard'
+                args.miniBatchShuffle logical = true
+                args.randomStatePreservedOnShuffle  logical = false
                 args.holdout        double ...
                     {mustBeInRange( args.holdout, 0, 0.5 )} = 0.2
                 args.valFreq        double ...
@@ -83,6 +87,9 @@ classdef ModelTrainer < handle
 
             self.ValPatience = args.valPatience;
             self.ValType = args.valType;
+
+            self.MiniBatchShuffle = args.miniBatchShuffle;
+            self.RandomStatePreservedOnShuffle = args.randomStatePreservedOnShuffle;
 
             self.NumLossFcns = size( lossFcnTbl,1 );
             self.LossTrn = [];
@@ -167,12 +174,24 @@ classdef ModelTrainer < handle
                     nLoss = thisModel.NumLoss;
                 end
             
-                if thisTrnData.isFixedLength
+                if thisTrnData.isFixedLength && self.MiniBatchShuffle
+                    
                     % reset with a shuffled order
+                    if self.RandomStatePreservedOnShuffle
+                        % preserve the random generator's state so the
+                        % model's stochastic behaviour is unaffected by shuffling
+                        temp = rng;
+                    end
                     shuffle( mbqTrn );
+                    if self.RandomStatePreservedOnShuffle
+                        rng( temp );  
+                    end
+                
                 else
+                
                     % reset whilst preserving the order
                     reset( mbqTrn );
+                
                 end
             
                 % loop over mini-batches
@@ -656,5 +675,6 @@ function updateLossLines( lossLines, j, newPts )
     drawnow;
 
 end
+
 
 

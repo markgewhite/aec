@@ -27,6 +27,8 @@ classdef FullRepresentationModel
         Axes            % axes for plotting latent space and components
         NumCompLines    % number of lines in the component plot
         RandomSeed      % for reproducibility
+        RandomSeedResets % whether to reset the seed for each sub-model
+
     end
 
     methods
@@ -44,6 +46,7 @@ classdef FullRepresentationModel
                     {mustBeInteger, mustBePositive} = 5
                 args.randomSeed     double ...
                     {mustBeInteger, mustBePositive}
+                args.randomSeedResets logical = false;
                 args.componentType  char ...
                     {mustBeMember(args.componentType, ...
                         {'Mean', 'PDP'} )} = 'PDP'
@@ -78,6 +81,7 @@ classdef FullRepresentationModel
             else
                 self.RandomSeed = [];
             end
+            self.RandomSeedResets = args.randomSeedResets;
 
             self.Info.Name = args.name;
             self.Info.Path = args.path;
@@ -128,12 +132,19 @@ classdef FullRepresentationModel
             % run the cross validation loop
             for k = 1:self.KFolds
             
+                disp(['Fold ' num2str(k) '/' num2str(self.KFolds)]);
+
                 % set the kth partitions
                 thisTrnSet = thisDataset.partition( self.Partitions(:,k) );
                 thisValSet = thisDataset.partition( ~self.Partitions(:,k) );
                 
                 % initialize the sub-model
-                self.SubModels{k} = self.initSubModel( k );
+                self = self.initSubModel( k );
+
+                if self.RandomSeedResets && ~isempty( self.RandomSeed )
+                    % reset the random seed for the submodel
+                    rng( self.RandomSeed );
+                end
 
                 % train the sub-model
                 self.SubModels{k} = self.SubModels{k}.train( thisTrnSet );

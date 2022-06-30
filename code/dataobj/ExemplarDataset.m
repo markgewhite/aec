@@ -28,6 +28,7 @@ classdef ExemplarDataset < ModelDataset
                 set                     char ...
                         {mustBeMember( set, ...
                                    {'Training', 'Testing'} )}
+                args.randomSeeds        (1,2) double = [ 1234 5678 ]
                 args.FeatureType        char ...
                         {mustBeMember( args.FeatureType, ...
                                    {'Gaussian'} )} = 'Gaussian'
@@ -65,6 +66,14 @@ classdef ExemplarDataset < ModelDataset
             nObs = sum(args.ClassSizes);
             X = cell( nObs, 1 );
             Y = zeros( nObs, 1 );
+
+            % set the random seed
+            switch set
+                case 'Training'
+                    rng( args.randomSeeds(1) );
+                case 'Testing'
+                    rng( args.randomSeeds(2) );
+            end
 
             % iterate through the classes, generating data
             idxStart = 1;
