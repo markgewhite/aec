@@ -293,7 +293,7 @@ classdef FullRepresentationModel
         end
 
 
-        function self = clearSpace( self )
+        function self = clearGraphics( self )
             % Clear the graphics objects to save memory
             arguments
                 self            FullRepresentationModel

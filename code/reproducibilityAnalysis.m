@@ -69,9 +69,9 @@ setup.model.args.trainer.Holdout = 0;
 parameters = [ "model.class" ];
 values = { {@FCModel} };
 
-nTests = 6*newInvestigation;
+nTests = 7*newInvestigation;
 
-for i = 3
+for i = [3 7]
 
     switch i
 
@@ -147,6 +147,18 @@ for i = 3
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
             theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
+        case 7
+            % Allow data partitions to vary alone
+            name = [ 'Exemplar-' attempt '-AllVariesExceptData' ];
+            setup.model.args.RandomSeedResets = false;
+            setup.model.args.IdenticalNetInit = false;
+            setup.model.args.trainer.HasMiniBatchShuffle = true;
+            setup.model.args.trainer.HasShuffleRandomStream = false;
+            setup.model.args.IdenticalPartitions = true;
+       
+            theInvestigation{i} = Investigation( name, path, parameters, values, setup );
+            theInvestigation{i} = theInvestigation{i}.clearPredictions;
+
     end
 
 end
@@ -154,7 +166,7 @@ end
 
 % conduct an analysis of the outputs
 % ----------------------------------
-nTests = 6;
+nTests = 7;
 
 % compare summary metrics across folds for each investigation
 nComparisons = kfolds*(kfolds-1)/2;
