@@ -39,23 +39,23 @@ classdef FullRepresentationModel
                 thisDataset         ModelDataset
                 args.ZDim           double ...
                     {mustBeInteger, mustBePositive}
-                args.auxModelType   string ...
-                        {mustBeMember( args.auxModelType, ...
+                args.AuxModelType   string ...
+                        {mustBeMember( args.AuxModelType, ...
                         {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
                 args.KFolds         double ...
                     {mustBeInteger, mustBePositive} = 5
-                args.randomSeed     double ...
+                args.RandomSeed     double ...
                     {mustBeInteger, mustBePositive}
-                args.randomSeedResets logical = false;
-                args.componentType  char ...
-                    {mustBeMember(args.componentType, ...
+                args.RandomSeedResets logical = false;
+                args.ComponentType  char ...
+                    {mustBeMember(args.ComponentType, ...
                         {'Mean', 'PDP'} )} = 'PDP'
                 args.NumCompLines   double...
                     {mustBeInteger, mustBePositive} = 8
                 args.ShowPlots      logical = true
                 args.IdenticalPartitions logical = false
-                args.name           string = "[ModelName]"
-                args.path           string = ""
+                args.Name           string = "[ModelName]"
+                args.Path           string = ""
             end
 
             % set properties based on the data
@@ -71,22 +71,22 @@ classdef FullRepresentationModel
             self = self.setScalingFactor( thisDataset.XTarget );
 
             self.ZDim = args.ZDim;
-            self.AuxModelType = args.auxModelType;
+            self.AuxModelType = args.AuxModelType;
             self.KFolds = args.KFolds;
             self.IdenticalPartitions = args.IdenticalPartitions;
             self.SubModels = cell( self.KFolds, 1 );
 
             if isfield( args, 'randomSeed' )
-                self.RandomSeed = args.randomSeed;
+                self.RandomSeed = args.RandomSeed;
             else
                 self.RandomSeed = [];
             end
-            self.RandomSeedResets = args.randomSeedResets;
+            self.RandomSeedResets = args.RandomSeedResets;
 
-            self.Info.Name = args.name;
-            self.Info.Path = args.path;
+            self.Info.Name = args.Name;
+            self.Info.Path = args.Path;
 
-            self.ComponentType = args.componentType;
+            self.ComponentType = args.ComponentType;
             self.NumCompLines = args.NumCompLines;
 
             self.ShowPlots = args.ShowPlots;

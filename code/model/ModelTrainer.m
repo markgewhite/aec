@@ -7,8 +7,8 @@ classdef ModelTrainer < handle
         CurrentEpoch     % epoch counter
         BatchSize        % minibatch size
         PartialBatch     % what to do with an incomplete batch
-        MiniBatchShuffle % flag indicating if minibatches are shuffled
-        RandomStatePreservedOnShuffle % flag whether to preserve state on minibatch shuffle so model is unaffected
+        HasMiniBatchShuffle % indicates if minibatches are shuffled
+        HasShuffleRandomStream % indicates if separate random stream for minibatch shuffling
 
         Holdout          % proportion of the dataset for validation
         ValFreq          % validation frequency in epochs
@@ -39,66 +39,66 @@ classdef ModelTrainer < handle
             % Initialize the model
             arguments
                 lossFcnTbl          table
-                args.numEpochs      double ...
+                args.NumEpochs      double ...
                     {mustBeInteger, mustBePositive} = 2000;
-                args.numEpochsPreTrn  double ...
+                args.NumEpochsPreTrn  double ...
                     {mustBeInteger, ...
-                     mustBeGreaterThanOrEqual(args.numEpochsPreTrn,0) } = 100;
-                args.batchSize      double ...
+                     mustBeGreaterThanOrEqual(args.NumEpochsPreTrn,0) } = 100;
+                args.BatchSize      double ...
                     {mustBeInteger, mustBePositive} = 40;
-                args.partialBatch   char ...
-                    {mustBeMember(args.partialBatch, ...
+                args.PartialBatch   char ...
+                    {mustBeMember(args.PartialBatch, ...
                         {'discard', 'return'} )} = 'discard'
-                args.miniBatchShuffle logical = true
-                args.randomStatePreservedOnShuffle  logical = false
-                args.holdout        double ...
-                    {mustBeInRange( args.holdout, 0, 0.5 )} = 0.2
-                args.valFreq        double ...
+                args.HasMiniBatchShuffle logical = true
+                args.HasShuffleRandomStream  logical = false
+                args.Holdout        double ...
+                    {mustBeInRange( args.Holdout, 0, 0.5 )} = 0.2
+                args.ValFreq        double ...
                     {mustBeInteger, mustBePositive} = 5; 
-                args.updateFreq     double ...
+                args.UpdateFreq     double ...
                     {mustBeInteger, mustBePositive} = 50;
-                args.lrFreq         double ...
+                args.LRFreq         double ...
                     {mustBeInteger, mustBePositive} = 200;
-                args.valPatience    double ...
+                args.ValPatience    double ...
                     {mustBeInteger, mustBePositive} = 25;
-                args.activeZFreq    double ...
+                args.ActiveZFreq    double ...
                     {mustBeInteger, mustBePositive} = 25;
-                args.postTraining   logical = true;
-                args.valType        char ...
-                    {mustBeMember(args.valType, ...
+                args.PostTraining   logical = true;
+                args.ValType        char ...
+                    {mustBeMember(args.ValType, ...
                         {'Reconstruction', 'AuxNetwork', 'AuxModel'} )} ...
                             = 'Reconstruction'
-                args.showPlots      logical = false
+                args.ShowPlots      logical = false
 
             end
 
             % initialize the training parameters
-            self.NumEpochs = args.numEpochs;
-            self.NumEpochsPreTrn = args.numEpochsPreTrn;
+            self.NumEpochs = args.NumEpochs;
+            self.NumEpochsPreTrn = args.NumEpochsPreTrn;
             self.CurrentEpoch = 0;
-            self.BatchSize = args.batchSize;
-            self.PartialBatch = args.partialBatch;
+            self.BatchSize = args.BatchSize;
+            self.PartialBatch = args.PartialBatch;
 
-            self.Holdout = args.holdout;
-            self.ValFreq = args.valFreq;
-            self.UpdateFreq = args.updateFreq;
-            self.LRFreq = args.lrFreq;
-            self.ActiveZFreq = args.activeZFreq;
+            self.Holdout = args.Holdout;
+            self.ValFreq = args.ValFreq;
+            self.UpdateFreq = args.UpdateFreq;
+            self.LRFreq = args.LRFreq;
+            self.ActiveZFreq = args.ActiveZFreq;
 
-            self.ValPatience = args.valPatience;
-            self.ValType = args.valType;
+            self.ValPatience = args.ValPatience;
+            self.ValType = args.ValType;
 
-            self.MiniBatchShuffle = args.miniBatchShuffle;
-            self.RandomStatePreservedOnShuffle = args.randomStatePreservedOnShuffle;
+            self.HasMiniBatchShuffle = args.HasMiniBatchShuffle;
+            self.HasShuffleRandomStream = args.HasShuffleRandomStream;
 
             self.NumLossFcns = size( lossFcnTbl,1 );
             self.LossTrn = [];
             self.LossVal = [];
 
             self.PreTraining = true;
-            self.PostTraining = args.postTraining;
+            self.PostTraining = args.PostTraining;
 
-            self.ShowPlots = args.showPlots;
+            self.ShowPlots = args.ShowPlots;
 
             if self.ShowPlots
                 [self.LossFig, self.LossLines] = ...
@@ -174,17 +174,23 @@ classdef ModelTrainer < handle
                     nLoss = thisModel.NumLoss;
                 end
             
-                if thisTrnData.isFixedLength && self.MiniBatchShuffle
+                if thisTrnData.isFixedLength && self.HasMiniBatchShuffle
                     
                     % reset with a shuffled order
-                    if self.RandomStatePreservedOnShuffle
-                        % preserve the random generator's state so the
-                        % model's stochastic behaviour is unaffected by shuffling
-                        temp = rng;
+                    if self.HasShuffleRandomStream
+                        % switch random streams for shuffling
+                        modelRandomState = rng;
+                        if epoch > 1
+                            rng( shuffleRandomState );
+                        end
                     end
+
                     shuffle( mbqTrn );
-                    if self.RandomStatePreservedOnShuffle
-                        rng( temp );  
+                    
+                    if self.HasShuffleRandomStream
+                        % switch back to the model random stream
+                        shuffleRandomState = rng;
+                        rng( modelRandomState );  
                     end
                 
                 else
