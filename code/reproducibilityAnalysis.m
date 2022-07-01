@@ -1,11 +1,27 @@
 % Run the analysis of reproducibility using the exemplar data sets
 
-clear;
+newInvestigation = false;
 
 % set the results destination
 path = fileparts( which('code/reproducibilityAnalysis.m') );
 path = [path '/../results/reproducibility/'];
 attempt = '003';
+
+if newInvestigation
+    theInvestigation = cell( nTests,1 ); %#ok<UNRCH> 
+else
+    if ~exist( 'theInvestigation', 'var' )
+        loadData = true;
+    elseif isempty( theInvestigation )
+        loadData = true;
+    else
+        loadData = false;
+    end
+    if loadData
+        filename = ['Exemplar-' num2str(attempt) '-Investigations'];
+        load( fullfile(path, filename), 'theInvestigation' );
+    end
+end
 
 % -- data setup --
 setup.data.class = @ExemplarDataset;   
@@ -33,9 +49,11 @@ setup.lossFcns.adv.class = @AdversarialLoss;
 setup.lossFcns.adv.name = 'Discriminator';
 
 % -- model setup --
-setup.model.args.ZDim = 4;
+kfolds = 10;
+zdim = 4;
+setup.model.args.ZDim = zdim;
 setup.model.args.InitZDimActive = 0;
-setup.model.args.KFolds = 10;
+setup.model.args.KFolds = kfolds;
 setup.model.args.InitZDimActive = 0;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
@@ -51,8 +69,7 @@ setup.model.args.trainer.holdout = 0;
 parameters = [ "model.class" ];
 values = { {@FCModel} };
 
-nTests = 6;
-theInvestigation = cell( nTests,1 );
+nTests = 6*newInvestigation;
 
 for i = 1:nTests
 
@@ -69,6 +86,7 @@ for i = 1:nTests
        
             theInvestigation{i} = ...
                 Investigation( name, path, parameters, values, setup );
+            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 2
             % Allow dropout to vary alone
@@ -81,6 +99,7 @@ for i = 1:nTests
 
             theInvestigation{i} = ...
                 Investigation( name, path, parameters, values, setup );
+            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 3
             % Allow mini-batching to vary alone
@@ -93,6 +112,7 @@ for i = 1:nTests
        
             theInvestigation{i} = ...
                 Investigation( name, path, parameters, values, setup );
+            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 4
             % Allow dropout and mini-batching to vary together
@@ -105,6 +125,7 @@ for i = 1:nTests
        
             theInvestigation{i} = ...
                 Investigation( name, path, parameters, values, setup );
+            theInvestigation{i} = theInvestigation{i}.clearPredictions;
         
         case 5
             % Allow network initialization to vary alone
@@ -117,6 +138,7 @@ for i = 1:nTests
        
             theInvestigation{i} = ...
                 Investigation( name, path, parameters, values, setup );
+            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 6
             % Allow data partitions to vary alone
@@ -129,7 +151,90 @@ for i = 1:nTests
        
             theInvestigation{i} = ...
                 Investigation( name, path, parameters, values, setup );
+            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
     end
 
 end
+
+
+% conduct an analysis of the outputs
+% ----------------------------------
+nTests = 6;
+
+% compare summary metrics across folds for each investigation
+nComparisons = kfolds*(kfolds-1)/2;
+reconLossTrnRMSE = zeros( nTests, 1 );
+ZCorrTrnRMSE = zeros( nTests, 1 );
+XCCorrTrnRMSE = zeros( nTests, 1 );
+for i = 1:nTests
+    thisModel = theInvestigation{i}.Evaluations{1}.Model;
+
+    for k1 = 1:kfolds
+        thisK1Model = thisModel.SubModels{k1};
+        
+        for k2 = k1+1:kfolds
+            thisK2Model = thisModel.SubModels{k2};
+
+            reconLossTrnRMSE(i) = reconLossTrnRMSE(i) + ...
+                    (thisK2Model.Loss.Training.ReconLoss ...
+                        - thisK1Model.Loss.Training.ReconLoss).^2;
+            
+            ZCorrTrnRMSE(i) = ZCorrTrnRMSE(i) + ...
+                    (thisK2Model.Correlations.Training.ZCorrelation ...
+                        - thisK1Model.Correlations.Training.ZCorrelation).^2;
+            
+            XCCorrTrnRMSE(i) = XCCorrTrnRMSE(i) + ...
+                    (thisK2Model.Correlations.Training.XCCorrelation ...
+                        - thisK1Model.Correlations.Training.XCCorrelation).^2;
+        
+        end
+    end
+end
+reconLossTrnRMSE = sqrt(reconLossTrnRMSE/nComparisons);
+ZCorrTrnRMSE = sqrt(ZCorrTrnRMSE/nComparisons);
+XCCorrTrnRMSE = sqrt(XCCorrTrnRMSE/nComparisons);
+
+
+% compare components across folds for each investigation
+p = perms(1:zdim);
+nCompComparisons = length(p);
+nLinesPerComponent = size( theInvestigation{1}.Evaluations{1}.Model.LatentComponents, 2 )/zdim;
+componentRMSE = zeros( nTests, nComparisons, nCompComparisons );
+componentRMSEBest = zeros( nTests, nComparisons );
+
+for i = 1:nTests
+    thisModel = theInvestigation{i}.Evaluations{1}.Model;
+    
+    j = 0;
+    for k1 = 1:kfolds
+        thisK1Model = thisModel.SubModels{k1};
+        
+        for k2 = k1+1:kfolds
+            thisK2Model = thisModel.SubModels{k2};
+
+            j = j+1;
+            for q = 1:length(p)
+                    
+                for d = 1:zdim
+                    c1A = (d-1)*nLinesPerComponent + 1;
+                    c1B = c1A + nLinesPerComponent - 1;
+
+                    c2A = (p(q,d)-1)*nLinesPerComponent + 1;
+                    c2B = c2A + nLinesPerComponent - 1;
+
+                    compC1 = thisK1Model.LatentComponents(:,c1A:c1B);
+                    compC2 = thisK2Model.LatentComponents(:,c2A:c2B);
+                                            
+                    componentRMSE(i,j,q) = componentRMSE(i,j,q) + ...
+                        mean( (compC1 - compC2).^2, 'all' );
+                end
+                componentRMSE(i,j,q) = componentRMSE(i,j,q)/zdim;
+
+            end
+            componentRMSEBest(i,j) = min( componentRMSE(i,j,:) );
+
+        end
+    end
+end
+componentRMSEBest = sqrt( mean(componentRMSEBest, 2) );

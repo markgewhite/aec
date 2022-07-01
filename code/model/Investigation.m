@@ -155,6 +155,26 @@ classdef Investigation
         end
 
 
+        function self = clearPredictions( self )
+            % Save memory by clearing model predictions
+            arguments
+                self        Investigation
+            end
+
+            nEval = prod( self.SearchDims );
+            for i = 1:nEval
+                idx = getIndices( i, self.SearchDims );
+                idxC = num2cell( idx );
+
+                self.Evaluations{ idxC{:} }.Model = ...
+                    self.Evaluations{ idxC{:} }.Model.clearPredictions;
+
+            end
+
+        end
+            
+
+
         function save( self )
             % Save the investigation to a specified path
             arguments

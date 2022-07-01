@@ -193,6 +193,17 @@ classdef CompactRepresentationModel
         end
 
 
+        function self = clearPredictions( self )
+            % Clear the model's predictions to save memory
+            arguments
+                self            CompactRepresentationModel
+            end
+
+            self.Predictions = [];
+
+        end
+
+
         function [ XCReg, XMeanReg, varProp, compVar ] = ...
                                     getLatentComponents( self, thisDataset )
             % Generate the latent components and

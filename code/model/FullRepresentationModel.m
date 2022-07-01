@@ -174,6 +174,9 @@ classdef FullRepresentationModel
                 self.plotAllLatentComponents;
             end
             
+            % remove figures and axes to save space
+            self = self.clearGraphics;
+
             % save the full model
             self.save;
 
@@ -284,21 +287,33 @@ classdef FullRepresentationModel
                 self            FullRepresentationModel
             end
 
-            model = self.clearGraphics;
             filename = strcat( self.Info.Name, "-FullModel" );
-            save( fullfile( self.Info.Path, filename ), 'model' );
+            save( fullfile( self.Info.Path, filename ), 'self' );
 
         end
 
 
-        function obj = clearGraphics( obj )
+        function self = clearSpace( self )
             % Clear the graphics objects to save memory
             arguments
-                obj            FullRepresentationModel
+                self            FullRepresentationModel
             end
 
-            obj.Figs = [];
-            obj.Axes = [];
+            self.Figs = [];
+            self.Axes = [];
+
+        end
+
+
+        function self = clearPredictions( self )
+            % Clear the graphics objects to save memory
+            arguments
+                self            FullRepresentationModel
+            end
+
+            for k = 1:self.KFolds
+                self.SubModels{k} = self.SubModels{k}.clearPredictions;
+            end
 
         end
 
