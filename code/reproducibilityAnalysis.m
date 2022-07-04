@@ -1,45 +1,44 @@
 % Run the analysis of reproducibility using the exemplar data sets
 
-newInvestigation = false;
+newInvestigation = true;
+dataType = 'Real';
 
 % set the results destination
 path = fileparts( which('code/reproducibilityAnalysis.m') );
 path = [path '/../results/reproducibility/'];
-attempt = '003';
-
-if newInvestigation
-    theInvestigation = cell( nTests,1 ); %#ok<UNRCH> 
-else
-    if ~exist( 'theInvestigation', 'var' )
-        loadData = true;
-    elseif isempty( theInvestigation )
-        loadData = true;
-    else
-        loadData = false;
-    end
-    if loadData
-        filename = ['Exemplar-' num2str(attempt) '-Investigations'];
-        load( fullfile(path, filename), 'theInvestigation' );
-    end
-end
+attempt = '004';
 
 % -- data setup --
-setup.data.class = @ExemplarDataset;   
-setup.data.args.HasNormalizedInput = true;
-setup.data.args.OverSmoothing = 1E8;
+switch dataType
+    case 'Synthetic'
+        dataName = 'Exemplar';
+        setup.data.class = @ExemplarDataset;   
+        setup.data.args.HasNormalizedInput = true;
+        setup.data.args.OverSmoothing = 1E8;
+        
+        % one class, one element
+        setup.data.args.ClassSizes = 400;
+        setup.data.args.ClassElements = 2;
+        setup.data.args.ClassMeans = [ -1.0 1.0 ];
+        setup.data.args.ClassSDs = [ 0.5 0.5 ];
+        setup.data.args.ClassPeaks = [ 2.0 1.0 ];
+        
+        % double Gaussian with peak inverse covariance
+        setup.data.args.PeakCovariance{1} = [1 -0.5; -0.5 1];
+        setup.data.args.MeanCovariance{1} = [1 -0.5; -0.5 1];
+        setup.data.args.SDCovariance{1} = [1 0.5; 0.5 1];
 
-% one class, one element
-setup.data.args.ClassSizes = 400;
-setup.data.args.ClassElements = 2;
-setup.data.args.ClassMeans = [ -1.0 1.0 ];
-setup.data.args.ClassSDs = [ 0.5 0.5 ];
-setup.data.args.ClassPeaks = [ 2.0 1.0 ];
+    case 'Real'
+        dataName = 'JumpGRF';
+        setup.data.class = @JumpGRFDataset;   
+        setup.data.args.Normalization = 'PAD';
+        setup.data.args.HasNormalizedInput = true;
+        setup.data.args.NormalizedPts = 51;
+        setup.data.args.ResampleRate = 10;
+        setup.data.args.OverSmoothing = 1E3;
+        setup.data.args.HasMatchingOutput = false;
 
-% double Gaussian with peak inverse covariance
-setup.data.args.PeakCovariance{1} = [1 -0.5; -0.5 1];
-setup.data.args.MeanCovariance{1} = [1 -0.5; -0.5 1];
-setup.data.args.SDCovariance{1} = [1 0.5; 0.5 1];
-
+end
 
 % -- loss functions --
 setup.lossFcns.recon.class = @ReconstructionLoss;
@@ -71,13 +70,30 @@ values = { {@FCModel} };
 
 nTests = 7*newInvestigation;
 
-for i = [3 7]
+% -- load data, if required --
+if newInvestigation
+    theInvestigation = cell( nTests,1 ); %#ok<UNRCH> 
+else
+    if ~exist( 'theInvestigation', 'var' )
+        loadData = true;
+    elseif isempty( theInvestigation )
+        loadData = true;
+    else
+        loadData = false;
+    end
+    if loadData
+        filename = [dataName '-' num2str(attempt) '-Investigations'];
+        load( fullfile(path, filename), 'theInvestigation' );
+    end
+end
+
+for i = 1:nTests
 
     switch i
 
         case 1
             % Full control - identical outputs
-            name = [ 'Exemplar-' attempt '-FullControl' ];
+            name = [ dataName '-' attempt '-FullControl' ];
             setup.model.args.RandomSeedResets = true;
             setup.model.args.IdenticalNetInit = true;
             setup.model.args.trainer.HasMiniBatchShuffle = false;
@@ -89,7 +105,7 @@ for i = [3 7]
 
         case 2
             % Allow dropout to vary alone
-            name = [ 'Exemplar-' attempt '-DropoutVaries' ];
+            name = [ dataName '-' attempt '-DropoutVaries' ];
             setup.model.args.RandomSeedResets = false;
             setup.model.args.IdenticalNetInit = true;
             setup.model.args.trainer.HasMiniBatchShuffle = false;
@@ -101,7 +117,7 @@ for i = [3 7]
 
         case 3
             % Allow mini-batching to vary alone
-            name = [ 'Exemplar-' attempt '-MiniBatchVaries' ];
+            name = [ dataName '-' attempt '-MiniBatchVaries' ];
             setup.model.args.RandomSeedResets = true;
             setup.model.args.IdenticalNetInit = true;
             setup.model.args.trainer.HasMiniBatchShuffle = true;
@@ -113,7 +129,7 @@ for i = [3 7]
 
         case 4
             % Allow dropout and mini-batching to vary together
-            name = [ 'Exemplar-' attempt '-MiniBatch&DropoutVary' ];
+            name = [ dataName '-' attempt '-MiniBatch&DropoutVary' ];
             setup.model.args.RandomSeedResets = false;
             setup.model.args.IdenticalNetInit = true;
             setup.model.args.trainer.HasMiniBatchShuffle = true;
@@ -125,7 +141,7 @@ for i = [3 7]
         
         case 5
             % Allow network initialization to vary alone
-            name = [ 'Exemplar-' attempt '-NetInitVaries' ];
+            name = [ dataName '-' attempt '-NetInitVaries' ];
             setup.model.args.RandomSeedResets = true;
             setup.model.args.IdenticalNetInit = false;
             setup.model.args.trainer.HasMiniBatchShuffle = false;
@@ -137,7 +153,7 @@ for i = [3 7]
 
         case 6
             % Allow data partitions to vary alone
-            name = [ 'Exemplar-' attempt '-DataVaries' ];
+            name = [ dataName '-' attempt '-DataVaries' ];
             setup.model.args.RandomSeedResets = true;
             setup.model.args.IdenticalNetInit = true;
             setup.model.args.trainer.HasMiniBatchShuffle = false;
@@ -149,7 +165,7 @@ for i = [3 7]
 
         case 7
             % Allow data partitions to vary alone
-            name = [ 'Exemplar-' attempt '-AllVariesExceptData' ];
+            name = [ dataName '-' attempt '-AllVariesExceptData' ];
             setup.model.args.RandomSeedResets = false;
             setup.model.args.IdenticalNetInit = false;
             setup.model.args.trainer.HasMiniBatchShuffle = true;
@@ -203,44 +219,10 @@ XCCorrTrnRMSE = sqrt(XCCorrTrnRMSE/nComparisons);
 
 
 % compare components across folds for each investigation
-p = perms(1:zdim);
-nCompComparisons = length(p);
-nLinesPerComponent = size( theInvestigation{1}.Evaluations{1}.Model.LatentComponents, 2 )/zdim;
-componentRMSE = zeros( nTests, nComparisons, nCompComparisons );
-componentRMSEBest = zeros( nTests, nComparisons );
+componentRMSEBest = zeros( nTests, 1 );
 
 for i = 1:nTests
     thisModel = theInvestigation{i}.Evaluations{1}.Model;
-    
-    j = 0;
-    for k1 = 1:kfolds
-        thisK1Model = thisModel.SubModels{k1};
-        
-        for k2 = k1+1:kfolds
-            thisK2Model = thisModel.SubModels{k2};
-
-            j = j+1;
-            for q = 1:length(p)
-                    
-                for d = 1:zdim
-                    c1A = (d-1)*nLinesPerComponent + 1;
-                    c1B = c1A + nLinesPerComponent - 1;
-
-                    c2A = (p(q,d)-1)*nLinesPerComponent + 1;
-                    c2B = c2A + nLinesPerComponent - 1;
-
-                    compC1 = thisK1Model.LatentComponents(:,c1A:c1B);
-                    compC2 = thisK2Model.LatentComponents(:,c2A:c2B);
-                                            
-                    componentRMSE(i,j,q) = componentRMSE(i,j,q) + ...
-                                    mean( (compC1 - compC2).^2, 'all' );
-                end
-                componentRMSE(i,j,q) = componentRMSE(i,j,q)/zdim;
-
-            end
-            componentRMSEBest(i,j) = min( componentRMSE(i,j,:) );
-
-        end
-    end
+    componentRMSEBest(i) = matchComponents( thisModel );
 end
 componentRMSEBest = sqrt( mean(componentRMSEBest, 2) );
