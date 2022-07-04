@@ -1,12 +1,12 @@
 % Run the analysis of reproducibility using the exemplar data sets
 
-newInvestigation = true;
-dataType = 'Real';
+newInvestigation = false;
+dataType = 'Synthetic';
 
 % set the results destination
 path = fileparts( which('code/reproducibilityAnalysis.m') );
 path = [path '/../results/reproducibility/'];
-attempt = '004';
+attempt = '003';
 
 % -- data setup --
 switch dataType
@@ -71,6 +71,8 @@ values = { {@FCModel} };
 nTests = 7*newInvestigation;
 
 % -- load data, if required --
+filename = [dataName '-' num2str(attempt) '-Investigations'];
+
 if newInvestigation
     theInvestigation = cell( nTests,1 ); %#ok<UNRCH> 
 else
@@ -82,7 +84,6 @@ else
         loadData = false;
     end
     if loadData
-        filename = [dataName '-' num2str(attempt) '-Investigations'];
         load( fullfile(path, filename), 'theInvestigation' );
     end
 end
@@ -179,10 +180,13 @@ for i = 1:nTests
 
 end
 
+if newInvestigation
+    save( fullfile( path, filename ), 'theInvestigation' );
+end
 
 % conduct an analysis of the outputs
 % ----------------------------------
-nTests = 7;
+nTests = length( theInvestigation );
 
 % compare summary metrics across folds for each investigation
 nComparisons = kfolds*(kfolds-1)/2;
@@ -219,10 +223,56 @@ XCCorrTrnRMSE = sqrt(XCCorrTrnRMSE/nComparisons);
 
 
 % compare components across folds for each investigation
-componentRMSEBest = zeros( nTests, 1 );
+% the problem is not tractable with brute force
+% a genetic algorithm is required to find the best component order
+% arrangement across the sub-models
+
+permOrderIdx = perms( 1:zdim );
+lb = [ length(permOrderIdx) ones( 1, kfolds-1 ) ];
+ub = length(permOrderIdx)*ones( 1, kfolds );
+options = optimoptions( 'ga', ...
+                        'PopulationSize', 200, ...
+                        'EliteCount', 20, ...
+                        'MaxGenerations', 300, ...
+                        'MaxStallGenerations', 150, ...
+                        'FunctionTolerance', 1E-5, ...
+                        'UseVectorized', true, ...
+                        'PlotFcn', {'gaplotbestf','gaplotdistance'} );
+
+
+
+componentMSE = zeros( nTests, kfolds );
+componentPerms = zeros( nTests, kfolds );
+componentOrder = zeros( kfolds, zdim, nTests );
+
+compSize = size( theInvestigation{i}.Evaluations{1}.Model.LatentComponents );
+retainedCompLines = 1:thisModel.NumCompLines;
+latentComp = zeros( compSize(1), length(retainedCompLines)*zdim, kfolds );
 
 for i = 1:nTests
+
     thisModel = theInvestigation{i}.Evaluations{1}.Model;
-    componentRMSEBest(i) = matchComponents( thisModel );
+    
+    % pre-compile latent components across the sub-models
+    for j = 1:kfolds
+        comp = reshape( thisModel.SubModels{j}.LatentComponents, ...
+                        compSize(1), thisModel.NumCompLines, [] );
+        comp = comp( :, retainedCompLines, : );
+        latentComp(:,:,j) = reshape( comp, compSize(1), [] );
+    end
+    
+    % setup the objective function
+    objFcn = @(p) arrangementError( p, latentComp, zdim );
+    
+    % run the genetic algorithm optimization
+    [ componentPerms(i,:), componentMSE(i,:) ] = ...
+        ga( objFcn, kfolds, [], [], [], [], lb, ub, [], 1:kfolds, options );
+
+    % generate the order from list of permutations
+    for j = 1:kfolds
+        componentOrder( j, :, i ) = permOrderIdx( componentPerms(i,j), : );
+    end
+
 end
-componentRMSEBest = sqrt( mean(componentRMSEBest, 2) );
+
+componentRMSE = sqrt( componentMSE(:,1) );
