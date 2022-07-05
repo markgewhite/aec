@@ -12,7 +12,7 @@ function MSE = arrangementError( p, latentComp, ZDim )
     nModels = size( latentComp, 3 );
 
     nEvals = size( p, 1 );
-    MSE = zeros( nModels, 1 );
+    MSE = zeros( nEvals, 1 );
     for i = 1:nEvals
 
         MSEFull = zeros( size(latentComp,1), nLinesPerComp );

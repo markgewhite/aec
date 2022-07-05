@@ -1,12 +1,12 @@
 % Run the analysis of reproducibility using the exemplar data sets
 
 newInvestigation = false;
-dataType = 'Synthetic';
+dataType = 'Real';
 
 % set the results destination
 path = fileparts( which('code/reproducibilityAnalysis.m') );
 path = [path '/../results/reproducibility/'];
-attempt = '003';
+attempt = '004';
 
 % -- data setup --
 switch dataType
@@ -231,33 +231,31 @@ permOrderIdx = perms( 1:zdim );
 lb = [ length(permOrderIdx) ones( 1, kfolds-1 ) ];
 ub = length(permOrderIdx)*ones( 1, kfolds );
 options = optimoptions( 'ga', ...
-                        'PopulationSize', 200, ...
-                        'EliteCount', 20, ...
+                        'PopulationSize', 400, ...
+                        'EliteCount', 80, ...
                         'MaxGenerations', 300, ...
                         'MaxStallGenerations', 150, ...
-                        'FunctionTolerance', 1E-5, ...
+                        'FunctionTolerance', 1E-6, ...
                         'UseVectorized', true, ...
                         'PlotFcn', {'gaplotbestf','gaplotdistance'} );
 
-
-
-componentMSE = zeros( nTests, kfolds );
+componentMSE = zeros( nTests, 1 );
 componentPerms = zeros( nTests, kfolds );
 componentOrder = zeros( kfolds, zdim, nTests );
 
 compSize = size( theInvestigation{i}.Evaluations{1}.Model.LatentComponents );
-retainedCompLines = 1:thisModel.NumCompLines;
-latentComp = zeros( compSize(1), length(retainedCompLines)*zdim, kfolds );
+latentComp = zeros( compSize(1), zdim, kfolds );
 
 for i = 1:nTests
 
     thisModel = theInvestigation{i}.Evaluations{1}.Model;
     
     % pre-compile latent components across the sub-models
+    % summarising all component lines into the mean absolute curve
     for j = 1:kfolds
         comp = reshape( thisModel.SubModels{j}.LatentComponents, ...
                         compSize(1), thisModel.NumCompLines, [] );
-        comp = comp( :, retainedCompLines, : );
+        comp = mean( abs(comp), 2 );
         latentComp(:,:,j) = reshape( comp, compSize(1), [] );
     end
     
