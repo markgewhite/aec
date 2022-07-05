@@ -19,6 +19,8 @@ classdef FullRepresentationModel
         MeanCurve       % estimated mean curve
         ComponentType   % type of components generated (Mean or PDP)
         LatentComponents % cross-validated latent components
+        ComponentOrder  % optimal arrangement of sub-model components
+        ComponentDiffRMSE % overall difference between sub-models
         Loss            % collated losses from sub-models
         CVLoss          % aggregate cross-validated losses
         Correlation     % mean correlation matrices
@@ -161,6 +163,9 @@ classdef FullRepresentationModel
  
             end
 
+            % find the optimal arrangement of sub-model components
+            self = self.arrangeComponents;
+
             % calculate the aggregated latent components
             self = self.setLatentComponents;
 
@@ -216,6 +221,50 @@ classdef FullRepresentationModel
         end
 
 
+        function self = arrangeComponents( self )
+            % Find the optimal arrangement for the sub-model's components
+            % by finding the best set of permutations
+            arguments
+                          self        FullRepresentationModel
+            end
+
+            permOrderIdx = perms( 1:self.ZDim );
+            lb = [ length(permOrderIdx) ones( 1, self.KFolds-1 ) ];
+            ub = length(permOrderIdx)*ones( 1, self.KFolds );
+            options = optimoptions( 'ga', ...
+                                    'PopulationSize', 400, ...
+                                    'EliteCount', 80, ...
+                                    'MaxGenerations', 300, ...
+                                    'MaxStallGenerations', 150, ...
+                                    'FunctionTolerance', 1E-6, ...
+                                    'UseVectorized', true, ...
+                                    'PlotFcn', {'gaplotbestf','gaplotdistance', ...
+                                                'gaplotbestindiv' } );
+
+            % pre-compile latent components across the sub-models for speed
+            latentComp = zeros( self.XInputDim, self.NumCompLines*self.ZDim, self.KFolds );
+            for k = 1:self.KFolds
+                latentComp(:,:,k) = self.SubModels{k}.LatentComponents;
+            end
+            
+            % setup the objective function
+            objFcn = @(p) arrangementError( p, latentComp, self.ZDim );
+            
+            % run the genetic algorithm optimization
+            [ componentPerms, componentMSE ] = ...
+                                ga( objFcn, self.KFolds, [], [], [], [], ...
+                                    lb, ub, [], 1:self.KFolds, options );
+        
+            % generate the order from list of permutations
+            self.ComponentOrder = zeros( self.KFolds, self.ZDim );
+            for k = 1:self.KFolds
+                self.ComponentOrder( k, : ) = permOrderIdx( componentPerms(k), : );
+            end
+            self.ComponentDiffRMSE = sqrt( componentMSE );
+
+        end
+
+
         function self = setLatentComponents( self )
             % Calculate the cross-validated latent components
             % by averaging across the sub-models
@@ -225,19 +274,32 @@ classdef FullRepresentationModel
 
             XC = self.SubModels{1}.LatentComponents;
             for k = 2:self.KFolds
-                XC = XC + self.SubModels{k}.LatentComponents;
+
+                if isempty( self.ComponentOrder )
+                    % use model arrangement
+                    comp = self.SubModels{k}.LatentComponents;
+                else
+                    % use optimized arrangement
+                    comp = reshape( self.SubModels{k}.LatentComponents, ...
+                                self.XInputDim, self.NumCompLines, [] );
+                    comp = comp( :, :, self.ComponentOrder(k,:) );
+                    comp = reshape( comp, self.XInputDim, [] );
+                end
+
+                XC = XC + comp;
+            
             end
 
             self.LatentComponents = XC/self.KFolds;
 
-
         end
 
 
-        function self = plotAllLatentComponents( self )
+        function self = plotAllLatentComponents( self, arg )
             % Plot all the latent components from the sub-models
             arguments
-                self        FullRepresentationModel
+                self                FullRepresentationModel
+                arg.Rearranged      logical = false
             end
 
             figs = gobjects( self.KFolds, 1 );
@@ -263,11 +325,20 @@ classdef FullRepresentationModel
 
             % plot all the components across figures
             for k = 1:self.KFolds
-                plotLatentComp( self.SubModels{k}, ...
+                if arg.Rearranged
+                    plotLatentComp( self.SubModels{k}, ...
+                                order = self.ComponentOrder(k,:), ...
                                 axes = axes(:,:,k), ...
                                 showTitle = (k==1), ...
                                 showLegend = false, ...
                                 showXAxis = (k==self.KFolds) );
+                else
+                    plotLatentComp( self.SubModels{k}, ...
+                                axes = axes(:,:,k), ...
+                                showTitle = (k==1), ...
+                                showLegend = false, ...
+                                showXAxis = (k==self.KFolds) );
+                end
             end
 
             % save the figures and then close

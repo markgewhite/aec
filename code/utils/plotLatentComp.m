@@ -8,6 +8,8 @@ function plotLatentComp( thisModel, args )
         args.XMean          {mustBeA( args.XMean, { 'dlarray', 'double' })} = []
         args.XC             {mustBeA( args.XC, { 'dlarray', 'double' })} = []
         args.nSample        double = 0
+        args.order          double ...
+            {mustBeInteger, mustBePositive} = []
         args.type           char ...
             {mustBeMember(args.type, ...
                 {'Smoothed', 'Predicted', 'Both'} )} = 'Smoothed'
@@ -90,16 +92,30 @@ function plotLatentComp( thisModel, args )
             axes = args.axes;
         else
             eid = 'Plot:AxesDimsIncorrect';
-            msg = 'The specifies axes array does not have correct dimensions.';
+            msg = 'The specified axes array does not have correct dimensions.';
             throwAsCaller( MException(eid,msg) );
         end
     end
+
+    if isempty( args.order )
+        % standard order from the model
+        compIdx = 1:thisModel.ZDim;
+    elseif length(args.order)==thisModel.ZDim ...
+           && max(args.order)<=thisModel.ZDim
+        % specified order
+        compIdx = args.order;
+    else
+        eid = 'Plot:InvalidOrder';
+        msg = 'The specified component order is invalid.';
+        throwAsCaller( MException(eid,msg) );
+    end
+
 
     for c = 1:thisModel.XChannels
 
         k = 0; % sample counter
 
-        for i = 1:thisModel.ZDim
+        for i = compIdx
 
             axis = axes(c,i);
 
