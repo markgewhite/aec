@@ -68,9 +68,9 @@ function plotLatentComp( thisModel, args )
     XCsmth = XMeanSmth + smoothSeries( XC, tSpanXC, tSpanPlot, fdParams );
 
 
-    % set the colours from blue and red
-    compColours = [ 0.0000 0.4470 0.7410; ...
-                    0.6350 0.0780 0.1840 ];
+    % set the colours: red=positive, blue=negative
+    compColours = [ 0.6350 0.0780 0.1840; ...
+                    0.0000 0.4470 0.7410 ];
     gray = [ 0.5, 0.5, 0.5 ];
     black = [ 0, 0 , 0 ];
     % set positive/negative plot characteristics
@@ -126,11 +126,11 @@ function plotLatentComp( thisModel, args )
 
             l = 0; % legend counter
 
-            % plot the gradations
+            % plot the gradations 
             for j = 1:nSample
 
-                % first half blue, second half red
-                s = (j > 0.5*nSample) + 1;
+                % first half blue (-ve), second half red (+ve)
+                s = (j < 0.5*nSample) + 1;
                 
                 % next sample
                 k = k+1;

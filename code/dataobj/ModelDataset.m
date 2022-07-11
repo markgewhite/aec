@@ -80,6 +80,7 @@ classdef ModelDataset < handle
                 args.datasetName            string
                 args.timeLabel              string = "Time"
                 args.channelLabels          string
+                args.classLabels            string
                 args.channelLimits          double
             end
 
@@ -109,6 +110,7 @@ classdef ModelDataset < handle
             self.Info.DatasetName = args.datasetName;
             self.Info.ChannelLabels = args.channelLabels;
             self.Info.TimeLabel = args.timeLabel;
+            self.Info.ClassLabels = args.classLabels;
             self.Info.ChannelLimits = args.channelLimits;
 
             % get immediately available dimensions

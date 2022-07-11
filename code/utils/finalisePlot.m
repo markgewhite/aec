@@ -6,8 +6,8 @@ function finalisePlot( ax, args )
 
     ax.Box = false;
     ax.TickDir = 'out';
-    ax.XAxis.LineWidth = 1;
-    ax.YAxis.LineWidth = 1;
+    ax.XAxis.LineWidth = 0.75;
+    ax.YAxis.LineWidth = 0.75;
     ax.FontName = 'Arial';
     if args.square
         ax.PlotBoxAspectRatio = [1 1 1];
