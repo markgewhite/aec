@@ -39,6 +39,7 @@ setup.model.args.trainer.holdout = 0;
 parameters = [ "model.class" "model.args.ZDim" ];
 values = {{@FCModel,@FullPCAModel,} 1:5 };
 N = 200;
+sigma = 0.8;
 
 idx = 1:6;
 
@@ -46,7 +47,7 @@ for i = idx
 
     switch i
 
-        case {1 2 3}
+        case {1 2}
             % one class, one element
             setup.data.args.ClassSizes = N;
             setup.data.args.ClassElements = 1;
@@ -54,7 +55,7 @@ for i = idx
             setup.data.args.ClassSDs = 0.5;
             setup.data.args.ClassPeaks = 2.0;
 
-        case {4 5}
+        case {5 6}
             % one class, two elements
             setup.data.args.ClassSizes = N;
             setup.data.args.ClassElements = 2;
@@ -89,39 +90,28 @@ for i = idx
                 Investigation( name, path, parameters, values, setup );
 
         case 3
-            % Single Gaussian with standard deviation (width) variance
-            name = 'SingleGaussian-SDVar';
-
-            setup.data.args.PeakCovariance{1} = 1E-6;
-            setup.data.args.MeanCovariance{1} = 1E-6;
-            setup.data.args.SDCovariance{1} = 1;
-    
-            singleGaussianSVInvestigation = ...
-                Investigation( name, path, parameters, values, setup );
-
-        case 4
             % Double Gaussian with peak inverse covariance
             name = 'DoubleGaussian-PeakVar';
     
-            setup.data.args.PeakCovariance{1} = [1 -0.5; -0.5 1];
+            setup.data.args.PeakCovariance{1} = [1 -sigma; -sigma 1];
             setup.data.args.MeanCovariance{1} = 1E-6*eye(2);
             setup.data.args.SDCovariance{1} = 1E-6*eye(2);
        
             doubleGaussianPVInvestigation = ...
                 Investigation( name, path, parameters, values, setup );
 
-        case 5
+        case 4
             % Double Gaussian with peak inverse covariance
             name = 'DoubleGaussian-MeanSDVar';
     
-            setup.data.args.PeakCovariance{1} = [1 -0.5; -0.5 1];
-            setup.data.args.MeanCovariance{1} = [1 -0.5; -0.5 1];
-            setup.data.args.SDCovariance{1} = [1 0.5; 0.5 1];
+            setup.data.args.PeakCovariance{1} = [1 sigma; sigma 1];
+            setup.data.args.MeanCovariance{1} = [1 -sigma; -sigma 1];
+            setup.data.args.SDCovariance{1} = [1 sigma; sigma 1];
        
             doubleGaussianPVInvestigation = ...
                 Investigation( name, path, parameters, values, setup );
 
-        case 6
+        case 5
             % Two classes each with a single Gaussian
             name = 'SingleGaussian-2Classes';
 
@@ -135,14 +125,14 @@ for i = idx
             setup.data.args.MeanCovariance{1} = 1E-6;
             setup.data.args.SDCovariance{1} = 1;
 
-            setup.data.args.PeakCovariance{2} = 0.5;
+            setup.data.args.PeakCovariance{2} = sigma;
             setup.data.args.MeanCovariance{2} = 1E-6;
-            setup.data.args.SDCovariance{2} = 0.5;
+            setup.data.args.SDCovariance{2} = 1E-6;
        
             singleGaussian2CInvestigation = ...
                 Investigation( name, path, parameters, values, setup );
 
-        case 7
+        case 6
             % Two classes each with a double Gaussian
             name = 'DoubleGaussian-2Classes';
 
@@ -152,13 +142,13 @@ for i = idx
             setup.data.args.ClassSDs = [ 0.5 0.3; 0.2 0.1 ];
             setup.data.args.ClassPeaks = [ 2.0 3.0; 2.0 1.0 ];
     
-            setup.data.args.PeakCovariance{1} = 0.1*[1 -0.5; -0.5 1];
-            setup.data.args.MeanCovariance{1} = 0.1*[1 -0.5; -0.5 1];
-            setup.data.args.SDCovariance{1} = 0.1*[1 -0.5; -0.5 1];
+            setup.data.args.PeakCovariance{1} = 0.1*[1 -sigma; -sigma 1];
+            setup.data.args.MeanCovariance{1} = 0.1*[1 -sigma; -sigma 1];
+            setup.data.args.SDCovariance{1} = 0.1*[1 -sigma; -sigma 1];
 
-            setup.data.args.PeakCovariance{2} = 0.2*[1 -0.5; -0.5 1];
-            setup.data.args.MeanCovariance{2} = 0.2*[1 -0.5; -0.5 1];
-            setup.data.args.SDCovariance{2} = 0.2*[1 -0.5; -0.5 1];
+            setup.data.args.PeakCovariance{2} = 0.2*[1 -sigma; -sigma 1];
+            setup.data.args.MeanCovariance{2} = 0.2*[1 -sigma; -sigma 1];
+            setup.data.args.SDCovariance{2} = 0.2*[1 -sigma; -sigma 1];
        
             singleGaussian2CInvestigation = ...
                 Investigation( name, path, parameters, values, setup );
