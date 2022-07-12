@@ -102,7 +102,6 @@ for i = 1:nTests
             setup.model.args.IdenticalPartitions = true;
        
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
-            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 2
             % Allow dropout to vary alone
@@ -114,7 +113,6 @@ for i = 1:nTests
             setup.model.args.IdenticalPartitions = true;
 
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
-            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 3
             % Allow mini-batching to vary alone
@@ -126,7 +124,6 @@ for i = 1:nTests
             setup.model.args.IdenticalPartitions = true;
        
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
-            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 4
             % Allow dropout and mini-batching to vary together
@@ -138,7 +135,6 @@ for i = 1:nTests
             setup.model.args.IdenticalPartitions = true;
        
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
-            theInvestigation{i} = theInvestigation{i}.clearPredictions;
         
         case 5
             % Allow network initialization to vary alone
@@ -150,7 +146,6 @@ for i = 1:nTests
             setup.model.args.IdenticalPartitions = true;
        
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
-            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 6
             % Allow data partitions to vary alone
@@ -162,7 +157,6 @@ for i = 1:nTests
             setup.model.args.IdenticalPartitions = false;
        
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
-            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
         case 7
             % Allow data partitions to vary alone
@@ -174,7 +168,6 @@ for i = 1:nTests
             setup.model.args.IdenticalPartitions = true;
        
             theInvestigation{i} = Investigation( name, path, parameters, values, setup );
-            theInvestigation{i} = theInvestigation{i}.clearPredictions;
 
     end
 

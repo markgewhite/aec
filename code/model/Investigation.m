@@ -149,6 +149,8 @@ classdef Investigation
 
             end
 
+            self.clearPredictions;
+
             self.save;
             
 

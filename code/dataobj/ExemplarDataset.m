@@ -59,10 +59,11 @@ classdef ExemplarDataset < ModelDataset
             end
 
             % setup the timespan
-            nPts = 501;
-            args.tSpan = linspace( -5, 5, nPts )';
+            nPts = 101;
+            args.tSpan = linspace( -4, 4, nPts )';
 
             % initialize the data arrays
+            nClasses = length(args.ClassSizes);
             nObs = sum(args.ClassSizes);
             X = cell( nObs, 1 );
             Y = zeros( nObs, 1 );
@@ -77,7 +78,8 @@ classdef ExemplarDataset < ModelDataset
 
             % iterate through the classes, generating data
             idxStart = 1;
-            for i = 1:length( args.ClassSizes )
+            labels = strings( nClasses, 1 );
+            for i = 1:nClasses
 
                 idxEnd = idxStart + args.ClassSizes(i) - 1;
 
@@ -85,6 +87,8 @@ classdef ExemplarDataset < ModelDataset
                 Y( idxStart:idxEnd ) = i;
 
                 idxStart = idxEnd + 1;
+
+                labels(i) = strcat( "Class ", char(64+i) );
 
             end
 
@@ -110,16 +114,17 @@ classdef ExemplarDataset < ModelDataset
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
 
-            name = 'Exemplar Data';
+            name = "Exemplar Data";
 
             self = self@ModelDataset( X, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...
                             datasetName = name, ...
-                            channelLabels = "Y (no units)", ...
-                            timeLabel = "Time (no units)", ...
-                            channelLimits = [0 6] );
+                            channelLabels = "\bf{\it{X(t)}}", ...
+                            timeLabel = "\bf{\it{t}}", ...
+                            classLabels = labels, ...
+                            channelLimits = [-1 5] );
 
             self.FeatureType = args.FeatureType;
             self.ClassSizes = args.ClassSizes;

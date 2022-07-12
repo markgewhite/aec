@@ -12,15 +12,18 @@ setup.data.args.HasNormalizedInput = true;
 setup.data.args.OverSmoothing = 1E8;
 
 % -- loss functions --
-setup.lossFcns.recon.class = @ReconstructionLoss;
-setup.lossFcns.recon.name = 'Reconstruction';
+lossFcns1.recon.class = @ReconstructionLoss;
+lossFcns1.recon.name = 'Reconstruction';
+lossFcns1.adv.class = @AdversarialLoss;
+lossFcns1.adv.name = 'Discriminator';
 
-setup.lossFcns.adv.class = @AdversarialLoss;
-setup.lossFcns.adv.name = 'Discriminator';
+lossFcns2 = lossFcns1;
+lossFcns2.zcls.class = @ClassifierLoss;
+lossFcns2.zcls.name = 'ZClassifier';
+lossFcns2.xcls.class = @ComparatorLoss;
+lossFcns2.xcls.name = 'XClassifier';
 
-setup.lossFcns.orth.class = @ComponentLoss;
-setup.lossFcns.orth.name = 'XOrthogonality';
-setup.lossFcns.orth.args.criterion = 'InnerProduct';
+setup.lossFcns = lossFcns1;
 
 % -- model setup --
 setup.model.args.InitZDimActive = 0;
@@ -31,14 +34,14 @@ setup.model.args.randomSeed = 1234;
 % -- trainer setup --
 setup.model.args.trainer.numEpochs = 400;
 setup.model.args.trainer.numEpochsPreTrn = 10;
-setup.model.args.trainer.updateFreq = 100;
-setup.model.args.trainer.batchSize = 100;
+setup.model.args.trainer.updateFreq = 50;
+setup.model.args.trainer.batchSize = 1000;
 setup.model.args.trainer.holdout = 0;
 
 % -- grid search --
 parameters = [ "model.class" "model.args.ZDim" ];
-values = {{@FCModel,@FullPCAModel,} 1:5 };
-N = 200;
+values = {{@FCModel, @ConvolutionalModel, @FullPCAModel} 1:4 }; 
+N = 500;
 sigma = 0.8;
 
 idx = 1:6;
@@ -55,7 +58,7 @@ for i = idx
             setup.data.args.ClassSDs = 0.5;
             setup.data.args.ClassPeaks = 2.0;
 
-        case {5 6}
+        case {3 4}
             % one class, two elements
             setup.data.args.ClassSizes = N;
             setup.data.args.ClassElements = 2;
@@ -108,7 +111,7 @@ for i = idx
             setup.data.args.MeanCovariance{1} = [1 -sigma; -sigma 1];
             setup.data.args.SDCovariance{1} = [1 sigma; sigma 1];
        
-            doubleGaussianPVInvestigation = ...
+            doubleGaussianMVInvestigation = ...
                 Investigation( name, path, parameters, values, setup );
 
         case 5
@@ -129,7 +132,12 @@ for i = idx
             setup.data.args.MeanCovariance{2} = 1E-6;
             setup.data.args.SDCovariance{2} = 1E-6;
        
+            setup.lossFcns = lossFcns1;
             singleGaussian2CInvestigation = ...
+                Investigation( name, path, parameters, values, setup );
+
+            setup.lossFcns = lossFcns2;
+            singleGaussian2CCInvestigation = ...
                 Investigation( name, path, parameters, values, setup );
 
         case 6
@@ -150,7 +158,12 @@ for i = idx
             setup.data.args.MeanCovariance{2} = 0.2*[1 -sigma; -sigma 1];
             setup.data.args.SDCovariance{2} = 0.2*[1 -sigma; -sigma 1];
        
-            singleGaussian2CInvestigation = ...
+            setup.lossFcns = lossFcns1;
+            doubleGaussian2CInvestigation = ...
+                Investigation( name, path, parameters, values, setup );
+
+            setup.lossFcns = lossFcns2;
+            doubleGaussian2CCInvestigation = ...
                 Investigation( name, path, parameters, values, setup );
             
 

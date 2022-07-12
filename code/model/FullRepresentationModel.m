@@ -164,7 +164,9 @@ classdef FullRepresentationModel
             end
 
             % find the optimal arrangement of sub-model components
-            self = self.arrangeComponents;
+            if self.KFolds > 1
+                self = self.arrangeComponents;
+            end
 
             % calculate the aggregated latent components
             self = self.setLatentComponents;

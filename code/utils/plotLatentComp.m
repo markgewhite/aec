@@ -69,12 +69,12 @@ function plotLatentComp( thisModel, args )
 
 
     % set the colours: red=positive, blue=negative
-    compColours = [ 0.6350 0.0780 0.1840; ...
-                    0.0000 0.4470 0.7410 ];
+    compColours = [ 0.0000 0.4470 0.7410; ...
+                    0.6350 0.0780 0.1840 ];
     gray = [ 0.5, 0.5, 0.5 ];
     black = [ 0, 0 , 0 ];
     % set positive/negative plot characteristics
-    names = [ "+ve", "-ve" ];
+    names = [ "-ve", "+ve" ];
 
     if args.nSample > 0
         nSample = args.nSample;
@@ -126,11 +126,11 @@ function plotLatentComp( thisModel, args )
 
             l = 0; % legend counter
 
-            % plot the gradations 
-            for j = 1:nSample
+            % plot the gradations (in reverse to +ve plots first)
+            for j = nSample:-1:1
 
                 % first half blue (-ve), second half red (+ve)
-                s = (j < 0.5*nSample) + 1;
+                s = (j > 0.5*nSample) + 1;
                 
                 % next sample
                 k = k+1;
