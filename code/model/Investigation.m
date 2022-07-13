@@ -177,8 +177,22 @@ classdef Investigation
             
 
 
-        function save( self )
+        function report = save( self )
             % Save the investigation to a specified path
+            arguments
+                self        Investigation
+            end
+
+            report = getResults;
+            
+            name = strcat( self.Name, "-Investigation" );
+            save( fullfile( self.Path, name ), 'report' );
+
+        end
+
+
+        function report = getResults( self )
+            % Return a structure summarizing the results
             arguments
                 self        Investigation
             end
@@ -188,11 +202,8 @@ classdef Investigation
             report.GridSearch = self.GridSearch;
             report.TrainingResults = self.TrainingResults;
             report.TestingResults = self.TestingResults;
-            
-            name = strcat( self.Name, "-Investigation" );
-            save( fullfile( self.Path, name ), 'report' );
 
-        end  
+        end
 
 
     end
