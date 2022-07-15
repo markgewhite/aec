@@ -2,9 +2,14 @@
 
 clear;
 
-% set the results destination
+runAnalysis = false;
+
+% set the destinations for results and figures
 path = fileparts( which('code/exemplarAnalysis.m') );
 path = [path '/../results/exemplars/'];
+
+path2 = fileparts( which('code/exemplarAnalysis.m') );
+path2 = [path2 '/../paper/results/'];
 
 % -- data setup --
 setup.data.class = @ExemplarDataset;   
@@ -43,8 +48,8 @@ values = {{@FCModel, @ConvolutionalModel, @FullPCAModel} 1:nDims };
 N = 500;
 sigma = 0.8;
 
-nModels = length( values{1} );
 nDatasets = 6;
+nModels = length( values{1} );
 nReports = 8;
 
 name = [ "1G-PeakVar", "1G-MeanVar", ...
@@ -52,162 +57,161 @@ name = [ "1G-PeakVar", "1G-MeanVar", ...
          "1G-2Classes", "1G-2Classes-Classify", ...
          "2G-2Classes", "2G-2Classes-Classify" ];
 results = cell( nReports, 1 );
+thisData = cell( nReports, 1 );
 
-k = 0;
-for i = 1:nDatasets
-
-    switch i
-
-        case {1 2}
-            % one class, one element
-            setup.data.args.ClassSizes = N;
-            setup.data.args.ClassElements = 1;
-            setup.data.args.ClassMeans = 0.0;
-            setup.data.args.ClassSDs = 0.5;
-            setup.data.args.ClassPeaks = 2.0;
-
-        case {3 4}
-            % one class, two elements
-            setup.data.args.ClassSizes = N;
-            setup.data.args.ClassElements = 2;
-            setup.data.args.ClassMeans = [ -1.0 1.0 ];
-            setup.data.args.ClassSDs = [ 0.5 0.5 ];
-            setup.data.args.ClassPeaks = [ 2.0 1.0 ];
+if runAnalysis
+    for i = 1:nReports
+    
+        switch i
+    
+            case {1 2}
+                % one class, one element
+                setup.data.args.ClassSizes = N;
+                setup.data.args.ClassElements = 1;
+                setup.data.args.ClassMeans = 0.0;
+                setup.data.args.ClassSDs = 0.5;
+                setup.data.args.ClassPeaks = 2.0;
+    
+            case {3 4}
+                % one class, two elements
+                setup.data.args.ClassSizes = N;
+                setup.data.args.ClassElements = 2;
+                setup.data.args.ClassMeans = [ -1.0 1.0 ];
+                setup.data.args.ClassSDs = [ 0.5 0.5 ];
+                setup.data.args.ClassPeaks = [ 2.0 1.0 ];
+    
+            case {5 6}
+                % Two classes each with a single Gaussian
+                setup.data.args.ClassSizes = [ N/2 N/2 ];
+                setup.data.args.ClassElements = 1;
+                setup.data.args.ClassMeans = [ -1; 1 ];
+                setup.data.args.ClassSDs = [ 0.5; 0.5 ];
+                setup.data.args.ClassPeaks = [ 2.0; 1.0 ];
+        
+                setup.data.args.PeakCovariance{1} = 1;
+                setup.data.args.MeanCovariance{1} = 1E-6;
+                setup.data.args.SDCovariance{1} = 1;
+    
+                setup.data.args.PeakCovariance{2} = sigma;
+                setup.data.args.MeanCovariance{2} = 1E-6;
+                setup.data.args.SDCovariance{2} = 1E-6;
+    
+            case {7 8}
+                % Two classes each with a double Gaussian
+                setup.data.args.ClassSizes = [ N/2 N/2 ];
+                setup.data.args.ClassElements = 2;
+                setup.data.args.ClassMeans = [ -1 0; 0 1 ];
+                setup.data.args.ClassSDs = [ 0.5 0.3; 0.2 0.1 ];
+                setup.data.args.ClassPeaks = [ 2.0 3.0; 2.0 1.0 ];
+        
+                setup.data.args.PeakCovariance{1} = 0.1*[1 -sigma; -sigma 1];
+                setup.data.args.MeanCovariance{1} = 0.1*[1 -sigma; -sigma 1];
+                setup.data.args.SDCovariance{1} = 0.1*[1 -sigma; -sigma 1];
+    
+                setup.data.args.PeakCovariance{2} = 0.2*[1 -sigma; -sigma 1];
+                setup.data.args.MeanCovariance{2} = 0.2*[1 -sigma; -sigma 1];
+                setup.data.args.SDCovariance{2} = 0.2*[1 -sigma; -sigma 1];
+        
+        end
+    
+        switch i
+    
+            case 1
+                % Single Gaussian with peak (height) variance   
+                setup.data.args.PeakCovariance{1} = 1;
+                setup.data.args.MeanCovariance{1} = 1E-6;
+                setup.data.args.SDCovariance{1} = 1E-6;
+           
+                setup.lossFcns = lossFcns1;
+    
+            case 2
+                % Single Gaussian with mean (position) variance
+                setup.data.args.PeakCovariance{1} = 1E-6;
+                setup.data.args.MeanCovariance{1} = 1;
+                setup.data.args.SDCovariance{1} = 1E-6;
+        
+                setup.lossFcns = lossFcns1;
+    
+            case 3
+                % Double Gaussian with peak inverse covariance
+                setup.data.args.PeakCovariance{1} = [1 -sigma; -sigma 1];
+                setup.data.args.MeanCovariance{1} = 1E-6*eye(2);
+                setup.data.args.SDCovariance{1} = 1E-6*eye(2);
+           
+                setup.lossFcns = lossFcns1;
+    
+            case 4
+                % Double Gaussian with peak inverse covariance   
+                setup.data.args.PeakCovariance{1} = [1 sigma; sigma 1];
+                setup.data.args.MeanCovariance{1} = [1 -sigma; -sigma 1];
+                setup.data.args.SDCovariance{1} = [1 sigma; sigma 1];
+           
+                setup.lossFcns = lossFcns1;
+    
+            case 5
+                % Two classes each with a single Gaussian
+                setup.lossFcns = lossFcns1;
+    
+            case 6
+                % Two classes each with a single Gaussian - with classification
+                setup.lossFcns = lossFcns2;       
+    
+            case 7
+                % Two classes each with a double Gaussian
+                setup.lossFcns = lossFcns1;
+    
+            case 8
+                % Two classes each with a double Gaussian - with classification
+                setup.lossFcns = lossFcns2;       
+    
+        end
+    
+        %thisRun = Investigation( name(i), path, parameters, values, setup );
+        argsCell = namedargs2cell( setup.data.args );
+        thisData{i} = ExemplarDataset( 'Testing', argsCell{:} );
+        results{i} = thisRun.getResults;
     
     end
 
-    switch i
+else
 
-        case 1
-            % Single Gaussian with peak (height) variance   
-            setup.data.args.PeakCovariance{1} = 1;
-            setup.data.args.MeanCovariance{1} = 1E-6;
-            setup.data.args.SDCovariance{1} = 1E-6;
-       
-            k = k + 1;
-            setup.lossFcns = lossFcns1;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;
-
-        case 2
-            % Single Gaussian with mean (position) variance
-            setup.data.args.PeakCovariance{1} = 1E-6;
-            setup.data.args.MeanCovariance{1} = 1;
-            setup.data.args.SDCovariance{1} = 1E-6;
-    
-            k = k + 1;
-            setup.lossFcns = lossFcns1;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;
-
-        case 3
-            % Double Gaussian with peak inverse covariance
-            setup.data.args.PeakCovariance{1} = [1 -sigma; -sigma 1];
-            setup.data.args.MeanCovariance{1} = 1E-6*eye(2);
-            setup.data.args.SDCovariance{1} = 1E-6*eye(2);
-       
-            k = k + 1;
-            setup.lossFcns = lossFcns1;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;
-
-        case 4
-            % Double Gaussian with peak inverse covariance   
-            setup.data.args.PeakCovariance{1} = [1 sigma; sigma 1];
-            setup.data.args.MeanCovariance{1} = [1 -sigma; -sigma 1];
-            setup.data.args.SDCovariance{1} = [1 sigma; sigma 1];
-       
-            k = k + 1;
-            setup.lossFcns = lossFcns1;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;
-
-        case 5
-            % Two classes each with a single Gaussian
-            setup.data.args.ClassSizes = [ N/2 N/2 ];
-            setup.data.args.ClassElements = 1;
-            setup.data.args.ClassMeans = [ -1; 1 ];
-            setup.data.args.ClassSDs = [ 0.5; 0.5 ];
-            setup.data.args.ClassPeaks = [ 2.0; 1.0 ];
-    
-            setup.data.args.PeakCovariance{1} = 1;
-            setup.data.args.MeanCovariance{1} = 1E-6;
-            setup.data.args.SDCovariance{1} = 1;
-
-            setup.data.args.PeakCovariance{2} = sigma;
-            setup.data.args.MeanCovariance{2} = 1E-6;
-            setup.data.args.SDCovariance{2} = 1E-6;
-       
-            k = k + 1;
-            setup.lossFcns = lossFcns1;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;
-
-            k = k + 1;
-            setup.lossFcns = lossFcns2;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;
-
-        case 6
-            % Two classes each with a double Gaussian
-            setup.data.args.ClassSizes = [ N/2 N/2 ];
-            setup.data.args.ClassElements = 2;
-            setup.data.args.ClassMeans = [ -1 0; 0 1 ];
-            setup.data.args.ClassSDs = [ 0.5 0.3; 0.2 0.1 ];
-            setup.data.args.ClassPeaks = [ 2.0 3.0; 2.0 1.0 ];
-    
-            setup.data.args.PeakCovariance{1} = 0.1*[1 -sigma; -sigma 1];
-            setup.data.args.MeanCovariance{1} = 0.1*[1 -sigma; -sigma 1];
-            setup.data.args.SDCovariance{1} = 0.1*[1 -sigma; -sigma 1];
-
-            setup.data.args.PeakCovariance{2} = 0.2*[1 -sigma; -sigma 1];
-            setup.data.args.MeanCovariance{2} = 0.2*[1 -sigma; -sigma 1];
-            setup.data.args.SDCovariance{2} = 0.2*[1 -sigma; -sigma 1];
-       
-            k = k + 1;
-            setup.lossFcns = lossFcns1;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;
-
-            k = k + 1;
-            setup.lossFcns = lossFcns2;
-            thisRun = Investigation( name(k), path, parameters, values, setup );
-            results{k} = thisRun.getResults;            
-
+    % load from files instead
+    for i = 1:nReports
+        filename = strcat( name(i), "/", name(i), "-Investigation" );
+        load( fullfile( path, filename ), 'report' );
+        results{i} = report;
     end
 
-end
-
-% temporary file read
-name = [ "1G-PeakVar", "1G-MeanVar", ...
-         "2G-PeakVar", "2G-MeanSDVar", ...
-         "1G-2Classes", "1G-2Classes-Classify", ...
-         "2G-2Classes", "2G-2Classes-Classify" ];
-results = cell( 8, 1 );
-
-for k = 1:8
-    filename = strcat( name(k), "/", name(k), "-Investigation" );
-    load( fullfile( path, filename ), 'report' );
-    results{k} = report;
 end
 
 % compile results for the paper
 fields = [ "ReconLossRegular", "AuxModelLoss", ...
            "ZCorrelation", "XCCorrelation" ];
 nFields = length( fields );
+
 for d = 1:nDims
 
     for i = 1:nFields
         for j = 1:nModels
             fieldName = strcat( fields(i), num2str(j) );
-            T.(fieldName) = zeros( nDatasets, 1 );
-            for k = 1:nDatasets
-                T.(fieldName)(k) = ...
-                    round( results{k}.TestingResults.(fields(i))(j,d), 3 );
+            T.(fieldName) = zeros( nReports, 1 );
+            for k = 1:nReports
+                T.(fieldName)(k) = results{k}.TestingResults.(fields(i))(j,d);
             end
         end
     end
     T0 = struct2table( T );
-    filename = strcat( "Results-Dim", num2str(d), ".csv" );
-    writetable( T0, fullfile( path, filename ) );
+
+    T0 = genPaperTableCSV( T0, direction = "Rows", criterion = "Lowest", ...
+                           groups = [ {1:nModels}, {3*nModels+1:4*nModels} ] );
+
+    filename = strcat( "Exemplars-Dim", num2str(d), ".csv" );
+    writetable( T0, fullfile( path2, filename ) );
+
 end
+
+% save the dataset plots
+genPaperDataPlots( thisData, "Exemplars", name );
+
+% re-save the component plots
+genPaperCompPlots( path, "Exemplars", name, 2, nReports, nModels ) 
