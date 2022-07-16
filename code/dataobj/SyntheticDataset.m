@@ -5,9 +5,11 @@ classdef SyntheticDataset < ModelDataset
     % The number of levels is specified if basis is a cell array
 
     properties
+        TemplateSeed    % seed specifying the data set template
+        DatasetSeed     % seed specifying the random realization of that template
         ClassSizes      % number observations per class (vector)
         NumPts          % number of point across domain
-        Ratio           % amplitude ratio of different levels
+        Scaling         % scaling ratio of the levels
         Mu              % mean amplitudes across levels
         Sigma           % standard deviation in magnitudes
         Eta             % noise 
@@ -24,12 +26,14 @@ classdef SyntheticDataset < ModelDataset
                 set                 char ...
                     {mustBeMember( set, ...
                                    {'Training', 'Testing'} )}
+                args.TemplateSeed    double = 1234
+                args.DatasetSeed     double = 9876
                 args.ClassSizes     double ...
                     {mustBeInteger, mustBePositive} = [500 500 500]
                 args.NumPts         double ...
                     {mustBeInteger, mustBePositive} = 17
                 args.Channels       double = 1
-                args.Ratio          double = [2 4 8]
+                args.Scaling        double = [2 4 8]
                 args.Mu             double = [1 2 4]
                 args.Sigma          double = [1 1 1]
                 args.Eta            double = 0.1
@@ -40,13 +44,23 @@ classdef SyntheticDataset < ModelDataset
                 superArgs.?ModelDataset
             end
 
-            args.tSpan = linspace( 0, 1024, args.NumPts );
+            % setup the timespan
+            args.TSpanTemplate = linspace( 0, 1, args.NumPts )';
+            args.TSpan = linspace( 0, 1, 101 )';
 
-            [ XRaw, Y ] = SyntheticDataset.genData( args.ClassSizes, args );
+            % set the random seed
+            switch set
+                case 'Training'
+                    args.RandomSeed = args.DatasetSeed;
+                case 'Testing'
+                    args.RandomSeed = args.DatasetSeed+1;
+            end
+
+            [ XRaw, Y ] = generateData( args.ClassSizes, args );
 
             % setup padding
             if args.PaddingLength==0
-                pad.Length = length( args.tSpan );
+                pad.Length = length( args.TSpan );
             else
                 pad.Length = args.PaddingLength;
             end
@@ -56,13 +70,11 @@ classdef SyntheticDataset < ModelDataset
             pad.Value = 1;
             pad.Same = true;
             pad.Anchoring = 'None';
-
-            tSpan= args.tSpan;
-        
+       
             % setup fda
             paramsFd.BasisOrder = 4;
             paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = 1E2;
+            paramsFd.Lambda = 1E-9;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -72,7 +84,7 @@ classdef SyntheticDataset < ModelDataset
                 labels(i) = strcat( "Class ", char(64+i) );
             end
 
-            self = self@ModelDataset( XRaw, Y, tSpan, ...
+            self = self@ModelDataset( XRaw, Y, args.TSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
                             fda = paramsFd, ...
@@ -80,10 +92,10 @@ classdef SyntheticDataset < ModelDataset
                             channelLabels = "X (no units)", ...
                             timeLabel = "Time Domain", ...
                             classLabels = labels, ...
-                            channelLimits = [-5 5] );
+                            channelLimits = [-3 3] );
 
             self.ClassSizes = args.ClassSizes;
-            self.Ratio = args.Ratio;
+            self.Scaling = args.Scaling;
             self.Mu = args.Mu;
             self.Sigma = args.Sigma;
             self.Eta = args.Eta;
@@ -96,118 +108,124 @@ classdef SyntheticDataset < ModelDataset
 
     end
 
-
-    methods (Static)
-
-        function [ X, Y ] = genData( nObs, args )
-            % Generate the data
-            arguments
-                nObs            double ...
-                                {mustBeInteger, mustBePositive}
-                args            struct
-            end
-        
-            % initialise the number of points across multiple layers
-            % allow extra space either end for extrapolation when time warping
-            % (the time domains are twice as long)
-            nLevels = length( args.Ratio );
-            
-            nPts = zeros( nLevels, 1 );
-            tSpanLevels = cell( nLevels, 1 );
-            range = [ args.tSpan(1), args.tSpan(end) ];
-            extra = 0.5*(range(2)-range(1));
-            dt = args.tSpan(2)-args.tSpan(1);
-            
-            for j = 1:nLevels
-                nPts(j) = 2*((length( args.tSpan )-1)/args.Ratio(j))+1;
-                tSpanLevels{j} = linspace( range(1)-extra, ...
-                                           range(2)+extra, ...
-                                           nPts(j) )';
-            end
-            
-            tWarp0 = tSpanLevels{ args.WarpLevel };
-            
-            % initialise the template array across levels
-            template = zeros( nPts(1), args.Channels, nLevels );
-            
-            % initialise the array holding the generated data
-            X = zeros( length( args.tSpan ), sum(nObs), args.Channels );
-            Y = zeros( sum(nObs), 1 );
-            
-            % define the common template shared by all classes
-            for j = args.SharedLevel:nLevels
-                template( :,:,j ) = interpRandSeries( tSpanLevels{j}, ...
-                                                      tSpanLevels{1}, ...
-                                                      nPts(j), ...
-                                                      args.Channels, 2 );
-            end
-            
-            a = 0;
-            for c = 1:length(nObs)
-            
-                % generate random template function coefficients
-                % with covariance between the series elements
-                % interpolating to the base layer (1)
-                for j = 1:args.SharedLevel-1
-                    template( :,:,j ) = interpRandSeries( tSpanLevels{j}, ...
-                                                          tSpanLevels{1}, ...
-                                                          nPts(j), ...
-                                                          args.Channels, 2 );
-                end
-               
-                for i = 1:nObs(c)
-            
-                    a = a+1;
-            
-                    % vary the template function across levels
-                    sample = zeros( nPts(1), args.Channels );
-                    for j = 1:nLevels 
-                        sample = sample + ...
-                            (args.Mu(j) + args.Sigma(j)*randn(1,1)) ...
-                                            * template( :,:,j );
-                    end
-            
-                    % introduce noise
-                    sample = sample + args.Eta*randn( nPts(1), args.Channels );
-            
-                    % warp the time domain at the top level, ensuring monotonicity
-                    % and avoiding excessive curvature by constraining the gradient
-                    monotonic = false;
-                    excessCurvature = false;
-                    while ~monotonic || excessCurvature
-
-                        % generate a time warp series based on the top-level 
-                        tWarp = tWarp0 + args.Tau*randSeries( 1, length(tWarp0) )';
-                        
-                        % interpolate so it fits the initial level
-                        tWarp = interp1( tWarp0, tWarp, tSpanLevels{1}, 'spline' );
-
-                        % check constraints
-                        grad = diff( tWarp )/dt;
-                        monotonic = all( grad>0 );
-                        excessCurvature = any( grad<0.2 );
-
-                    end
-            
-                    % interpolate the coefficients to the warped time points
-                    X( :, a, : ) = interp1( tWarp, sample, args.tSpan, 'spline' );
-
-                    % add the class information
-                    Y( a ) = c;
-                           
-                end
-            
-            end
-
-            % convert to cell array
-            X = num2cell( X, 1 );
-            
-            end
-
-
-   end
-
-
 end
+
+
+function [ X, Y ] = generateData( nObs, args )
+    % Generate the synthetic data
+    arguments
+        nObs            double ...
+                        {mustBeInteger, mustBePositive}
+        args            struct
+    end
+
+    % initialise the number of points across multiple layers
+    % allow extra space either end for extrapolation when time warping
+    % (the time domains are twice as long)
+    nLevels = length( args.Scaling );
+    
+    nPts = zeros( nLevels, 1 );
+    tSpanLevels = cell( nLevels, 1 );
+    range = [ args.TSpanTemplate(1), args.TSpanTemplate(end) ];
+    extra = 0.5*(range(2)-range(1));
+    dt = args.TSpanTemplate(2)-args.TSpanTemplate(1);
+    
+    for j = 1:nLevels
+        nPts(j) = 2*((length( args.TSpanTemplate )-1)/args.Scaling(j))+1;
+        tSpanLevels{j} = linspace( range(1)-extra, ...
+                                   range(2)+extra, ...
+                                   nPts(j) )';
+    end
+    
+    nPtsFull = nPts(end);
+    tSpanLevelsFull = tSpanLevels{end};
+
+    % set the warping timespan
+    tWarp0 = tSpanLevels{ args.WarpLevel };
+    
+    % initialise the template array across levels
+    template = zeros( nPtsFull, args.Channels, nLevels );
+    
+    % initialise the array holding the generated data
+    X = zeros( length( args.TSpan ), sum(nObs), args.Channels );
+    Y = zeros( sum(nObs), 1 );
+    
+    % define the common template shared by all classes
+    rng( args.DatasetSeed );
+    for j = 1:args.SharedLevel
+        template( :,:,j ) = interpRandSeries( tSpanLevels{j}, ...
+                                              tSpanLevelsFull, ...
+                                              nPts(j), ...
+                                              args.Channels, 2 );
+    end
+    
+    a = 0;
+    rng( args.RandomSeed );
+    for c = 1:length(nObs)
+    
+        % generate random template function coefficients
+        % with covariance between the series elements
+        % interpolating to the base layer (1)
+        for j = args.SharedLevel+1:nLevels
+            template( :,:,j ) = interpRandSeries( tSpanLevels{j}, ...
+                                                  tSpanLevelsFull, ...
+                                                  nPts(j), ...
+                                                  args.Channels, 2 );
+        end
+       
+        for i = 1:nObs(c)
+    
+            a = a+1;
+    
+            % vary the template function across levels
+            sample = zeros( nPts(end), args.Channels );
+            for j = 1:nLevels 
+                sample = sample + ...
+                    (args.Mu(j) + randn*args.Sigma(j))*template( :,:,j );
+            end
+    
+            % introduce noise
+            sample = sample + args.Eta*randn( nPtsFull, args.Channels );
+    
+            % warp the time domain at the top level, ensuring monotonicity
+            % and avoiding excessive curvature by constraining the gradient
+            monotonic = false;
+            excessCurvature = false;
+            while ~monotonic || excessCurvature
+
+                % generate a time warp series based at the desired level 
+                tWarp = tWarp0 + args.Tau*randSeries( 1, length(tWarp0) )';
+                
+                % interpolate to the most detailed level
+                tWarp = interp1( tWarp0, tWarp, tSpanLevelsFull, 'spline' );
+
+                % check constraints
+                grad = diff( tWarp )/dt;
+                monotonic = all( grad>0 );
+                excessCurvature = any( grad<0.2 );
+
+            end
+    
+            % interpolate using the warped time points
+            % as if the points regularly spaced
+            sample = interp1( tWarp, sample, tSpanLevelsFull, 'spline' );
+
+            % interpolate to obtain time series of overall required length
+            X( :, a, : ) = interp1( tSpanLevelsFull, sample, ...
+                                    args.TSpan, 'spline' );
+
+            % add the class information
+            Y( a ) = c;
+                   
+        end
+    
+    end 
+
+    % convert to cell array
+    X = num2cell( X, 1 );
+    
+end
+
+
 
 

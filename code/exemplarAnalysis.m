@@ -166,9 +166,9 @@ if runAnalysis
     
         end
     
-        %thisRun = Investigation( name(i), path, parameters, values, setup );
+        thisRun = Investigation( name(i), path, parameters, values, setup );
         argsCell = namedargs2cell( setup.data.args );
-        thisData{i} = ExemplarDataset( 'Testing', argsCell{:} );
+        thisData{i} = thisRun.getDatasets( which = "First", set = "Testing" );
         results{i} = thisRun.getResults;
     
     end
