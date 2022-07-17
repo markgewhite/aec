@@ -12,12 +12,17 @@ classdef Investigation
         Evaluations         % array of evaluation objects
         TrainingResults     % structure summarising results from evaluations
         TestingResults      % structure summarising results from evaluations
+        MemoryConservation  % degree of memory conservation employed
+                            % 0 = none; 1 = graphics cleared; 
+                            % 2 = graphics and predictions cleared;
+                            % 3 = graphics, predictions, and optimzer cleared
     end
 
 
     methods
 
-        function self = Investigation( name, path, parameters, searchValues, setup )
+        function self = Investigation( name, path, parameters, ...
+                                       searchValues, setup, memorySaving )
             % Construct an investigation comprised of evaluations
             arguments
                 name            string
@@ -25,7 +30,8 @@ classdef Investigation
                 parameters      string
                 searchValues
                 setup           struct
-
+                memorySaving    double {mustBeInteger, ...
+                    mustBeInRange( memorySaving, 0, 4 )} = 0
             end
 
             % create a folder for this investigation
@@ -37,6 +43,7 @@ classdef Investigation
             % initialize properties
             self.Name = name;
             self.Path = path;
+            self.MemoryConservation = memorySaving;
 
             % add the name and path to the model properties
             setup.model.args.name = name;
@@ -142,39 +149,28 @@ classdef Investigation
                     thisEvaluation.TrainingCorrelations.XCCovariance;
                 self.TestingResults.XCCovariance( idxC{:} ) = ...
                     thisEvaluation.TestingCorrelations.XCCovariance;
-
     
                 % save the evaluations
                 thisEvaluation.save( path, name );
 
-            end
+                % conserve memory - essential in a long run
+                if self.MemoryConservation == 4
+                    % maximum conservation: erase the evaluation
+                    % useful if the grid search is extensive
+                    self.Evaluations{ idxC{:} } = [];
+                else
+                    % scaled memory conservation
+                    self.Evaluations{ idxC{:} }.Model = ...
+                        thisEvaluation.Model.conserveMemory( ...
+                                            self.MemoryConservation );
+                end
 
-            self.clearPredictions;
+            end
 
             self.save;
             
 
-        end
-
-
-        function self = clearPredictions( self )
-            % Save memory by clearing model predictions
-            arguments
-                self        Investigation
-            end
-
-            nEval = prod( self.SearchDims );
-            for i = 1:nEval
-                idx = getIndices( i, self.SearchDims );
-                idxC = num2cell( idx );
-
-                self.Evaluations{ idxC{:} }.Model = ...
-                    self.Evaluations{ idxC{:} }.Model.clearPredictions;
-
-            end
-
-        end
-            
+        end           
 
 
         function report = save( self )
@@ -183,7 +179,7 @@ classdef Investigation
                 self        Investigation
             end
 
-            report = getResults;
+            report = self.getResults;
             
             name = strcat( self.Name, "-Investigation" );
             save( fullfile( self.Path, name ), 'report' );
@@ -216,7 +212,7 @@ classdef Investigation
                     args.set, {'Training', 'Testing'} )} = 'Testing'
             end
 
-            fld = [ args.set 'Dataset' ];
+            fld = strcat( args.set, "Dataset" );
 
             switch args.which
                 case 'First'

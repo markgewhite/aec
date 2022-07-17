@@ -157,9 +157,6 @@ classdef FullRepresentationModel
 
                 % save the model
                 self.SubModels{k}.save;
-
-                % clear graphics objects to save memory
-                self.SubModels{k} = self.SubModels{k}.clearGraphics;
  
             end
 
@@ -181,9 +178,6 @@ classdef FullRepresentationModel
                 self.plotAllLatentComponents;
             end
             
-            % remove figures and axes to save space
-            self = self.clearGraphics;
-
             % save the full model
             self.save;
 
@@ -361,31 +355,39 @@ classdef FullRepresentationModel
             end
 
             filename = strcat( self.Info.Name, "-FullModel" );
-            save( fullfile( self.Info.Path, filename ), 'self' );
+            
+            theModel = self;
+            theModel.Figs = [];
+            theModel.Axes = [];
+            for k = 1:theModel.KFolds
+                theModel.SubModels{k} = theModel.SubModels{k}.clearPredictions;
+                theModel.SubModels{k} = theModel.SubModels{k}.clearGraphics;
+            end
+
+            save( fullfile( self.Info.Path, filename ), 'theModel' );
 
         end
 
 
-        function self = clearGraphics( self )
-            % Clear the graphics objects to save memory
+        function self = conserveMemory( self, level )
+            % Conserve memory usage
             arguments
                 self            FullRepresentationModel
+                level           double {mustBeInteger, mustBePositive} = 0
             end
 
-            self.Figs = [];
-            self.Axes = [];
-
-        end
-
-
-        function self = clearPredictions( self )
-            % Clear the graphics objects to save memory
-            arguments
-                self            FullRepresentationModel
+            if level >= 1
+                self.Figs = [];
+                self.Axes = [];
+                for k = 1:self.KFolds
+                    self.SubModels{k} = self.SubModels{k}.clearGraphics;
+                end
             end
 
-            for k = 1:self.KFolds
-                self.SubModels{k} = self.SubModels{k}.clearPredictions;
+            if level >= 2
+                for k = 1:self.KFolds
+                    self.SubModels{k} = self.SubModels{k}.clearPredictions;
+                end
             end
 
         end

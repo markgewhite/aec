@@ -3,7 +3,7 @@ function genPaperDataPlots( thisData, title, names )
     arguments
         thisData        cell
         title           string
-        names           strings
+        names           string
     end
 
     n = length( thisData );

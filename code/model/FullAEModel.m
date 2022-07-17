@@ -63,7 +63,7 @@ classdef FullAEModel < FullRepresentationModel
             self = self@FullRepresentationModel( thisDataset, ...
                                                  superArgsCell{:}, ...
                                                  superArgs2Cell{:}, ...
-                                                 NumCompLines = 9 );
+                                                 NumCompLines = 5 );
 
             % check dataset is suitable
             if thisDataset.isFixedLength == args.HasSeqInput
@@ -300,6 +300,23 @@ classdef FullAEModel < FullRepresentationModel
 
         end
 
+
+        function self = conserveMemory( self, level )
+            % Conserve memory usage for AE
+            arguments
+                self            FullRepresentationModel
+                level           double {mustBeInteger, mustBePositive} = 0
+            end
+
+            self = conserveMemory@FullRepresentationModel( self, level );
+
+            if level >= 3
+                for k = 1:self.KFolds
+                    self.SubModels{k}.Optimizer = [];
+                end
+            end
+
+        end
 
     end
 

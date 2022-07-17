@@ -51,9 +51,9 @@ classdef SyntheticDataset < ModelDataset
             % set the random seed
             switch set
                 case 'Training'
-                    args.RandomSeed = args.DatasetSeed;
+                    args.RandomSeed = args.TemplateSeed + args.DatasetSeed;
                 case 'Testing'
-                    args.RandomSeed = args.DatasetSeed+1;
+                    args.RandomSeed = args.TemplateSeed + args.DatasetSeed + 1;
             end
 
             [ XRaw, Y ] = generateData( args.ClassSizes, args );
@@ -151,7 +151,7 @@ function [ X, Y ] = generateData( nObs, args )
     Y = zeros( sum(nObs), 1 );
     
     % define the common template shared by all classes
-    rng( args.DatasetSeed );
+    rng( args.TemplateSeed );
     for j = 1:args.SharedLevel
         template( :,:,j ) = interpRandSeries( tSpanLevels{j}, ...
                                               tSpanLevelsFull, ...
@@ -160,19 +160,26 @@ function [ X, Y ] = generateData( nObs, args )
     end
     
     a = 0;
-    rng( args.RandomSeed );
     for c = 1:length(nObs)
     
-        % generate random template function coefficients
-        % with covariance between the series elements
-        % interpolating to the base layer (1)
+        % define the class-specific template on top
+        
         for j = args.SharedLevel+1:nLevels
             template( :,:,j ) = interpRandSeries( tSpanLevels{j}, ...
                                                   tSpanLevelsFull, ...
                                                   nPts(j), ...
                                                   args.Channels, 2 );
         end
-       
+
+        % preserve the template random state
+        rngStateTemplate = rng;
+        % and switch to the dataset random stream
+        if c==1
+            rng( args.RandomSeed );
+        else
+            rng( rngStateData );
+        end
+
         for i = 1:nObs(c)
     
             a = a+1;
@@ -218,6 +225,11 @@ function [ X, Y ] = generateData( nObs, args )
             Y( a ) = c;
                    
         end
+
+        % preserve the dataset random state
+        rngStateData = rng;
+        % restore the template random stream
+        rng( rngStateTemplate );
     
     end 
 
