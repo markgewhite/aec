@@ -151,7 +151,7 @@ classdef Investigation
                     thisEvaluation.TestingCorrelations.XCCovariance;
     
                 % save the evaluations
-                thisEvaluation.save( path, name );
+                thisEvaluation.save( setup.model.args.path, name );
 
                 % conserve memory - essential in a long run
                 if self.MemoryConservation == 4

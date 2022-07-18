@@ -43,16 +43,16 @@ setup.model.args.trainer.holdout = 0;
 
 % -- grid search --
 nDims = 4;
-nDatasets = 10;
+nDatasets = 5;
 rng( setup.model.args.randomSeed );
 seeds = randi( 1000, 1, nDatasets );
 
-parameters = [ "data.args.TemplateSeed", ...
-               "model.class", ...
-               "model.args.ZDim" ];
-values = { seeds, ...
-           {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
-           1:nDims }; 
+parameters = [ "model.class", ...
+               "model.args.ZDim", ...
+               "data.args.TemplateSeed" ];
+values = { {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
+           1:nDims, ...
+           seeds }; 
 
 nModels = length( values{2} );
 nReports = 4;
@@ -62,7 +62,7 @@ name = [ "1L", ...
          "3L" ];
 results = cell( nReports, 1 );
 thisData = cell( nReports, 1 );
-memorySaving = 3;
+memorySaving = 4;
 
 if runAnalysis
     for i = 1:nReports
@@ -153,7 +153,7 @@ for d = 1:nDims
 
                 q = zeros( nDatasets, 1 );
                 for m = 1:nDatasets
-                    q(m) = results{k}.TestingResults.(fields(i))(m,j,d);
+                    q(m) = results{k}.TestingResults.(fields(i))(j,d,m);
                 end
                 T.Mean.(fieldName)(k) = mean(q);
                 T.SD.(fieldName)(k) = std(q);
