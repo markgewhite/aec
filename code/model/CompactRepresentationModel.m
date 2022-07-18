@@ -77,7 +77,7 @@ classdef CompactRepresentationModel
                                         {'Random', 'Fixed'} )} = 'Random'
                 args.nSample        double {mustBeInteger} = 0
                 args.range          double {mustBePositive} = 2.0
-                args.MaxObs         double = 100
+                args.MaxObs         double = 50
             end
 
             if args.nSample > 0
@@ -270,7 +270,6 @@ classdef CompactRepresentationModel
             % re-order the dimensions for FDA
             % !!! Is there a problem here? !!!
             if size( XC, 3 ) > 1
-                X = permute( X, [1 3 2] );
                 XC = permute( XC, [1 3 2] );
             end
 
@@ -289,7 +288,7 @@ classdef CompactRepresentationModel
             XC = XC - mean( XC, 2 );
             
             % compute the total variance from X
-            totVar = mean( sum( X.^2 ) );
+            totVar = squeeze(mean( sum( X.^2 ) ));
 
             % reshape XC by introducing dim for offset
             nOffsets = length( offsets );
@@ -306,8 +305,8 @@ classdef CompactRepresentationModel
                 end
             end
 
-            compVar = squeeze( compVar./totVar );
-            varProp = mean( compVar );
+            compVar = compVar./totVar;
+            varProp = squeeze(mean( compVar, 2 ));
 
         end
 
@@ -371,9 +370,15 @@ classdef CompactRepresentationModel
                                                    thisModel.Scale );
         
             % compute the variance as a function of time
-            loss.ReconTimeVar = reconTemporalLoss( ...
-                            pred.XHat - loss.ReconTimeBias, ...
-                            pred.XTarget, thisModel.Scale );
+            if length( size(pred.XHat) ) == 2
+                XDiff = pred.XHat - loss.ReconTimeBias;
+            else
+                XDiff = pred.XHat - reshape( loss.ReconTimeBias, ...
+                                            size(loss.ReconTimeBias,1), ...
+                                            1, [] );
+            end
+            loss.ReconTimeVar = reconTemporalLoss( XDiff, pred.XTarget, ...
+                                                    thisModel.Scale );
         
             % compute the mean squared error as a function of time
             loss.ReconTimeMSERegular = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
@@ -384,9 +389,15 @@ classdef CompactRepresentationModel
                                                    thisModel.Scale );
         
             % compute the variance as a function of time
-            loss.ReconTimeVarRegular = reconTemporalLoss( ...
-                            pred.XHatRegular - loss.ReconTimeBiasRegular, ...
-                            pred.XRegular, thisModel.Scale );
+            if length( size(pred.XHatRegular) ) == 2
+                XDiff = pred.XHatRegular - loss.ReconTimeBias;
+            else
+                XDiff = pred.XHatRegular - reshape( loss.ReconTimeBiasRegular, ...
+                                            size(loss.ReconTimeBiasRegular,1), ...
+                                            1, [] );
+            end
+            loss.ReconTimeVarRegular = reconTemporalLoss( XDiff, ...
+                                            pred.XRegular, thisModel.Scale );
 
             % compute the latent code correlation matrix
             [ cor.ZCorrelation, cor.ZCovariance ] = ...

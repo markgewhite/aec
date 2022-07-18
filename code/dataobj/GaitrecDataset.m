@@ -285,8 +285,7 @@ function [X, Y, S, channelNames, classNames ] = load( set, args )
     
     % convert to a cell array
     X = num2cell( X, [2 3] );
-    X = cellfun( @squeeze, X, UniformOutput = false );
-    X = cellfun( @(x) permute( x, [2 1] ), X, UniformOutput = false );
+    X = cellfun( @(x) permute( x, [2 3 1] ), X, UniformOutput = false );
 
 end
 

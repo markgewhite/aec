@@ -206,17 +206,24 @@ classdef CompactAEModel < CompactRepresentationModel
 
             if strcmp( self.ComponentType, 'PDP' )
                 % take the mean across the subsets
-                dlXC = reshape( dlXC, size(dlXC,1), nObs, [] );
-                dlXC = squeeze( mean( dlXC, 2 ) );
+                if length( size(dlXC) )==3
+                    dlXC = reshape( dlXC, size(dlXC,1), size(dlXC,2), nObs, [] );
+                    dlXC = squeeze( mean( dlXC, 3 ) );
+
+                else
+                    dlXC = reshape( dlXC, size(dlXC,1), nObs, [] );
+                    dlXC = squeeze( mean( dlXC, 2 ) );
+
+                end
             end
 
             % extract the mean curve from the end
-            if length( size(dlXC) )==2
-                dlXMean = dlXC( :, end );
-                dlXC = dlXC( :, 1:end-1 );
-            else
+            if length( size(dlXC) )==3
                 dlXMean = dlXC( :, :, end );
                 dlXC = dlXC( :, :, 1:end-1 );
+            else
+                dlXMean = dlXC( :, end );
+                dlXC = dlXC( :, 1:end-1 );
             end
            
             % centre about the mean curve (last curve)
