@@ -27,17 +27,20 @@ classdef GaitrecDataset < ModelDataset
                     {'Training', 'Testing'} )}
                 args.Grouping       char ...
                     {mustBeMember( args.Grouping, ...
-                    {'ClassLabels', 'ClassLabelDetails'} )} = 'ClassLabels'
+                    {'ControlsVsDisorders', 'Disorders'} )} = 'ControlsVsDisorders'
                 args.ShodCondition  char ...
                     {mustBeMember( args.ShodCondition, ...
-                    {'Barefoot/Socks', 'Shoes', 'OrthopaedicShoes'} )} = 'Barefoot/Socks'
+                    {'All', 'Barefoot/Socks', ...
+                     'Shoes', 'OrthopaedicShoes'} )} = 'Barefoot/Socks'
                 args.Speed          char ...
                     {mustBeMember( args.Speed, ...
-                    {'Slow', 'SelfSelected', 'Fast'} )} = 'SelfSelected'
+                    {'All', 'Slow', ...
+                     'SelfSelected', 'Fast'} )} = 'SelfSelected'
                 args.Readmission    logical = false
                 args.SessionType    char ...
                     {mustBeMember( args.SessionType, ...
-                    {'Initial', 'Control', 'ReadmissionInitial'} )} = 'Control'
+                    {'All', 'Initial', ...
+                     'Control', 'ReadmissionInitial'} )} = 'Control'
                 args.HasGRF         logical = true
                 args.HasVGRFOnly    logical = true
                 args.HasCOP         logical = false
@@ -58,7 +61,7 @@ classdef GaitrecDataset < ModelDataset
                 throwAsCaller( MException(eid,msg) );
             end
 
-            [ XRaw, Y, S, labels ] = GaitrecDataset.load( set, args );
+            [ XRaw, Y, S, channelLabels, classLabels ] = load( set, args );
 
             % setup padding
             if args.PaddingLength==0
@@ -75,9 +78,9 @@ classdef GaitrecDataset < ModelDataset
             tSpan= linspace( 0, 100, 101 );
         
             % setup fda
-            paramsFd.basisOrder = 4;
-            paramsFd.penaltyOrder = 2;
-            paramsFd.lambda = 1E2; % 1E2
+            paramsFd.BasisOrder = 4;
+            paramsFd.PenaltyOrder = 2;
+            paramsFd.Lambda = 1E-3;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -87,8 +90,9 @@ classdef GaitrecDataset < ModelDataset
                             padding = pad, ...
                             fda = paramsFd, ...
                             datasetName = "GaitRec", ...
-                            channelLabels = labels, ...
-                            timeLabel = "Percentage Stance", ...
+                            channelLabels = channelLabels, ...
+                            timeLabel = "% Stance", ...
+                            classLabels = classLabels, ...
                             channelLimits = [] );
 
             self.Grouping = args.Grouping;
@@ -120,166 +124,169 @@ classdef GaitrecDataset < ModelDataset
 
     end
 
-    methods (Static)
+end
 
-        function [X, Y, S, names ] = load( set, args )
 
-            if ismac
-                rootpath = '/Users/markgewhite/Google Drive/';
-            else 
-                rootpath = 'C:\Users\m.g.e.white\My Drive\';
-            end
+function [X, Y, S, channelNames, classNames ] = load( set, args )
 
-            dataFolder = 'Academia/Postdoc/Datasets/GaitRec';
-            datapath = [ rootpath dataFolder ];
+    if ismac
+        rootpath = '/Users/markgewhite/Google Drive/';
+    else 
+        rootpath = 'C:\Users\m.g.e.white\My Drive\';
+    end
 
-            % load the meta data
-            metaData = readtable( fullfile(datapath, 'GRF_metadata.csv') );
+    dataFolder = 'Academia/Postdoc/Datasets/GaitRec';
+    datapath = [ rootpath dataFolder ];
 
-            metaData.CLASS_LABEL = categorical( metaData.CLASS_LABEL );
-            metaData.CLASS_LABEL_DETAIL = ...
-                            categorical( metaData.CLASS_LABEL_DETAILED );
+    % load the meta data
+    metaData = readtable( fullfile(datapath, 'GRF_metadata.csv') );
 
-            % set and apply the filter based on the arguments
-            filter = setFilter( metaData, set, args );
-            metaData = metaData( filter, : );
+    metaData.CLASS_LABEL = categorical( metaData.CLASS_LABEL );
+    metaData.CLASS_LABEL_DETAILED = ...
+                    categorical( metaData.CLASS_LABEL_DETAILED );
 
-            % set Y reference class based on the requested grouping
-            switch args.Grouping
-                case 'ClassLabels'
-                    controls = metaData.CLASS_LABEL=='HC';
-                    refY( controls ) = 1;
-                    refY( ~controls ) = 2;
+    % set and apply the filter based on the arguments
+    filter = setFilter( metaData, set, args );
+    metaData = metaData( filter, : );
 
-                case 'ClassLabelDetails'
-                    controls = metaData.CLASS_LABEL=='HC';
-                    ankleDisorder = metaData.CLASS_LABEL=='A';
-                    kneeDisorder = metaData.CLASS_LABEL=='K';
-                    hipDisorder = metaData.CLASS_LABEL=='H';
-                    calcaneusDisorder = metaData.CLASS_LABEL=='C';
-                    refY( controls ) = 1;
-                    refY( ankleDisorder ) = 2;
-                    refY( kneeDisorder ) = 3;
-                    refY( hipDisorder ) = 4;
-                    refY( calcaneusDisorder ) = 5;
+    % set Y reference class based on the requested grouping
+    switch args.Grouping
+        case 'ControlsVsDisorders'
+            controls = metaData.CLASS_LABEL=='HC';
+            refY( controls ) = 1;
+            refY( ~controls ) = 2;
+            classNames = [ "Control", "Disorder" ];
 
-            end
+        case 'Disorders'
+            controls = metaData.CLASS_LABEL=='HC';
+            ankleDisorder = metaData.CLASS_LABEL=='A';
+            kneeDisorder = metaData.CLASS_LABEL=='K';
+            hipDisorder = metaData.CLASS_LABEL=='H';
+            calcaneusDisorder = metaData.CLASS_LABEL=='C';
+            refY( controls ) = 1;
+            refY( ankleDisorder ) = 2;
+            refY( kneeDisorder ) = 3;
+            refY( hipDisorder ) = 4;
+            refY( calcaneusDisorder ) = 5;
+            classNames = [ "Control", ...
+                           "Ankle Disorder", ...
+                           "Knee Disorder", ...
+                           "Hip Disorder", ...
+                           "Calcaneus Disorder" ];
 
-            % count the number of files/datasets required
-            nFiles = ( args.HasGRF*(3-2*args.HasVGRFOnly) ... 
-                                + args.HasCOP*2 );
+    end
 
-            % count up the number of channels per trial
-            channelsPerTrial = nFiles*(1 + args.HasDerivative + args.HasDelta);
+    % count the number of files/datasets required
+    nFiles = ( args.HasGRF*(3-2*args.HasVGRFOnly) ... 
+                        + args.HasCOP*2 );
 
-            % initialize arrays, assuming max of 10 trials per session
-            nSessions = size( metaData, 1 );          
-            X = zeros( nSessions*10, 101, channelsPerTrial );
+    % count up the number of channels per trial
+    channelsPerTrial = nFiles*(1 + args.HasDerivative + args.HasDelta);
 
-            if args.FromMatlabFile ...
-                    && isfile( fullfile(datapath,'RecentData.mat') )
+    % initialize arrays, assuming max of 10 trials per session
+    nSessions = size( metaData, 1 );          
+    X = zeros( nSessions*10, 101, channelsPerTrial );
 
-                % load data from a previous run - this is faster
-                load( fullfile(datapath,'RecentData.mat'), ...
-                      'trialData', 'sessions', 'sources' );
+    if args.FromMatlabFile ...
+            && isfile( fullfile(datapath,'RecentData.mat') )
 
-            else
-                % load the trial data from original files
-                [ trialData, sessions, sources ] = ...
-                                loadTrialData( datapath, nFiles, args );
-                % save it for future reference
-                save( fullfile(datapath,'RecentData.mat'), ...
-                      'trialData', 'sessions', 'sources', '-v7.3' );
-            
-            end
+        % load data from a previous run - this is faster
+        load( fullfile(datapath,'RecentData.mat'), ...
+              'trialData', 'sessions', 'sources' );
 
-            subjects = table2array( metaData( :, 1 ) );
+    else
+        % load the trial data from original files
+        [ trialData, sessions, sources ] = ...
+                        loadTrialData( datapath, nFiles, args );
+        % save it for future reference
+        save( fullfile(datapath,'RecentData.mat'), ...
+              'trialData', 'sessions', 'sources', '-v7.3' );
+    
+    end
 
-            names = strings( channelsPerTrial, 1 );
-            c = 0;
-            for j = 1:nFiles
+    subjects = table2array( metaData( :, 1 ) );
+
+    channelNames = strings( channelsPerTrial, 1 );
+    c = 0;
+    for j = 1:nFiles
+        c = c + 1;
+        channelNames(c) = strcat( sources(j), "_", args.Side );
+        if args.HasDerivative
+            c = c + 1;
+            channelNames(c) = strcat( sources(j), "_Derivative" );
+        end
+        if args.HasDelta
+            c = c + 1;
+            channelNames(c) = strcat( sources(j), "_Delta" );
+        end
+    end
+
+    % iterate through the sessions
+    kStart = 1;
+    for i = 1:nSessions
+
+        sessionID = metaData.SESSION_ID(i);
+
+        % determine which side to use, left or right
+        sideIdx = getSide( metaData.AFFECTED_SIDE(i), args.Side );
+
+        % identify the trials for this session using the first file
+        trials = sessions( :, 1 )==sessionID;
+        nSessionTrials = sum( trials );
+
+        % set index range
+        kEnd = kStart + nSessionTrials - 1;
+
+        % iterate through the files, adding the trials to array
+        c = 0;
+        for j = 1:nFiles
+
+            trials = sessions( :, j )==sessionID;
+            if sum( trials ) ~= nSessionTrials
+                eid = 'gaitrecDataset:TrialsNotConsistent';
+                msg = 'The number of trials across files in not consistent.';
+                throwAsCaller( MException(eid,msg) );
+            end                       
+
+            % store the selected side signal data
+            c = c + 1;
+            X( kStart:kEnd, :, c ) = trialData( trials, :, sideIdx, j );
+
+            if args.HasDerivative
+                % store the derivative for the selected signal
                 c = c + 1;
-                names(c) = strcat( sources(j), "_", args.Side );
-                if args.HasDerivative
-                    c = c + 1;
-                    names(c) = strcat( sources(j), "_Derivative" );
-                end
-                if args.HasDelta
-                    c = c + 1;
-                    names(c) = strcat( sources(j), "_Delta" );
-                end
+                X( kStart:kEnd, :, c ) = ...
+                        trialData( trials, :, 2+sideIdx, j );
             end
 
-            % iterate through the sessions
-            kStart = 1;
-            for i = 1:nSessions
-
-                sessionID = metaData.SESSION_ID(i);
-
-                % determine which side to use, left or right
-                sideIdx = getSide( metaData.AFFECTED_SIDE(i), args.Side );
-
-                % identify the trials for this session using the first file
-                trials = sessions( :, 1 )==sessionID;
-                nSessionTrials = sum( trials );
-
-                % set index range
-                kEnd = kStart + nSessionTrials - 1;
-
-                % iterate through the files, adding the trials to array
-                c = 0;
-                for j = 1:nFiles
-
-                    trials = sessions( :, j )==sessionID;
-                    if sum( trials ) ~= nSessionTrials
-                        eid = 'gaitrecDataset:TrialsNotConsistent';
-                        msg = 'The number of trials across files in not consistent.';
-                        throwAsCaller( MException(eid,msg) );
-                    end                       
-
-                    % store the selected side signal data
-                    c = c + 1;
-                    X( kStart:kEnd, :, c ) = trialData( trials, :, sideIdx, j );
-
-                    if args.HasDerivative
-                        % store the derivative for the selected signal
-                        c = c + 1;
-                        X( kStart:kEnd, :, c ) = ...
-                                trialData( trials, :, 2+sideIdx, j );
-                    end
-
-                    if args.HasDelta
-                        % store the delta 
-                        c = c + 1;
-                        X( kStart:kEnd, :, c ) = ...
-                                trialData( trials, :, end, j );
-                    end
-
-                    % store the reference class
-                    Y( kStart:kEnd ) = refY( i );
-
-                    % store the subject ID
-                    S( kStart:kEnd ) = subjects( i );
-
-                end
-
-                kStart = kEnd + 1;
-
+            if args.HasDelta
+                % store the delta 
+                c = c + 1;
+                X( kStart:kEnd, :, c ) = ...
+                        trialData( trials, :, end, j );
             end
 
-            % trim back the arrays
-            X = X( 1:kEnd, :, : );
-            Y = Y( 1:kEnd )';
-            S = S( 1:kEnd );
-            
-            % convert to a cell array
-            X = num2cell( X, [2 3] );
-            X = cellfun( @squeeze, X, UniformOutput = false );
+            % store the reference class
+            Y( kStart:kEnd ) = refY( i );
 
-       end
+            % store the subject ID
+            S( kStart:kEnd ) = subjects( i );
 
-   end
+        end
 
+        kStart = kEnd + 1;
+
+    end
+
+    % trim back the arrays
+    X = X( 1:kEnd, :, : );
+    Y = Y( 1:kEnd )';
+    S = S( 1:kEnd );
+    
+    % convert to a cell array
+    X = num2cell( X, [2 3] );
+    X = cellfun( @squeeze, X, UniformOutput = false );
+    X = cellfun( @(x) permute( x, [2 1] ), X, UniformOutput = false );
 
 end
 

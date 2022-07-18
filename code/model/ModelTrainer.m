@@ -245,11 +245,11 @@ classdef ModelTrainer < handle
                     
                     % run a validation check
                     v = v + 1;
-
+                   
                     % compute relevant loss
                     self.LossVal(v) = validationCheck( thisModel, ...
                                                     self.ValType, ...
-                                                    dlZVal, dlYVal );
+                                                    dlXVal, dlYVal );
                     if v > 2*vp-1
                         if mean(self.LossVal(v-2*vp+1:v-vp)) ...
                                 < mean(self.LossVal(v-vp+1:v))
@@ -596,18 +596,20 @@ function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
 end
  
 
-function lossVal = validationCheck( thisModel, valType, dlZVal, dlYVal )
+function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
     % Validate the model so far
     arguments
         thisModel       CompactAEModel
         valType         string
-        dlZVal          dlarray
+        dlXVal          dlarray
         dlYVal          dlarray
     end
 
+    dlZVal = thisModel.encode( dlXVal, convert = false );
+
     switch valType
         case 'Reconstruction'
-            dlXValHat = thisModel.reconstruct( dlZVal );
+            dlXValHat = squeeze(thisModel.reconstruct( dlZVal ));
             lossVal = reconLoss( dlXVal, dlXValHat, thisModel.Scale );
 
         case 'AuxNetwork'

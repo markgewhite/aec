@@ -397,7 +397,7 @@ classdef CompactAEModel < CompactRepresentationModel
 
             YHat = double(extractdata( dlYHat ))';
             CDim = size( YHat, 2 );
-            YHat = double(onehotdecode( YHat, 1:CDim, CDim ));
+            YHat = double(onehotdecode( YHat, 1:CDim, 2 ));
 
             loss = getPropCorrect( Y, YHat );
 
@@ -435,8 +435,7 @@ classdef CompactAEModel < CompactRepresentationModel
             dlYHat = predict( self.Nets.(compNetName), dlX );
 
             YHat = double(extractdata( dlYHat ))';
-            YHat = double(onehotdecode( YHat, ...
-                                1:thisDataset.CDim, thisDataset.CDim ));
+            YHat = double(onehotdecode( YHat, 1:thisDataset.CDim, 2 ));
 
             loss = getPropCorrect( thisDataset.Y, YHat );
 

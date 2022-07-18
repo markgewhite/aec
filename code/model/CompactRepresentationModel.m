@@ -77,7 +77,7 @@ classdef CompactRepresentationModel
                                         {'Random', 'Fixed'} )} = 'Random'
                 args.nSample        double {mustBeInteger} = 0
                 args.range          double {mustBePositive} = 2.0
-                args.ZSizeMax       double = 100
+                args.MaxObs         double = 1000
             end
 
             if args.nSample > 0
@@ -115,9 +115,9 @@ classdef CompactRepresentationModel
                 case 'PDP'
                     % initialize with all Z codes duplicated
                     % but limit the total size
-                    if nObs > args.ZSizeMax
-                        Z = Z( :, randsample( nObs, args.ZSizeMax ) );
-                        nObs = args.ZSizeMax;
+                    if nObs > args.MaxObs
+                        Z = Z( :, randsample( nObs, args.MaxObs ) );
+                        nObs = args.MaxObs;
                     end
                     ZC = repmat( Z, 1, self.ZDim*nSample+1 );
                     nRepeats = size( Z, 2 );
