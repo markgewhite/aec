@@ -1,4 +1,4 @@
-classdef LossFunction < handle
+classdef LossFunction
     % Superclass for loss functions
 
     properties

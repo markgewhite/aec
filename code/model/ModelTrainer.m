@@ -1,4 +1,4 @@
-classdef ModelTrainer < handle
+classdef ModelTrainer
     % Class defining a model trainer
 
     properties

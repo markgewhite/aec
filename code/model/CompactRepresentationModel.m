@@ -77,7 +77,7 @@ classdef CompactRepresentationModel
                                         {'Random', 'Fixed'} )} = 'Random'
                 args.nSample        double {mustBeInteger} = 0
                 args.range          double {mustBePositive} = 2.0
-                args.MaxObs         double = 1000
+                args.MaxObs         double = 100
             end
 
             if args.nSample > 0

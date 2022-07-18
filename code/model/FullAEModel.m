@@ -140,7 +140,7 @@ classdef FullAEModel < FullRepresentationModel
 
             % add details associated with the loss function networks
             % but without initializing them
-            self = addLossFcnNetworks( self, newFcns );
+            self = self.addLossFcnNetworks;
 
             % store the loss functions' details 
             % and relevant details for easier access when training
@@ -325,21 +325,20 @@ classdef FullAEModel < FullRepresentationModel
     methods (Access = protected)
 
 
-        function self = addLossFcnNetworks( self, newFcns )
+        function self = addLossFcnNetworks( self )
             % Add one or more networks to the model
             arguments
                 self        FullAEModel
-                newFcns     cell
             end
 
-            nFcns = length( newFcns );
+            nFcns = length( self.LossFcnNames );
             for i = 1:nFcns
-                thisLossFcn = newFcns{i};
-                if thisLossFcn.HasNetwork
+                name = self.LossFcnNames(i);
+                if self.LossFcns.(name).HasNetwork
                     % set the data dimensions 
-                    thisLossFcn = setDimensions( thisLossFcn, self );
+                    self.LossFcns.(name) = setDimensions( self.LossFcns.(name), self );
                     % record its name
-                    self.NetNames = [ string(self.NetNames) thisLossFcn.Name ];
+                    self.NetNames = [ string(self.NetNames) name ];
                     % increment the counter
                     self.NumNetworks = self.NumNetworks + 1;
                 end

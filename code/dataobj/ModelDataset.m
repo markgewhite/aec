@@ -1,4 +1,4 @@
-classdef ModelDataset < handle
+classdef ModelDataset
     % Class defining a dataset
 
     properties

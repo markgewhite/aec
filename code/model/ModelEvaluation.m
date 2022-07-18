@@ -1,4 +1,4 @@
-classdef ModelEvaluation < handle
+classdef ModelEvaluation
     % Class defining a model evaluation
 
     properties
