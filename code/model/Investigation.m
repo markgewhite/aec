@@ -216,7 +216,7 @@ classdef Investigation
 
             switch args.which
                 case 'First'
-                    datasets = self.Evaluations{1}.(fld);
+                    datasets = self.Evaluations{i}.(fld);
                                 
                 case 'All'
                     datasets = cell( self.SearchDims );

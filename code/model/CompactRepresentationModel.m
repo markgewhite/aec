@@ -306,7 +306,7 @@ classdef CompactRepresentationModel
             end
 
             compVar = compVar./totVar;
-            varProp = squeeze(mean( compVar, 2 ));
+            varProp = squeeze(mean( compVar, [2 3] ));
 
         end
 

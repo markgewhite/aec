@@ -1,6 +1,6 @@
 % Run the analysis for the synthetic data sets
 
-clear;
+%clear;
 
 runAnalysis = true;
 
@@ -65,7 +65,7 @@ thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
-    for i = 1:nReports
+    for i = 2:nReports
     
         switch i
 
@@ -117,8 +117,6 @@ if runAnalysis
     
         thisRun = Investigation( name(i), path, ...
                                  parameters, values, setup, memorySaving );
-        argsCell = namedargs2cell( setup.data.args );
-        thisData{i} = thisRun.getDatasets( which = "First", set = "Testing" );
         results{i} = thisRun.getResults;
         clear thisRun;
     
