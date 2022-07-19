@@ -101,18 +101,15 @@ classdef CompactPCAModel < CompactRepresentationModel
                 args.convert    logical = false % redundant
             end
 
-            [ ZC, offsets ] = self.componentEncodings( Z', ...
-                                        sampling = args.sampling, ...    
-                                        nSample = args.nSample );
-            nSample = length( offsets );
-
             % compute the components
+            nSample = self.NumCompLines;
+            offsets = linspace( -2, 2, nSample );
             XC = zeros( length(self.PCATSpan), self.XChannels, nSample );
             for i =1:self.ZDim
                 FPC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
                 for c = 1:self.XChannels
                     for j = 1:nSample
-                        XC(:,c,(i-1)*nSample+j) = offsets(j)*ZC(i,j)*FPC(:,:,c);
+                        XC(:,c,(i-1)*nSample+j) = offsets(j)*FPC(:,c);
                     end
                 end
             end

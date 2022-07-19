@@ -67,8 +67,8 @@ classdef ConvolutionalModel < FCModel
             end
             
             % define input layers
-            projectionSize = [ self.XInputDim 1 1 ];
-            layersEnc = [ featureInputLayer( self.XInputDim, 'Name', 'in', ...
+            projectionSize = [ self.XInputDim self.XChannels 1 ];
+            layersEnc = [ featureInputLayer( self.XInputDim*self.XChannels, 'Name', 'in', ...
                               'Normalization', 'zscore', ...
                               'Mean', 0, 'StandardDeviation', 1 ) 
                           dropoutLayer( self.Dropout, 'Name', 'drop0' )

@@ -60,13 +60,12 @@ if runAnalysis
                                "data.args.HasVGRFOnly", ...
                                "data.args.Grouping" ];
                 values = { {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
-                           {false,true}, ...
+                           {true,false}, ...
                            {'ControlsVsDisorders', 'Disorders'} }; 
 
-                setup.model.args.trainer.numEpochs = 2;
-                setup.model.args.trainer.valFreq = 1;
-                setup.model.args.trainer.updateFreq = 1;
-                setup.model.args.trainer.numEpochsPreTrn = 1;
+                setup.model.args.trainer.numEpochs = 100;
+                setup.model.args.trainer.updateFreq = 25;
+                setup.model.args.trainer.numEpochsPreTrn = 5;
 
                 setup.model.args.trainer.batchSize = 250;
 
@@ -85,6 +84,10 @@ if runAnalysis
                 values = { {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
                            {true,false}, ...
                            {'ControlsVsDisorders', 'Disorders'} }; 
+
+                setup.model.args.trainer.numEpochs = 100;
+                setup.model.args.trainer.updateFreq = 25;
+                setup.model.args.trainer.numEpochsPreTrn = 5;
 
                 setup.model.args.trainer.batchSize = 250; 
 

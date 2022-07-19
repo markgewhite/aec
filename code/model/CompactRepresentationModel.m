@@ -302,7 +302,7 @@ classdef CompactRepresentationModel
             for i = 1:nOffsets
                 for j = 1:self.ZDim
                     for k = 1:self.XChannels
-                        compVar( i, j, k ) = sum( (XC(:,i,j,k)/offsets(j)).^2 );
+                        compVar( i, j, k ) = sum( (XC(:,i,j,k)/offsets(i)).^2 );
                     end
                 end
             end

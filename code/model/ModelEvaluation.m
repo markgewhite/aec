@@ -189,7 +189,7 @@ classdef ModelEvaluation
 
             % limit the arguments to relevant fields
             pcaFields = {'KFolds', 'IdenticalPartitions', ...
-                         'ZDim', 'auxModel', 'name', 'path'};
+                         'ZDim', 'AuxModelType', 'name', 'path'};
             for i = 1:length(pcaFields)
                 if isfield( setup.model.args, pcaFields{i} )
                     args.(pcaFields{i}) = setup.model.args.(pcaFields{i});

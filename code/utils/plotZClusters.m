@@ -12,6 +12,7 @@ function plotZClusters( thisModel, Z, args )
         args.name           string = 'Latent Space'
         args.perplexity     double = 50
         args.compact        logical = false
+        args.maxObs         double = 1000
 
     end
 
@@ -36,7 +37,13 @@ function plotZClusters( thisModel, Z, args )
     else
         Y = ones( size( Z,1 ), 1 );
         classes = 1;
-    end           
+    end
+
+    % thin-out in case of large numbers of rows
+    nObs = min( size(Z,1), args.maxObs );
+    subset = randsample(size(Z,1), nObs);
+    Z = Z( subset, : );
+    Y = Y (subset );
 
     switch args.type
         case 'Canonical'

@@ -10,6 +10,9 @@ function [ R, C ] = latentCodeCorrelation( Z, arg )
         Z = double(extractdata( Z ))';
     end
 
+    % ensure Z is two dimensional
+    Z = reshape( Z, size(Z,1), [] );
+
     % get the correlation and covariance matrices
     R = corr( Z );
     C = cov( Z );
