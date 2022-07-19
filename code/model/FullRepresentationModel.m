@@ -548,7 +548,8 @@ function cvLoss = calcCVLoss( subModels, set )
 
     end
 
-    scale = mean(cellfun( @(m) m.Scale, subModels ));
+    scale = mean( cell2mat(cellfun( ...
+                    @(m) m.Scale, subModels, UniformOutput = false )), 1 );
 
     for i = 1:nPairs
 
@@ -561,18 +562,23 @@ function cvLoss = calcCVLoss( subModels, set )
         else
             % mean squared error loss
             cvLoss.(pairs{i,2}) = reconLoss( A, AHat, scale );
+
+            % permute dimensions for temporal losses
+            A = permute( A, [2 1 3] );
+            AHat = permute( AHat, [2 1 3] );
+
             % temporal mean squared error loss
             cvLoss.([pairs{i,2} 'TemporalMSE']) = ...
-                                    reconTemporalLoss( A', AHat', scale );
+                                    reconTemporalLoss( A, AHat, scale );
 
             % temporal bias
             cvLoss.([pairs{i,2} 'TemporalBias']) = ...
-                                    reconTemporalBias( A', AHat', scale );
+                                    reconTemporalBias( A, AHat, scale );
 
-            % temporal bias
-            A0 = AHat' - cvLoss.([pairs{i,2} 'TemporalBias']);
+            % temporal variance rearranging formula: MSE = Bias^2 + Var
             cvLoss.([pairs{i,2} 'TemporalVar']) = ...
-                                    reconTemporalLoss( A', A0, scale );
+                cvLoss.([pairs{i,2} 'TemporalMSE']) ...
+                                - cvLoss.([pairs{i,2} 'TemporalBias']).^2;
         
         end
     

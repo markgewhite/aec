@@ -58,6 +58,7 @@ function plotLatentComp( thisModel, args )
     % re-order the dimensions for FDA
     if size( XC, 3 ) > 1
         XC = permute( XC, [1 3 2] );
+        XMean = permute( XMean, [1 3 2] );
     end
 
     % smooth and re-evaluate all curves

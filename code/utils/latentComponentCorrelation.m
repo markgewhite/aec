@@ -52,8 +52,8 @@ function [ R, C ] = latentComponentCorrelation( XC, nSamples, arg )
             C0(c) = sum( ( squeeze(C(:,:,c)) - eye(nComp) ).^2, 'all' ) ...
                             /(nComp*(nComp-1));
         end
-        R = R0;
-        C = C0;
+        R = mean(R0);
+        C = mean(C0);
     end
 
 end

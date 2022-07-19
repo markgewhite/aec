@@ -263,7 +263,7 @@ classdef ModelTrainer
                 % update progress on screen
                 if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots
                     
-                    if ~self.PreTraining && self.Holdout > 0
+                    if ~self.PreTraining && self.Holdout > 0 && v > 0
                         % include validation
                         lossValArg = self.LossVal( v );
                     else
@@ -559,6 +559,8 @@ function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
     % record latent codes correlation
     [ metric.XCCorrelation, metric.XCCovariance ] = ...
                 latentComponentCorrelation( dlXC, 100, summary = true );
+    metric.XCCorrelation = mean( metric.XCCorrelation );
+    metric.XCCovariance = mean( metric.XCCovariance );
 
     % compute explained variance
     metric.VarianceProportionXC = ...
@@ -609,7 +611,7 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
 
     switch valType
         case 'Reconstruction'
-            dlXValHat = squeeze(thisModel.reconstruct( dlZVal ));
+            dlXValHat = squeeze(thisModel.reconstruct( dlZVal, convert = false ));
             lossVal = reconLoss( dlXVal, dlXValHat, thisModel.Scale );
 
         case 'AuxNetwork'

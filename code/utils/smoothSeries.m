@@ -8,6 +8,6 @@ function XOut = smoothSeries( XIn, tSpanIn, tSpanOut, fdParams )
     end
 
     XFd = smooth_basis( tSpanIn, XIn, fdParams );
-    XOut = squeeze( eval_fd( tSpanOut, XFd ) );
+    XOut = eval_fd( tSpanOut, XFd );
 
 end

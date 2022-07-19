@@ -244,8 +244,9 @@ classdef CompactRepresentationModel
                                   thisDataset.FDA.FdParamsTarget );
 
             % compute the components' explained variance
+            XTarget = permute( thisDataset.XTarget, [ 1 3 2 ] );
             [varProp, compVar] = self.explainedVariance( ...
-                                thisDataset.XTarget, XCFineReg, offsets );    
+                                XTarget, XCFineReg, offsets );    
 
         end
 
@@ -268,15 +269,16 @@ classdef CompactRepresentationModel
             end  
 
             % re-order the dimensions for FDA
-            % !!! Is there a problem here? !!!
+            if size( X, 3 ) > 1
+                X = permute( X, [1 3 2] );
+            end
             if size( XC, 3 ) > 1
                 XC = permute( XC, [1 3 2] );
             end
 
             if mod( size( XC, 2 ), 2 )==1
                 % remove the XC mean curve at the end
-                % !!! or is there a problem here? !!!
-                if size( XC, 3 ) > 1
+               if size( XC, 3 ) > 1
                     XC = XC( :, :, 1:end-1 );
                 else
                     XC = XC( :, 1:end-1 );
@@ -288,25 +290,25 @@ classdef CompactRepresentationModel
             XC = XC - mean( XC, 2 );
             
             % compute the total variance from X
-            totVar = squeeze(mean( sum( X.^2 ) ));
+            totVar = squeeze(mean( sum( X.^2 ) ))';
 
             % reshape XC by introducing dim for offset
             nOffsets = length( offsets );
-            XC = reshape( XC, size(XC,1), self.XChannels, nOffsets, self.ZDim );
+            XC = reshape( XC, size(XC,1), nOffsets, self.ZDim, self.XChannels );
 
             % compute the component variances in turn
-            compVar = zeros( self.XChannels, nOffsets, self.ZDim );
+            compVar = zeros( nOffsets, self.ZDim, self.XChannels );
 
-            for i = 1:self.XChannels
-                for j = 1:nOffsets
-                    for k = 1:self.ZDim
+            for i = 1:nOffsets
+                for j = 1:self.ZDim
+                    for k = 1:self.XChannels
                         compVar( i, j, k ) = sum( (XC(:,i,j,k)/offsets(j)).^2 );
                     end
                 end
             end
 
-            compVar = compVar./totVar;
-            varProp = squeeze(mean( compVar, [2 3] ));
+            compVar = squeeze(mean( compVar, 1 ))./totVar;
+            varProp = mean( compVar, 2 )';
 
         end
 

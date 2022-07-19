@@ -63,8 +63,9 @@ if runAnalysis
                            {false,true}, ...
                            {'ControlsVsDisorders', 'Disorders'} }; 
 
-                setup.model.args.trainer.numEpochs = 1;
-                setup.model.args.trainer.updateFreq = 25;
+                setup.model.args.trainer.numEpochs = 2;
+                setup.model.args.trainer.valFreq = 1;
+                setup.model.args.trainer.updateFreq = 1;
                 setup.model.args.trainer.numEpochsPreTrn = 1;
 
                 setup.model.args.trainer.batchSize = 250;
