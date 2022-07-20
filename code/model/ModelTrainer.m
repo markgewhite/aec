@@ -1,4 +1,4 @@
-classdef ModelTrainer
+classdef ModelTrainer < handle
     % Class defining a model trainer
 
     properties
@@ -66,7 +66,7 @@ classdef ModelTrainer
                 args.PostTraining   logical = true;
                 args.ValType        char ...
                     {mustBeMember(args.ValType, ...
-                        {'Reconstruction', 'AuxNetwork', 'AuxModel'} )} ...
+                        {'Reconstruction', 'AuxNetwork'} )} ...
                             = 'Reconstruction'
                 args.ShowPlots      logical = false
 
@@ -227,10 +227,8 @@ classdef ModelTrainer
                     end
 
                     % update network parameters
-                    [ thisModel.Optimizer, thisModel.Nets ] = ...
-                        thisModel.Optimizer.updateNets( thisModel.Nets, ...
-                                                        grads, ...
-                                                        j );
+                    thisModel.Nets  = thisModel.Optimizer.updateNets( ...
+                                            thisModel.Nets, grads, j );
 
                     if self.ShowPlots
                         % update loss plots
@@ -253,7 +251,7 @@ classdef ModelTrainer
                     if v > 2*vp-1
                         if mean(self.LossVal(v-2*vp+1:v-vp)) ...
                                 < mean(self.LossVal(v-vp+1:v))
-                            % no longer improving - stop training
+                            disp(['Stopping criterion met. Epoch = ' num2str(epoch)']);
                             break
                         end
                     end
@@ -276,12 +274,12 @@ classdef ModelTrainer
                         dlZTrnAll ] = calcMetrics( thisModel, dlXTrnAll );
 
                     % report 
-                    self.reportProgress( thisModel, ...
-                                         dlZTrnAll, ...
-                                         thisTrnData.Y, ...
-                                         self.LossTrn( j-nIter+1:j, : ), ...
-                                         epoch, ...
-                                         lossVal = lossValArg );
+                    reportProgress( thisModel, ...
+                                    dlZTrnAll, ...
+                                    thisTrnData.Y, ...
+                                    self.LossTrn( j-nIter+1:j, : ), ...
+                                    epoch, ...
+                                    lossVal = lossValArg );
                 end
             
                 % update the number of dimensions, if required
@@ -310,63 +308,6 @@ classdef ModelTrainer
 
             
     end      
-
-
-    methods (Static)
-
-        function reportProgress( thisModel, dlZ, dlY, ...
-                       lossTrn, epoch, args )
-            % Report progress on training
-            arguments
-                thisModel       CompactAEModel
-                dlZ             dlarray
-                dlY             dlarray
-                lossTrn         double
-                epoch           double
-                args.nLines     double = 8
-                args.lossVal    double = []
-            end
-        
-            if size( lossTrn, 1 ) > 1
-                meanLoss = mean( lossTrn );
-            else
-                meanLoss = lossTrn;
-            end
-        
-            fprintf('Loss (%4d) = ', epoch);
-            for k = 1:thisModel.NumLoss
-                fprintf(' %6.3f', meanLoss(k) );
-            end
-            if ~isempty( args.lossVal )
-                fprintf(' : %1.3f', args.lossVal );
-            else
-                fprintf('        ');
-            end
-            fprintf('\n');
-
-            % compute the AE components for plotting
-            [ dlXC, dlXMean ] = thisModel.calcLatentComponents( ...
-                                            dlZ, ...
-                                            sampling = 'Fixed' );
-
-            % plot them on specified axes
-            plotLatentComp( thisModel, ...
-                            XMean = dlXMean, XC = dlXC, ...
-                            type = 'Smoothed', shading = true );
-        
-            % plot the Z distributions
-            plotZDist( thisModel, dlZ );
-        
-            % plot the Z clusters
-            plotZClusters( thisModel, dlZ, Y = dlY );
-        
-            drawnow;
-              
-        end
-
-
-    end
-
 
 end
 
@@ -536,6 +477,56 @@ end
 
 
 
+function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
+    % Report progress on training
+    arguments
+        thisModel       CompactAEModel
+        dlZ             dlarray
+        dlY             dlarray
+        lossTrn         double
+        epoch           double
+        args.nLines     double = 8
+        args.lossVal    double = []
+    end
+
+    if size( lossTrn, 1 ) > 1
+        meanLoss = mean( lossTrn );
+    else
+        meanLoss = lossTrn;
+    end
+
+    fprintf('Loss (%4d) = ', epoch);
+    for k = 1:thisModel.NumLoss
+        fprintf(' %6.3f', meanLoss(k) );
+    end
+    if ~isempty( args.lossVal )
+        fprintf(' : %1.3f', args.lossVal );
+    else
+        fprintf('        ');
+    end
+    fprintf('\n');
+
+    % compute the AE components for plotting
+    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( ...
+                                    dlZ, ...
+                                    sampling = 'Fixed' );
+
+    % plot them on specified axes
+    plotLatentComp( thisModel, ...
+                    XMean = dlXMean, XC = dlXC, ...
+                    type = 'Smoothed', shading = true );
+
+    % plot the Z distributions
+    plotZDist( thisModel, dlZ );
+
+    % plot the Z clusters
+    plotZClusters( thisModel, dlZ, Y = dlY );
+
+    drawnow;
+      
+end
+
+        
 function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
     % Compute various supporting metrics
     arguments
@@ -619,11 +610,6 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
             cLabels = thisModel.LossFcns.(thisModel.auxNetwork).CLabels;
             dlYHatVal = double( onehotdecode( dlYHatVal, single(cLabels), 1 ));
             lossVal = sum( dlYHatVal~=dlYVal )/length(dlYVal);
-
-        case 'AuxModel'
-            ZVal = double(extractdata( dlZVal ));
-            YVal = double(extractdata( dlYVal ));
-            lossVal = loss( thisModel.AuxModel, ZVal', YVal );
     end
 
 

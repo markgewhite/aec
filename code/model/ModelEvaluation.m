@@ -165,8 +165,6 @@ classdef ModelEvaluation
             output.BespokeSetup = self.BespokeSetup;
             output.TrainingEvaluation = self.TrainingEvaluation;
             output.TestingEvaluation = self.TestingEvaluation;
-            output.TrainingPredictions = self.TrainingPredictions;
-            output.TestingPredictions = self.TestingPredictions;
             output.TrainingCorrelations = self.TrainingCorrelations;
             output.TestingCorrelations = self.TestingCorrelations;
             

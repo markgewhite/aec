@@ -1,7 +1,8 @@
-function Tout = genPaperTableCSV( Tin, TinSD, args )
+function Tout = genPaperTableCSV( rowNames, Tin, TinSD, args )
     % Format tables with numeric elements for CSV output
     % Embolden best (highest/lowest) by row or by column
     arguments
+        rowNames            string
         Tin                 table
         TinSD               table = []
         args.format         string = '%1.3f'
@@ -62,6 +63,8 @@ function Tout = genPaperTableCSV( Tin, TinSD, args )
         
     end
 
+    Tout = addvars( Tout, rowNames, Before = 1 );
+
 end
 
 function T0 = tableOfStrings( T1, T2, fmt )
@@ -92,7 +95,7 @@ function T0 = tableOfStrings( T1, T2, fmt )
         for i = 1:rows
             for j = 1:cols
                 V0(i,j) = strcat( formatFcn(T1{i,j}), ...
-                                  " $\pm$ ", formatFcn(T2{i,j}) );
+                                  "$\pm$", formatFcn(T2{i,j}) );
             end
         end
         T0 = array2table( V0 );

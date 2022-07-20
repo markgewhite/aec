@@ -30,6 +30,11 @@ classdef FullRepresentationModel
         NumCompLines    % number of lines in the component plot
         RandomSeed      % for reproducibility
         RandomSeedResets % whether to reset the seed for each sub-model
+        CompressionLevel % degree of compression when saving
+                         % 0 = None
+                         % 1 = Clear Figures
+                         % 2 = Clear Predictions
+                         % 3 = Clear Optimizer
 
     end
 
@@ -38,26 +43,28 @@ classdef FullRepresentationModel
         function self = FullRepresentationModel( thisDataset, args )
             % Initialize the model
             arguments
-                thisDataset         ModelDataset
-                args.ZDim           double ...
+                thisDataset             ModelDataset
+                args.ZDim               double ...
                     {mustBeInteger, mustBePositive}
-                args.AuxModelType   string ...
+                args.AuxModelType       string ...
                         {mustBeMember( args.AuxModelType, ...
                         {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
-                args.KFolds         double ...
+                args.KFolds             double ...
                     {mustBeInteger, mustBePositive} = 5
-                args.RandomSeed     double ...
+                args.RandomSeed         double ...
                     {mustBeInteger, mustBePositive}
-                args.RandomSeedResets logical = false;
-                args.ComponentType  char ...
+                args.RandomSeedResets   logical = false;
+                args.ComponentType      char ...
                     {mustBeMember(args.ComponentType, ...
                         {'Mean', 'PDP'} )} = 'PDP'
-                args.NumCompLines   double...
+                args.NumCompLines       double...
                     {mustBeInteger, mustBePositive} = 8
-                args.ShowPlots      logical = true
+                args.ShowPlots          logical = true
                 args.IdenticalPartitions logical = false
-                args.Name           string = "[ModelName]"
-                args.Path           string = ""
+                args.Name               string = "[ModelName]"
+                args.Path               string = ""
+                args.CompressionLevel   double ...
+                    {mustBeInRange(args.CompressionLevel, 0, 3)} = 2
             end
 
             % set properties based on the data
@@ -90,6 +97,7 @@ classdef FullRepresentationModel
 
             self.ComponentType = args.ComponentType;
             self.NumCompLines = args.NumCompLines;
+            self.CompressionLevel = args.CompressionLevel;
 
             self.ShowPlots = args.ShowPlots;
 
@@ -357,11 +365,13 @@ classdef FullRepresentationModel
             filename = strcat( self.Info.Name, "-FullModel" );
             
             theModel = self;
-            theModel.Figs = [];
-            theModel.Axes = [];
+            if self.CompressionLevel >= 1
+                theModel.Figs = [];
+                theModel.Axes = [];
+            end
             for k = 1:theModel.KFolds
-                theModel.SubModels{k} = theModel.SubModels{k}.clearPredictions;
-                theModel.SubModels{k} = theModel.SubModels{k}.clearGraphics;
+                theModel.SubModels{k} = ...
+                    theModel.SubModels{k}.compress( self.CompressionLevel );
             end
 
             save( fullfile( self.Info.Path, filename ), 'theModel' );
@@ -373,21 +383,18 @@ classdef FullRepresentationModel
             % Conserve memory usage
             arguments
                 self            FullRepresentationModel
-                level           double {mustBeInteger, mustBePositive} = 0
+                level           double ...
+                    {mustBeInRange( level, 0, 3 )} = 0
             end
 
             if level >= 1
                 self.Figs = [];
                 self.Axes = [];
-                for k = 1:self.KFolds
-                    self.SubModels{k} = self.SubModels{k}.clearGraphics;
-                end
             end
 
-            if level >= 2
-                for k = 1:self.KFolds
-                    self.SubModels{k} = self.SubModels{k}.clearPredictions;
-                end
+            for k = 1:self.KFolds
+                self.SubModels{k} = ...
+                    self.SubModels{k}.compress( self.CompressionLevel );
             end
 
         end

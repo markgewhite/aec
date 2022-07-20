@@ -181,25 +181,22 @@ classdef CompactRepresentationModel
         end
 
 
-        function self = clearGraphics( self )
-            % Clear the graphics objects to save memory
+        function self = compress( self, level )
+            % Clear the objects to save memory
             arguments
                 self            CompactRepresentationModel
+                level           double ...
+                    {mustBeInRange( level, 0, 3 )} = 0
             end
 
-            self.Figs = [];
-            self.Axes = [];
-
-        end
-
-
-        function self = clearPredictions( self )
-            % Clear the model's predictions to save memory
-            arguments
-                self            CompactRepresentationModel
+            if level >= 1
+                self.Figs = [];
+                self.Axes = [];
             end
 
-            self.Predictions = [];
+            if level >= 2
+                self.Predictions = [];
+            end
 
         end
 
@@ -356,12 +353,11 @@ classdef CompactRepresentationModel
             % compute reconstruction loss for the regularised curves
             loss.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
                                                thisModel.Scale );
-        
-            % compute the auxiliary loss using the model
-            ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
-            pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
-            loss.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
-               
+
+            % compute the bias and variance
+            loss.ReconBias = reconBias( thisDataset.XTarget, pred.XHat, ...
+                                        thisModel.Scale );
+            loss.ReconVar = loss.ReconLoss - loss.ReconBias^2;              
             
             % compute the mean squared error as a function of time
             loss.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, ...
@@ -417,7 +413,20 @@ classdef CompactRepresentationModel
             [ cor.XCCorrelationMatrix, cor.XCCovarianceMatrix ] = ...
                 latentComponentCorrelation( ...
                     thisModel.LatentComponents, thisModel.NumCompLines );
-        
+
+            % compute the auxiliary loss using the model
+            ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
+            pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
+            loss.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
+
+            % store the model coefficients - all important
+            switch class( thisModel.AuxModel )
+                case 'ClassificationLinear'
+                    loss.AuxModelCoeff = thisModel.AuxModel.Beta;
+                case 'ClassificationDiscriminant'
+                    loss.AuxModelCoeff = thisModel.AuxModel.DeltaPredictior;
+            end
+
         end
 
     end

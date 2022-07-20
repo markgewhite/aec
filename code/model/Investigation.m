@@ -70,12 +70,17 @@ classdef Investigation
             self.TrainingResults.ReconLoss = zeros( allocation );
             self.TrainingResults.ReconLossSmoothed = zeros( allocation );
             self.TrainingResults.ReconLossRegular = zeros( allocation );
-            self.TrainingResults.AuxModelLoss = zeros( allocation );
+            self.TrainingResults.ReconBias = zeros( allocation );
+            self.TrainingResults.ReconVar = zeros( allocation );
             self.TrainingResults.ZCorrelation = zeros( allocation );
             self.TrainingResults.XCCorrelation = zeros( allocation );
             self.TrainingResults.ZCovariance = zeros( allocation );
             self.TrainingResults.XCCovariance = zeros( allocation );
-            
+            self.TrainingResults.AuxModelLoss = zeros( allocation );
+            self.TrainingResults.AuxNetworkLoss = zeros( allocation );
+            self.TrainingResults.ComparatorLoss = zeros( allocation );
+            self.TrainingResults.AuxModelCoeff = cell( allocation );
+
             self.TestingResults = self.TrainingResults;
 
             nEval = prod( self.SearchDims );
@@ -107,51 +112,21 @@ classdef Investigation
                 self.Evaluations{ idxC{:} } = ...
                                 ModelEvaluation( evalName, setup, true );
 
-                % record results
-                thisEvaluation = self.Evaluations{ idxC{:} };
-                
-                self.TrainingResults.ReconLoss( idxC{:} ) = ...
-                    thisEvaluation.TrainingEvaluation.ReconLoss;
-                self.TestingResults.ReconLoss( idxC{:} ) = ...
-                    thisEvaluation.TestingEvaluation.ReconLoss;
+                % record results               
+                self.TrainingResults = updateResults( ...
+                        self.TrainingResults, idxC, ...
+                        self.Evaluations{ idxC{:} }.TrainingEvaluation, ...
+                        self.Evaluations{ idxC{:} }.TrainingCorrelations ...
+                        );
 
-                self.TrainingResults.ReconLossSmoothed( idxC{:} ) = ...
-                    thisEvaluation.TrainingEvaluation.ReconLossSmoothed;
-                self.TestingResults.ReconLossSmoothed( idxC{:} ) = ...
-                    thisEvaluation.TestingEvaluation.ReconLossSmoothed;
-
-                self.TrainingResults.ReconLossRegular( idxC{:} ) = ...
-                    thisEvaluation.TrainingEvaluation.ReconLossRegular;
-                self.TestingResults.ReconLossRegular( idxC{:} ) = ...
-                    thisEvaluation.TestingEvaluation.ReconLossRegular;
-                
-                self.TrainingResults.AuxModelLoss( idxC{:} ) = ...
-                    thisEvaluation.TrainingEvaluation.AuxModelLoss;
-                self.TestingResults.AuxModelLoss( idxC{:} ) = ...
-                    thisEvaluation.TestingEvaluation.AuxModelLoss;
-
-                self.TrainingResults.ZCorrelation( idxC{:} ) = ...
-                    thisEvaluation.TrainingCorrelations.ZCorrelation;
-                self.TestingResults.ZCorrelation( idxC{:} ) = ...
-                    thisEvaluation.TestingCorrelations.ZCorrelation;
-
-                self.TrainingResults.XCCorrelation( idxC{:} ) = ...
-                    thisEvaluation.TrainingCorrelations.XCCorrelation;
-                self.TestingResults.XCCorrelation( idxC{:} ) = ...
-                    thisEvaluation.TestingCorrelations.XCCorrelation;
-
-                self.TrainingResults.ZCovariance( idxC{:} ) = ...
-                    thisEvaluation.TrainingCorrelations.ZCovariance;
-                self.TestingResults.ZCovariance( idxC{:} ) = ...
-                    thisEvaluation.TestingCorrelations.ZCovariance;
-
-                self.TrainingResults.XCCovariance( idxC{:} ) = ...
-                    thisEvaluation.TrainingCorrelations.XCCovariance;
-                self.TestingResults.XCCovariance( idxC{:} ) = ...
-                    thisEvaluation.TestingCorrelations.XCCovariance;
+                self.TestingResults = updateResults( ...
+                        self.TestingResults, idxC, ...
+                        self.Evaluations{ idxC{:} }.TestingEvaluation, ...
+                        self.Evaluations{ idxC{:} }.TestingCorrelations ...
+                        );
     
                 % save the evaluations
-                thisEvaluation.save( setup.model.args.path, name );
+                self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
 
                 % conserve memory - essential in a long run
                 if self.MemoryConservation == 4
@@ -161,7 +136,7 @@ classdef Investigation
                 else
                     % scaled memory conservation
                     self.Evaluations{ idxC{:} }.Model = ...
-                        thisEvaluation.Model.conserveMemory( ...
+                        self.Evaluations{ idxC{:} }.Model.conserveMemory( ...
                                             self.MemoryConservation );
                 end
 
@@ -231,6 +206,41 @@ classdef Investigation
 
     end
 
+
+end
+
+
+function results = updateResults( results, idx, eval, corr )
+    % Update the ongoing results with the latest evaluation
+    arguments
+        results     struct
+        idx         cell
+        eval        struct
+        corr        struct
+    end
+
+    results.ReconLoss( idx{:} ) = eval.ReconLoss;
+    results.ReconLossSmoothed( idx{:} ) = eval.ReconLossSmoothed;
+    results.ReconLossRegular( idx{:} ) = eval.ReconLossRegular;
+
+    results.ReconBias( idx{:} ) = eval.ReconBias;
+    results.ReconVar( idx{:} ) = eval.ReconVar;
+
+    results.ZCorrelation( idx{:} ) = corr.ZCorrelation;
+    results.XCCorrelation( idx{:} ) = corr.XCCorrelation;
+
+    results.ZCovariance( idx{:} ) = corr.ZCovariance;
+    results.XCCovariance( idx{:} ) = corr.XCCovariance;
+   
+    results.AuxModelLoss( idx{:} ) = eval.AuxModelLoss;
+    results.AuxModelCoeff{ idx{:} } = eval.AuxModelCoeff;
+
+    if isfield( eval, 'AuxNetworkLoss' )
+        results.AuxNetworkLoss( idx{:} ) = eval.AuxNetworkLoss;
+    end
+    if isfield( eval, 'ComparatorLoss' )
+        results.ComparatorLoss( idx{:} ) = eval.ComparatorLoss;
+    end
 
 end
 

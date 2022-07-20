@@ -1,4 +1,4 @@
-classdef ModelOptimizer 
+classdef ModelOptimizer < handle
     % Class defining the optimizer for the model's networks
 
     properties
@@ -68,7 +68,7 @@ classdef ModelOptimizer
         end
 
 
-        function [ self, nets ] = updateNets( self, nets, ...
+        function nets = updateNets( self, nets, ...
                                     grads, count )
             % Update the network parameters
             arguments

@@ -9,7 +9,6 @@ function [figs, axes]= initializePlots( XChannels, ZDim )
 
     % setup the components figure
     figs.Components = figure(2);
-    figs.Components.Position(2) = 0;
     figs.Components.Position(3) = 100 + ZDim*250;
     figs.Components.Position(4) = 50 + XChannels*200;
     
