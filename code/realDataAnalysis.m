@@ -1,6 +1,6 @@
 % Run the analysis for the real data sets
 
-clear;
+%clear;
 
 runAnalysis = true;
 
@@ -38,12 +38,12 @@ nReports = 2;
 
 name = [ "GaitRecGRF", ...
          "GaitRecCOP" ];
-results = cell( nReports, 1 );
+%results = cell( nReports, 1 );
 thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
-    for i = 1:nReports
+    for i = 2:nReports
     
         switch i
 
@@ -75,7 +75,7 @@ if runAnalysis
                 setup.data.args.HasGRF = false;
                 setup.data.args.HasVGRFOnly = false;
                 setup.data.args.HasCOP = true;
-                setup.data.args.SessionType = 'Control';
+                setup.data.args.SessionType = 'Initial';
                 setup.data.args.FromMatlabFile = false;
                 
                 parameters = [ "model.class", ...
@@ -96,7 +96,7 @@ if runAnalysis
         thisRun = Investigation( name(i), path, ...
                                  parameters, values, setup, memorySaving );
         argsCell = namedargs2cell( setup.data.args );
-        thisData{i} = thisRun.getDatasets( which = "First", set = "Testing" );
+        %thisData{i} = thisRun.getDatasets( which = "First", set = "Testing" );
         results{i} = thisRun.getResults;
         clear thisRun;
     

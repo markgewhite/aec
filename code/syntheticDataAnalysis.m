@@ -2,7 +2,7 @@
 
 %clear;
 
-runAnalysis = true;
+runAnalysis = false;
 
 % set the destinations for results and figures
 path = fileparts( which('code/syntheticDataAnalysis.m') );
@@ -54,18 +54,16 @@ values = { {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
            1:nDims, ...
            seeds }; 
 
-nModels = length( values{2} );
+nModels = length( values{1} );
 nReports = 4;
 
-name = [ "1L", ...
-         "2L", ...
-         "3L" ];
+name = [ "1L", "2L", "3L", "4L" ];
 results = cell( nReports, 1 );
 thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
-    for i = 2:nReports
+    for i = 1:nReports
     
         switch i
 
@@ -164,7 +162,10 @@ for d = 1:nDims
 
     T0 = genPaperTableCSV( T0, T1, ...
                            direction = "Rows", criterion = "Lowest", ...
-                           groups = [ {1:nModels}, {3*nModels+1:4*nModels} ] );
+                           groups = [ {1:nModels}, ...
+                                      {nModels+1:2*nModels}, ...
+                                      {2*nModels+1:3*nModels}, ...
+                                      {3*nModels+1:4*nModels} ] );
 
     filename = strcat( "Synthetic-Dim", num2str(d), ".csv" );
     writetable( T0, fullfile( path2, filename ) );
