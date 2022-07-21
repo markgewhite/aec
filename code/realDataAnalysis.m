@@ -1,8 +1,8 @@
 % Run the analysis for the real data sets
 
-%clear;
+clear;
 
-runAnalysis = true;
+runAnalysis = false;
 
 % set the destinations for results and figures
 path = fileparts( which('code/realDataAnalysis.m') );
@@ -38,7 +38,7 @@ nReports = 2;
 
 name = [ "GaitRecGRF", ...
          "GaitRecCOP" ];
-%results = cell( nReports, 1 );
+results = cell( nReports, 1 );
 thisData = cell( nReports, 1 );
 memorySaving = 4;
 
@@ -114,40 +114,42 @@ else
 end
 
 % compile results for the paper
-fields = [ "ReconLossRegular", "AuxModelLoss", ...
-           "ZCorrelation", "XCCorrelation" ];
-nFields = length( fields );
+fields = [ "ReconLossRegular", ...
+           "AuxModelLoss" ];
 
-for d = 1:nDims
-
-    for i = 1:nFields
-        for j = 1:nModels
-
-            fieldName = strcat( fields(i), num2str(j) );
-            T.Mean.(fieldName) = zeros( nReports, 1 );
-            T.SD.(fieldName) = zeros( nReports, 1 );
-
-            for k = 1:nReports
-
-                q = zeros( nDatasets, 1 );
-                for m = 1:nDatasets
-                    q(m) = results{k}.TestingResults.(fields(i))(j,d,m);
-                end
-                T.Mean.(fieldName)(k) = mean(q);
-                T.SD.(fieldName)(k) = std(q);
-
+% reshape the results
+m = 0;
+for i = 1:nReports
+    nParams = cellfun( @length, results{i}.GridSearch );
+    for j = 1:nParams(2)
+        for k = 1:nParams(3)
+            m = m + 1;
+            resultsExt{m}.BaselineSetup = results{i}.BaselineSetup; %#ok<SAGROW> 
+            resultsExt{m}.GridSearch = results{i}.GridSearch; %#ok<SAGROW> 
+            flds = fieldnames( results{i}.TestingResults );
+            for f = 1:length(flds)
+                resultsExt{m}.TestingResults.(flds{f}) = ...
+                    results{i}.TestingResults.(flds{f})(:,j,k);
             end
         end
     end
-    T0 = struct2table( T.Mean );
-    T1 = struct2table( T.SD );
-
-    T0 = genPaperTableCSV( T0, T1, ...
-                           direction = "Rows", criterion = "Lowest", ...
-                           groups = [ {1:nModels}, {3*nModels+1:4*nModels} ] );
-
-    filename = strcat( "Synthetic-Dim", num2str(d), ".csv" );
-    writetable( T0, fullfile( path2, filename ) );
-
 end
+
+groupSizes = [3 3];
+
+T0 = genPaperResultsTable( resultsExt, fields, groupSizes );
+
+
+TestNames = [ repelem( "GaitRec (GRF)", prod(nParams(2:3)), 1 ); ...
+             repelem( "GaitRec (COP)", prod(nParams(2:3)), 1 ) ];
+Param1Names = [ "1D"; "1D"; "3D"; "3D"; ...
+                "Deriv"; "Deriv"; "-"; "-" ];
+Param2Names = repmat( ["Controls vs Disorders"; "Disorders"], prod(nParams(2:3)), 1 );
+
+T0 = addvars( T0, TestNames, Before = 1 );
+T0 = addvars( T0, Param1Names, Before = 2 );
+T0 = addvars( T0, Param2Names, Before = 3 );
+
+filename = strcat( "RealDatasets-Results.csv" );
+writetable( T0, fullfile( path2, filename ) );
 

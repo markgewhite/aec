@@ -251,7 +251,7 @@ classdef ModelTrainer < handle
                     if v > 2*vp-1
                         if mean(self.LossVal(v-2*vp+1:v-vp)) ...
                                 < mean(self.LossVal(v-vp+1:v))
-                            disp(['Stopping criterion met. Epoch = ' num2str(epoch)']);
+                            disp(['Stopping criterion met. Epoch = ' num2str(epoch)]);
                             break
                         end
                     end

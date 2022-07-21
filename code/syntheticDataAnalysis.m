@@ -54,15 +54,15 @@ values = { {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
            seeds }; 
 
 nModels = length( values{1} );
-nReports = 4;
+nReports = 8;
 
-names = [ "1L", "2L", "3L", "4L" ];
+names = [ "1L", "2L", "3L", "4L", "5L", "6L", "7L", "8L" ];
 results = cell( nReports, 1 );
 thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
-    for i = 1:nReports
+    for i = 5:nReports
     
         switch i
 
@@ -110,6 +110,50 @@ if runAnalysis
                 setup.data.args.WarpLevel = 1;
                 setup.data.args.SharedLevel = 2;
 
+            case 5
+                % four levels - 3 common & 1 class-specific
+                setup.data.args.NumPts = 17;
+                setup.data.args.Scaling = [8 4 2 1];
+                setup.data.args.Mu = 0.25*[4 3 2 1];
+                setup.data.args.Sigma = zscore*setup.data.args.Mu;
+                setup.data.args.Eta = 0.1;
+                setup.data.args.Tau = 0;    
+                setup.data.args.WarpLevel = 1;
+                setup.data.args.SharedLevel = 3;
+
+            case 6
+                % four levels - 2 common & 3 class-specific, level 1 warping
+                setup.data.args.NumPts = 17;
+                setup.data.args.Scaling = [8 4 2 1];
+                setup.data.args.Mu = 0.25*[4 3 2 1];
+                setup.data.args.Sigma = zscore*setup.data.args.Mu;
+                setup.data.args.Eta = 0.1;
+                setup.data.args.Tau = 0.2;    
+                setup.data.args.WarpLevel = 1;
+                setup.data.args.SharedLevel = 3;
+
+            case 7
+                % four levels - 2 common & 3 class-specific, level 2 warping
+                setup.data.args.NumPts = 17;
+                setup.data.args.Scaling = [8 4 2 1];
+                setup.data.args.Mu = 0.25*[4 3 2 1];
+                setup.data.args.Sigma = zscore*setup.data.args.Mu;
+                setup.data.args.Eta = 0.1;
+                setup.data.args.Tau = 0.2;    
+                setup.data.args.WarpLevel = 2;
+                setup.data.args.SharedLevel = 3;
+
+            case 8
+                % four levels - 2 common & 3 class-specific, level 3 warping
+                setup.data.args.NumPts = 17;
+                setup.data.args.Scaling = [8 4 2 1];
+                setup.data.args.Mu = 0.25*[4 3 2 1];
+                setup.data.args.Sigma = zscore*setup.data.args.Mu;
+                setup.data.args.Eta = 0.1;
+                setup.data.args.Tau = 0.4;    
+                setup.data.args.WarpLevel = 2;
+                setup.data.args.SharedLevel = 3;
+
         end
     
         thisRun = Investigation( names(i), path, ...
@@ -132,50 +176,27 @@ end
 
 % compile results for the paper
 fields = [ "ReconLoss", "ReconLossSmoothed", "ReconLossRegular", ...
-           "AuxModelLoss" ];
-%fields = [ "ReconLoss", "ReconLossSmoothed", "ReconLossRegular", ...
-%           "ReconBias", "ReconVar", ...
-%           "AuxModelLoss", "AuxNetworkLoss", "ComparatorLoss" ];
-nFields = length( fields );
-groupings = cell( nFields, 1 );
-d = 4;
-rowNames = [ "2L:S1-C2"; ...
+           "ReconBias", "ReconVar", ...
+           "AuxModelLoss", "AuxNetworkLoss", "ComparatorLoss", ...
+           "ZCorrelation", "XCCorrelation" ];
+
+groupSizes = [ 3, 3, 3, ...
+               2, 2, ...
+               3, 2, 2, ...
+               3, 3 ];
+    
+T0 = genPaperResultsTable( results, fields, groupSizes );
+
+TestNames = [ "2L:S1-C2"; ...
              "3L:S12-C3"; ...
              "3L:S1-C23"; ...
-             "4L:S12-C34" ];
-for i = 1:nFields
+             "4L:S12-C34"; ...
+             "4L:S123-C4"; ...
+             "4L:S123-C4-W1"; ...
+             "4L:S123-C4-W2"; ...
+             "4L:S123-C4-W2*" ];
 
-    for j = 1:nModels
-
-        fieldName = strcat( fields(i), num2str(j) );
-        T.Mean.(fieldName) = zeros( nReports, 1 );
-        T.SD.(fieldName) = zeros( nReports, 1 );
-
-        for k = 1:nReports
-
-            q = zeros( nDatasets, 1 );
-            for m = 1:nDatasets
-                q(m) = results{k}.TestingResults.(fields(i))(j,d,m);
-            end
-            T.Mean.(fieldName)(k) = mean(q);
-            T.SD.(fieldName)(k) = std(q);
-
-        end
-    end
-
-    if i==2
-        groupings{i} = (i-1)*nModels+(1:2);
-    else
-        groupings{i} = (i-1)*nModels+(1:nModels);
-    end
-
-end
-T0 = struct2table( T.Mean );
-T1 = struct2table( T.SD );
-
-T0 = genPaperTableCSV( rowNames, T0, T1, ...
-                       direction = "Rows", criterion = "Lowest", ...
-                       groups = groupings );
+T0 = addvars( T0, TestNames, Before = 1 );
 
 filename = strcat( "Synthetic-Results.csv" );
 writetable( T0, fullfile( path2, filename ) );

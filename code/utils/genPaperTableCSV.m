@@ -1,32 +1,45 @@
-function Tout = genPaperTableCSV( rowNames, Tin, TinSD, args )
+function Tout = genPaperTableCSV( Tin, TinDev, TF, args )
     % Format tables with numeric elements for CSV output
     % Embolden best (highest/lowest) by row or by column
     arguments
-        rowNames            string
         Tin                 table
-        TinSD               table = []
+        TinDev              table = []
+        TF                  table = []
         args.format         string = '%1.3f'
         args.criterion      string {mustBeMember( ...
-                    args.criterion, {'Highest', 'Lowest'})} = 'Lowest'
+                    args.criterion, {'Smallest', 'Largest'})} = 'Smallest'
         args.direction      string {mustBeMember( ...
                     args.direction, {'Rows', 'Columns'})} = 'Rows'
+        args.threshold      double = 0.05
         args.groups         cell = []
     end
 
     % format table as strings
-    Tout = tableOfStrings( Tin, TinSD, args.format );
+    Tout = tableOfStrings( Tin, TinDev, args.format );
 
     % set the criterion function
     switch args.criterion
-        case 'Lowest'
-            critFcn = @min;
-        case 'Highest'
-            critFcn = @max;
+        case 'Smallest'
+            critFcn = @(x) min(abs(x));
+        case 'Largest'
+            critFcn = @(X) max(abs(x));
+    end
+
+    Ain = table2array( Tin );
+    [ nRows, nCols ] = size( Tin );
+
+    % mark the elements that are significantly different from the control
+    if ~isempty( TF )
+        for i = 1:nRows
+            for j = 1:nCols
+                if TF{i,j}<args.threshold && TF{i,j}~=0
+                    Tout{i,j} = strcat( Tout{i,j}, "\textsuperscript{*}" );
+                end
+            end
+        end
     end
 
     % highlight the elements which are best according to criterion
-    Ain = table2array( Tin );
-    [ nRows, nCols ] = size( Tin );
     switch args.direction
 
         case 'Rows'
@@ -63,9 +76,8 @@ function Tout = genPaperTableCSV( rowNames, Tin, TinSD, args )
         
     end
 
-    Tout = addvars( Tout, rowNames, Before = 1 );
-
 end
+
 
 function T0 = tableOfStrings( T1, T2, fmt )
     % Convert tables of numeric values into strings
@@ -102,8 +114,6 @@ function T0 = tableOfStrings( T1, T2, fmt )
         T0.Properties.VariableNames = vars;
 
     end
-
-
 
 end
 
