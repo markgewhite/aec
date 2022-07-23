@@ -2,7 +2,7 @@
 
 clear;
 
-runAnalysis = true;
+runAnalysis = false;
 
 % set the destinations for results and figures
 path = fileparts( which('code/syntheticDataAnalysis.m') );

@@ -388,7 +388,7 @@ classdef CompactRepresentationModel
         
             % compute the variance as a function of time
             if length( size(pred.XHatRegular) ) == 2
-                XDiff = pred.XHatRegular - loss.ReconTimeBias;
+                XDiff = pred.XHatRegular - loss.ReconTimeBiasRegular;
             else
                 XDiff = pred.XHatRegular - reshape( loss.ReconTimeBiasRegular, ...
                                             size(loss.ReconTimeBiasRegular,1), ...

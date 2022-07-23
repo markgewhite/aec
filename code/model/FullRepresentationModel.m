@@ -142,8 +142,10 @@ classdef FullRepresentationModel
             % run the cross validation loop
             for k = 1:self.KFolds
             
-                disp(['Fold ' num2str(k) '/' num2str(self.KFolds)]);
-
+                if self.ShowPlots
+                    disp(['Fold ' num2str(k) '/' num2str(self.KFolds)]);
+                end
+                
                 % set the kth partitions
                 thisTrnSet = thisDataset.partition( self.Partitions(:,k) );
                 thisValSet = thisDataset.partition( ~self.Partitions(:,k) );

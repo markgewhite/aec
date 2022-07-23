@@ -294,7 +294,7 @@ classdef ModelTrainer < handle
                 end
 
             end
-
+           
 
             % train the auxiliary model
             dlZTrnAll = thisModel.encode( dlXTrnAll, convert = false );
@@ -303,6 +303,10 @@ classdef ModelTrainer < handle
                                         dlZTrnAll, ...
                                         dlYTrnAll );
 
+            % set the oversmoothing level
+            XHatTrnAll = thisModel.reconstruct( dlZTrnAll, convert = true );
+            [ thisModel.FDA.FdParamsTarget, thisModel.FDA.LambdaTarget ] = ...
+                thisTrnData.setTargetFdParams( permute(XHatTrnAll, [1 3 2]) );
 
         end
 

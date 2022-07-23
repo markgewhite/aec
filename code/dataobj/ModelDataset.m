@@ -33,7 +33,6 @@ classdef ModelDataset
         AdaptiveLowerBound  % lower limit on point density
         AdaptiveUpperBound  % upper limit on point density
         ResampleRate        % downsampling rate
-        OverSmoothing       % additional factor for target roughness penalty 
 
         Info            % dataset information (used for plotting)
     end
@@ -76,7 +75,6 @@ classdef ModelDataset
                 args.adaptiveUpperBound     double = 5
                 args.resampleRate           double ...
                     {mustBeNumeric} = 1
-                args.overSmoothing          double = 1E0
                 args.datasetName            string
                 args.timeLabel              string = "Time"
                 args.channelLabels          string
@@ -105,7 +103,6 @@ classdef ModelDataset
             self.AdaptiveLowerBound = args.adaptiveLowerBound;
             self.AdaptiveUpperBound = args.adaptiveUpperBound;
             self.ResampleRate = args.resampleRate;
-            self.OverSmoothing = args.overSmoothing;
 
             self.Info.DatasetName = args.datasetName;
             self.Info.ChannelLabels = args.channelLabels;
@@ -181,13 +178,11 @@ classdef ModelDataset
                                             self.FDA.Lambda );
 
             % set the FD parameters for adaptive spacing
-            % with a higher level of smoothing than the input
-            lambda = self.FDA.Lambda*self.OverSmoothing;
             self.FDA.FdParamsTarget = setFDAParameters( ...
                                     self.TSpan.Target, ...
                                     self.FDA.BasisOrder, ...
                                     self.FDA.PenaltyOrder, ...
-                                    lambda );
+                                    self.FDA.Lambda );
 
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
@@ -457,6 +452,36 @@ classdef ModelDataset
         end
 
 
+        function [ fdParams, lambda ] = setTargetFdParams( self, X )
+            % Get the target FD parameters for a given data set
+            arguments
+                self        ModelDataset
+                X           double
+            end
+        
+            if length( self.TSpan.Target ) ~= size( X, 1 )
+                error('X does not match the target timespan.');
+            end
+        
+            tSpan = self.TSpan.Target;
+            basis = create_bspline_basis( [tSpan(1) tSpan(end)], ...
+                                          length(tSpan), ...
+                                          self.FDA.BasisOrder);
+        
+            gcvFcn = @(L) gcv( L, X, tSpan, basis, self.FDA.PenaltyOrder );
+
+            % find the loglambda where GCV is minimized
+            logLambda = fminbnd( gcvFcn, -10, 10 );
+            lambda = 10^round( logLambda, 1 );
+
+            fdParams = setFDAParameters( tSpan, ...
+                                         self.FDA.BasisOrder, ...
+                                         self.FDA.PenaltyOrder, ...
+                                         lambda );
+        
+        end
+
+
     end
 
 end
@@ -700,5 +725,26 @@ function [ X, XN, Y ] = preprocMiniBatch( XCell, XNCell, YCell, ...
         Y = [];
     end
 
+
+end
+
+
+function err = gcv( logLambda, X, tSpan, basis, penaltyOrder  )
+    % Objective function returning GCV error for given smoothing
+    arguments
+        logLambda       double
+        X               double
+        tSpan           double
+        basis
+        penaltyOrder    double
+    end
+
+    % set smoothing parameters
+    XFdParam = fdPar( basis, penaltyOrder, 10^logLambda );
+    
+    % perform smoothing
+    [~, ~, err] = smooth_basis( tSpan, X, XFdParam );
+
+    err = mean(err) + 0.001*logLambda;
 
 end
