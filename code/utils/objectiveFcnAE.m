@@ -36,7 +36,7 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
             obj = thisEvaluation.TestingEvaluation.ReconLossSmoothed;
         case 'ReconLossRegular'
             obj = thisEvaluation.TestingEvaluation.ReconLossRegular;
-        case 'AuxLoss'
+        case 'AuxModelLoss'
             obj = thisEvaluation.TestingEvaluation.AuxModelLoss;
     end
 

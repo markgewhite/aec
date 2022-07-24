@@ -4,6 +4,8 @@ clear;
 
 runAnalysis = false;
 
+exploration = 0.5;
+
 % set the destinations for results and figures
 path = fileparts( which('code/optimizeAE.m') );
 path = [path '/../results/opt/'];
@@ -12,15 +14,30 @@ path2 = fileparts( which('code/optimizeAE.m') );
 path2 = [path2 '/../paper/results/'];
 
 % -- data setup --
-setup.data.class = @SyntheticDataset;
-setup.data.args.ClassSizes = [100 100];
+setup.data.class = @JumpGRFDataset;
+setup.data.args.Normalization = 'PAD';
 setup.data.args.HasNormalizedInput = true;
-setup.data.args.NormalizedPts = 51;
-zscore = 0.5;
+
+%setup.data.class = @SyntheticDataset;
+%setup.data.args.ClassSizes = [100 100];
+%setup.data.args.HasNormalizedInput = true;
+%setup.data.args.NormalizedPts = 11;
+
+%setup.data.args.NumPts = 17;
+%setup.data.args.Scaling = [8 4 2 1];
+%setup.data.args.Mu = 0.25*[4 3 2 1];
+%setup.data.args.Sigma = 0.5*setup.data.args.Mu;
+%setup.data.args.Eta = 0.1;
+%setup.data.args.Tau = 0;    
+%setup.data.args.WarpLevel = 1;
+%setup.data.args.SharedLevel = 3;
+
 
 % -- loss functions --
 setup.lossFcns.recon.class = @ReconstructionLoss;
 setup.lossFcns.recon.name = 'Reconstruction';
+setup.lossFcns.zcls.class = @ClassifierLoss;
+setup.lossFcns.zcls.name = 'ZClassifier';
 
 % -- model setup --
 setup.model.class = @FCModel;
@@ -33,23 +50,62 @@ setup.model.args.CompressionLevel = 3;
 setup.model.args.ShowPlots = false;
 
 % -- trainer setup --
-setup.model.args.trainer.numEpochs = 40; % 400
+setup.model.args.trainer.numEpochs = 200; % 400
 setup.model.args.trainer.numEpochsPreTrn = 10; %10
 setup.model.args.trainer.updateFreq = 200;
 setup.model.args.trainer.batchSize = 50;
 setup.model.args.trainer.holdout = 0;
 
 % -- optimizer setup --
-setup.opt.objective = 'ReconLossRegular';
+setup.opt.objective = 'AuxModelLoss';
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'data_args_HasAdaptiveTimeSpan', ...
-        ["false" "true"], ...
-        'Type', 'categorical', 'Optimize', false );
+        ["false" "true"], Type = 'categorical', ...
+        Optimize = false );
 
 varDef(2) = optimizableVariable( 'data_args_NormalizedPts', ...
         [3 1000], Type = 'integer', Transform = 'log', ... 
         Optimize = true );
+
+varDef(3) = optimizableVariable( 'data_args_ResampleRate', ...
+        [1 100], Type = 'real', Transform = 'log', ... 
+        Optimize = true );
+
+varDef(4) = optimizableVariable( 'data_args_Lambda', ...
+        [1E-10 1E10], Type = 'real', Transform = 'log', ... 
+        Optimize = false );
+
+varDef(5) = optimizableVariable( 'model_args_HasInputNormalization', ...
+        ["false" "true"], Type = 'categorical', ...
+        Optimize = false );
+
+
+varDef(6) = optimizableVariable( 'model_args_NumHidden', ...
+        [1 3], Type = 'integer', ... 
+        Optimize = true );
+
+varDef(7) = optimizableVariable( 'model_args_NumFC', ...
+        [16 256], Type = 'integer', Transform = 'log', ... 
+        Optimize = true );
+
+varDef(8) = optimizableVariable( 'model_args_FCFactor', ...
+        [1 3], Type = 'integer', ... 
+        Optimize = true );
+
+varDef(9) = optimizableVariable( 'model_args_ReLuScale', ...
+        [0.01 0.9], Type = 'real', Transform = 'log', ... 
+        Optimize = true );
+
+varDef(10) = optimizableVariable( 'model_args_InputDropout', ...
+        [0.01 0.5], Type = 'real', Transform = 'log', ... 
+        Optimize = true );
+
+varDef(11) = optimizableVariable( 'model_args_Dropout', ...
+        [0.01 0.5], Type = 'real', Transform = 'log', ... 
+        Optimize = true );
+
+
 
 % setup objective function
 objFcn = @(x) objectiveFcnAE( x, setup );
@@ -57,7 +113,7 @@ objFcn = @(x) objectiveFcnAE( x, setup );
 % run optimisation
 output = bayesopt( objFcn, varDef, ...
             NumCoupledConstraints = 1, ...
-            ExplorationRatio = 2.0, ...
+            ExplorationRatio = exploration, ...
             MaxObjectiveEvaluations = 50 );
 
 

@@ -7,6 +7,7 @@ classdef FCModel < FullAEModel
         ReLuScale     % leaky ReLu scale factor
         InputDropout  % input dropout rate
         Dropout       % hidden layer dropout rate
+        HasInputNormalization % apply amplitude normalization
     end
 
     methods
@@ -39,6 +40,7 @@ classdef FCModel < FullAEModel
                     {mustBeInRange(args.InputDropout, 0, 1)} = 0.2
                 args.Dropout    double ...
                     {mustBeInRange(args.Dropout, 0, 1)} = 0.05
+                args.HasInputNormalization logical = true
                 args.FlattenInput   logical = true
                 args.HasSeqInput    logical = false
             end
@@ -61,6 +63,7 @@ classdef FCModel < FullAEModel
             self.ReLuScale = args.ReLuScale;
             self.InputDropout = args.InputDropout;
             self.Dropout = args.Dropout;
+            self.HasInputNormalization = args.HasInputNormalization;
            
         end
 
@@ -71,10 +74,17 @@ classdef FCModel < FullAEModel
                 self        FCModel
             end
 
-            layersEnc = [ featureInputLayer( self.XInputDim*self.XChannels, ...
-                                   'Name', 'in', ...
-                                   'Normalization', 'zscore', ...
-                                   'Mean', 0, 'StandardDeviation', 1 )
+            if self.HasInputNormalization
+                layersEnc = featureInputLayer( self.XInputDim*self.XChannels, ...
+                                       'Name', 'in', ...
+                                       'Normalization', 'zscore', ...
+                                       'Mean', 0, 'StandardDeviation', 1 );
+            else
+                layersEnc = featureInputLayer( self.XInputDim*self.XChannels, ...
+                                       'Name', 'in' );
+            end
+
+            layersEnc = [ layersEnc; ...
                           dropoutLayer( self.InputDropout, 'Name', 'drop0' ) ];
 
             lgraphEnc = layerGraph( layersEnc );       

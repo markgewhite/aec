@@ -14,6 +14,7 @@ classdef JumpGRFDataset < ModelDataset
                     {mustBeMember( set, ...
                                    {'Training', 'Testing'} )}
                 args.PaddingLength  double = 0
+                args.Lambda         double = 1E0
                 superArgs.?ModelDataset
             end
 
@@ -37,7 +38,7 @@ classdef JumpGRFDataset < ModelDataset
             % setup fda
             paramsFd.BasisOrder = 4;
             paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = 1E0; % 1E5 1E2
+            paramsFd.Lambda = args.Lambda;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
