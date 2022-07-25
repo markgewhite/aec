@@ -16,8 +16,7 @@ path2 = [path2 '/../paper/results/'];
 % -- data setup --
 setup.data.class = @JumpGRFDataset;
 setup.data.args.Normalization = 'PAD';
-setup.data.args.HasNormalizedInput = true;
-setup.data.args.ResampleRate = 1.5;
+setup.data.args.HasNormalizedInput = false;
 
 %setup.data.class = @SyntheticDataset;
 %setup.data.args.ClassSizes = [100 100];
@@ -37,11 +36,11 @@ setup.data.args.ResampleRate = 1.5;
 % -- loss functions --
 setup.lossFcns.recon.class = @ReconstructionLoss;
 setup.lossFcns.recon.name = 'Reconstruction';
-%setup.lossFcns.zcls.class = @ClassifierLoss;
-%setup.lossFcns.zcls.name = 'ZClassifier';
+setup.lossFcns.zcls.class = @ClassifierLoss;
+setup.lossFcns.zcls.name = 'ZClassifier';
 
 % -- model setup --
-setup.model.class = @FCModel;
+setup.model.class = @TCNModel;
 setup.model.args.ZDim = 4;
 setup.model.args.InitZDimActive = 0;
 setup.model.args.KFolds = 1;
@@ -49,14 +48,12 @@ setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
 setup.model.args.CompressionLevel = 3;
 setup.model.args.ShowPlots = false;
-
-setup.model.args.NumHidden = 1;
+setup.model.args.HasFCDecoder = true;
 setup.model.args.FCFactor = 1;
-setup.model.args.InputDropout = 0;
-
+setup.model.args.NumFC = 128;
 
 % -- trainer setup --
-setup.model.args.trainer.numEpochs = 200; % 400
+setup.model.args.trainer.numEpochs = 100; % 400
 setup.model.args.trainer.numEpochsPreTrn = 10; %10
 setup.model.args.trainer.updateFreq = 200;
 setup.model.args.trainer.batchSize = 50;
@@ -86,14 +83,14 @@ varDef(5) = optimizableVariable( 'model_args_HasInputNormalization', ...
         ["false" "true"], Type = 'categorical', ...
         Optimize = false );
 
-
+% FC Model hyperparameters
 varDef(6) = optimizableVariable( 'model_args_NumHidden', ...
         [1 3], Type = 'integer', ... 
         Optimize = false );
 
 varDef(7) = optimizableVariable( 'model_args_NumFC', ...
         [16 256], Type = 'integer', Transform = 'log', ... 
-        Optimize = true );
+        Optimize = false );
 
 varDef(8) = optimizableVariable( 'model_args_FCFactor', ...
         [1 3], Type = 'integer', ... 
@@ -101,7 +98,7 @@ varDef(8) = optimizableVariable( 'model_args_FCFactor', ...
 
 varDef(9) = optimizableVariable( 'model_args_ReLuScale', ...
         [0.01 0.9], Type = 'real', Transform = 'log', ... 
-        Optimize = true );
+        Optimize = false );
 
 varDef(10) = optimizableVariable( 'model_args_InputDropout', ...
         [0.01 0.5], Type = 'real', Transform = 'log', ... 
@@ -109,8 +106,21 @@ varDef(10) = optimizableVariable( 'model_args_InputDropout', ...
 
 varDef(11) = optimizableVariable( 'model_args_Dropout', ...
         [0.01 0.5], Type = 'real', Transform = 'log', ... 
-        Optimize = true );
+        Optimize = false );
 
+
+% TCN Model hyperparameters
+varDef(12) = optimizableVariable( 'model_args_NumConvHidden', ...
+        [2 8], Type = 'integer', ... 
+        Optimize = false );
+
+varDef(13) = optimizableVariable( 'model_args_DilationFactor', ...
+        [2 4], Type = 'integer', ... 
+        Optimize = false );
+
+varDef(14) = optimizableVariable( 'model_args_HasReluInside', ...
+        ["false" "true"], Type = 'categorical', ...
+        Optimize = true );
 
 
 % setup objective function

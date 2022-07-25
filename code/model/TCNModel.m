@@ -2,11 +2,13 @@ classdef TCNModel < FCModel
     % Subclass defining a temporal convolutional autoencoder model
 
     properties
+        NumConvHidden % number of convolution hidden layers (distinct from FC hidden layers)
         NumFilters    % number of filters aka kernels
         FilterSize    % length of the filters
         Dilations     % dilations
         Pooling       % pooling operator
         UseSkips      % whether to include short circuit paths
+        HasReLuInside % whether ReLu is placed inside or outside the block
         HasFCDecoder  % whether the decoder inherits the fully-connected design
     end
 
@@ -28,6 +30,8 @@ classdef TCNModel < FCModel
                 superArgs.?FCModel
                 superArgs2.name     string
                 superArgs2.path     string
+                args.NumConvHidden  double ...
+                    {mustBeInteger, mustBePositive} = 4
                 args.NumFilters     double ...
                     {mustBeInteger, mustBePositive} = 16
                 args.FilterSize     double ...
@@ -38,6 +42,7 @@ classdef TCNModel < FCModel
                     {mustBeMember(args.Pooling, ...
                       {'GlobalMax', 'GlobalAvg'} )} = 'GlobalMax'
                 args.UseSkips       logical = true
+                args.HasReLuInside  logical = true
                 args.HasFCDecoder   logical = false
             end
 
@@ -54,19 +59,21 @@ classdef TCNModel < FCModel
 
 
             % store this class's properties
+            self.NumConvHidden = args.NumConvHidden;
             self.FilterSize = args.FilterSize;
             self.Pooling = args.Pooling;
             self.UseSkips = args.UseSkips;
+            self.HasReLuInside = args.HasReLuInside;
             self.HasFCDecoder = args.HasFCDecoder;
 
             if self.UseSkips
                 % must use the same number of filters in each block
-                self.NumFilters = args.NumFilters*ones( self.NumHidden, 1 );
+                self.NumFilters = args.NumFilters*ones( self.NumConvHidden, 1 );
             else
                 % progressively double filters
-                self.NumFilters = args.NumFilters*2.^(0:self.NumHidden-1);
+                self.NumFilters = args.NumFilters*2.^(0:self.NumConvHidden-1);
             end
-            self.Dilations = 2.^((0:self.NumHidden-1)*args.DilationFactor);
+            self.Dilations = 2.^((0:self.NumConvHidden-1)*args.DilationFactor);
 
         end
 
@@ -87,12 +94,13 @@ classdef TCNModel < FCModel
             lastLayer = 'drop0';
             
             % create hidden layers
-            for i = 1:self.NumHidden
+            for i = 1:self.NumConvHidden
                 [lgraphEnc, lastLayer] = addResidualBlock( ...
                     lgraphEnc, i, lastLayer, ...
                     self.FilterSize, self.NumFilters(i), ...
                     self.Dilations(i), ...
-                    self.ReLuScale, self.Dropout, self.UseSkips, false );
+                    self.ReLuScale, self.Dropout, ...
+                    self.UseSkips, false, self.HasReLuInside );
             end
             
             % add the output layers
@@ -137,13 +145,14 @@ classdef TCNModel < FCModel
             lgraphDec = layerGraph( layersDec );
             lastLayer = 'proj';
             
-            for i = 1:self.NumHidden
-                f = self.NumFilters( self.NumHidden-i+1 );
+            for i = 1:self.NumConvHidden
+                f = self.NumFilters( self.NumConvHidden-i+1 );
                 [lgraphDec, lastLayer] = addResidualBlock( ...
                     lgraphDec, i, lastLayer, ...
                     self.FilterSize, f, ...
                     self.Dilations(i), ...
-                    self.ReLuScale, self.Dropout, self.UseSkips, true );
+                    self.ReLuScale, self.Dropout, ...
+                    self.UseSkips, true, self.HasReLuInside );
             end
             
             % add the output layers
@@ -196,7 +205,7 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
                         lgraph, i, lastLayer, ...
                         filterSize, nFilters, ...
                         dilation, ...
-                        scale, dropout, skip, transpose )
+                        scale, dropout, skip, transpose, reluInside )
 
     % define residual block
     if transpose
@@ -216,14 +225,24 @@ function [ lgraph, lastLayer ] = addResidualBlock( ...
                 layerNormalizationLayer( 'Name', ['lnorm' num2str(i)] )
                 ];
 
+    if reluInside
+        block = [ block;
+                leakyReluLayer( scale, ...
+                                'Name', ['relu' num2str(i)] ) ];
+    end
+
     if skip
         block = [ block; 
                   additionLayer( 2, 'Name', ['add' num2str(i)] ) ];
     end
 
-    block = [ block;
+    if ~reluInside
+        block = [ block;
                 leakyReluLayer( scale, ...
-                                'Name', ['relu' num2str(i)] )
+                                'Name', ['relu' num2str(i)] ) ];
+    end
+
+    block = [ block;
                 spatialDropoutLayer( dropout, ...
                                      'Name', ['drop' num2str(i)] )
                 ];
