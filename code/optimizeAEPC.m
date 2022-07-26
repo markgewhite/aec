@@ -4,7 +4,7 @@ clear;
 
 runAnalysis = false;
 
-exploration = 0.5;
+exploration = 2;
 
 % set the destinations for results and figures
 path = fileparts( which('code/optimizeAE.m') );
@@ -17,6 +17,7 @@ path2 = [path2 '/../paper/results/'];
 setup.data.class = @JumpGRFDataset;
 setup.data.args.Normalization = 'PAD';
 setup.data.args.HasNormalizedInput = false;
+setup.data.args.ResampleRate = 5;
 
 %setup.data.class = @SyntheticDataset;
 %setup.data.args.ClassSizes = [100 100];
@@ -120,8 +121,11 @@ varDef(13) = optimizableVariable( 'model_args_DilationFactor', ...
 
 varDef(14) = optimizableVariable( 'model_args_HasReluInside', ...
         ["false" "true"], Type = 'categorical', ...
-        Optimize = true );
+        Optimize = false );
 
+varDef(14) = optimizableVariable( 'model_args_Pooling', ...
+        ["GlobalMax" "GlobalAvg"], Type = 'categorical', ...
+        Optimize = true );
 
 % setup objective function
 objFcn = @(x) objectiveFcnAE( x, setup );

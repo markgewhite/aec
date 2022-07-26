@@ -2,11 +2,11 @@
 
 clear;
 
-runAnalysis = false;
+runAnalysis = true;
 
 % set the destinations for results and figures
 path = fileparts( which('code/syntheticDataAnalysis.m') );
-path = [path '/../results/test/'];
+path = [path '/../results/synthetic2/'];
 
 path2 = fileparts( which('code/syntheticDataAnalysis.m') );
 path2 = [path2 '/../paper/results/'];
@@ -14,8 +14,7 @@ path2 = [path2 '/../paper/results/'];
 % -- data setup --
 setup.data.class = @SyntheticDataset;
 setup.data.args.ClassSizes = [200 200];
-setup.data.args.HasNormalizedInput = true;
-setup.data.args.OverSmoothing = 1E5;
+setup.data.args.HasNormalizedInput = false;
 zscore = 0.5;
 
 % -- loss functions --
@@ -50,7 +49,9 @@ seeds = randi( 1000, 1, nDatasets );
 
 parameters = [ "model.class", ...
                "data.args.TemplateSeed" ];
-values = { {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
+%values = { {@FCModel, @ConvolutionalModel, @FullPCAModel}, ...
+%           seeds }; 
+values = { {@TCNModel}, ...
            seeds }; 
 
 nModels = length( values{1} );
@@ -62,7 +63,7 @@ thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
-    for i = 5:nReports
+    for i = 1:nReports
     
         switch i
 

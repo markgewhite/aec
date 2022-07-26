@@ -133,7 +133,7 @@ classdef InputClassifierLoss < LossFunction
 
         function [ loss, state ] = networkLoss( self, net, dlX, dlC )
 
-            if size( dlX, 3 ) > 1
+            if size( dlX, 3 ) > 1 && net.Layers(1).InputSize > 1
                 % flatten the input
                 dlX = flattenDLArray( dlX );
             end

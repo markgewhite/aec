@@ -51,6 +51,7 @@ setup.model.args.ShowPlots = false;
 setup.model.args.HasFCDecoder = true;
 setup.model.args.FCFactor = 1;
 setup.model.args.NumFC = 128;
+setup.model.args.Pooling = 'None';
 
 % -- trainer setup --
 setup.model.args.trainer.numEpochs = 100; % 400
