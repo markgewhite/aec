@@ -8,8 +8,7 @@ function setup = initSetup
     setup.data.args.NormalizedPts = 51;
     setup.data.args.HasAdaptiveTimeSpan = true;
     setup.data.args.ResampleRate = 10;
-    setup.data.args.OverSmoothing = 1E3;
-    setup.data.args.HasMatchingOutput = false;
+    setup.data.args.HasMatchingOutput = true;
         
     %setup.data.class = @fukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
@@ -32,13 +31,13 @@ function setup = initSetup
     setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
 
-    setup.lossFcns.adv.class = @AdversarialLoss;
-    setup.lossFcns.adv.name = 'Discriminator';
+    %setup.lossFcns.adv.class = @AdversarialLoss;
+    %setup.lossFcns.adv.name = 'Discriminator';
     
-    setup.lossFcns.orth.class = @ComponentLoss;
-    setup.lossFcns.orth.name = 'XOrthogonality';
-    setup.lossFcns.orth.args.criterion = 'InnerProduct';
-    setup.lossFcns.orth.args.useLoss = false;
+    %setup.lossFcns.orth.class = @ComponentLoss;
+    %setup.lossFcns.orth.name = 'XOrthogonality';
+    %setup.lossFcns.orth.args.criterion = 'InnerProduct';
+    %setup.lossFcns.orth.args.useLoss = false;
 
     %setup.lossFcns.cls.class = @ClassifierLoss;
     %setup.lossFcns.cls.name = 'Classification';
@@ -57,12 +56,14 @@ function setup = initSetup
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
+    setup.model.args.ShowPlots = true;
+    setup.model.args.DestroyDropout = 0;
     
     % training
-    setup.model.args.trainer.updateFreq = 200;
-    setup.model.args.trainer.valType = 'AuxModel';
+    setup.model.args.trainer.updateFreq = 20;
+    setup.model.args.trainer.valType = 'Reconstruction';
     setup.model.args.trainer.numEpochs = 1000;
-    setup.model.args.trainer.numEpochsPreTrn = 40;
+    setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;

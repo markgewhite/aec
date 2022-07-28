@@ -17,6 +17,8 @@ classdef CompactAEModel < CompactRepresentationModel
         Trainer        % trainer object holding training parameters
         Optimizer      % optimizer object
         ZDimActive     % number of dimensions currently active
+        IsInterpolativeDecoder % whether the decoder takes destroyed X as input
+        DestroyDropout % dropout rate for an interpolative decoder
     end
 
     properties (Dependent = true)
@@ -48,6 +50,8 @@ classdef CompactAEModel < CompactRepresentationModel
             self.FlattenInput = theFullModel.FlattenInput;
             self.HasSeqInput = theFullModel.HasSeqInput;
             self.ZDimActive = theFullModel.InitZDimActive;
+            self.IsInterpolativeDecoder = theFullModel.IsInterpolativeDecoder;
+            self.DestroyDropout = theFullModel.DestroyDropout;
 
             if theFullModel.IdenticalNetInit ...
                     && ~isempty( theFullModel.InitializedNets )
@@ -272,7 +276,7 @@ classdef CompactAEModel < CompactRepresentationModel
 
 
 
-        function [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ )
+        function [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ, dlX )
             % Forward-run the decoder network
             % dlnetworks are provided for tracing purposes 
             % rather than using the object's network definitions
@@ -280,10 +284,17 @@ classdef CompactAEModel < CompactRepresentationModel
                 self        CompactAEModel
                 decoder     dlnetwork
                 dlZ         dlarray
+                dlX         dlarray = []
             end
 
-            % reconstruct curves from latent codes
-            [ dlXHat, state ] = forward( decoder, dlZ );
+            if self.IsInterpolativeDecoder
+                % reconstruct curves from latent codes and mean X
+                dlXMean = repmat( mean(dlX,2), 1, size(dlX,2));
+                [ dlXHat, state ] = forward( decoder, dlZ, dlXMean );
+            else
+                % reconstruct curves from latent codes
+                [ dlXHat, state ] = forward( decoder, dlZ );
+            end
 
         end
 
@@ -335,7 +346,9 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlZ = dlarray( Z', 'CB' );
             end
 
-            dlXHat = decodeDispatcher( self, dlZ, forward = false );
+            dlXHat = decodeDispatcher( self, dlZ, ...
+                                       dlX = dlX, ...
+                                       forward = false );
 
             if arg.convert
                 if isa( dlXHat, 'dlarray' )
@@ -359,7 +372,11 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             if args.forward
-                dlX = forward( self.Nets.Decoder, dlZ );
+                if self.IsInterpolativeDecoder
+                    dlX = forward( self.Nets.Decoder, dlZ, args.dlX );
+                else
+                    dlX = forward( self.Nets.Decoder, dlZ );
+                end
             else
                 dlX = predict( self.Nets.Decoder, dlZ );
             end
