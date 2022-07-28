@@ -21,7 +21,9 @@ function T0 = genPaperResultsTable( results, fields, groupSizes )
             T.Median.(fieldNames(i,j)) = zeros( nReports, 1 );
             if nDatasets > 1
                 T.IQR.(fieldNames(i,j)) = zeros( nReports, 1 );
-                T.Friedman.(fieldNames(i,j)) = zeros( nReports, 1 );
+                if nModels > 1
+                    T.Friedman.(fieldNames(i,j)) = zeros( nReports, 1 );
+                end
             end
         end
         groupings{i} = (i-1)*nModels+(1:groupSizes(i));
@@ -46,7 +48,7 @@ function T0 = genPaperResultsTable( results, fields, groupSizes )
 
             end
     
-            if nDatasets > 1
+            if nDatasets > 1 && nModels > 1
                 % conduct Friedman's ANOVA comparison between models
                 [ ~, ~, stats ] = friedman( q(1:groupSizes(i),:), 1, "off" );
                 if groupSizes(i)==nModels
@@ -73,16 +75,26 @@ function T0 = genPaperResultsTable( results, fields, groupSizes )
     end
     T0 = struct2table( T.Median );
 
+    if nModels > 1
+        embolden = "Rows";
+    else
+        embolden = "None";
+    end
+
     if nDatasets > 1
         T1 = struct2table( T.IQR );
-        T2 = struct2table( T.Friedman );
+        if nModels > 1
+            T2 = struct2table( T.Friedman );
+        else
+            T2 = [];
+        end
         
         T0 = genPaperTableCSV( T0, T1, T2, ...
-                               direction = "Rows", criterion = "Smallest", ...
+                               direction = embolden, criterion = "Smallest", ...
                                groups = groupings );
     else
         T0 = genPaperTableCSV( T0, [], [], ...
-                               direction = "Rows", criterion = "Smallest", ...
+                               direction = embolden, criterion = "Smallest", ...
                                groups = groupings );
     end
 

@@ -9,7 +9,7 @@ function Tout = genPaperTableCSV( Tin, TinDev, TF, args )
         args.criterion      string {mustBeMember( ...
                     args.criterion, {'Smallest', 'Largest'})} = 'Smallest'
         args.direction      string {mustBeMember( ...
-                    args.direction, {'Rows', 'Columns'})} = 'Rows'
+                    args.direction, {'Rows', 'Columns', 'None'})} = 'Rows'
         args.threshold      double = 0.05
         args.groups         cell = []
     end

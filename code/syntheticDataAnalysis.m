@@ -6,7 +6,7 @@ runAnalysis = true;
 
 % set the destinations for results and figures
 path = fileparts( which('code/syntheticDataAnalysis.m') );
-path = [path '/../results/synthetic2/'];
+path = [path '/../results/synthetic3/'];
 
 path2 = fileparts( which('code/syntheticDataAnalysis.m') );
 path2 = [path2 '/../paper/results/'];
@@ -15,6 +15,7 @@ path2 = [path2 '/../paper/results/'];
 setup.data.class = @SyntheticDataset;
 setup.data.args.ClassSizes = [200 200];
 setup.data.args.HasNormalizedInput = false;
+setup.data.args.NumPts = 201;
 zscore = 0.5;
 
 % -- loss functions --
@@ -199,7 +200,7 @@ TestNames = [ "2L:S1-C2"; ...
 
 T0 = addvars( T0, TestNames, Before = 1 );
 
-filename = strcat( "Synthetic-Results.csv" );
+filename = strcat( "Synthetic3-Results.csv" );
 writetable( T0, fullfile( path2, filename ) );
 
 

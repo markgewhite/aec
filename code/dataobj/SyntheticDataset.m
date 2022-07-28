@@ -30,7 +30,8 @@ classdef SyntheticDataset < ModelDataset
                 args.DatasetSeed     double = 9876
                 args.ClassSizes     double ...
                     {mustBeInteger, mustBePositive} = [500 500 500]
-                args.NumPts         double ...
+                args.NumPts         double = 101
+                args.NumTemplatePts double ...
                     {mustBeInteger, mustBePositive} = 17
                 args.Channels       double = 1
                 args.Scaling        double = [2 4 8]
@@ -45,8 +46,8 @@ classdef SyntheticDataset < ModelDataset
             end
 
             % setup the timespan
-            args.TSpanTemplate = linspace( 0, 1, args.NumPts )';
-            args.TSpan = linspace( 0, 1, 101 )';
+            args.TSpanTemplate = linspace( 0, 1, args.NumTemplatePts )';
+            args.TSpan = linspace( 0, 1, args.NumPts )';
 
             % set the random seed
             switch set

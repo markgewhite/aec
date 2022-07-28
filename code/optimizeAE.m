@@ -2,7 +2,7 @@
 
 clear;
 
-runAnalysis = false;
+dataset = "Jumps";
 
 exploration = 0.5;
 
@@ -14,24 +14,33 @@ path2 = fileparts( which('code/optimizeAE.m') );
 path2 = [path2 '/../paper/results/'];
 
 % -- data setup --
-setup.data.class = @JumpGRFDataset;
-setup.data.args.Normalization = 'PAD';
-setup.data.args.HasNormalizedInput = false;
+switch dataset
+    case "Jumps"
+        setup.data.class = @JumpGRFDataset;
+        setup.data.args.Normalization = 'PAD';
+        setup.data.args.HasNormalizedInput = false;
+        setup.data.args.ResampleRate = 10;
 
-%setup.data.class = @SyntheticDataset;
-%setup.data.args.ClassSizes = [100 100];
-%setup.data.args.HasNormalizedInput = true;
-%setup.data.args.NormalizedPts = 11;
+    case "Synthetic"
+        setup.data.class = @SyntheticDataset;
+        setup.data.args.ClassSizes = [200 200];
+        setup.data.args.HasNormalizedInput = false;
+        zscore = 0.5;
+        
+        setup.data.args.NumPts = 201;
+        setup.data.args.NumTemplatePts = 17;
+        setup.data.args.Scaling = [8 4 2 1];
+        setup.data.args.Mu = 0.25*[4 3 2 1];
+        setup.data.args.Sigma = zscore*setup.data.args.Mu;
+        setup.data.args.Eta = 0.1;
+        setup.data.args.Tau = 0;    
+        setup.data.args.WarpLevel = 1;
+        setup.data.args.SharedLevel = 2;
 
-%setup.data.args.NumPts = 17;
-%setup.data.args.Scaling = [8 4 2 1];
-%setup.data.args.Mu = 0.25*[4 3 2 1];
-%setup.data.args.Sigma = 0.5*setup.data.args.Mu;
-%setup.data.args.Eta = 0.1;
-%setup.data.args.Tau = 0;    
-%setup.data.args.WarpLevel = 1;
-%setup.data.args.SharedLevel = 3;
-
+    otherwise
+        error("Unrecognised dataset specified.");
+    
+end
 
 % -- loss functions --
 setup.lossFcns.recon.class = @ReconstructionLoss;
@@ -51,7 +60,6 @@ setup.model.args.ShowPlots = false;
 setup.model.args.HasFCDecoder = true;
 setup.model.args.FCFactor = 1;
 setup.model.args.NumFC = 128;
-setup.model.args.Pooling = 'None';
 
 % -- trainer setup --
 setup.model.args.trainer.numEpochs = 100; % 400
@@ -110,18 +118,32 @@ varDef(11) = optimizableVariable( 'model_args_Dropout', ...
         Optimize = false );
 
 
+% data hyperparameters
+varDef(12) = optimizableVariable( 'data_args_NumPts', ...
+        [20 2000], Type = 'integer', Transform = 'log', ... 
+        Optimize = false );
+
 % TCN Model hyperparameters
-varDef(12) = optimizableVariable( 'model_args_NumConvHidden', ...
-        [2 8], Type = 'integer', ... 
-        Optimize = false );
-
-varDef(13) = optimizableVariable( 'model_args_DilationFactor', ...
-        [2 4], Type = 'integer', ... 
-        Optimize = false );
-
-varDef(14) = optimizableVariable( 'model_args_HasReluInside', ...
+varDef(13) = optimizableVariable( 'model_args_HasReluInside', ...
         ["false" "true"], Type = 'categorical', ...
+        Optimize = false );
+
+varDef(14) = optimizableVariable( 'model_args_NumConvHidden', ...
+        [2 8], Type = 'integer', ... 
         Optimize = true );
+
+varDef(15) = optimizableVariable( 'model_args_DilationFactor', ...
+        [1 2], Type = 'integer', ... 
+        Optimize = true );
+
+varDef(16) = optimizableVariable( 'model_args_FilterSize', ...
+        [3 11], Type = 'integer', ... 
+        Optimize = true );
+
+varDef(17) = optimizableVariable( 'model_args_NumFilters', ...
+        [4 64], Type = 'integer', Transform = 'log', ... 
+        Optimize = true );
+
 
 
 % setup objective function

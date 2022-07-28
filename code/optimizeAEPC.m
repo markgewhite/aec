@@ -14,31 +14,30 @@ path2 = fileparts( which('code/optimizeAE.m') );
 path2 = [path2 '/../paper/results/'];
 
 % -- data setup --
-setup.data.class = @JumpGRFDataset;
-setup.data.args.Normalization = 'PAD';
+%setup.data.class = @JumpGRFDataset;
+%setup.data.args.Normalization = 'PAD';
+%setup.data.args.HasNormalizedInput = false;
+
+setup.data.class = @SyntheticDataset;
+setup.data.args.ClassSizes = [200 200];
 setup.data.args.HasNormalizedInput = false;
-setup.data.args.ResampleRate = 5;
+zscore = 0.5;
 
-%setup.data.class = @SyntheticDataset;
-%setup.data.args.ClassSizes = [100 100];
-%setup.data.args.HasNormalizedInput = true;
-%setup.data.args.NormalizedPts = 11;
-
-%setup.data.args.NumPts = 17;
-%setup.data.args.Scaling = [8 4 2 1];
-%setup.data.args.Mu = 0.25*[4 3 2 1];
-%setup.data.args.Sigma = 0.5*setup.data.args.Mu;
-%setup.data.args.Eta = 0.1;
-%setup.data.args.Tau = 0;    
-%setup.data.args.WarpLevel = 1;
-%setup.data.args.SharedLevel = 3;
+setup.data.args.NumPts = 17;
+setup.data.args.Scaling = [8 4 2 1];
+setup.data.args.Mu = 0.25*[4 3 2 1];
+setup.data.args.Sigma = zscore*setup.data.args.Mu;
+setup.data.args.Eta = 0.1;
+setup.data.args.Tau = 0;    
+setup.data.args.WarpLevel = 1;
+setup.data.args.SharedLevel = 2;
 
 
 % -- loss functions --
 setup.lossFcns.recon.class = @ReconstructionLoss;
 setup.lossFcns.recon.name = 'Reconstruction';
-setup.lossFcns.zcls.class = @ClassifierLoss;
-setup.lossFcns.zcls.name = 'ZClassifier';
+%setup.lossFcns.zcls.class = @ClassifierLoss;
+%setup.lossFcns.zcls.name = 'ZClassifier';
 
 % -- model setup --
 setup.model.class = @TCNModel;
@@ -52,6 +51,7 @@ setup.model.args.ShowPlots = false;
 setup.model.args.HasFCDecoder = true;
 setup.model.args.FCFactor = 1;
 setup.model.args.NumFC = 128;
+setup.model.args.Pooling = 'None';
 
 % -- trainer setup --
 setup.model.args.trainer.numEpochs = 100; % 400
@@ -61,7 +61,7 @@ setup.model.args.trainer.batchSize = 50;
 setup.model.args.trainer.holdout = 0;
 
 % -- optimizer setup --
-setup.opt.objective = 'AuxModelLoss';
+setup.opt.objective = 'ReconLossRegular';
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'data_args_HasAdaptiveTimeSpan', ...
@@ -123,9 +123,11 @@ varDef(14) = optimizableVariable( 'model_args_HasReluInside', ...
         ["false" "true"], Type = 'categorical', ...
         Optimize = false );
 
-varDef(14) = optimizableVariable( 'model_args_Pooling', ...
-        ["GlobalMax" "GlobalAvg"], Type = 'categorical', ...
+% data hyperparameters
+varDef(15) = optimizableVariable( 'model_args_NumPts', ...
+        [20 2000], Type = 'integer', Transform = 'log', ... 
         Optimize = true );
+
 
 % setup objective function
 objFcn = @(x) objectiveFcnAE( x, setup );
