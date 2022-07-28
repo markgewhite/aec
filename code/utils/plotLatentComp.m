@@ -18,6 +18,7 @@ function plotLatentComp( thisModel, args )
         args.showTitle      logical = true
         args.showXAxis      logical = true
         args.showYAxis      logical = true
+        args.centredYAxis   logical = false
         args.axes           = []
     end
     
@@ -218,7 +219,14 @@ function plotLatentComp( thisModel, args )
             end
 
             if ~isempty( thisModel.Info.ChannelLimits )
-                ylim( axis, thisModel.Info.ChannelLimits(c,:) );
+                if args.centredYAxis
+                    yRng = thisModel.Info.ChannelLimits(c,2) ...
+                            - thisModel.Info.ChannelLimits(c,1);
+                    yLimits = [ -0.5*yRng, 0.5*yRng ];
+                else
+                    yLimits = thisModel.Info.ChannelLimits(c,:);
+                end
+                ylim( axis, yLimits );
             end               
 
             finalisePlot( axis );

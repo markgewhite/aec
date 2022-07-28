@@ -340,6 +340,11 @@ function [grad, state, loss] = gradients( nets, ...
     [ dlXGen, state.Decoder ] = ...
             forwardDecoder( thisModel, nets.Decoder, dlZGen );
 
+    if thisModel.HasCentredDecoder
+        % add the target mean to the prediction
+        dlXGen = dlXGen + repmat( mean(dlXOut, 2), 1, size(dlXOut,2) );
+    end
+
     if thisModel.IsVAE
         % duplicate X & Y to match VAE's multiple draws
         nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
@@ -516,8 +521,13 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
                                     sampling = 'Fixed' );
 
     % plot them on specified axes
+    if thisModel.HasCentredDecoder
+        dlXMean(:) = 0;
+    end
+
     plotLatentComp( thisModel, ...
                     XMean = dlXMean, XC = dlXC, ...
+                    centredYAxis = thisModel.HasCentredDecoder, ...
                     type = 'Smoothed', shading = true );
 
     % plot the Z distributions

@@ -18,8 +18,8 @@ classdef FullAEModel < FullRepresentationModel
         Trainer        % optional arguments for the trainer
         Optimizer      % optional arguments for the optimizer
         InitZDimActive % initial number of Z dimensions active
-        IsInterpolativeDecoder % whether the decoder takes destroyed X as input
-        DestroyDropout % dropout rate for an interpolative decoder
+        ComponentCentring % how to centre the generated components
+        HasCentredDecoder % whether the decoder predicts centred X
     end
 
     properties (Dependent = true)
@@ -53,9 +53,10 @@ classdef FullAEModel < FullRepresentationModel
                 args.HasSeqInput    logical = false
                 args.InitZDimActive double ...
                     {mustBeInteger} = 1
-                args.IsInterpolativeDecoder logical = false
-                args.DestroyDropout double ...
-                    {mustBeInRange(args.DestroyDropout, 0, 1)} = 0.75
+                args.ComponentCentring string ...
+                    {mustBeMember( args.ComponentCentring, ...
+                                    {'Z', 'X', 'None'} )} = 'Z'
+                args.HasCentredDecoder logical = false
                 args.Weights        double ...
                                     {mustBeNumeric,mustBeVector} = 1
                 args.Trainer        struct = []
@@ -89,8 +90,8 @@ classdef FullAEModel < FullRepresentationModel
             self.NumVAEDraws = args.NumVAEDraws;
             self.FlattenInput = args.FlattenInput;
             self.HasSeqInput = args.HasSeqInput;
-            self.IsInterpolativeDecoder = args.IsInterpolativeDecoder;
-            self.DestroyDropout = args.DestroyDropout;
+            self.ComponentCentring = args.ComponentCentring;
+            self.HasCentredDecoder = args.HasCentredDecoder;
 
             if args.InitZDimActive==0
                 self.InitZDimActive = self.ZDim;

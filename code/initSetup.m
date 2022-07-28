@@ -57,7 +57,6 @@ function setup = initSetup
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.ShowPlots = true;
-    setup.model.args.DestroyDropout = 0;
     
     % training
     setup.model.args.trainer.updateFreq = 20;
