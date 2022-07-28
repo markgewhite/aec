@@ -270,10 +270,8 @@ classdef ModelTrainer < handle
                     end
 
                     % record relevant metrics
-                    %[ self.Metrics( epoch/self.UpdateFreq, : ), ...
-                    %   dlZTrnAll ] = calcMetrics( thisModel, dlXTrnAll );
-
-                    [ ~, dlZTrnAll ] = calcMetrics( thisModel, dlXTrnAll );
+                    [ self.Metrics( epoch/self.UpdateFreq, : ), ...
+                        dlZTrnAll ] = calcMetrics( thisModel, dlXTrnAll );
 
                     % report 
                     reportProgress( thisModel, ...
@@ -340,7 +338,7 @@ function [grad, state, loss] = gradients( nets, ...
             forwardEncoder( thisModel, nets.Encoder, dlXIn );
 
     [ dlXGen, state.Decoder ] = ...
-            forwardDecoder( thisModel, nets.Decoder, dlZGen, dlXIn );
+            forwardDecoder( thisModel, nets.Decoder, dlZGen );
 
     if thisModel.IsVAE
         % duplicate X & Y to match VAE's multiple draws
@@ -513,14 +511,14 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
     fprintf('\n');
 
     % compute the AE components for plotting
-    %[ dlXC, dlXMean ] = thisModel.calcLatentComponents( ...
-    %                                dlZ, ...
-    %                                sampling = 'Fixed' );
+    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( ...
+                                    dlZ, ...
+                                    sampling = 'Fixed' );
 
     % plot them on specified axes
-    %plotLatentComp( thisModel, ...
-    %                XMean = dlXMean, XC = dlXC, ...
-    %                type = 'Smoothed', shading = true );
+    plotLatentComp( thisModel, ...
+                    XMean = dlXMean, XC = dlXC, ...
+                    type = 'Smoothed', shading = true );
 
     % plot the Z distributions
     plotZDist( thisModel, dlZ );
@@ -542,9 +540,7 @@ function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
 
     % generate full-set encoding
     dlZ = thisModel.encode( dlX, convert = false );
-    metric = [];
 
-    return
     % record latent codes correlation
     [ metric.ZCorrelation, metric.ZCovariance ] = ...
                     latentCodeCorrelation( dlZ, summary = true );

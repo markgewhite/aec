@@ -134,47 +134,15 @@ classdef FCModel < FullAEModel
             outLayers = fullyConnectedLayer( self.XTargetDim*self.XChannels, ...
                                                'Name', 'fcout' );
 
-            if self.IsInterpolativeDecoder
-
-                if self.HasInputNormalization
-                    layersDecX = featureInputLayer( self.XInputDim*self.XChannels, ...
-                                           'Name', 'inX', ...
-                                           'Normalization', 'zscore', ...
-                                           'Mean', 0, 'StandardDeviation', 1 );
-                else
-                    layersDecX = featureInputLayer( self.XInputDim*self.XChannels, ...
-                                           'Name', 'inX' );
-                end
-    
-                layersDecX = [ layersDecX; ...
-                              dropoutLayer( self.DestroyDropout, 'Name', 'dropX' ); ...
-                              additionLayer( 2, 'Name', 'add' ) ];
-
-                lgraphDec = addLayers( lgraphDec, outLayers );
-                lgraphDec = addLayers( lgraphDec, layersDecX );
-                
-                lgraphDec = connectLayers( lgraphDec, lastLayer, 'fcout' );
-                lgraphDec = connectLayers( lgraphDec, 'fcout', 'add/in2' );
-
-                if self.XChannels > 1
-                    lgraphDec = addLayers( lgraphDec, ...
-                        reshapeLayer( [self.XTargetDim self.XChannels], ...
-                                              'Name', 'reshape' ) );
-                end
-
-            else
-
-                if self.XChannels > 1
-                    outLayers = [ outLayers; 
-                                    reshapeLayer( [self.XTargetDim self.XChannels], ...
-                                                  'Name', 'reshape' ) ];
-                end
-                
-                lgraphDec = addLayers( lgraphDec, outLayers );
-                lgraphDec = connectLayers( lgraphDec, ...
-                                           lastLayer, 'fcout' );
-
+            if self.XChannels > 1
+                outLayers = [ outLayers; 
+                                reshapeLayer( [self.XTargetDim self.XChannels], ...
+                                              'Name', 'reshape' ) ];
             end
+            
+            lgraphDec = addLayers( lgraphDec, outLayers );
+            lgraphDec = connectLayers( lgraphDec, ...
+                                       lastLayer, 'fcout' );
 
             net = dlnetwork( lgraphDec );
 
