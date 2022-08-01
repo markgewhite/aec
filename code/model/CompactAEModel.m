@@ -256,6 +256,26 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
+        function [ dlZ, dlXHat, state, dlMean, dlLogVar ] = ...
+                                    forward( self, encoder, decoder, dlX )
+            % Forward-run the encoder and decoder networks
+            arguments
+                self        CompactAEModel
+                encoder     dlnetwork
+                decoder     dlnetwork
+                dlX         dlarray
+            end
+
+            % generate latent encodings
+            [ dlZ, state.Encoder, dlMean, dlLogVar ] = ...
+                                        self.forwardEncoder( encoder, dlX );
+
+            % reconstruct curves from latent codes
+            [ dlXHat, state.Decoder ] = self.forwardDecoder( decoder, dlZ );
+
+        end
+
+
         function [ dlZ, state, dlMean, dlLogVar ] = forwardEncoder( self, encoder, dlX )
             % Forward-run the encoder network
             % dlnetworks are provided for tracing purposes 
@@ -288,7 +308,6 @@ classdef CompactAEModel < CompactRepresentationModel
             dlZ = self.maskZ( dlZ );
 
         end
-
 
 
         function [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ )

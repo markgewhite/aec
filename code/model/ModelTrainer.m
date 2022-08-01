@@ -338,11 +338,8 @@ function [grad, state, loss] = gradients( nets, ...
     end
 
     % autoencoder training
-    [ dlZGen, state.Encoder, dlZMu, dlZLogVar ] = ...
-            forwardEncoder( thisModel, nets.Encoder, dlXIn );
-
-    [ dlXGen, state.Decoder ] = ...
-            forwardDecoder( thisModel, nets.Decoder, dlZGen );
+    [ dlZGen, dlXGen, state, dlZMu, dlZLogVar ] = ...
+                forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
 
     if thisModel.HasCentredDecoder
         % add the target mean to the prediction
