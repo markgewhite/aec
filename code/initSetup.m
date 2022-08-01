@@ -4,7 +4,7 @@ function setup = initSetup
     % dataset
     setup.data.class = @JumpGRFDataset;
     setup.data.args.Normalization = 'PAD';
-    setup.data.args.HasNormalizedInput = true;
+    setup.data.args.HasNormalizedInput = false;
     setup.data.args.NormalizedPts = 51;
     setup.data.args.HasAdaptiveTimeSpan = true;
     setup.data.args.ResampleRate = 10;
@@ -52,10 +52,11 @@ function setup = initSetup
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;
-    setup.model.args.KFolds = 2;
+    setup.model.args.KFolds = 1;
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
+    setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
     
     % training

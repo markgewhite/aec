@@ -313,7 +313,8 @@ classdef FullAEModel < FullRepresentationModel
             % Conserve memory usage for AE
             arguments
                 self            FullRepresentationModel
-                level           double {mustBeInteger, mustBePositive} = 0
+                level           double ...
+                    {mustBeInRange( level, 0, 4 )} = 0
             end
 
             self = conserveMemory@FullRepresentationModel( self, level );

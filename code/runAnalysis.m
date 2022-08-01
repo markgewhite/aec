@@ -10,8 +10,8 @@ path = [path '/../results/'];
 %parameters = "model.args.ZDim";
 %values = {[1:6]};
 
-parameters = [ "model.args.HasCentredDecoder" ];
-values = {{true}};
+parameters = [ "model.class" ];
+values = {{@LSTMModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 

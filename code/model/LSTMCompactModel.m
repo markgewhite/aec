@@ -90,7 +90,6 @@ classdef LSTMCompactModel < CompactAEModel
         end
 
 
-
         function [ dlXHat, state ] = forwardDecoder( self, decoder, dlHS, dlX )
             % Forward-run the lstm decoder network
             arguments

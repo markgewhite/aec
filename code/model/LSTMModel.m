@@ -145,14 +145,17 @@ classdef LSTMModel < FCModel
         end
 
 
-        function thisModel = initSubModel( self, id )
+        function self = initSubModel( self, k )
             % Initialize a sub-model
             arguments
                 self            LSTMModel
-                id              double
+                k               double
             end
 
-            thisModel = LSTMCompactModel( self, id );
+            self.SubModels{k} = LSTMCompactModel( self, k );
+            if self.IdenticalNetInit && k==1
+                self.InitializedNets = self.SubModels{k}.Nets;
+            end
 
         end
 
