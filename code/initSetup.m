@@ -8,7 +8,7 @@ function setup = initSetup
     setup.data.args.NormalizedPts = 51;
     setup.data.args.HasAdaptiveTimeSpan = true;
     setup.data.args.ResampleRate = 10;
-    setup.data.args.HasMatchingOutput = true;
+    setup.data.args.HasMatchingOutput = false;
         
     %setup.data.class = @fukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
@@ -48,20 +48,20 @@ function setup = initSetup
     %setup.lossFcns.xcls.args.useLoss = true;
 
     % model
-    setup.model.class = @FCModel;
+    setup.model.class = @FullPCAModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;
-    setup.model.args.KFolds = 10;
+    setup.model.args.KFolds = 2;
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 20;
+    setup.model.args.trainer.updateFreq = 5;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 1000;
+    setup.model.args.trainer.numEpochs = 10;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;

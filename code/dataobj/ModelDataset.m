@@ -40,7 +40,9 @@ classdef ModelDataset
     properties (Dependent = true)
         XInput          % processed input data (variable length)       
         XTarget         % target output
+        XTargetMean     % target output mean
         XInputRegular   % processed input with regularly spaced time span
+        XInputRegularMean % mean of the processed regular input curve
     end
 
 
@@ -334,6 +336,35 @@ classdef ModelDataset
                                self.Normalization );
 
             X = timeNormalize( XCell, numPts );
+
+        end
+
+
+        function XMean = get.XInputRegularMean( self )
+            % Calculate the mean input regular curve
+            arguments
+                self            ModelDataset            
+            end
+
+            if self.XChannels == 1
+                XMean = mean( self.XInputRegular, 2 );
+            else
+                XMean = mean( self.XInputRegular, 3 );
+            end
+
+        end
+     
+        function XMean = get.XTargetMean( self )
+            % Calculate the mean target curve
+            arguments
+                self            ModelDataset            
+            end
+
+            if self.XChannels == 1
+                XMean = mean( self.XTarget, 2 );
+            else
+                XMean = mean( self.XTarget, 3 );
+            end
 
         end
 

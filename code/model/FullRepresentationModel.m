@@ -170,6 +170,9 @@ classdef FullRepresentationModel
  
             end
 
+            % set the overall mean curve
+            self.MeanCurve = thisDataset.XInputRegularMean;
+
             % find the optimal arrangement of sub-model components
             if self.KFolds > 1
                 self = self.arrangeComponents;
@@ -439,6 +442,7 @@ classdef FullRepresentationModel
             end
             XHatMean = mean( XHatFold, 3 );
             XHatSD = std( XHatFold, [], 3 );
+
         end
 
 

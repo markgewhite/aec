@@ -19,6 +19,7 @@ classdef CompactAEModel < CompactRepresentationModel
         ZDimActive     % number of dimensions currently active
         ComponentCentring % how to centre the generated components
         HasCentredDecoder % whether the decoder predicts centred X
+        MeanCurveTarget   % mean curve for the X target time span
     end
 
     properties (Dependent = true)
@@ -120,9 +121,8 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             self = self.Trainer.runTraining( self, thisData );
-
-            % compute the components' explained variance
-            [self.LatentComponents, self.MeanCurve, ...
+            
+            [self.LatentComponents, ...
                 self.VarProportion, self.ComponentVar] ...
                             = self.getLatentComponents( thisData );
 
@@ -182,7 +182,7 @@ classdef CompactAEModel < CompactRepresentationModel
                 args.nSample    double {mustBeInteger} = 0
                 args.range      double {mustBePositive} = 2.0
                 args.convert    logical = false
-                args.forward    logical = false
+                args.final      logical = false
                 args.dlX        {mustBeA( args.dlX, {'dlarray', 'double'} )}
             end
 
@@ -201,7 +201,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             % generate all the component curves using the decoder
-            dispatchArgs.forward = args.forward;
+            dispatchArgs.forward = args.final;
             if isfield( args, 'dlX' )
                 dispatchArgs.dlX = repmat( args.dlX, 1, self.ZDim*args.nSample+1 );
             end
@@ -237,6 +237,11 @@ classdef CompactAEModel < CompactRepresentationModel
                 case 'X'
                     % centre about the mean generated curve
                     dlXC = dlXC - mean( dlXC, length(size(dlXC)) );
+            end
+
+            if args.final && self.HasCentredDecoder
+                % add in the mean if finalising
+                dlXC = dlXC + self.MeanCurveTarget;
             end
 
             if isa( dlXC, 'dlarray' ) && args.convert
@@ -346,6 +351,10 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             dlXHat = decodeDispatcher( self, dlZ, forward = false );
+
+            if self.HasCentredDecoder
+                dlXHat = dlXHat + self.MeanCurveTarget;
+            end
 
             if arg.convert
                 if isa( dlXHat, 'dlarray' )

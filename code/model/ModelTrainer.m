@@ -303,6 +303,10 @@ classdef ModelTrainer < handle
                                         dlZTrnAll, ...
                                         dlYTrnAll );
 
+            % set the mean curve for these training data
+            thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
+            thisModel.MeanCurve = thisTrnData.XInputRegularMean;
+
             % set the oversmoothing level
             XHatTrnAll = thisModel.reconstruct( dlZTrnAll, convert = true );
             [ thisModel.FDA.FdParamsTarget, thisModel.FDA.LambdaTarget ] = ...

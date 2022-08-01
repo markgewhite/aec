@@ -19,14 +19,14 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
     end
     
     % initialize and run the evaluation
-    %try
+    try
         thisEvaluation = ModelEvaluation( "Optimization", setup, false );
         constraint = -1;
-    %catch
-    %    constraint = 1;
-    %    obj = NaN;
-    %    return
-    %end
+    catch
+        constraint = 1;
+        obj = NaN;
+        return
+    end
     
     % set the objective function's output
     switch setup.opt.objective

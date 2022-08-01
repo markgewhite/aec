@@ -69,9 +69,12 @@ classdef CompactPCAModel < CompactRepresentationModel
                     self.AuxModel = fitcecoc( Z, thisData.Y );
             end
 
+            % compute the mean curve directly
+            self.MeanCurve = eval_fd( self.TSpan.Regular, ...
+                                      self.MeanFd );
 
             % compute the components' explained variance
-            [self.LatentComponents, self.MeanCurve, ...
+            [self.LatentComponents, ...
                 self.VarProportion, self.ComponentVar] ...
                             = self.getLatentComponents( thisData );
             
@@ -99,6 +102,7 @@ classdef CompactPCAModel < CompactRepresentationModel
                 args.centre     logical = true
                 args.range      double {mustBePositive} = 2.0
                 args.convert    logical = false % redundant
+                args.final      logical = false % redundant
             end
 
             % compute the components
