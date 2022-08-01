@@ -181,7 +181,6 @@ classdef CompactAEModel < CompactRepresentationModel
                         {'Random', 'Fixed'} )} = 'Random'
                 args.nSample    double {mustBeInteger} = 0
                 args.range      double {mustBePositive} = 2.0
-                args.convert    logical = false
                 args.final      logical = false
                 args.dlX        {mustBeA( args.dlX, {'dlarray', 'double'} )}
             end
@@ -239,14 +238,19 @@ classdef CompactAEModel < CompactRepresentationModel
                     dlXC = dlXC - mean( dlXC, length(size(dlXC)) );
             end
 
-            if args.final && self.HasCentredDecoder
-                % add in the mean if finalising
-                dlXC = dlXC + self.MeanCurveTarget;
-            end
+            if args.final
+                % perform post-processing operations to finalize
 
-            if isa( dlXC, 'dlarray' ) && args.convert
-                dlXC = double(extractdata( dlXC ));
-                dlXMean = double(extractdata( dlXMean ));
+                if isa( dlXC, 'dlarray' ) 
+                    dlXC = double(extractdata( dlXC ));
+                    dlXMean = double(extractdata( dlXMean ));
+                end
+
+                % smooth to regularly-spaced time span
+                dlXC = smoothSeries( dlXC, ...
+                                     self.TSpan.Target, ...
+                                     self.TSpan.Regular, ...
+                                     self.FDA.FdParamsTarget );
             end
 
         end
@@ -336,12 +340,12 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function dlXHat = reconstruct( self, Z, arg )
+        function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
             % Reconstruct X from Z using the model
             arguments
                 self            CompactAEModel
                 Z               {mustBeA(Z, {'double', 'dlarray'})}
-                arg.convert     logical = true
+                args.convert    logical = true
             end
 
             if isa( Z, 'dlarray' )
@@ -356,13 +360,27 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlXHat = dlXHat + self.MeanCurveTarget;
             end
 
-            if arg.convert
+            XHatSmth = [];
+            XHatReg = [];
+
+            if args.convert
+
                 if isa( dlXHat, 'dlarray' )
                     dlXHat = double(extractdata( dlXHat ));
                 end
                 dlXHat = permute( dlXHat, [1 3 2] );
+                dlXHat = squeeze( dlXHat ); 
+
+                XHatSmth = smoothSeries(  dlXHat, ...
+                                          self.TSpan.Target, ...
+                                          self.TSpan.Target, ...
+                                          self.FDA.FdParamsTarget );
+                XHatReg = smoothSeries(   dlXHat, ...
+                                          self.TSpan.Target, ...
+                                          self.TSpan.Regular, ...
+                                          self.FDA.FdParamsTarget );
+
             end
-            
 
         end
 

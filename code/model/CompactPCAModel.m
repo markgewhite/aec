@@ -101,7 +101,6 @@ classdef CompactPCAModel < CompactRepresentationModel
                 args.nSample    double {mustBeInteger} = 0
                 args.centre     logical = true
                 args.range      double {mustBePositive} = 2.0
-                args.convert    logical = false % redundant
                 args.final      logical = false % redundant
             end
 
@@ -165,28 +164,24 @@ classdef CompactPCAModel < CompactRepresentationModel
             
         end
 
-        function XHat = reconstruct( self, Z, arg )
+        function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
             % Reconstruct X from Z using the model
             arguments
                 self                CompactPCAModel
                 Z                   double  % latent codes
-                arg.convert         logical % redundant
+                args.convert        logical % redundant
             end
+                   
+            XHat = constructCurves( self.TSpan.Target, ...
+                                    self.MeanFd, self.CompFd, ...
+                                    Z );
             
-            % create the set of points from the mean for each curve
-            nRows = size( Z, 1 );
-            XHat = repmat( eval_fd( self.PCATSpan, self.MeanFd ), 1, nRows );
-        
-            % linearly combine the components, points-wise
-            XC = eval_fd( self.PCATSpan, self.CompFd );
-            for k = 1:self.XChannels
-                for j = 1:self.ZDim        
-                    for i = 1:nRows
-                        XHat(:,i,k) = XHat(:,i,k) + Z(i,j,k)*XC(:,j,k);
-                    end
-                end
-            end
- 
+            XHatSmth = XHat;
+
+            XHatReg = constructCurves( self.TSpan.Regular, ...
+                                       self.MeanFd, self.CompFd, ...
+                                       Z );
+
         end
 
 
@@ -194,5 +189,36 @@ classdef CompactPCAModel < CompactRepresentationModel
 
 end
 
+
+function XHat = constructCurves( tSpan, meanFd, compFd, Z )
+    % Construct the curves from the mean and components
+    % by linearly summing the components, points-wise
+    arguments
+        tSpan       double
+        meanFd
+        compFd
+        Z           double
+    end
+
+    % create the set of points from the mean for each curve
+    nRows = size( Z, 1 );
+    XHat = repmat( eval_fd( tSpan, meanFd ), 1, nRows );
+
+    % generate components as sets of points
+    XC = eval_fd( tSpan, compFd );  
+
+    % linearly combine the components, points-wise
+    nChannels = size( XC, 3 );
+    nDim = size( XC, 2 );
+
+    for k = 1:nChannels
+        for j = 1:nDim        
+            for i = 1:nRows
+                XHat(:,i,k) = XHat(:,i,k) + Z(i,j,k)*XC(:,j,k);
+            end
+        end
+    end
+
+end
 
 

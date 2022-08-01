@@ -48,7 +48,7 @@ function setup = initSetup
     %setup.lossFcns.xcls.args.useLoss = true;
 
     % model
-    setup.model.class = @FullPCAModel;
+    setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;
@@ -59,9 +59,9 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 5;
+    setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 10;
+    setup.model.args.trainer.numEpochs = 1000;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;
