@@ -124,6 +124,13 @@ classdef AdversarialLoss < LossFunction
             switch self.Distribution
                 case 'Gaussian'
                     dlZReal = dlarray( randn( ZSize, batchSize ), 'CB' );
+                case 'DoubleGaussian'
+                    dlZReal = dlarray( randn( ZSize, batchSize ), 'CB' );
+                    dlZReal(:,1:fix(1:batchSize/2)) = ...
+                                    dlZReal(:,1:fix(1:batchSize/2)) - 2;
+                    dlZReal(:,fix(1:batchSize/2)+1:end) = ...
+                                dlZReal(:,fix(1:batchSize/2)+1:end) + 2;
+
                 case 'Categorical'
                     dlZReal = dlarray( randi( ZSize, batchSize ), 'CB' );
             end

@@ -168,11 +168,9 @@ classdef ModelTrainer < handle
 
                 % Pre-training
                 self.PreTraining = (epoch<=self.NumEpochsPreTrn);
-                if self.PreTraining
-                    nLoss = 1;
-                else
-                    nLoss = thisModel.NumLoss;
-                end
+
+                thisModel.LossFcnTbl.DoCalcLoss( thisModel.LossFcnTbl.Types=="Reconstruction" ) ...
+                    = ~self.PreTraining;
             
                 if thisTrnData.isFixedLength && self.HasMiniBatchShuffle
                     
@@ -209,7 +207,7 @@ classdef ModelTrainer < handle
                     [ dlXTTrn, dlXNTrn, dlYTrn ] = next( mbqTrn );
                     
                     % evaluate the model gradients 
-                    [ grads, states, self.LossTrn(j,1:nLoss) ] = ...
+                    [ grads, states, self.LossTrn(j,1+self.PreTraining:end) ] = ...
                                       dlfeval(  @gradients, ...
                                                 thisModel.Nets, ...
                                                 thisModel, ...
@@ -354,11 +352,7 @@ function [grad, state, loss] = gradients( nets, ...
     end
 
     % select the active loss functions
-    if preTraining
-        isActive = thisModel.LossFcnTbl.Types=='Reconstruction';
-    else
-        isActive = thisModel.LossFcnTbl.DoCalcLoss;
-    end
+    isActive = thisModel.LossFcnTbl.DoCalcLoss;
 
     activeFcns = thisModel.LossFcnTbl( isActive, : );
 

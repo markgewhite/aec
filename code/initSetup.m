@@ -4,7 +4,7 @@ function setup = initSetup
     % dataset
     setup.data.class = @JumpGRFDataset;
     setup.data.args.Normalization = 'PAD';
-    setup.data.args.HasNormalizedInput = false;
+    setup.data.args.HasNormalizedInput = true;
     setup.data.args.NormalizedPts = 51;
     setup.data.args.HasAdaptiveTimeSpan = true;
     setup.data.args.ResampleRate = 10;
@@ -31,8 +31,9 @@ function setup = initSetup
     setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
 
-    %setup.lossFcns.adv.class = @AdversarialLoss;
-    %setup.lossFcns.adv.name = 'Discriminator';
+    setup.lossFcns.adv.class = @AdversarialLoss;
+    setup.lossFcns.adv.name = 'Discriminator';
+    setup.lossFcns.adv.args.Distribution = 'Gaussian';
     
     %setup.lossFcns.orth.class = @ComponentLoss;
     %setup.lossFcns.orth.name = 'XOrthogonality';
@@ -41,16 +42,16 @@ function setup = initSetup
     %setup.lossFcns.orth.args.NumSamples = 2;
     %setup.lossFcns.orth.args.MaxObservations = 10;
     
-    setup.lossFcns.cls.class = @ClassifierLoss;
-    setup.lossFcns.cls.name = 'Classification';
-    setup.lossFcns.cls.args.useLoss = true;
+    %setup.lossFcns.cls.class = @ClassifierLoss;
+    %setup.lossFcns.cls.name = 'Classification';
+    %setup.lossFcns.cls.args.useLoss = true;
 
     %setup.lossFcns.xcls.class = @InputClassifierLoss;
     %setup.lossFcns.xcls.name = 'XClassification';
     %setup.lossFcns.xcls.args.useLoss = true;
 
     % model
-    setup.model.class = @FCModel;
+    setup.model.class = @ConvolutionalModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;
@@ -63,9 +64,9 @@ function setup = initSetup
     setup.model.args.ComponentType = 'PDP';
     
     % training
-    setup.model.args.trainer.updateFreq = 50;
+    setup.model.args.trainer.updateFreq = 25;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 1000;
+    setup.model.args.trainer.numEpochs = 400;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;

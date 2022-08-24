@@ -10,8 +10,8 @@ path = [path '/../results/'];
 %parameters = "model.args.ZDim";
 %values = {[1:6]};
 
-parameters = [ "model.class" ];
-values = {{@ConvolutionalModel, @FCModel}};
+parameters = [ "model.args.trainer.NumEpochsPreTrn" ];
+values = {{200,400,0}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 
