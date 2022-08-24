@@ -180,8 +180,10 @@ classdef CompactAEModel < CompactRepresentationModel
                     {mustBeMember(args.sampling, ...
                         {'Random', 'Fixed'} )} = 'Random'
                 args.nSample    double {mustBeInteger} = 0
+                args.maxObs     double {mustBeInteger} = 10
                 args.range      double {mustBePositive} = 2.0
-                args.final      logical = false
+                args.forward    logical = false
+                args.convert    logical = false
                 args.dlX        {mustBeA( args.dlX, {'dlarray', 'double'} )}
             end
 
@@ -190,7 +192,8 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             [ dlZC, offsets, nObs ] = self.componentEncodings( dlZ, ...
-                                        sampling = args.sampling, ...    
+                                        sampling = args.sampling, ...
+                                        maxObs = args.maxObs, ...
                                         nSample = args.nSample );
 
             % mask Z based on number of active dimensions
@@ -200,7 +203,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             % generate all the component curves using the decoder
-            dispatchArgs.forward = args.final;
+            dispatchArgs.forward = args.forward;
             if isfield( args, 'dlX' )
                 dispatchArgs.dlX = repmat( args.dlX, 1, self.ZDim*args.nSample+1 );
             end
@@ -218,6 +221,9 @@ classdef CompactAEModel < CompactRepresentationModel
                     dlXC = squeeze( mean( dlXC, 2 ) );
 
                 end
+            else
+                % only remove dimension labels to match PDP
+                dlXC = stripdims( dlXC );
             end
 
             % extract the mean curve from the end
@@ -238,8 +244,8 @@ classdef CompactAEModel < CompactRepresentationModel
                     dlXC = dlXC - mean( dlXC, length(size(dlXC)) );
             end
 
-            if args.final
-                % perform post-processing operations to finalize
+            if args.convert
+                % convert to double and smooth
 
                 if isa( dlXC, 'dlarray' ) 
                     dlXC = double(extractdata( dlXC ));

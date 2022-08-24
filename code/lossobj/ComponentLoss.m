@@ -3,7 +3,9 @@ classdef ComponentLoss < LossFunction
 
     properties
         Criterion     % criterion function for component loss
+        Sampling      % sampling method for Z offsets
         NumSamples    % number of samples to draw to generate components
+        MaxObservations % limit to batch size when training
         Scale         % scaling factor between channels
     end
 
@@ -13,12 +15,17 @@ classdef ComponentLoss < LossFunction
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
-                args.criterion       char ...
-                    {mustBeMember( args.criterion, ...
+                args.Criterion       char ...
+                    {mustBeMember( args.Criterion, ...
                         {'InnerProduct', 'Orthogonality', ...
                          'Varimax', 'ExplainedVariance'} )} ...
                                         = 'Orthogonality'
-                args.nSample         double ...
+                args.Sampling        char ...
+                    {mustBeMember( args.Sampling, ...
+                        {'Fixed', 'Random'} )} = 'Random'
+                args.NumSamples      double ...
+                    {mustBeInteger, mustBePositive} = 10
+                args.MaxObservations double ...
                     {mustBeInteger, mustBePositive} = 10
                 superArgs.?LossFunction
             end
@@ -29,8 +36,10 @@ classdef ComponentLoss < LossFunction
                                  input = 'XC', ...
                                  lossNets = {'Encoder', 'Decoder'} );
 
-            self.Criterion = args.criterion;
-            self.NumSamples = args.nSample;
+            self.Criterion = args.Criterion;
+            self.Sampling = args.Sampling;
+            self.NumSamples = args.NumSamples;
+            self.MaxObservations = args.MaxObservations;
             self.Scale = 1;
 
         end

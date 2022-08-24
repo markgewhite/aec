@@ -77,7 +77,7 @@ classdef CompactRepresentationModel
                                         {'Random', 'Fixed'} )} = 'Random'
                 args.nSample        double {mustBeInteger} = 0
                 args.range          double {mustBePositive} = 2.0
-                args.MaxObs         double = 50
+                args.maxObs         double = 10
             end
 
             if args.nSample > 0
@@ -115,9 +115,9 @@ classdef CompactRepresentationModel
                 case 'PDP'
                     % initialize with all Z codes duplicated
                     % but limit the total size
-                    if nObs > args.MaxObs
-                        Z = Z( :, randsample( nObs, args.MaxObs ) );
-                        nObs = args.MaxObs;
+                    if nObs > args.maxObs
+                        Z = Z( :, randsample( nObs, args.maxObs ) );
+                        nObs = args.maxObs;
                     end
                     ZC = repmat( Z, 1, self.ZDim*nSample+1 );
                     nRepeats = size( Z, 2 );
@@ -215,14 +215,14 @@ classdef CompactRepresentationModel
             % generate the AE components, smoothing them, for storage
             XC = self.calcLatentComponents( Z, ...
                                             sampling = 'Fixed', ...
-                                            final = true );
+                                            convert = true );
 
             % generate finer-grained components for calculation
             [ XCFine, ~, offsets ] = self.calcLatentComponents( ...
                                             Z, ...
                                             sampling = 'Fixed', ...
                                             nSample = 10, ...
-                                            final = true );
+                                            convert = true );
 
             % compute the components' explained variance
             XTarget = permute( thisDataset.XTarget, [ 1 3 2 ] );

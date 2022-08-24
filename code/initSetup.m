@@ -36,12 +36,14 @@ function setup = initSetup
     
     %setup.lossFcns.orth.class = @ComponentLoss;
     %setup.lossFcns.orth.name = 'XOrthogonality';
-    %setup.lossFcns.orth.args.criterion = 'InnerProduct';
-    %setup.lossFcns.orth.args.useLoss = false;
-
-    %setup.lossFcns.cls.class = @ClassifierLoss;
-    %setup.lossFcns.cls.name = 'Classification';
-    %setup.lossFcns.cls.args.useLoss = true;
+    %setup.lossFcns.orth.args.Criterion = 'InnerProduct';
+    %setup.lossFcns.orth.args.Sampling = 'Fixed';
+    %setup.lossFcns.orth.args.NumSamples = 2;
+    %setup.lossFcns.orth.args.MaxObservations = 10;
+    
+    setup.lossFcns.cls.class = @ClassifierLoss;
+    setup.lossFcns.cls.name = 'Classification';
+    setup.lossFcns.cls.args.useLoss = true;
 
     %setup.lossFcns.xcls.class = @InputClassifierLoss;
     %setup.lossFcns.xcls.name = 'XClassification';
@@ -58,9 +60,10 @@ function setup = initSetup
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
+    setup.model.args.ComponentType = 'PDP';
     
     % training
-    setup.model.args.trainer.updateFreq = 100;
+    setup.model.args.trainer.updateFreq = 50;
     setup.model.args.trainer.valType = 'Reconstruction';
     setup.model.args.trainer.numEpochs = 1000;
     setup.model.args.trainer.numEpochsPreTrn = 0;

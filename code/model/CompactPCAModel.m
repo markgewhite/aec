@@ -101,7 +101,8 @@ classdef CompactPCAModel < CompactRepresentationModel
                 args.nSample    double {mustBeInteger} = 0
                 args.centre     logical = true
                 args.range      double {mustBePositive} = 2.0
-                args.final      logical = false % redundant
+                args.forward    logical = false % redundant
+                args.convert    logical = false % redundant
             end
 
             % compute the components

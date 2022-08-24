@@ -4,7 +4,7 @@ clear;
 
 dataset = "Jumps";
 
-exploration = 0.5;
+exploration = 2;
 
 % set the destinations for results and figures
 path = fileparts( which('code/optimizeAE.m') );
@@ -18,13 +18,13 @@ switch dataset
     case "Jumps"
         setup.data.class = @JumpGRFDataset;
         setup.data.args.Normalization = 'PAD';
-        setup.data.args.HasNormalizedInput = false;
+        setup.data.args.HasNormalizedInput = true;
         setup.data.args.ResampleRate = 10;
 
     case "Synthetic"
         setup.data.class = @SyntheticDataset;
         setup.data.args.ClassSizes = [200 200];
-        setup.data.args.HasNormalizedInput = false;
+        setup.data.args.HasNormalizedInput = true;
         zscore = 0.5;
         
         setup.data.args.NumPts = 201;
@@ -37,6 +37,13 @@ switch dataset
         setup.data.args.WarpLevel = 1;
         setup.data.args.SharedLevel = 2;
 
+    case 'Synthetic-Legacy'
+        setup.data.class = @SyntheticDataset;
+        setup.data.args.ClassSizes = [100 100];
+        setup.data.args.HasNormalizedInput = true;
+        setup.data.args.NormalizedPts = 51;
+        zscore = 0.5;
+
     otherwise
         error("Unrecognised dataset specified.");
     
@@ -45,11 +52,11 @@ end
 % -- loss functions --
 setup.lossFcns.recon.class = @ReconstructionLoss;
 setup.lossFcns.recon.name = 'Reconstruction';
-setup.lossFcns.zcls.class = @ClassifierLoss;
-setup.lossFcns.zcls.name = 'ZClassifier';
+%setup.lossFcns.zcls.class = @ClassifierLoss;
+%setup.lossFcns.zcls.name = 'ZClassifier';
 
 % -- model setup --
-setup.model.class = @TCNModel;
+setup.model.class = @ConvolutionalModel; % @FCModel; 
 setup.model.args.ZDim = 4;
 setup.model.args.InitZDimActive = 0;
 setup.model.args.KFolds = 1;
@@ -57,16 +64,16 @@ setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
 setup.model.args.CompressionLevel = 3;
 setup.model.args.ShowPlots = false;
-setup.model.args.HasFCDecoder = true;
+setup.model.args.HasFCDecoder = false;
 setup.model.args.FCFactor = 1;
 setup.model.args.NumFC = 128;
-setup.model.args.NumConvHidden = 5;
-setup.model.args.DilationFactor = 1;
+%setup.model.args.NumConvHidden = 5;
+%setup.model.args.DilationFactor = 1;
 
 % -- trainer setup --
-setup.model.args.trainer.numEpochs = 100; % 400
-setup.model.args.trainer.numEpochsPreTrn = 10; %10
-setup.model.args.trainer.updateFreq = 200;
+setup.model.args.trainer.numEpochs = 400; % 400
+setup.model.args.trainer.numEpochsPreTrn = 0; %10
+setup.model.args.trainer.updateFreq = 50;
 setup.model.args.trainer.batchSize = 50;
 setup.model.args.trainer.holdout = 0;
 
@@ -140,12 +147,16 @@ varDef(15) = optimizableVariable( 'model_args_DilationFactor', ...
 
 varDef(16) = optimizableVariable( 'model_args_FilterSize', ...
         [3 11], Type = 'integer', ... 
-        Optimize = true );
+        Optimize = false );
 
 varDef(17) = optimizableVariable( 'model_args_NumFilters', ...
         [4 64], Type = 'integer', Transform = 'log', ... 
-        Optimize = true );
+        Optimize = false );
 
+% new centring parameter
+varDef(18) = optimizableVariable( 'model_args_HasCentredDecoder', ...
+        ["false" "true"], Type = 'categorical', ...
+        Optimize = true );
 
 
 % setup objective function
