@@ -38,11 +38,11 @@ classdef ClassifierLoss < LossFunction
                 args.dropout    double ...
                             {mustBeInRange(args.dropout, 0, 1)} = 0.1
                 args.initLearningRate     double ...
-                    {mustBeInRange(args.initLearningRate, 0, 1)} = 0.01
+                    {mustBeInRange(args.initLearningRate, 0, 1)} = 0.001
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = {'Encoder', name};
+            netAssignments = {'Encoder', 'Decoder', name};
 
             isNet = strcmp( args.modelType, 'Network' );
 

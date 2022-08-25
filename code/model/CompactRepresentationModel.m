@@ -390,7 +390,7 @@ classdef CompactRepresentationModel
                     thisModel.LatentComponents, thisModel.NumCompLines );
 
             % compute the auxiliary loss using the model
-            ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
+            ZLong = reshape( zscore(pred.Z), size( pred.Z, 1 ), [] );
             pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
             loss.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
 

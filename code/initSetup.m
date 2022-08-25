@@ -33,7 +33,7 @@ function setup = initSetup
 
     setup.lossFcns.adv.class = @AdversarialLoss;
     setup.lossFcns.adv.name = 'Discriminator';
-    setup.lossFcns.adv.args.Distribution = 'Gaussian';
+    setup.lossFcns.adv.args.Distribution = 'DoubleGaussian';
     
     %setup.lossFcns.orth.class = @ComponentLoss;
     %setup.lossFcns.orth.name = 'XOrthogonality';
@@ -42,16 +42,14 @@ function setup = initSetup
     %setup.lossFcns.orth.args.NumSamples = 2;
     %setup.lossFcns.orth.args.MaxObservations = 10;
     
-    %setup.lossFcns.cls.class = @ClassifierLoss;
-    %setup.lossFcns.cls.name = 'Classification';
-    %setup.lossFcns.cls.args.useLoss = true;
+    setup.lossFcns.cls.class = @ClassifierLoss;
+    setup.lossFcns.cls.name = 'ZClassifier';
 
     %setup.lossFcns.xcls.class = @InputClassifierLoss;
-    %setup.lossFcns.xcls.name = 'XClassification';
-    %setup.lossFcns.xcls.args.useLoss = true;
+    %setup.lossFcns.xcls.name = 'XClassifier';
 
     % model
-    setup.model.class = @ConvolutionalModel;
+    setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;
