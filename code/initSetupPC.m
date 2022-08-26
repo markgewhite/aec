@@ -51,7 +51,7 @@ function setup = initSetup
     %setup.lossFcns.xcls.args.useLoss = true;
 
     % model
-    setup.model.class = @FCModel;
+    setup.model.class = @FullPCAModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;

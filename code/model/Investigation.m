@@ -66,22 +66,6 @@ classdef Investigation
             end
 
             self.Evaluations = cell( allocation );
-            
-            self.TrainingResults.ReconLoss = zeros( allocation );
-            self.TrainingResults.ReconLossSmoothed = zeros( allocation );
-            self.TrainingResults.ReconLossRegular = zeros( allocation );
-            self.TrainingResults.ReconBias = zeros( allocation );
-            self.TrainingResults.ReconVar = zeros( allocation );
-            self.TrainingResults.ZCorrelation = zeros( allocation );
-            self.TrainingResults.XCCorrelation = zeros( allocation );
-            self.TrainingResults.ZCovariance = zeros( allocation );
-            self.TrainingResults.XCCovariance = zeros( allocation );
-            self.TrainingResults.AuxModelLoss = zeros( allocation );
-            self.TrainingResults.AuxNetworkLoss = zeros( allocation );
-            self.TrainingResults.ComparatorLoss = zeros( allocation );
-            self.TrainingResults.AuxModelCoeff = cell( allocation );
-
-            self.TestingResults = self.TrainingResults;
 
             nEval = prod( self.SearchDims );
             % run the evaluation loop
@@ -114,16 +98,18 @@ classdef Investigation
 
                 % record results               
                 self.TrainingResults = updateResults( ...
-                        self.TrainingResults, idxC, ...
-                        self.Evaluations{ idxC{:} }.TrainingEvaluation, ...
-                        self.Evaluations{ idxC{:} }.TrainingCorrelations ...
-                        );
+                        self.TrainingResults, idxC, allocation, ...
+                        self.Evaluations{ idxC{:} }.TrainingEvaluation );
+                self.TrainingResults = updateResults( ...
+                        self.TrainingResults, idxC, allocation, ...
+                        self.Evaluations{ idxC{:} }.TrainingCorrelations );
 
                 self.TestingResults = updateResults( ...
-                        self.TestingResults, idxC, ...
-                        self.Evaluations{ idxC{:} }.TestingEvaluation, ...
-                        self.Evaluations{ idxC{:} }.TestingCorrelations ...
-                        );
+                        self.TestingResults, idxC, allocation, ...
+                        self.Evaluations{ idxC{:} }.TestingEvaluation );
+                self.TestingResults = updateResults( ...
+                        self.TestingResults, idxC, allocation, ...
+                        self.Evaluations{ idxC{:} }.TestingCorrelations );
     
                 % save the evaluations
                 self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
@@ -210,36 +196,36 @@ classdef Investigation
 end
 
 
-function results = updateResults( results, idx, eval, corr )
+function results = updateResults( results, idx, allocation, info )
     % Update the ongoing results with the latest evaluation
     arguments
         results     struct
         idx         cell
-        eval        struct
-        corr        struct
+        allocation  double
+        info        struct
     end
 
-    results.ReconLoss( idx{:} ) = eval.ReconLoss;
-    results.ReconLossSmoothed( idx{:} ) = eval.ReconLossSmoothed;
-    results.ReconLossRegular( idx{:} ) = eval.ReconLossRegular;
-
-    results.ReconBias( idx{:} ) = eval.ReconBias;
-    results.ReconVar( idx{:} ) = eval.ReconVar;
-
-    results.ZCorrelation( idx{:} ) = corr.ZCorrelation;
-    results.XCCorrelation( idx{:} ) = corr.XCCorrelation;
-
-    results.ZCovariance( idx{:} ) = corr.ZCovariance;
-    results.XCCovariance( idx{:} ) = corr.XCCovariance;
-   
-    results.AuxModelLoss( idx{:} ) = eval.AuxModelLoss;
-    results.AuxModelCoeff{ idx{:} } = eval.AuxModelCoeff;
-
-    if isfield( eval, 'AuxNetworkLoss' )
-        results.AuxNetworkLoss( idx{:} ) = eval.AuxNetworkLoss;
+    fld = fieldnames( info );
+    isNew = isempty( results );
+    if isNew
+        results(1).temp = 0;
     end
-    if isfield( eval, 'ComparatorLoss' )
-        results.ComparatorLoss( idx{:} ) = eval.ComparatorLoss;
+    for i = 1:length(fld)
+        if ~isfield( results, fld{i} )
+            if length(info.(fld{i}))==1
+                results.(fld{i}) = zeros( allocation );
+            else
+                results.(fld{i}) = cell( allocation );
+            end
+        end
+        if ~iscell( results.(fld{i}) )
+            results.(fld{i})(idx{:}) = info.(fld{i});
+        else
+            results.(fld{i}){idx{:}} = info.(fld{i});
+        end
+    end
+    if isNew
+        results = rmfield( results, 'temp' );
     end
 
 end

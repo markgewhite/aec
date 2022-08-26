@@ -429,7 +429,7 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ YHat, loss ] = predictAuxNet( self, Z, Y )
+        function YHat = predictAuxNet( self, Z, Y )
             % Make prediction from Z using an auxiliary network
             arguments
                 self            CompactAEModel
@@ -468,12 +468,10 @@ classdef CompactAEModel < CompactRepresentationModel
             CDim = size( YHat, 2 );
             YHat = double(onehotdecode( YHat, 1:CDim, 2 ));
 
-            loss = getPropCorrect( Y, YHat );
-
         end
 
 
-        function [ YHat, loss ] = predictCompNet( self, thisDataset )
+        function YHat = predictCompNet( self, thisDataset )
             % Make prediction from X using the comparator network
             arguments
                 self            CompactAEModel
@@ -505,8 +503,6 @@ classdef CompactAEModel < CompactRepresentationModel
 
             YHat = double(extractdata( dlYHat ))';
             YHat = double(onehotdecode( YHat, 1:thisDataset.CDim, 2 ));
-
-            loss = getPropCorrect( thisDataset.Y, YHat );
 
         end
 
@@ -594,15 +590,17 @@ classdef CompactAEModel < CompactRepresentationModel
 
             if any(self.LossFcnTbl.Types == 'Comparator')
                 % compute the comparator loss using the comparator network
-                [ pred.ComparatorYHat, eval.ComparatorLoss ] = ...
-                                predictCompNet( self, thisDataset ); 
+                pred.ComparatorYHat = predictCompNet( self, thisDataset );
+                eval.Comparator = evaluateClassifier( pred.Y, pred.ComparatorYHat );
             end
     
             if any(self.LossFcnTbl.Types == 'Auxiliary')
                 % compute the auxiliary loss using the network
-                [ pred.AuxNetworkYHat, eval.AuxNetworkLoss ] = ...
-                                predictAuxNet( self, pred.Z, thisDataset.Y );
+                pred.AuxNetworkYHat = predictAuxNet( self, pred.Z, thisDataset.Y );
+                eval.AuxNetwork = evaluateClassifier( pred.Y, pred.AuxNetworkYHat );
             end
+
+            eval = flattenStruct( eval );
         
         end
 

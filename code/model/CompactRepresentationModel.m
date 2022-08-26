@@ -302,7 +302,7 @@ classdef CompactRepresentationModel
 
     methods (Static)
 
-        function [loss, pred, cor] = evaluateSet( thisModel, thisDataset )
+        function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
             % Evaluate the model with a specified dataset
             arguments
                 thisModel       CompactRepresentationModel
@@ -322,56 +322,56 @@ classdef CompactRepresentationModel
                     thisModel.reconstruct( pred.Z, convert = true );
                
             % compute reconstruction loss
-            loss.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, ...
+            eval.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, ...
                                         thisModel.Scale );
-            loss.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
+            eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
                                                 thisModel.Scale );
         
             % compute reconstruction loss for the regularised curves
-            loss.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
+            eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
                                                thisModel.Scale );
 
             % compute the bias and variance
-            loss.ReconBias = reconBias( thisDataset.XTarget, pred.XHat, ...
+            eval.ReconBias = reconBias( thisDataset.XTarget, pred.XHat, ...
                                         thisModel.Scale );
-            loss.ReconVar = loss.ReconLoss - loss.ReconBias^2;              
+            eval.ReconVar = eval.ReconLoss - eval.ReconBias^2;              
             
             % compute the mean squared error as a function of time
-            loss.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, ...
+            eval.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, ...
                                                    thisModel.Scale );
         
             % compute the mean error (bias) as a function of time
-            loss.ReconTimeBias = reconTemporalBias( pred.XHat, pred.XTarget, ...
+            eval.ReconTimeBias = reconTemporalBias( pred.XHat, pred.XTarget, ...
                                                    thisModel.Scale );
         
             % compute the variance as a function of time
             if length( size(pred.XHat) ) == 2
-                XDiff = pred.XHat - loss.ReconTimeBias;
+                XDiff = pred.XHat - eval.ReconTimeBias;
             else
-                XDiff = pred.XHat - reshape( loss.ReconTimeBias, ...
-                                            size(loss.ReconTimeBias,1), ...
+                XDiff = pred.XHat - reshape( eval.ReconTimeBias, ...
+                                            size(eval.ReconTimeBias,1), ...
                                             1, [] );
             end
-            loss.ReconTimeVar = reconTemporalLoss( XDiff, pred.XTarget, ...
+            eval.ReconTimeVar = reconTemporalLoss( XDiff, pred.XTarget, ...
                                                     thisModel.Scale );
         
             % compute the mean squared error as a function of time
-            loss.ReconTimeMSERegular = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
+            eval.ReconTimeMSERegular = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
                                                    thisModel.Scale );
         
             % compute the mean error (bias) as a function of time
-            loss.ReconTimeBiasRegular = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
+            eval.ReconTimeBiasRegular = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
                                                    thisModel.Scale );
         
             % compute the variance as a function of time
             if length( size(pred.XHatRegular) ) == 2
-                XDiff = pred.XHatRegular - loss.ReconTimeBiasRegular;
+                XDiff = pred.XHatRegular - eval.ReconTimeBiasRegular;
             else
-                XDiff = pred.XHatRegular - reshape( loss.ReconTimeBiasRegular, ...
-                                            size(loss.ReconTimeBiasRegular,1), ...
+                XDiff = pred.XHatRegular - reshape( eval.ReconTimeBiasRegular, ...
+                                            size(eval.ReconTimeBiasRegular,1), ...
                                             1, [] );
             end
-            loss.ReconTimeVarRegular = reconTemporalLoss( XDiff, ...
+            eval.ReconTimeVarRegular = reconTemporalLoss( XDiff, ...
                                             pred.XRegular, thisModel.Scale );
 
             % compute the latent code correlation matrix
@@ -396,15 +396,17 @@ classdef CompactRepresentationModel
             ZLong = (ZLong-thisModel.AuxModelZMean)./thisModel.AuxModelZStd;
 
             pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
-            loss.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
+            eval.AuxModel = evaluateClassifier( pred.Y, pred.AuxModelYHat );
 
             % store the model coefficients - all important
             switch class( thisModel.AuxModel )
                 case 'ClassificationLinear'
-                    loss.AuxModelCoeff = thisModel.AuxModel.Beta;
+                    eval.AuxModel.Coeff = thisModel.AuxModel.Beta;
                 case 'ClassificationDiscriminant'
-                    loss.AuxModelCoeff = thisModel.AuxModel.DeltaPredictior;
+                    eval.AuxModel.Coeff = thisModel.AuxModel.DeltaPredictior;
             end
+
+            eval = flattenStruct( eval );
 
         end
 
