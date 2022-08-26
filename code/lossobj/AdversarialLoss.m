@@ -39,8 +39,7 @@ classdef AdversarialLoss < LossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = { string(name); ...
-                               ["Encoder", "ZClassifier"] };
+            netAssignments = { string(name); "Encoder" };
 
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...

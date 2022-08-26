@@ -296,7 +296,9 @@ classdef ModelTrainer < handle
 
             % train the auxiliary model
             dlZTrnAll = thisModel.encode( dlXTrnAll, convert = false );
-            thisModel.AuxModel = trainAuxModel( ...
+            [thisModel.AuxModel, ...
+                thisModel.AuxModelZMean, ...
+                thisModel.AuxModelZStd] = trainAuxModel( ...
                                         thisModel.AuxModelType, ...
                                         dlZTrnAll, ...
                                         dlYTrnAll );
@@ -574,7 +576,7 @@ function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
 end
 
 
-function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
+function [model, ZTrnMean, ZTrnSD] = trainAuxModel( modelType, dlZTrn, dlYTrn )
     % Train a non-network auxiliary model
     arguments
         modelType   string ...
@@ -586,6 +588,11 @@ function model = trainAuxModel( modelType, dlZTrn, dlYTrn )
     % convert to double for models which don't take dlarrays
     ZTrn = double(extractdata( dlZTrn ))';
     YTrn = double(extractdata( dlYTrn ));
+
+    % standardize
+    ZTrnMean = mean( ZTrn );
+    ZTrnSD = std( ZTrn );
+    ZTrn = (ZTrn-ZTrnMean)./ZTrnSD;
     
     % fit the appropriate model
     switch modelType

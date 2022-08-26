@@ -31,9 +31,9 @@ function setup = initSetup
     setup.lossFcns.recon.class = @ReconstructionLoss;
     setup.lossFcns.recon.name = 'Reconstruction';
 
-    setup.lossFcns.adv.class = @AdversarialLoss;
-    setup.lossFcns.adv.name = 'Discriminator';
-    setup.lossFcns.adv.args.Distribution = 'DoubleGaussian';
+    %setup.lossFcns.adv.class = @AdversarialLoss;
+    %setup.lossFcns.adv.name = 'Discriminator';
+    %setup.lossFcns.adv.args.Distribution = 'DoubleGaussian';
     
     %setup.lossFcns.orth.class = @ComponentLoss;
     %setup.lossFcns.orth.name = 'XOrthogonality';
@@ -62,9 +62,9 @@ function setup = initSetup
     setup.model.args.ComponentType = 'PDP';
     
     % training
-    setup.model.args.trainer.updateFreq = 25;
+    setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 400;
+    setup.model.args.trainer.numEpochs = 1000;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;

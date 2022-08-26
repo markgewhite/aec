@@ -13,6 +13,8 @@ classdef CompactRepresentationModel
         Scale           % scaling factor for reconstruction loss
         AuxModelType    % type of auxiliary model to use
         AuxModel        % auxiliary model
+        AuxModelZMean   % mean used in standardizing Z prior to fitting (apply before prediction)
+        AuxModelZStd    % standard deviation used prior to fitting (apply before prediction)
 
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
@@ -390,7 +392,9 @@ classdef CompactRepresentationModel
                     thisModel.LatentComponents, thisModel.NumCompLines );
 
             % compute the auxiliary loss using the model
-            ZLong = reshape( zscore(pred.Z), size( pred.Z, 1 ), [] );
+            ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
+            ZLong = (ZLong-thisModel.AuxModelZMean)./thisModel.AuxModelZStd;
+
             pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
             loss.AuxModelLoss = getPropCorrect( pred.AuxModelYHat, pred.Y );
 

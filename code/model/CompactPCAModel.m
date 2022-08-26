@@ -58,6 +58,11 @@ classdef CompactPCAModel < CompactRepresentationModel
             % generate the latent components
             Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
 
+            % standardize
+            self.AuxModelZMean = mean( Z );
+            self.AuxModelZStd = std( Z );
+            Z = (Z-self.AuxModelZMean)./self.AuxModelZStd;
+
             % train the auxiliary model
             switch self.AuxModelType
                 case 'Logistic'
