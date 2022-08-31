@@ -62,9 +62,9 @@ function setup = initSetup
     setup.model.args.ComponentType = 'PDP';
     
     % training
-    setup.model.args.trainer.updateFreq = 100;
+    setup.model.args.trainer.updateFreq = 25;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 1000;
+    setup.model.args.trainer.numEpochs = 200;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;

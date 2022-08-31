@@ -15,6 +15,7 @@ classdef CompactRepresentationModel
         AuxModel        % auxiliary model
         AuxModelZMean   % mean used in standardizing Z prior to fitting (apply before prediction)
         AuxModelZStd    % standard deviation used prior to fitting (apply before prediction)
+        AuxModelPD      % partial dependence
 
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
@@ -144,6 +145,54 @@ classdef CompactRepresentationModel
         end
 
 
+        function [auxPD, Z] = auxPartialDependence( self, thisDataset, args )
+            % Generate the model's partial dependence to latent codes
+            arguments
+                self            CompactRepresentationModel
+                thisDataset     ModelDataset
+                args.nSample    double {mustBeInteger} = 41
+                args.range      double {mustBePositive} = 2.0
+                args.auxFcn     function_handle = @predictAuxModel
+            end
+
+            % generate the latent encodings
+            Z = self.encode( thisDataset );
+            %Z(:,1) = 1:486;
+            %Z(:,2) = 1001:1486;
+            %Z(:,3) = 2001:2486;
+            %Z(:,4) = 3001:3486;
+
+            % define the query points by z-scores
+            [ ZQ, ~, nObs ] = self.componentEncodings( Z', ...
+                                          sampling = 'Fixed', ...
+                                          nSample = args.nSample, ...
+                                          range = args.range, ...
+                                          maxObs = 1000 );
+            ZQ = ZQ';
+
+            % get the auxiliary function predictions, as scores
+            [~, auxPD] = args.auxFcn( self, ZQ );
+
+            % take only the second column, if binary
+            if size(auxPD,2) == 2
+                auxPD = auxPD(:,2);
+            end
+
+            % take the mean across the subsets
+            auxPD = reshape( auxPD, nObs , [] );
+            % drop the last one, which is the mean
+            auxPD = auxPD(:,1:end-1);
+            % take mean across the observations
+            auxPD = mean( auxPD, 1 );
+            % reshape for each Z value
+            auxPD = reshape( auxPD, [], self.ZDim );
+
+            % fit a Gaussian process 
+
+
+        end
+
+
 
         function self = evaluate( self, thisTrnSet, thisValSet )
             % Evaluate the model with a specified dataset
@@ -203,7 +252,7 @@ classdef CompactRepresentationModel
         end
 
 
-        function [ XC, varProp, compVar ] = getLatentComponents( self, thisDataset )
+        function [ XA, XC, varProp, compVar ] = getLatentResponse( self, thisDataset )
             % Generate the latent components and
             % compute the explained variance
             arguments
@@ -211,8 +260,8 @@ classdef CompactRepresentationModel
                 thisDataset     ModelDataset
             end
 
-            % generate the latent encodings
-            Z = self.encode( thisDataset );
+            % calculate the auxiliary model/network dependence
+            [XA, Z] = self.auxPartialDependence( thisDataset );
 
             % generate the AE components, smoothing them, for storage
             XC = self.calcLatentComponents( Z, ...
@@ -295,6 +344,23 @@ classdef CompactRepresentationModel
             varProp = mean( compVar, 2 )';
 
         end
+
+
+        function [ YHat, YHatScore] = predictAuxModel( self, Z )
+            % Make prediction from Z using an auxiliary model
+            arguments
+                self            CompactRepresentationModel
+                Z               {mustBeA(Z, {'double', 'dlarray'})}
+            end
+
+            if isa( Z, 'dlarray' )
+                Z = double(extractdata(Z))';
+            end
+
+            [YHat, YHatScore] = predict( self.AuxModel, Z );
+
+        end
+
 
 
     end

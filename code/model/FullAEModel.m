@@ -270,10 +270,10 @@ classdef FullAEModel < FullRepresentationModel
             for k = 1:self.KFolds
                 if isEnsemble
                     YHatFold( :, k ) = ...
-                            predictAuxNet( self.SubModels{k}, Z(:,:,k), Y );
+                            predictAuxNet( self.SubModels{k}, Z(:,:,k) );
                 else
                     YHatFold( :, k ) = ...
-                            predictAuxNet( self.SubModels{k}, Z, Y );
+                            predictAuxNet( self.SubModels{k}, Z );
                 end
             end
 

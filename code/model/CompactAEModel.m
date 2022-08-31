@@ -20,6 +20,7 @@ classdef CompactAEModel < CompactRepresentationModel
         ComponentCentring % how to centre the generated components
         HasCentredDecoder % whether the decoder predicts centred X
         MeanCurveTarget   % mean curve for the X target time span
+        AuxNetworkPD   % auxiliary network partial dependence
     end
 
     properties (Dependent = true)
@@ -122,9 +123,15 @@ classdef CompactAEModel < CompactRepresentationModel
 
             self = self.Trainer.runTraining( self, thisData );
             
-            [self.LatentComponents, ...
+            [self.AuxModelPD, self.LatentComponents, ...
                 self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentComponents( thisData );
+                            = self.getLatentResponse( thisData );
+
+            if any(self.LossFcnTbl.Types=='Auxiliary')
+                self.AuxNetworkPD = ...
+                    self.auxPartialDependence( thisData, ...
+                                               auxFcn = @predictAuxNet );
+            end
 
         end
 
@@ -429,22 +436,17 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function YHat = predictAuxNet( self, Z, Y )
+        function [ YHat, YHatScore] = predictAuxNet( self, Z )
             % Make prediction from Z using an auxiliary network
             arguments
                 self            CompactAEModel
                 Z               {mustBeA(Z, {'double', 'dlarray'})}
-                Y               {mustBeA(Y, {'double', 'dlarray'})}
             end
 
             if isa( Z, 'dlarray' )
                 dlZ = Z;
             else
                 dlZ = dlarray( Z', 'CB' );
-            end
-
-            if isa( Y, 'dlarray' )
-                Y = double(extractdata( Y ))';
             end
 
             auxNet = (self.LossFcnTbl.Types == 'Auxiliary');
@@ -462,11 +464,18 @@ classdef CompactAEModel < CompactRepresentationModel
 
             auxNetName = self.LossFcnTbl.Names( auxNet );
 
-            dlYHat = predict( self.Nets.(auxNetName), dlZ );
+            % get the network's prediction with softmax
+            fcLayer = self.Nets.(auxNetName).Layers(end-1).Name;
+            outLayer = self.Nets.(auxNetName).Layers(end).Name;
+
+            [ dlYHat, dlYHatScore ] = predict( self.Nets.(auxNetName), ...
+                                               dlZ, ...
+                                               Outputs = {outLayer, fcLayer} );
 
             YHat = double(extractdata( dlYHat ))';
-            CDim = size( YHat, 2 );
-            YHat = double(onehotdecode( YHat, 1:CDim, 2 ));
+            YHatScore = double(extractdata( dlYHatScore ))';
+
+            YHat = double(onehotdecode( YHat, 1:self.CDim, 2 ));
 
         end
 
@@ -596,7 +605,7 @@ classdef CompactAEModel < CompactRepresentationModel
     
             if any(self.LossFcnTbl.Types == 'Auxiliary')
                 % compute the auxiliary loss using the network
-                pred.AuxNetworkYHat = predictAuxNet( self, pred.Z, thisDataset.Y );
+                pred.AuxNetworkYHat = predictAuxNet( self, pred.Z );
                 eval.AuxNetwork = evaluateClassifier( pred.Y, pred.AuxNetworkYHat );
             end
 
