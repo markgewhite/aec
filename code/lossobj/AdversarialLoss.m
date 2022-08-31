@@ -96,7 +96,7 @@ classdef AdversarialLoss < LossFunction
             % create final layers
             layers = [ layers; ...    
                             fullyConnectedLayer( 1, 'Name', 'fcout' )
-                            sigmoidLayer( 'Name', 'out' )
+                            softmaxLayer( 'Name', 'out' )
                             ];
             
             lgraph = layerGraph( layers );

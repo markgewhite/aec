@@ -112,7 +112,7 @@ classdef ClassifierLoss < LossFunction
             % create final layers
             layers = [ layers; ...    
                             fullyConnectedLayer( self.CDim, 'Name', 'fcout' )
-                            sigmoidLayer( 'Name', 'out' )
+                            softmaxLayer( 'Name', 'out' )
                             ];
             
             lgraph = layerGraph( layers );

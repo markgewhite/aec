@@ -97,7 +97,7 @@ classdef InputClassifierLoss < LossFunction
            
             % define replacement layers
             newLayers = [ fullyConnectedLayer( self.CDim, 'Name', 'fcout' )
-                          sigmoidLayer( 'Name', 'out' ) ];
+                          softmaxLayer( 'Name', 'out' ) ];
 
             lgraph = replaceLayer( lgraph, lastName, newLayers );
             net = dlnetwork( lgraph );
