@@ -51,7 +51,7 @@ classdef FukuchiDataset < ModelDataset
                 throwAsCaller( MException(eid,msg) );
             end
 
-            [ XRaw, Y, S, side, labels ] = FukuchiDataset.load( set, args );
+            [ XRaw, Y, S, side, channels, classes ] = FukuchiDataset.load( set, args );
 
             % setup padding
             if args.PaddingLength==0
@@ -88,8 +88,9 @@ classdef FukuchiDataset < ModelDataset
                             padding = pad, ...
                             fda = paramsFd, ...
                             datasetName = "Fukuchi", ...
-                            channelLabels = labels, ...
+                            channelLabels = channels, ...
                             timeLabel = label, ...
+                            classLabels = classes, ...
                             channelLimits = [] );
 
             self.Category = args.Category;
@@ -123,7 +124,7 @@ classdef FukuchiDataset < ModelDataset
 
     methods (Static)
 
-        function [X, Y, S, side, names ] = load( set, args )
+        function [X, Y, S, side, names, classLabels ] = load( set, args )
 
             if ismac
                 rootpath = '/Users/markgewhite/Google Drive/';
@@ -152,18 +153,22 @@ classdef FukuchiDataset < ModelDataset
                     young = metaData.AgeGroup=='Young';
                     refY( young ) = 1;
                     refY( ~young ) = 2;
+                    classLabels = unique( metaData.AgeGroup );
 
                 case 'Gender'
                     male = metaData.Gender=='M';
                     refY( male ) = 1;
                     refY( ~male ) = 2;
+                    classLabels = unique( metaData.Gender );
 
                 case 'SpeedClass'
                     metaData.SpeedClass = categorical( metaData.FileName(11:13) );
                     refY = metaData.SpeedClass;
+                    classLabels = unique( metaData.SpeedClass );
 
                 case 'GaitSpeed'
                     refY = metaData.GaitSpeed;
+                    classLabels = "";
 
             end
 

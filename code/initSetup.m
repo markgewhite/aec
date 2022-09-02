@@ -10,7 +10,7 @@ function setup = initSetup
     setup.data.args.ResampleRate = 10;
     setup.data.args.HasMatchingOutput = false;
         
-    %setup.data.class = @fukuchiDataset;
+    %setup.data.class = @FukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
     %setup.data.args.HasVGRFOnly = false;
     %setup.data.args.Category = 'JointAngles';
@@ -59,12 +59,11 @@ function setup = initSetup
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
-    setup.model.args.ComponentType = 'PDP';
     
     % training
-    setup.model.args.trainer.updateFreq = 25;
+    setup.model.args.trainer.updateFreq = 20;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 200;
+    setup.model.args.trainer.numEpochs = 10;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;

@@ -81,7 +81,7 @@ classdef CompactPCAModel < CompactRepresentationModel
             % compute the components' explained variance
             [self.LatentComponents, ...
                 self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentComponents( thisData );
+                            = self.getLatentResponse( thisData );
             
             % plot them on specified axes
             plotLatentComp( self, type = 'Smoothed', shading = true );
@@ -100,9 +100,7 @@ classdef CompactPCAModel < CompactRepresentationModel
             arguments
                 self            CompactPCAModel
                 Z               double % redundant
-                args.sampling   char ...
-                    {mustBeMember(args.sampling, ...
-                        {'Random', 'Fixed'} )} = 'Random'
+                args.sampling   char % redundant
                 args.nSample    double {mustBeInteger} = 0
                 args.centre     logical = true
                 args.range      double {mustBePositive} = 2.0

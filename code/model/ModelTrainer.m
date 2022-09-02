@@ -515,9 +515,7 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
     fprintf('\n');
 
     % compute the AE components for plotting
-    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( ...
-                                    dlZ, ...
-                                    sampling = 'Fixed' );
+    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( dlZ );
 
     % plot them on specified axes
     if thisModel.HasCentredDecoder
@@ -555,21 +553,18 @@ function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
                     latentCodeCorrelation( dlZ, summary = true );
 
     % generate validation components
-    [ dlXC, ~, offsets ] = thisModel.calcLatentComponents( ...
-                    dlZ, ...
-                    nSample = 100, ...
-                    sampling = 'Random' );
+    [ dlXC, ~, offsets ] = thisModel.calcLatentComponents( dlZ );
 
     % record latent codes correlation
     [ metric.XCCorrelation, metric.XCCovariance ] = ...
-                latentComponentCorrelation( dlXC, 100, summary = true );
+                latentComponentCorrelation( dlXC, summary = true );
     metric.XCCorrelation = mean( metric.XCCorrelation );
     metric.XCCovariance = mean( metric.XCCovariance );
 
-    % compute explained variance
-    metric.VarianceProportionXC = ...
-                        thisModel.explainedVariance( dlX, dlXC, offsets );
-
+    % compute explained variance - NEED TO FIX
+    %metric.VarianceProportionXC = ...
+    %                    thisModel.explainedVariance( dlX, dlXC, offsets );
+    metric.VarianceProportionXC = zeros( 1, thisModel.ZDim );
     % convert to table
     metric = struct2table( metric );
 

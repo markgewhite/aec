@@ -20,7 +20,7 @@ classdef CompactAEModel < CompactRepresentationModel
         ComponentCentring % how to centre the generated components
         HasCentredDecoder % whether the decoder predicts centred X
         MeanCurveTarget   % mean curve for the X target time span
-        AuxNetworkPD   % auxiliary network partial dependence
+        AuxNetworkALE  % auxiliary network Accumulated Local Effects
     end
 
     properties (Dependent = true)
@@ -123,12 +123,12 @@ classdef CompactAEModel < CompactRepresentationModel
 
             self = self.Trainer.runTraining( self, thisData );
             
-            [self.AuxModelPD, self.LatentComponents, ...
+            [self.AuxModelALE, self.LatentComponents, ...
                 self.VarProportion, self.ComponentVar] ...
                             = self.getLatentResponse( thisData );
 
             if any(self.LossFcnTbl.Types=='Auxiliary')
-                self.AuxNetworkPD = ...
+                self.AuxNetworkALE = ...
                     self.auxPartialDependence( thisData, ...
                                                auxFcn = @predictAuxNet );
             end
@@ -174,96 +174,64 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ dlXC, dlXMean, offsets ] = calcLatentComponents( self, dlZ, args )
-            % Calculate the funtional components from the latent codes
-            % using the decoder network. For each component, the relevant 
-            % code is varied randomly about the mean. This is more 
-            % efficient than calculating two components at strict
-            % 2SD separation from the mean.
+        function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
+            % Calculate the funtional components using the decoder network
+            % from Z code generated using Accumulated Local Estimation 
             arguments
                 self            CompactAEModel
                 dlZ             {mustBeA( dlZ, {'dlarray', 'double'} )}
-                args.sampling   char ...
-                    {mustBeMember(args.sampling, ...
-                        {'Random', 'Fixed'} )} = 'Random'
-                args.nSample    double {mustBeInteger} = 0
-                args.maxObs     double {mustBeInteger} = 10
-                args.range      double {mustBePositive} = 2.0
+                args.maxObs     double {mustBeInteger} = 500
                 args.forward    logical = false
-                args.convert    logical = false
+                args.smooth     logical = false
                 args.dlX        {mustBeA( args.dlX, {'dlarray', 'double'} )}
             end
 
-            if size( dlZ, 1 ) ~= self.ZDim
-                dlZ = dlZ';
-            end
-
-            [ dlZC, offsets, nObs ] = self.componentEncodings( dlZ, ...
-                                        sampling = args.sampling, ...
-                                        maxObs = args.maxObs, ...
-                                        nSample = args.nSample );
-
-            % mask Z based on number of active dimensions
-            dlZC = self.maskZ( dlZC );
-            if isa( dlZC, 'double' )
-                dlZC = dlarray( dlZC, 'CB' );
-            end
-
-            % generate all the component curves using the decoder
+            % prepare decoder dispatch arguments
             dispatchArgs.forward = args.forward;
             if isfield( args, 'dlX' )
-                dispatchArgs.dlX = repmat( args.dlX, 1, self.ZDim*args.nSample+1 );
+                dispatchArgs.dlX = args.dlX;
             end
             dispatchArgsCell = namedargs2cell( dispatchArgs );
-            dlXC = self.decodeDispatcher( dlZC, dispatchArgsCell{:} );
 
-            if strcmp( self.ComponentType, 'PDP' )
-                % take the mean across the subsets
-                if length( size(dlXC) )==3
-                    dlXC = reshape( dlXC, size(dlXC,1), size(dlXC,2), nObs, [] );
-                    dlXC = squeeze( mean( dlXC, 3 ) );
+            [XC, ~, offsets] = self.ALE( dlZ, ...
+                              sampling = 'Component', ...
+                              modelFcn = @decodeDispatcher, ...
+                              modelFcnArgs = dispatchArgsCell, ...
+                              maxObs = args.maxObs );
 
-                else
-                    dlXC = reshape( dlXC, size(dlXC,1), nObs, [] );
-                    dlXC = squeeze( mean( dlXC, 2 ) );
+            % put XC into the appropriate structure
+            % Points, Samples, Components, Channels
+            XC = permute( XC, [3 2 1 4] );
 
-                end
-            else
-                % only remove dimension labels to match PDP
-                dlXC = stripdims( dlXC );
-            end
+            % remove surplus offsets
+            nSamples = size(XC, 2);
+            XC = XC( :, 1:2:nSamples, :, : );
+            offsets = offsets( 1:2:nSamples );
+            nSamples = ceil(nSamples/2);
 
-            % extract the mean curve from the end
-            if length( size(dlXC) )==3
-                dlXMean = dlXC( :, :, end );
-                dlXC = dlXC( :, :, 1:end-1 );
-            else
-                dlXMean = dlXC( :, end );
-                dlXC = dlXC( :, 1:end-1 );
-            end
+            % extract the mean curve based on Z
+            XMean = XC( :, ceil(nSamples/2), :, : );
            
             switch self.ComponentCentring
                 case 'Z'
                     % centre about the curve generated by mean Z
-                    dlXC = dlXC - dlXMean;
+                    XC = XC - XMean;
                 case 'X'
                     % centre about the mean generated curve
-                    dlXC = dlXC - mean( dlXC, length(size(dlXC)) );
+                    XC = XC - mean( XC, length(size(XC)) );
             end
 
-            if args.convert
-                % convert to double and smooth
-
-                if isa( dlXC, 'dlarray' ) 
-                    dlXC = double(extractdata( dlXC ));
-                    dlXMean = double(extractdata( dlXMean ));
-                end
-
+            if args.smooth
                 % smooth to regularly-spaced time span
-                dlXC = smoothSeries( dlXC, ...
-                                     self.TSpan.Target, ...
-                                     self.TSpan.Regular, ...
-                                     self.FDA.FdParamsTarget );
+                XCSmth = zeros( length(self.TSpan.Regular), ...
+                                size(XC,2), size(XC,3), size(XC,4) );
+                for c = 1:size(XC,4)
+                    XCSmth(:,:,:,c) = smoothSeries( XC(:,:,:,c), ...
+                                         self.TSpan.Target, ...
+                                         self.TSpan.Regular, ...
+                                         self.FDA.FdParamsTarget );
+                end
+                XC = XCSmth;
             end
 
         end
@@ -442,11 +410,14 @@ classdef CompactAEModel < CompactRepresentationModel
                 self            CompactAEModel
                 Z               {mustBeA(Z, {'double', 'dlarray'})}
             end
-
+                
             if isa( Z, 'dlarray' )
                 dlZ = Z;
             else
-                dlZ = dlarray( Z', 'CB' );
+                if size( Z, 1 ) ~= self.ZDim
+                    Z = Z';
+                end
+                dlZ = dlarray( Z, 'CB' );
             end
 
             auxNet = (self.LossFcnTbl.Types == 'Auxiliary');
@@ -472,10 +443,10 @@ classdef CompactAEModel < CompactRepresentationModel
                                                dlZ, ...
                                                Outputs = {outLayer, fcLayer} );
 
-            YHat = double(extractdata( dlYHat ))';
-            YHatScore = double(extractdata( dlYHatScore ))';
+            YHat = double(extractdata( dlYHat ));
+            YHatScore = double(extractdata( dlYHatScore ));
 
-            YHat = double(onehotdecode( YHat, 1:self.CDim, 2 ));
+            YHat = double(onehotdecode( YHat', 1:self.CDim, 2 ))';
 
         end
 

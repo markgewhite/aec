@@ -1,39 +1,19 @@
-function [ R, C ] = latentComponentCorrelation( XC, nSamples, arg )
+function [ R, C ] = latentComponentCorrelation( XC, arg )
     % Calculate the Pearson correlation between latent components
     % and the covariance matrix
     arguments
-        XC              {mustBeA( XC, {'dlarray', 'double'} )}
-        nSamples        double {mustBeInteger, mustBePositive}
+        XC              double
         arg.summary     logical = false
     end
 
-    if isa( XC, 'dlarray' )
-        XC = double(extractdata( XC ));
-    end
-
-    % put XC into the appropriate structure
-    if size( XC, 3 ) == 1
-        XC = permute( XC, [1 3 2] );
-    end
-
-    [nPts, nChannels, nComp] = size( XC );
-    if mod( nComp, nSamples )~=0
-        % odd number: last component must be the mean
-        % centre the components
-        XC = XC( :,:,1:nComp-1 ) - XC( :,:,end );
-        nComp = nComp - 1;
-    end
-
-    nComp = nComp/nSamples;
-
-    XC = reshape( XC, nPts, nChannels, [], nComp );
+    [nPts, nSamples, nComp, nChannels] = size( XC );
 
     % calculate the correlation matrics across samples and channels
     R = zeros( nComp, nComp, nChannels);
     C = zeros( nComp, nComp, nChannels);
     for c = 1:nChannels
         for k = 1:nSamples
-            XCsample = squeeze( XC(:,c,k,:) );
+            XCsample = squeeze( XC(:,k,:,c) );
             R(:,:,c) = R(:,:,c) + corr( XCsample );
             C(:,:,c) = C(:,:,c) + cov( XCsample );
         end

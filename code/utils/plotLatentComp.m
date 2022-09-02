@@ -24,7 +24,10 @@ function plotLatentComp( thisModel, args )
     
     if isempty( args.XMean )
         % use the pre-calculated mean curve
-        XMean = thisModel.MeanCurve;
+        XMean = repmat( thisModel.MeanCurve, 1, thisModel.ZDim );
+        if thisModel.XChannels==1
+            XMean = permute( XMean, [1 3 2] );
+        end
     else
         % use the mean curve specified
         if isa( args.XMean, 'dlarray' )
@@ -56,19 +59,14 @@ function plotLatentComp( thisModel, args )
         fdParams = thisModel.FDA.FdParamsTarget;
     end
 
-    % re-order the dimensions for FDA
-    if size( XC, 3 ) > 1
-        XC = permute( XC, [1 3 2] );
-        XMean = permute( XMean, [1 3 2] );
-    end
+    % get dimensions
+    [nPts, nSamples, nDim, nChannels, ] = size( XC );
 
     % smooth and re-evaluate all curves
     tSpanPlot = linspace( thisModel.TSpan.Original(1), ...
                           thisModel.TSpan.Original(end), 101 );
 
     XMeanSmth = smoothSeries( XMean, tSpanXC, tSpanPlot, fdParams );
-    XCsmth = XMeanSmth + smoothSeries( XC, tSpanXC, tSpanPlot, fdParams );
-
 
     % set the colours: red=positive, blue=negative
     compColours = [ 0.0000 0.4470 0.7410; ...
@@ -77,12 +75,6 @@ function plotLatentComp( thisModel, args )
     black = [ 0, 0 , 0 ];
     % set positive/negative plot characteristics
     names = [ "-ve", "+ve" ];
-
-    if args.nSample > 0
-        nSample = args.nSample;
-    else
-        nSample = thisModel.NumCompLines;
-    end
 
     % set the plot axes
     if isempty( args.axes )
@@ -101,9 +93,9 @@ function plotLatentComp( thisModel, args )
 
     if isempty( args.order )
         % standard order from the model
-        compIdx = 1:thisModel.ZDim;
-    elseif length(args.order)==thisModel.ZDim ...
-           && max(args.order)<=thisModel.ZDim
+        compIdx = 1:nDim;
+    elseif length(args.order)==nDim ...
+           && max(args.order)<=nDim
         % specified order
         compIdx = args.order;
     else
@@ -113,9 +105,10 @@ function plotLatentComp( thisModel, args )
     end
 
 
-    for c = 1:thisModel.XChannels
+    for c = 1:nChannels
 
-        k = 0; % sample counter
+        XCsmth = XMeanSmth(:,c,:) + smoothSeries( XC(:,:,:,c), ...
+                                           tSpanXC, tSpanPlot, fdParams );
 
         for i = compIdx
 
@@ -129,23 +122,20 @@ function plotLatentComp( thisModel, args )
             l = 0; % legend counter
 
             % plot the gradations (in reverse to +ve plots first)
-            for j = nSample:-1:1
+            for j = nSamples:-1:1
 
                 % first half blue (-ve), second half red (+ve)
-                s = (j > 0.5*nSample) + 1;
-                
-                % next sample
-                k = k+1;
+                s = (j > 0.5*nSamples) + 1;
 
-                isOuterCurve = (j==1 || j==nSample);
+                isOuterCurve = (j==1 || j==nSamples);
                 if isOuterCurve
                     % fill-up shading area
                     if args.shading
                         plotShadedArea( axis, ...
                                         tSpanPlot, ...
-                                        XCsmth( :, k, c ), ...
-                                        XMeanSmth( :, 1, c ), ...
-                                        compColours(s,:), ...
+                                        XCsmth( :,j,i ), ...
+                                        XMeanSmth( :,c,i ), ...
+                                        compColours( s,: ), ...
                                         name = names(s) );
                     end
                     width = 1.0;
@@ -159,7 +149,7 @@ function plotLatentComp( thisModel, args )
                 if any(strcmp( args.type, {'Predicted','Both'} ))
                     % plot predicted values
                     plot( axis, ...
-                          fda.tSpanAdaptive, XC( :, k, c ), ...
+                          fda.tSpanAdaptive, XC( :,j,i,c ), ...
                           Color = gray, ...
                           LineWidth = 0.5 );
                 end
@@ -169,15 +159,15 @@ function plotLatentComp( thisModel, args )
                         % include in legend
                         l = l+1;
                         pltObj(l) = plot( axis, ...
-                                          tSpanPlot, XCsmth( :, k, c ), ...
-                                          Color = compColours(s,:), ...
+                                          tSpanPlot, XCsmth( :,j,i ), ...
+                                          Color = compColours( s,: ), ...
                                           LineWidth = width, ...
                                           DisplayName = names(s));
                     else
                         % don't record it for the legend
                         plot( axis, ...
-                                          tSpanPlot, XCsmth( :, k, c ), ...
-                                          Color = compColours(s,:), ...
+                                          tSpanPlot, XCsmth( :,j,i ), ...
+                                          Color = compColours( s,: ), ...
                                           LineWidth = width );
                     end
 
@@ -188,7 +178,7 @@ function plotLatentComp( thisModel, args )
             % plot the mean curve
             l = l+1;
             pltObj(l) = plot( axis, ...
-                              tSpanPlot, XMeanSmth( :, 1, c ), ...
+                              tSpanPlot, XMeanSmth( :,c,i ), ...
                               Color = black, ...
                               LineWidth = 1.0, ...
                               DisplayName = 'Mean' );

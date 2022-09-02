@@ -54,11 +54,8 @@ classdef FullRepresentationModel
                 args.RandomSeed         double ...
                     {mustBeInteger, mustBePositive}
                 args.RandomSeedResets   logical = false;
-                args.ComponentType      char ...
-                    {mustBeMember(args.ComponentType, ...
-                        {'Mean', 'PDP'} )} = 'PDP'
                 args.NumCompLines       double...
-                    {mustBeInteger, mustBePositive} = 8
+                    {mustBeInteger, mustBePositive} = 5
                 args.ShowPlots          logical = true
                 args.IdenticalPartitions logical = false
                 args.Name               string = "[ModelName]"
@@ -95,7 +92,6 @@ classdef FullRepresentationModel
             self.Info.Name = args.Name;
             self.Info.Path = args.Path;
 
-            self.ComponentType = args.ComponentType;
             self.NumCompLines = args.NumCompLines;
             self.CompressionLevel = args.CompressionLevel;
 
