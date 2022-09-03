@@ -79,7 +79,7 @@ classdef CompactPCAModel < CompactRepresentationModel
                                       self.MeanFd );
 
             % compute the components' explained variance
-            [self.LatentComponents, ...
+            [self.AuxModelALE, self.LatentComponents, ...
                 self.VarProportion, self.ComponentVar] ...
                             = self.getLatentResponse( thisData );
             
@@ -100,23 +100,20 @@ classdef CompactPCAModel < CompactRepresentationModel
             arguments
                 self            CompactPCAModel
                 Z               double % redundant
-                args.sampling   char % redundant
-                args.nSample    double {mustBeInteger} = 0
-                args.centre     logical = true
-                args.range      double {mustBePositive} = 2.0
                 args.forward    logical = false % redundant
-                args.convert    logical = false % redundant
+                args.smooth     logical = false % redundant
             end
 
             % compute the components
             nSample = self.NumCompLines;
-            offsets = linspace( -2, 2, nSample );
-            XC = zeros( length(self.PCATSpan), self.XChannels, nSample );
+            offsets = norminv(linspace( 0.050, 0.950, nSample ));
+            % XC structure: Points, Samples, Components, Channels
+            XC = zeros( length(self.PCATSpan), nSample, self.ZDim, self.XChannels );
             for i =1:self.ZDim
                 FPC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
                 for c = 1:self.XChannels
                     for j = 1:nSample
-                        XC(:,c,(i-1)*nSample+j) = offsets(j)*FPC(:,c);
+                        XC(:,j,i,c) = offsets(j)*FPC(:,c);
                     end
                 end
             end
@@ -126,11 +123,12 @@ classdef CompactPCAModel < CompactRepresentationModel
         end
 
 
-        function Z = encode( self, data )
+        function Z = encode( self, data, args )
             % Encode features Z from X using the model
             arguments
-                self        CompactPCAModel
-                data               
+                self            CompactPCAModel
+                data
+                args.convert    logical = false % redundant
             end
 
             if isa( data, 'fd' )

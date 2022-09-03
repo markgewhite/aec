@@ -106,17 +106,17 @@ classdef CompactRepresentationModel
             K = args.nSample;
             switch args.sampling
                 case 'Regular'
-                    prc = linspace( 1/K, 1, K );
+                    prc = linspace( 1/K, 1-1/K, K-1 );
+                    offsets = norminv( prc ); % z-scores
+
                 case 'Component'
-                    prc = [   0.100, ...
-                              0.225, 0.325, ...
-                              0.450, 0.550, ...
-                              0.675, 0.775, ...
-                              0.900, 1.000];
+                    q = linspace( 0.05, 0.95, self.NumCompLines );
+                    prc = sort( [q-0.05 q+0.05] );
+                    prc = prc( 2:end-1 );
+                    offsets = norminv( q ); % z-scores
             end
-            offsets = norminv( prc ); % z-scores
             ZQ = quantile( Z, prc, 2 );
-            ZQ = [ min(Z,[],2) ZQ ];
+            ZQ = [ min(Z,[],2) ZQ max(Z,[],2) ];
             K = length(ZQ)-1;
 
             % identify bin assignments across dimensions
@@ -191,6 +191,11 @@ classdef CompactRepresentationModel
             end
 
             ZQMid = ((ZQ(:,1:K) + ZQ(:,2:K+1))/2)';
+
+            if strcmp( args.sampling, 'Component' )
+                % remove surplus samples
+                F = F( :, 1:2:K, :, : );
+            end
 
         end
 
@@ -287,7 +292,7 @@ classdef CompactRepresentationModel
             % calculate the auxiliary model/network dependence
             XA = self.auxPartialDependence( thisDataset );
 
-            % generate the AE components, smoothing them, for storage
+            % generate the components, smoothing them, for storage
             Z = self.encode( thisDataset, convert = false );
             XC = self.calcLatentComponents( Z, smooth = true );
 
