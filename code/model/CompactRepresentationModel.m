@@ -57,7 +57,6 @@ classdef CompactRepresentationModel
             self.ShowPlots = theFullModel.ShowPlots;
             self.Figs = theFullModel.Figs;
             self.Axes = theFullModel.Axes;
-            self.ComponentType = theFullModel.ComponentType;
             self.NumCompLines = theFullModel.NumCompLines;
 
             self.Info.Name = strcat( self.Info.Name, "-Fold", ...
@@ -294,7 +293,7 @@ classdef CompactRepresentationModel
 
             % generate the components, smoothing them, for storage
             Z = self.encode( thisDataset, convert = false );
-            XC = self.calcLatentComponents( Z, smooth = true );
+            [XC, ~, offsets ] = self.calcLatentComponents( Z, smooth = true );
 
             % compute the components' explained variance
             XTarget = permute( thisDataset.XTarget, [ 1 3 2 ] );

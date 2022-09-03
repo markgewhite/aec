@@ -17,13 +17,13 @@ classdef FullRepresentationModel
         IdenticalPartitions % flag for special case of identical partitions
         SubModels       % array of trained models
         MeanCurve       % estimated mean curve
-        ComponentType   % type of components generated (Mean or PDP)
-        LatentComponents % cross-validated latent components
-        ComponentOrder  % optimal arrangement of sub-model components
-        ComponentDiffRMSE % overall difference between sub-models
         Loss            % collated losses from sub-models
         CVLoss          % aggregate cross-validated losses
-        Correlation     % mean correlation matrices
+        CVAuxiliary     % aggregate paramteres for auxiliary models
+        CVCorrelation   % mean correlation matrices
+        CVLatentComponents % cross-validated latent components
+        ComponentOrder  % optimal arrangement of sub-model components
+        ComponentDiffRMSE % overall difference between sub-models
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
@@ -171,17 +171,21 @@ classdef FullRepresentationModel
 
             % find the optimal arrangement of sub-model components
             if self.KFolds > 1
-                self = self.arrangeComponents;
+                % NEED TO FIX
+                % self = self.arrangeComponents;
             end
 
             % calculate the aggregated latent components
             self = self.setLatentComponents;
 
             % calculate the cross-validated losses
-            self = self.computeLosses;
+            self = self.computeCVLosses;
 
-            % summarise correlation matrices
-            self = self.computeCorrelations;
+            % calculate cross-validated correlation matrices
+            self = self.computeCVCorrelations;
+
+            % calculate other cross-validated parameters
+            self = self.computeCVParameters;
 
             if self.ShowPlots
                 self.plotAllLatentComponents;
@@ -193,35 +197,51 @@ classdef FullRepresentationModel
         end
 
 
-        function self = computeLosses( self )
+        function self = computeCVLosses( self )
             % Calculate the cross-validated losses
             % using predictions from the sub-models
             arguments
                 self        FullRepresentationModel
             end
 
-            self.Loss.Training = collateLosses( self.SubModels, 'Training' );
-            self.CVLoss.Training = calcCVLoss( self.SubModels, 'Training' );
+            self.Loss.Training = self.collateLosses( self.SubModels, 'Training' );
+            self.CVLoss.Training = self.calcCVLoss( self.SubModels, 'Training' );
 
             if isfield( self.SubModels{1}.Loss, 'Validation' )
-                self.Loss.Validation = collateLosses( self.SubModels, 'Validation' );
-                self.CVLoss.Validation = calcCVLoss( self.SubModels, 'Validation' );
+                self.Loss.Validation = self.collateLosses( self.SubModels, 'Validation' );
+                self.CVLoss.Validation = self.calcCVLoss( self.SubModels, 'Validation' );
             end
 
         end
 
 
-        function self = computeCorrelations( self )
+        function self = computeCVCorrelations( self )
             % Average the correlation matrices across sub-models
             arguments
                 self        FullRepresentationModel
             end
 
-            self.Correlation.Training = averageCorrelations( self.SubModels, 'Training' );
+            self.CVCorrelation.Training = ...
+                self.calcCVCorrelations( self.SubModels, 'Training' );
 
             if isfield( self.SubModels{1}.Loss, 'Validation' )
-                self.Correlation.Validation = averageCorrelations( self.SubModels, 'Validation' );
+                self.CVCorrelation.Validation = ...
+                    self.calcCVCorrelations( self.SubModels, 'Validation' );
             end
+
+        end
+
+
+        function self = computeCVParameters( self )
+            % Average specific parameters across sub-models
+            arguments
+                self        FullRepresentationModel
+            end
+
+            self.CVAuxiliary.AuxModelBeta = self.calcCVNestedParameter( ...
+                        self.SubModels, {'AuxModel', 'Beta'} );
+            self.CVAuxiliary.AuxModelALE = self.calcCVParameter( ...
+                        self.SubModels, 'AuxModelALE' );
 
         end
 
@@ -247,9 +267,10 @@ classdef FullRepresentationModel
                                                 'gaplotbestindiv' } );
 
             % pre-compile latent components across the sub-models for speed
-            latentComp = zeros( self.XInputDim, self.NumCompLines*self.ZDim, self.KFolds );
+            latentComp = zeros( self.XInputDim, self.NumCompLines, ...
+                                self.ZDim, self.XChannels, self.KFolds );
             for k = 1:self.KFolds
-                latentComp(:,:,k) = self.SubModels{k}.LatentComponents;
+                latentComp(:,:,:,:,k) = self.SubModels{k}.LatentComponents;
             end
             
             % setup the objective function
@@ -295,7 +316,7 @@ classdef FullRepresentationModel
             
             end
 
-            self.LatentComponents = XC/self.KFolds;
+            self.CVLatentComponents = XC/self.KFolds;
 
         end
 
@@ -488,136 +509,208 @@ classdef FullRepresentationModel
     end
 
 
-end
+    methods (Static)
 
-
-function aggrLoss = collateLosses( subModels, set )
-    % Collate the losses from the submodels
-    arguments
-        subModels       cell
-        set             char ...
-            {mustBeMember( set, {'Training', 'Validation'} )}
-    end
-
-    nModels = length( subModels );
-    fields = fieldnames( subModels{1}.Loss.(set) );
-    nFields = length( fields );
-
-    for i = 1:nFields
-
-        fldDim = size( subModels{1}.Loss.(set).(fields{i}) );
-        thisAggrLoss = zeros( [nModels fldDim] );
-        for k = 1:nModels
-           thisAggrLoss(k,:,:) = subModels{k}.Loss.(set).(fields{i});
-        end
-        aggrLoss.(fields{i}) = thisAggrLoss;
-
-    end
-
-end
-
-
-function cvLoss = calcCVLoss( subModels, set )
-    % Calculate the aggregate cross-validated losses across all submodels
-    % drawing on the pre-computed predictions 
-    arguments
-        subModels       cell
-        set             char ...
-            {mustBeMember( set, {'Training', 'Validation'} )}
-    end
-
-    nModels = length( subModels );
-
-    pairs = [   {'XTarget', 'XHat'}; ...
-                {'XTarget', 'XHatSmoothed'}; ...
-                {'XRegular', 'XHatRegular'}; ...
-                {'Y', 'AuxModelYHat'} ];
-    fieldsToPermute = { 'XTarget', 'XHat', 'XHatSmoothed', 'XRegular', 'XHatRegular' };
-    fieldsForAuxLoss = { 'AuxModelYHat' };
-
-    nPairs = length( pairs );
-    fields = unique( pairs );
-
-    % aggregate all the predictions for each field into one array
-    for i = 1:length(fields)
-
-        aggr.(fields{i}) = [];
-        doPermute = ismember( fields{i}, fieldsToPermute );
-
-        for k = 1:nModels
-
-            data = subModels{k}.Predictions.(set).(fields{i});
-            if doPermute
-                data = permute( data, [2 1 3] );
+        function aggrLoss = collateLosses( subModels, set )
+            % Collate the losses from the submodels
+            arguments
+                subModels       cell
+                set             char ...
+                    {mustBeMember( set, {'Training', 'Validation'} )}
             end
-            
-            aggr.(fields{i}) = [ aggr.(fields{i}); data ];
-
-        end
-
-    end
-
-    scale = mean( cell2mat(cellfun( ...
-                    @(m) m.Scale, subModels, UniformOutput = false )), 1 );
-
-    for i = 1:nPairs
-
-        A = aggr.(pairs{i,1});
-        AHat = aggr.(pairs{i,2});
-
-        if ismember( pairs{i,2}, fieldsForAuxLoss )
-            % cross entropy loss
-            cvLoss.(pairs{i,2}) = getPropCorrect( A, AHat );
-        else
-            % mean squared error loss
-            cvLoss.(pairs{i,2}) = reconLoss( A, AHat, scale );
-
-            % permute dimensions for temporal losses
-            A = permute( A, [2 1 3] );
-            AHat = permute( AHat, [2 1 3] );
-
-            % temporal mean squared error loss
-            cvLoss.([pairs{i,2} 'TemporalMSE']) = ...
-                                    reconTemporalLoss( A, AHat, scale );
-
-            % temporal bias
-            cvLoss.([pairs{i,2} 'TemporalBias']) = ...
-                                    reconTemporalBias( A, AHat, scale );
-
-            % temporal variance rearranging formula: MSE = Bias^2 + Var
-            cvLoss.([pairs{i,2} 'TemporalVar']) = ...
-                cvLoss.([pairs{i,2} 'TemporalMSE']) ...
-                                - cvLoss.([pairs{i,2} 'TemporalBias']).^2;
+        
+            nModels = length( subModels );
+            fields = fieldnames( subModels{1}.Loss.(set) );
+            nFields = length( fields );
+        
+            for i = 1:nFields
+        
+                fldDim = size( subModels{1}.Loss.(set).(fields{i}) );
+                thisAggrLoss = zeros( [nModels fldDim] );
+                for k = 1:nModels
+                   thisAggrLoss(k,:,:) = subModels{k}.Loss.(set).(fields{i});
+                end
+                aggrLoss.(fields{i}) = thisAggrLoss;
+        
+            end
         
         end
-    
-    end
-
-
-
-end
-
-
-function aggrCorr = averageCorrelations( subModels, set )
-    % Average the correlation matrices over the submodels
-    arguments
-        subModels       cell
-        set             char ...
-            {mustBeMember( set, {'Training', 'Validation'} )}
-    end
-
-    nModels = length( subModels );
-    fields = fieldnames( subModels{1}.Correlations.(set) );
-    nFields = length( fields );
-
-    for i = 1:nFields
-
-        fldDim = size( subModels{1}.Correlations.(set).(fields{i}) );
-        R = zeros( fldDim );
-        for k = 1:nModels
-           R = R + subModels{k}.Correlations.(set).(fields{i});
+        
+        
+        function cvLoss = calcCVLoss( subModels, set )
+            % Calculate the aggregate cross-validated losses across all submodels
+            % drawing on the pre-computed predictions 
+            arguments
+                subModels       cell
+                set             char ...
+                    {mustBeMember( set, {'Training', 'Validation'} )}
+            end
+        
+            nModels = length( subModels );
+        
+            pairs = [   {'XTarget', 'XHat'}; ...
+                        {'XTarget', 'XHatSmoothed'}; ...
+                        {'XRegular', 'XHatRegular'}; ...
+                        {'Y', 'AuxModelYHat'}; ];
+            fieldsToPermute = { 'XTarget', 'XHat', 'XHatSmoothed', 'XRegular', 'XHatRegular' };
+            fieldsForAuxLoss = { 'AuxModelYHat', 'AuxNetworkYHat', 'ComparatorYHat' };
+        
+            % check if fields are present
+            fields = unique( pairs );
+            nPairs = length( pairs );
+            for i = 1:nPairs
+                if ~isfield( subModels{1}.Predictions.(set), fields{i} )
+                    pairs{i,:} = [];
+                end
+            end
+            fields = unique( pairs );
+            nPairs = length( pairs );
+        
+            % aggregate all the predictions for each field into one array
+            for i = 1:length(fields)
+        
+                aggr.(fields{i}) = [];
+                doPermute = ismember( fields{i}, fieldsToPermute );
+        
+                for k = 1:nModels
+        
+                    data = subModels{k}.Predictions.(set).(fields{i});
+                    if doPermute
+                        data = permute( data, [2 1 3] );
+                    end
+                    aggr.(fields{i}) = [ aggr.(fields{i}); data ];
+        
+                end
+        
+            end
+        
+            scale = mean( cell2mat(cellfun( ...
+                            @(m) m.Scale, subModels, UniformOutput = false )), 1 );
+        
+            for i = 1:nPairs
+        
+                A = aggr.(pairs{i,1});
+                AHat = aggr.(pairs{i,2});
+        
+                if ismember( pairs{i,2}, fieldsForAuxLoss )
+                    % cross entropy loss
+                    cvLoss.(pairs{i,2}) = evaluateClassifier( A, AHat );
+        
+                else
+                    % mean squared error loss
+                    cvLoss.(pairs{i,2}) = reconLoss( A, AHat, scale );
+        
+                    % permute dimensions for temporal losses
+                    A = permute( A, [2 1 3] );
+                    AHat = permute( AHat, [2 1 3] );
+        
+                    % temporal mean squared error loss
+                    cvLoss.([pairs{i,2} 'TemporalMSE']) = ...
+                                            reconTemporalLoss( A, AHat, scale );
+        
+                    % temporal bias
+                    cvLoss.([pairs{i,2} 'TemporalBias']) = ...
+                                            reconTemporalBias( A, AHat, scale );
+        
+                    % temporal variance rearranging formula: MSE = Bias^2 + Var
+                    cvLoss.([pairs{i,2} 'TemporalVar']) = ...
+                        cvLoss.([pairs{i,2} 'TemporalMSE']) ...
+                                        - cvLoss.([pairs{i,2} 'TemporalBias']).^2;
+                
+                end
+            
+            end
+        
+        
+        
         end
-        aggrCorr.(fields{i}) = R/nModels;
+        
+        
+        function aggrCorr = calcCVCorrelations( subModels, set )
+            % Average correlations from submodels
+            arguments
+                subModels       cell
+                set             char ...
+                    {mustBeMember( set, {'Training', 'Validation'} )}
+            end
+        
+            nModels = length( subModels );
+            fields = fieldnames( subModels{1}.Correlations.(set) );
+            nFields = length( fields );
+        
+            for i = 1:nFields
+        
+                fldDim = size( subModels{1}.Correlations.(set).(fields{i}) );
+                R = zeros( fldDim );
+                for k = 1:nModels
+                   R = R + subModels{k}.Correlations.(set).(fields{i});
+                end
+                aggrCorr.(fields{i}) = R/nModels;
+        
+            end
+        
+        end
+        
+        
+        function P = calcCVParameter( subModels, param )
+            % Average a given parameter from submodels
+            arguments
+                subModels           cell
+                param               char
+            end
+        
+            P = 0;
+            % check if parameter exists
+            if ~isprop( subModels{1}, param )
+                warning(['SubModel parameter ' param ' does not exist.']);
+                return
+            end
+            if ~isnumeric( subModels{1}.(param) )
+                warning(['SubModel parameter ' param ' is not numeric.']);
+                return
+            end
+        
+            fldDim = size( subModels{1}.(param) );
+            P = zeros( fldDim );
+            nModels = length( subModels );
+            for k = 1:nModels
+               P = P + subModels{k}.(param);
+            end
+            P = P/nModels;
+        
+        end
+        
+        
+        function P = calcCVNestedParameter( subModels, param )
+            % Average a given nested parameter from submodels
+            arguments
+                subModels           cell
+                param               cell
+            end
+        
+            P = 0;
+            % check if parameter exists
+            try
+                fld = getfield( subModels{1}, param{:} );
+            catch
+                warning('SubModel parameter hierarchy does not exist.');
+                return
+            end
+            
+            if ~isnumeric(fld)
+                warning(['SubModel parameter ' param ' is not numeric.']);
+                return
+            end
+        
+            fldDim = size(fld);
+            P = zeros( fldDim );
+            nModels = length( subModels );
+            for k = 1:nModels
+               P = P + getfield( subModels{k}, param{:} );
+            end
+            P = P/nModels;
+        
+        end
 
     end
 
