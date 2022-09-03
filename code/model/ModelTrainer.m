@@ -533,6 +533,14 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
     % plot the Z clusters
     plotZClusters( thisModel, dlZ, Y = dlY );
 
+    % compute the ALE curves for the auxiliary network, if present
+    if any(thisModel.LossFcnTbl.Types == 'Auxiliary')
+        [auxALE, ZQ] = thisModel.ALE( dlZ, ...
+                                      modelFcn = @predictAuxNet, ...
+                                      maxObs = 1000 );
+        plotALE( thisModel, ZQ, auxALE );
+
+    end
     drawnow;
       
 end
@@ -553,11 +561,11 @@ function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
                     latentCodeCorrelation( dlZ, summary = true );
 
     % generate validation components
-    [ dlXC, ~, offsets ] = thisModel.calcLatentComponents( dlZ );
+    [ XC, ~, offsets ] = thisModel.calcLatentComponents( dlZ );
 
     % record latent codes correlation
     [ metric.XCCorrelation, metric.XCCovariance ] = ...
-                latentComponentCorrelation( dlXC, summary = true );
+                        latentComponentCorrelation( XC, summary = true );
     metric.XCCorrelation = mean( metric.XCCorrelation );
     metric.XCCovariance = mean( metric.XCCovariance );
 

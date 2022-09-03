@@ -190,7 +190,7 @@ classdef CompactRepresentationModel
 
             end
 
-            ZQMid = ((ZQ(:,1:K) + ZQ(:,2:K+1))/2)';
+            ZQMid = ((ZQ(:,1:K) + ZQ(:,2:K+1))/2);
 
             if strcmp( args.sampling, 'Component' )
                 % remove surplus samples
@@ -296,15 +296,11 @@ classdef CompactRepresentationModel
             Z = self.encode( thisDataset, convert = false );
             XC = self.calcLatentComponents( Z, smooth = true );
 
-            % generate finer-grained components for calculation
-            [ XCFine, ~, offsets ] = self.calcLatentComponents( ...
-                                            Z, smooth = true );
-
             % compute the components' explained variance
             XTarget = permute( thisDataset.XTarget, [ 1 3 2 ] );
 
             [varProp, compVar] = self.explainedVariance( ...
-                                XTarget, XCFine, offsets );    
+                                XTarget, XC, offsets );    
 
         end
 

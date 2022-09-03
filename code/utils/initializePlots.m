@@ -4,8 +4,10 @@ function [figs, axes]= initializePlots( XChannels, ZDim )
     % setup figure for Z distribution and clustering
     figs.LatentSpace = figure(1);
     clf;
-    axes.ZDistribution = subplot( 1, 2, 1 );
-    axes.ZClustering = subplot( 1, 2, 2 );
+    axes.ZDistribution = subplot( 2, 2, 1 );
+    axes.ZClustering = subplot( 2, 2, 2 );
+    axes.AuxModel = subplot( 2, 2, 3 );
+    axes.AuxNetwork = subplot( 2, 2, 4 );
 
     % setup the components figure
     figs.Components = figure(2);
