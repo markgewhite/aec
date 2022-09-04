@@ -123,7 +123,7 @@ classdef CompactAEModel < CompactRepresentationModel
 
             self = self.Trainer.runTraining( self, thisData );
             
-            [self.AuxModelALE,  self.AuxNetworkALE, ...
+            [self.AuxModelALE, self.ALEQuantiles, ...
                 self.LatentComponents, ...
                 self.VarProportion, self.ComponentVar] ...
                             = self.getLatentResponse( thisData );
@@ -194,7 +194,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
             dispatchArgsCell = namedargs2cell( dispatchArgs );
 
-            [XC, ~, offsets] = self.ALE( dlZ, ...
+            [XC, ~, ~, offsets] = self.ALE( dlZ, ...
                               sampling = 'Component', ...
                               modelFcn = @decodeDispatcher, ...
                               modelFcnArgs = dispatchArgsCell, ...
@@ -229,24 +229,6 @@ classdef CompactAEModel < CompactRepresentationModel
                 end
                 XC = XCSmth;
             end
-
-        end
-
-
-        function [ XA, XANet, XC, varProp, compVar ] = getLatentResponse( self, thisDataset )
-            % Override the general latent response to include
-            % computing the ALE for the auxiliary network
-            arguments
-                self            CompactAEModel            
-                thisDataset     ModelDataset
-            end
-
-            [XA, XC, varProp, compVar] = ...
-                getLatentResponse@CompactRepresentationModel( self, thisDataset );
-
-            % calculate the auxiliary model/network dependence
-            XANet = self.auxPartialDependence( thisDataset, ...
-                                               auxFcn = @predictAuxNet );
 
         end
 

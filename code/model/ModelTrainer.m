@@ -533,12 +533,19 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
     % plot the Z clusters
     plotZClusters( thisModel, dlZ, Y = dlY );
 
+    % fit the auxiliary model and compute the ALE curves
+    thisModel.AuxModel = trainAuxModel( thisModel.AuxModelType, dlZ, dlY );
+    [auxALE, Q] = thisModel.ALE( dlZ, ...
+                                  modelFcn = @predictAuxModel, ...
+                                  maxObs = 500 );
+    plotALE( thisModel, quantiles = Q, pts = auxALE, type = 'Model' );
+
     % compute the ALE curves for the auxiliary network, if present
     if any(thisModel.LossFcnTbl.Types == 'Auxiliary')
-        [auxALE, ZQ] = thisModel.ALE( dlZ, ...
+        [auxALE, Q] = thisModel.ALE( dlZ, ...
                                       modelFcn = @predictAuxNet, ...
-                                      maxObs = 1000 );
-        plotALE( thisModel, ZQ, auxALE );
+                                      maxObs = 500 );
+        plotALE( thisModel, quantiles = Q, pts = auxALE, type = 'Network' );
 
     end
     drawnow;

@@ -53,6 +53,18 @@ function savePlots( gObjs, path, name )
 
     end
 
+    if isfield( gObjs, 'ALE' )
+
+        % save the ALE plots
+        fullpath = strcat( path, '/ale/' );
+        if ~isfolder( fullpath )
+            mkdir( fullpath)
+        end
+        saveGraphicsObject( gObjs.ALE, ...
+                            fullfile( fullpath, name ) );
+        
+    end
+
 end   
 
 

@@ -16,6 +16,7 @@ classdef CompactRepresentationModel
         AuxModelZMean   % mean used in standardizing Z prior to fitting (apply before prediction)
         AuxModelZStd    % standard deviation used prior to fitting (apply before prediction)
         AuxModelALE     % auxiliary model's Accumulated Local Effects
+        ALEQuantiles    % quantiles of Z used in computing ALE
 
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
@@ -65,7 +66,7 @@ classdef CompactRepresentationModel
         end
 
 
-        function [F, ZQMid, offsets ] = ALE( self, dlZ, args )
+        function [F, QMid, ZQMid, offsets ] = ALE( self, dlZ, args )
             % Accumulated Local Estimation 
             % For latent component generation and the auxiliary model
             arguments
@@ -105,17 +106,17 @@ classdef CompactRepresentationModel
             K = args.nSample;
             switch args.sampling
                 case 'Regular'
-                    prc = linspace( 1/K, 1-1/K, K-1 );
+                    prc = linspace( 0, 1, K+1 );
                     offsets = norminv( prc ); % z-scores
 
                 case 'Component'
                     q = linspace( 0.05, 0.95, self.NumCompLines );
                     prc = sort( [q-0.05 q+0.05] );
-                    prc = prc( 2:end-1 );
                     offsets = norminv( q ); % z-scores
             end
+            QMid = prc(1:end-1) + diff(prc)/2;
             ZQ = quantile( Z, prc, 2 );
-            ZQ = [ min(Z,[],2) ZQ max(Z,[],2) ];
+            %ZQ = [ min(Z,[],2) ZQ max(Z,[],2) ];
             K = length(ZQ)-1;
 
             % identify bin assignments across dimensions
@@ -199,7 +200,7 @@ classdef CompactRepresentationModel
         end
 
 
-        function [auxALE, Z, ZQ] = auxPartialDependence( self, thisDataset, args )
+        function [auxALE, Q] = auxPartialDependence( self, thisDataset, args )
             % Generate the model's partial dependence to latent codes
             arguments
                 self            CompactRepresentationModel
@@ -212,7 +213,7 @@ classdef CompactRepresentationModel
             Z = self.encode( thisDataset );
 
             % define the query points by z-scores
-            [auxALE, ZQ] = self.ALE( Z, ...
+            [auxALE, Q] = self.ALE( Z, ...
                               sampling = 'Regular', ...
                               modelFcn = args.auxFcn, ...
                               nSample = args.nSample, ...
@@ -280,7 +281,7 @@ classdef CompactRepresentationModel
         end
 
 
-        function [ XA, XC, varProp, compVar ] = getLatentResponse( self, thisDataset )
+        function [ XA, Q, XC, varProp, compVar ] = getLatentResponse( self, thisDataset )
             % Generate the latent components and
             % compute the explained variance
             arguments
@@ -289,7 +290,7 @@ classdef CompactRepresentationModel
             end
 
             % calculate the auxiliary model/network dependence
-            XA = self.auxPartialDependence( thisDataset );
+            [XA, Q] = self.auxPartialDependence( thisDataset );
 
             % generate the components, smoothing them, for storage
             Z = self.encode( thisDataset, convert = false );
@@ -361,7 +362,7 @@ classdef CompactRepresentationModel
             end
 
             if isa( Z, 'dlarray' )
-                Z = double(extractdata(Z))';
+                Z = double(extractdata(Z));
             end
 
             doTranspose = (size(Z,2) ~= self.ZDim);

@@ -45,15 +45,15 @@ function setup = initSetup
     setup.lossFcns.cls.class = @ClassifierLoss;
     setup.lossFcns.cls.name = 'ZClassifier';
 
-    setup.lossFcns.xcls.class = @InputClassifierLoss;
-    setup.lossFcns.xcls.name = 'XClassifier';
+    %setup.lossFcns.xcls.class = @InputClassifierLoss;
+    %setup.lossFcns.xcls.name = 'XClassifier';
 
     % model
     setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;
-    setup.model.args.KFolds = 2;
+    setup.model.args.KFolds = 1;
     setup.model.args.IdenticalPartitions = true;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
@@ -61,9 +61,9 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 2;
+    setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 1;
+    setup.model.args.trainer.numEpochs = 500;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;
