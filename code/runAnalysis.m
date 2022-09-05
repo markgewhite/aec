@@ -8,7 +8,7 @@ path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
 parameters = [ "model.class" ];
-values = {{@FCModel, @FullPCAModel, @ConvolutionalModel}};
+values = {{@FCModel, @FullPCAModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 
