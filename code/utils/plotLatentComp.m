@@ -4,7 +4,7 @@ function plotLatentComp( thisModel, args )
     arguments
         thisModel           {mustBeA( thisModel, ...
                                 { 'FullRepresentationModel', ...
-                                  'CompactRepresentationModel' })}
+                                  'SubRepresentationModel' })}
         args.XMean          {mustBeA( args.XMean, { 'dlarray', 'double' })} = []
         args.XC             {mustBeA( args.XC, { 'dlarray', 'double' })} = []
         args.nSample        double = 0

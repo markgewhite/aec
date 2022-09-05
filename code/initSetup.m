@@ -45,8 +45,8 @@ function setup = initSetup
     setup.lossFcns.cls.class = @ClassifierLoss;
     setup.lossFcns.cls.name = 'ZClassifier';
 
-    %setup.lossFcns.xcls.class = @InputClassifierLoss;
-    %setup.lossFcns.xcls.name = 'XClassifier';
+    setup.lossFcns.xcls.class = @InputClassifierLoss;
+    setup.lossFcns.xcls.name = 'XClassifier';
 
     % model
     setup.model.class = @FCModel;

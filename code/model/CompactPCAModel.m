@@ -1,4 +1,4 @@
-classdef CompactPCAModel < CompactRepresentationModel
+classdef CompactPCAModel < SubRepresentationModel
     % Class defining an individual PCA model
 
     properties
@@ -19,7 +19,7 @@ classdef CompactPCAModel < CompactRepresentationModel
                 fold                double
             end
 
-            self@CompactRepresentationModel( theFullModel, fold );
+            self@SubRepresentationModel( theFullModel, fold );
          
             self.PCATSpan = theFullModel.PCATSpan;
             self.PCAFdParams = theFullModel.PCAFdParams;
@@ -75,14 +75,11 @@ classdef CompactPCAModel < CompactRepresentationModel
             end
 
             % compute the mean curve directly
-            self.MeanCurve = eval_fd( self.TSpan.Regular, ...
-                                      self.MeanFd );
+            self.MeanCurve = eval_fd( self.TSpan.Regular, self.MeanFd );
 
             % compute the components' explained variance
             [self.AuxModelALE, self.ALEQuantiles, ...
-                self.LatentComponents, ...
-                self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentResponse( thisData );
+                self.LatentComponents ] = self.getLatentResponse( thisData );
             
             % plot them on specified axes
             plotLatentComp( self, type = 'Smoothed', shading = true );

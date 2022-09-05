@@ -3,7 +3,7 @@ function plotZDist( thisModel, Z, args )
     arguments
         thisModel           {mustBeA( thisModel, ...
                                 { 'FullRepresentationModel', ...
-                                  'CompactRepresentationModel' })}
+                                  'SubRepresentationModel' })}
         Z                   {mustBeA( Z, { 'dlarray', 'double' })}
         args.name           string = 'Latent Distribution'
         args.standardize    logical = false

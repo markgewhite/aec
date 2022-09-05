@@ -1,4 +1,4 @@
-classdef CompactAEModel < CompactRepresentationModel
+classdef CompactAEModel < SubRepresentationModel
     % Subclass defining the framework for an autoencoder model
     
     properties
@@ -35,7 +35,7 @@ classdef CompactAEModel < CompactRepresentationModel
                 fold                double
             end
 
-            self@CompactRepresentationModel( theFullModel, fold );
+            self@SubRepresentationModel( theFullModel, fold );
 
             % copy over the full model's relevant properties
             self.NetNames = theFullModel.NetNames;
@@ -120,13 +120,10 @@ classdef CompactAEModel < CompactRepresentationModel
             self = self.Trainer.runTraining( self, thisData );
             
             [self.AuxModelALE, self.ALEQuantiles, ...
-                self.LatentComponents, ...
-                self.VarProportion, self.ComponentVar] ...
-                            = self.getLatentResponse( thisData );
+                self.LatentComponents ] = self.getLatentResponse( thisData );
 
             if any(self.LossFcnTbl.Types=='Auxiliary')
-                self.AuxNetworkALE = ...
-                    self.auxPartialDependence( thisData, ...
+                self.AuxNetworkALE = self.getAuxALE( thisData, ...
                                                auxFcn = @predictAuxNet );
             end
 
@@ -190,7 +187,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
             dispatchArgsCell = namedargs2cell( dispatchArgs );
 
-            [XC, ~, ~, offsets] = self.ALE( dlZ, ...
+            [XC, ~, ~, offsets] = self.calcALE( dlZ, ...
                               sampling = 'Component', ...
                               modelFcn = @decodeDispatcher, ...
                               modelFcnArgs = dispatchArgsCell, ...
@@ -511,7 +508,7 @@ classdef CompactAEModel < CompactRepresentationModel
                     {mustBeInRange( level, 0, 3 )} = 0
             end
 
-            self = compress@CompactRepresentationModel( self, level );
+            self = compress@SubRepresentationModel( self, level );
 
             if level >= 1
                 self.Trainer.LossFig = [];
@@ -539,7 +536,7 @@ classdef CompactAEModel < CompactRepresentationModel
 
             % call the superclass method
             [ eval, pred, cor ] = ...
-                evaluateSet@CompactRepresentationModel( self, thisDataset );
+                evaluateSet@SubRepresentationModel( self, thisDataset );
 
             if any(self.LossFcnTbl.Types == 'Comparator')
                 % compute the comparator loss using the comparator network
