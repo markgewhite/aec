@@ -5,7 +5,7 @@ function self = initSubModel( self, k )
         k               double
     end
 
-    self.SubModels{k} = CompactAEModel( self, k );
+    self.SubModels{k} = SubAEModel( self, k );
     if self.IdenticalNetInit && k==1
         self.InitializedNets = self.SubModels{k}.Nets;
     end

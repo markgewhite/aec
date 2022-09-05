@@ -1,7 +1,7 @@
 function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
     % Report progress on training
     arguments
-        thisModel       CompactAEModel
+        thisModel       SubAEModel
         dlZ             dlarray
         dlY             dlarray
         lossTrn         double

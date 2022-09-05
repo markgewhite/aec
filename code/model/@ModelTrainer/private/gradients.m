@@ -8,7 +8,7 @@ function [grad, state, loss] = gradients( nets, ...
     % (Model object not supplied so nets can be traced)
     arguments
         nets         struct   % networks, separate for traceability
-        thisModel    CompactAEModel % contains all other relevant info
+        thisModel    SubAEModel % contains all other relevant info
         dlXIn        dlarray  % input to the encoder
         dlXOut       dlarray  % output target for the decoder
         dlY          dlarray  % auxiliary outcome variable
