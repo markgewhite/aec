@@ -37,7 +37,7 @@ classdef FullPCAModel < FullRepresentationModel
                 k               double
             end
 
-            self.SubModels{k} = CompactPCAModel( self, k );
+            self.SubModels{k} = SubPCAModel( self, k );
 
         end
 
