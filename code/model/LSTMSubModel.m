@@ -1,4 +1,4 @@
-classdef LSTMCompactModel < CompactAEModel
+classdef LSTMSubModel < SubAEModel
     % Subclass to define LSTM-specific forward and encode functions
 
     properties
@@ -10,14 +10,14 @@ classdef LSTMCompactModel < CompactAEModel
 
     methods
 
-        function self = LSTMCompactModel( theLSTMModel, fold )
+        function self = LSTMSubModel( theLSTMModel, fold )
             % Initialize the model
             arguments
                 theLSTMModel           LSTMModel
                 fold                   double
             end
 
-            self@CompactAEModel( theLSTMModel, fold );
+            self@SubAEModel( theLSTMModel, fold );
 
             self.ReverseDecoding = theLSTMModel.ReverseDecoding;
             self.Bidirectional = theLSTMModel.Bidirectional;
@@ -31,7 +31,7 @@ classdef LSTMCompactModel < CompactAEModel
             % Generate X from Z either using forward or predict
             % Overrides the autoencoder method
             arguments
-                self                LSTMCompactModel
+                self                LSTMSubModel
                 dlZ                 dlarray
                 args.forward        logical = false
                 args.dlX            dlarray
@@ -52,7 +52,7 @@ classdef LSTMCompactModel < CompactAEModel
             % overriding the autoencoder encode method
             % which must have inputs in the trained batch size
             arguments
-                self            LSTMCompactModel
+                self            LSTMSubModel
                 X               
                 arg.convert     logical = true
             end
@@ -93,7 +93,7 @@ classdef LSTMCompactModel < CompactAEModel
         function [ dlZ, dlXHat, state ] = forward( self, encoder, decoder, dlX )
             % Override forward-running the encoder and decoder networks
             arguments
-                self        LSTMCompactModel
+                self        LSTMSubModel
                 encoder     dlnetwork
                 decoder     dlnetwork
                 dlX         dlarray
@@ -111,7 +111,7 @@ classdef LSTMCompactModel < CompactAEModel
         function [ dlXHat, state ] = forwardDecoder( self, decoder, dlHS, dlX )
             % Forward-run the lstm decoder network
             arguments
-                self            LSTMCompactModel
+                self            LSTMSubModel
                 decoder         dlnetwork
                 dlHS            dlarray
                 dlX             dlarray
@@ -180,7 +180,7 @@ classdef LSTMCompactModel < CompactAEModel
         function dlXHat = predictDecoder( self, decoder, dlHS )
             % Forward-run the lstm decoder network
             arguments
-                self            LSTMCompactModel
+                self            LSTMSubModel
                 decoder         dlnetwork
                 dlHS            dlarray
             end

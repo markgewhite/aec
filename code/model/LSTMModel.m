@@ -151,7 +151,7 @@ classdef LSTMModel < FCModel
                 k               double
             end
 
-            self.SubModels{k} = LSTMCompactModel( self, k );
+            self.SubModels{k} = LSTMSubModel( self, k );
             if self.IdenticalNetInit && k==1
                 self.InitializedNets = self.SubModels{k}.Nets;
             end
