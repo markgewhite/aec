@@ -99,8 +99,7 @@ classdef FCModel < FullAEModel
 
             end
             
-            outLayers = fullyConnectedLayer( self.ZDim*(self.IsVAE+1), ...
-                                               'Name', 'out' );
+            outLayers = fullyConnectedLayer( self.ZDim, 'Name', 'out' );
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...

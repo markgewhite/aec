@@ -6,8 +6,6 @@ classdef FullAEModel < FullRepresentationModel
         NumNetworks    % number of networks
         IdenticalNetInit % wherther to use same initialized networks
         InitializedNets% initialized networks before training
-        IsVAE          % flag indicating if variational autoencoder
-        NumVAEDraws    % number of draws from encoder output distribution
         LossFcns       % loss function objects
         LossFcnNames   % names of the loss functions
         LossFcnWeights % weights to be applied to the loss function
@@ -46,9 +44,6 @@ classdef FullAEModel < FullRepresentationModel
                 superArgs2.name     string
                 superArgs2.path     string
                 args.IdenticalNetInit logical = false
-                args.IsVAE          logical = false
-                args.NumVAEDraws    double ...
-                    {mustBeInteger, mustBePositive} = 1
                 args.FlattenInput   logical = false
                 args.HasSeqInput    logical = false
                 args.InitZDimActive double ...
@@ -86,8 +81,6 @@ classdef FullAEModel < FullRepresentationModel
             self.NetNames = {'Encoder', 'Decoder'};
             self.NumNetworks = 2;
             self.IdenticalNetInit = args.IdenticalNetInit; 
-            self.IsVAE = args.IsVAE;
-            self.NumVAEDraws = args.NumVAEDraws;
             self.FlattenInput = args.FlattenInput;
             self.HasSeqInput = args.HasSeqInput;
             self.ComponentCentring = args.ComponentCentring;

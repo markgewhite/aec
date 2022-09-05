@@ -61,9 +61,9 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 100;
+    setup.model.args.trainer.updateFreq = 1;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 500;
+    setup.model.args.trainer.numEpochs = 1;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;

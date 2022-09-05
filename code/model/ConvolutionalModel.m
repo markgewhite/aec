@@ -98,8 +98,7 @@ classdef ConvolutionalModel < FCModel
             end
             
             outLayers = [ outLayers;
-                          fullyConnectedLayer( self.ZDim*(self.IsVAE+1), ...
-                                               'Name', 'out' ) ];
+                          fullyConnectedLayer( self.ZDim, 'Name', 'out' ) ];
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...

@@ -5,8 +5,6 @@ classdef CompactAEModel < CompactRepresentationModel
         Nets           % networks defined in this model (structure)
         NetNames       % names of the networks (for convenience)
         NumNetworks    % number of networks
-        IsVAE          % flag indicating if variational autoencoder
-        NumVAEDraws    % number of draws from encoder output distribution
         LossFcns       % array of loss functions
         LossFcnNames   % names of the loss functions
         LossFcnWeights % weights to be applied to the loss function
@@ -42,8 +40,6 @@ classdef CompactAEModel < CompactRepresentationModel
             % copy over the full model's relevant properties
             self.NetNames = theFullModel.NetNames;
             self.NumNetworks = theFullModel.NumNetworks;
-            self.IsVAE = theFullModel.IsVAE;
-            self.NumVAEDraws = theFullModel.NumVAEDraws;
             self.LossFcns = theFullModel.LossFcns;
             self.LossFcnNames = theFullModel.LossFcnNames;
             self.LossFcnWeights = theFullModel.LossFcnWeights;
@@ -233,8 +229,7 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ dlZ, dlXHat, state, dlMean, dlLogVar ] = ...
-                                    forward( self, encoder, decoder, dlX )
+        function [ dlZ, dlXHat, state ] = forward( self, encoder, decoder, dlX )
             % Forward-run the encoder and decoder networks
             arguments
                 self        CompactAEModel
@@ -244,8 +239,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             % generate latent encodings
-            [ dlZ, state.Encoder, dlMean, dlLogVar ] = ...
-                                        self.forwardEncoder( encoder, dlX );
+            [ dlZ, state.Encoder ] = self.forwardEncoder( encoder, dlX );
 
             % reconstruct curves from latent codes
             [ dlXHat, state.Decoder ] = self.forwardDecoder( decoder, dlZ );
@@ -253,7 +247,7 @@ classdef CompactAEModel < CompactRepresentationModel
         end
 
 
-        function [ dlZ, state, dlMean, dlLogVar ] = forwardEncoder( self, encoder, dlX )
+        function [ dlZ, state ] = forwardEncoder( self, encoder, dlX )
             % Forward-run the encoder network
             % dlnetworks are provided for tracing purposes 
             % rather than using the object's network definitions
@@ -268,18 +262,7 @@ classdef CompactAEModel < CompactRepresentationModel
             end
 
             % generate latent encodings
-            [ dlEncOutput, state ] = forward( encoder, dlX );
-
-            if self.IsVAE
-                % variational autoencoder
-                [ dlZ, dlMean, dlLogVar ] = ...
-                    reparameterize( dlEncOutput, self.NumVAEDraws );
-            else
-                % standard encoder
-                dlZ = dlEncOutput;
-                dlMean = mean( dlZ, 2 );
-                dlLogVar = log( var( dlZ, [], 2 ) );
-            end
+            [ dlZ, state ] = forward( encoder, dlX );
     
             % mask Z based on number of active dimensions
             dlZ = self.maskZ( dlZ );
@@ -321,13 +304,7 @@ classdef CompactAEModel < CompactRepresentationModel
                 dlX = flattenDLArray( dlX );
             end
 
-            dlEncOutput = predict( self.Nets.Encoder, dlX );
-
-            if self.IsVAE
-                dlZ = dlEncOutput( 1:self.ZDim, : );
-            else
-                dlZ = dlEncOutput;
-            end
+            dlZ = predict( self.Nets.Encoder, dlX );
             
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';

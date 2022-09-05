@@ -338,7 +338,7 @@ function [grad, state, loss] = gradients( nets, ...
     end
 
     % autoencoder training
-    [ dlZGen, dlXGen, state, dlZMu, dlZLogVar ] = ...
+    [ dlZGen, dlXGen, state ] = ...
                 forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
 
     if thisModel.HasCentredDecoder
@@ -346,33 +346,9 @@ function [grad, state, loss] = gradients( nets, ...
         dlXGen = dlXGen + repmat( mean(dlXOut, 2), 1, size(dlXOut,2) );
     end
 
-    if thisModel.IsVAE
-        % duplicate X & Y to match VAE's multiple draws
-        nDraws = size( dlXGen, 2 )/size( dlXOut, 2 );
-        dlXOut = repmat( dlXOut, 1, nDraws );
-        dlY = repmat( dlY, 1, nDraws );
-    end
-
     % select the active loss functions
     isActive = thisModel.LossFcnTbl.DoCalcLoss;
-
     activeFcns = thisModel.LossFcnTbl( isActive, : );
-
-    compLossFcnIdx = find( activeFcns.Types=='Component', 1 );
-    if ~isempty( compLossFcnIdx )
-        % identify the component loss function
-        thisName = activeFcns.Names(compLossFcnIdx);
-        thisLossFcn = thisModel.LossFcns.(thisName);
-        % compute the AE components
-        dlXC = thisModel.calcLatentComponents( ...
-                                dlZGen, ...
-                                sampling = thisLossFcn.Sampling, ...
-                                nSample = thisLossFcn.NumSamples, ...
-                                maxObs = thisLossFcn.MaxObservations, ...
-                                forward = true, ...
-                                dlX = dlXIn );
-    end
-
     
     % compute the active loss functions in turn
     % and assign to networks
@@ -396,14 +372,10 @@ function [grad, state, loss] = gradients( nets, ...
         switch thisLossFcn.Input
             case 'X-XHat'
                 dlV = { dlXOut, dlXGen };
-            case 'XC'
-                dlV = { dlXC };
             case 'XHat'
                 dlV = { dlXGen };
             case 'Z'
                 dlV = { dlZGen };
-            case 'ZMu-ZLogVar'
-                dlV = { dlZMu, dlZLogVar };
             case 'YHat'
                 dlV = dlYHat;
             case 'Z-Y'

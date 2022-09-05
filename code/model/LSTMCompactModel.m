@@ -90,8 +90,7 @@ classdef LSTMCompactModel < CompactAEModel
         end
 
 
-        function [ dlZ, dlXHat, state, dlMean, dlLogVar ] = ...
-                                    forward( self, encoder, decoder, dlX )
+        function [ dlZ, dlXHat, state ] = forward( self, encoder, decoder, dlX )
             % Override forward-running the encoder and decoder networks
             arguments
                 self        LSTMCompactModel
@@ -101,8 +100,7 @@ classdef LSTMCompactModel < CompactAEModel
             end
 
             % generate latent encodings
-            [ dlZ, state.Encoder, dlMean, dlLogVar ] = ...
-                                        self.forwardEncoder( encoder, dlX );
+            [ dlZ, state.Encoder ] = self.forwardEncoder( encoder, dlX );
 
             % reconstruct curves from latent codes
             [ dlXHat, state.Decoder ] = self.forwardDecoder( decoder, dlZ, dlX );
