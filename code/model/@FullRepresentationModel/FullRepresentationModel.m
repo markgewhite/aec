@@ -77,11 +77,16 @@ classdef FullRepresentationModel
             self = self.setScalingFactor( thisDataset.XTarget );
 
             self.ZDim = args.ZDim;
-            self.AuxModelType = args.AuxModelType;
             self.KFolds = args.KFolds;
             self.IdenticalPartitions = args.IdenticalPartitions;
             self.SubModels = cell( self.KFolds, 1 );
 
+            if self.CDim < 3
+                self.AuxModelType = args.AuxModelType;
+            else
+                self.AuxModelType = 'SVM';
+            end
+            
             if isfield( args, 'randomSeed' )
                 self.RandomSeed = args.RandomSeed;
             else

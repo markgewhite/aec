@@ -13,10 +13,13 @@ function eval = evaluateClassifier( Y, YHat )
     eval.ErrorRate = 1 - eval.Accuracy;
 
     if length(unique(Y))>2
-        eval.PrecisionMicro = diag(C)./sum(C,2); 
+        eval.PrecisionMicro = diag(C)./sum(C,2);
+        eval.PrecisionMicro( isnan(eval.PrecisionMicro) ) = 0;
         eval.RecallMicro = diag(C)./sum(C,1)';
-        eval.F1ScoreMicro = 2*eval.PrecisionMicro.*eval.Recall./ ...
+        eval.RecallMicro( isnan(eval.RecallMicro) ) = 0;
+        eval.F1ScoreMicro = 2*eval.PrecisionMicro.*eval.RecallMicro./ ...
                                 (eval.PrecisionMicro+eval.RecallMicro);
+        eval.F1ScoreMicro( isnan(eval.F1ScoreMicro) ) = 0;
         eval.Precision = mean( eval.PrecisionMicro );
         eval.Recall = mean( eval.RecallMicro );
         eval.F1Score = mean( eval.F1ScoreMicro );

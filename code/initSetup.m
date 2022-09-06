@@ -2,13 +2,16 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @JumpGRFDataset;
-    setup.data.args.Normalization = 'PAD';
-    setup.data.args.HasNormalizedInput = true;
-    setup.data.args.NormalizedPts = 51;
-    setup.data.args.HasAdaptiveTimeSpan = true;
-    setup.data.args.ResampleRate = 10;
-    setup.data.args.HasMatchingOutput = false;
+    setup.data.class = @UCRDataset;
+    setup.data.args.SetID = 1;
+
+    %setup.data.class = @JumpGRFDataset;
+    %setup.data.args.Normalization = 'PAD';
+    %setup.data.args.HasNormalizedInput = true;
+    %setup.data.args.NormalizedPts = 51;
+    %setup.data.args.HasAdaptiveTimeSpan = true;
+    %setup.data.args.ResampleRate = 10;
+    %setup.data.args.HasMatchingOutput = false;
         
     %setup.data.class = @FukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
@@ -35,13 +38,6 @@ function setup = initSetup
     %setup.lossFcns.adv.name = 'Discriminator';
     %setup.lossFcns.adv.args.Distribution = 'DoubleGaussian';
     
-    %setup.lossFcns.orth.class = @ComponentLoss;
-    %setup.lossFcns.orth.name = 'XOrthogonality';
-    %setup.lossFcns.orth.args.Criterion = 'InnerProduct';
-    %setup.lossFcns.orth.args.Sampling = 'Fixed';
-    %setup.lossFcns.orth.args.NumSamples = 2;
-    %setup.lossFcns.orth.args.MaxObservations = 10;
-    
     setup.lossFcns.cls.class = @ClassifierLoss;
     setup.lossFcns.cls.name = 'ZClassifier';
 
@@ -61,9 +57,9 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 1;
+    setup.model.args.trainer.updateFreq = 50;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 1;
+    setup.model.args.trainer.numEpochs = 2;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;

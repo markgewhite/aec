@@ -4,8 +4,10 @@ function self = computeCVParameters( self )
         self        FullRepresentationModel
     end
 
-    self.CVAuxiliary.AuxModelBeta = self.calcCVNestedParameter( ...
-                self.SubModels, {'AuxModel', 'Beta'} );
+    if ~strcmp( self.AuxModelType, 'SVM' )
+        self.CVAuxiliary.AuxModelBeta = self.calcCVNestedParameter( ...
+                    self.SubModels, {'AuxModel', 'Beta'} );
+    end
     self.CVAuxiliary.AuxModelALE = self.calcCVParameter( ...
                 self.SubModels, 'AuxModelALE' );
 
