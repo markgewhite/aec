@@ -108,7 +108,7 @@ function [ X, Y, name ] = loadData( id, set )
     for i = 1:length(X)
         lmax = size(X{i},1);
         for d = 1:size(X{i},2)
-            l = find(isnan(X{i}(:,d)),1);
+            l = find(isnan(X{i}(:,d)),1)-1;
             if ~isempty(l)
                 lmax = min( l, lmax );
             end
