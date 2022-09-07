@@ -69,8 +69,11 @@ classdef ModelDataset
                 args.hasMatchingOutput      logical = false
                 args.padding                struct ...
                     {mustBeValidPadding}
-                args.fda                    struct ...
-                    {mustBeValidFdParams}
+                args.basisOrder             double ...
+                    {mustBePositive, mustBeInteger} = 4
+                args.penaltyOrder           double ...
+                    {mustBePositive, mustBeInteger} = 2
+                args.lambda                 double = []
                 args.tSpan                  double = []
                 args.hasAdaptiveTimeSpan    logical = false
                 args.adaptiveLowerBound     double = 0.05
@@ -98,7 +101,10 @@ classdef ModelDataset
             self.HasNormalizedInput = args.hasNormalizedInput;
             self.HasMatchingOutput = args.hasMatchingOutput;
             self.Padding = args.padding;
-            self.FDA = args.fda;
+
+            self.FDA.BasisOrder = args.basisOrder;
+            self.FDA.PenaltyOrder = args.penaltyOrder;
+            self.FDA.Lambda = args.lambda;
 
             self.TSpan.Original = tSpan;
             self.HasAdaptiveTimeSpan = args.hasAdaptiveTimeSpan;
@@ -117,10 +123,7 @@ classdef ModelDataset
             self.XChannels = size( XInputRaw{1}, 2 );
 
             % create smooth functions for the data
-            [self.XFd, self.XLen] = smoothRawData( XInputRaw, ...
-                                                   self.Padding, ...
-                                                   self.TSpan.Original, ...
-                                                   self.FDA  );
+            [self.XFd, self.XLen, self.FDA.Lambda] = self.smoothRawData( XInputRaw );
 
             % re-sampling at the given rate
             self.TSpan.Regular = linspace( ...
@@ -166,25 +169,13 @@ classdef ModelDataset
             end
 
             % set the FD parameters for regular spacing
-            self.FDA.FdParamsRegular = setFDAParameters( ...
-                                            self.TSpan.Regular, ...
-                                            self.FDA.BasisOrder, ...
-                                            self.FDA.PenaltyOrder, ...
-                                            self.FDA.Lambda );
+            self.FDA.FdParamsRegular = self.setFDAParameters( self.TSpan.Regular);
 
             % set the FD parameters for adaptive spacing
-            self.FDA.FdParamsInput = setFDAParameters( ...
-                                            self.TSpan.Input, ...
-                                            self.FDA.BasisOrder, ...
-                                            self.FDA.PenaltyOrder, ...
-                                            self.FDA.Lambda );
+            self.FDA.FdParamsInput = self.setFDAParameters( self.TSpan.Input );
 
             % set the FD parameters for adaptive spacing
-            self.FDA.FdParamsTarget = setFDAParameters( ...
-                                    self.TSpan.Target, ...
-                                    self.FDA.BasisOrder, ...
-                                    self.FDA.PenaltyOrder, ...
-                                    self.FDA.Lambda );
+            self.FDA.FdParamsTarget = self.setFDAParameters( self.TSpan.Target );
 
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );

@@ -14,7 +14,7 @@ classdef JumpGRFDataset < ModelDataset
                     {mustBeMember( set, ...
                                    {'Training', 'Testing'} )}
                 args.PaddingLength  double = 0
-                args.Lambda         double = 1E0
+                args.Lambda         double = []
                 superArgs.?ModelDataset
             end
 
@@ -34,11 +34,6 @@ classdef JumpGRFDataset < ModelDataset
             pad.Anchoring = 'Right';
 
             tSpan= -pad.Length+1:0;
-        
-            % setup fda
-            paramsFd.BasisOrder = 4;
-            paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = args.Lambda;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -46,7 +41,7 @@ classdef JumpGRFDataset < ModelDataset
             self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
-                            fda = paramsFd, ...
+                            lambda = args.Lambda, ...
                             datasetName = "Jumps VGRF Data", ...
                             channelLabels = "VGRF (BW)", ...
                             timeLabel = "Time (ms)", ...

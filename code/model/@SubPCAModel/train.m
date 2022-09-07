@@ -46,6 +46,13 @@ function self = train( self, thisData )
     % compute the components' explained variance
     [self.AuxModelALE, self.ALEQuantiles, ...
         self.LatentComponents ] = self.getLatentResponse( thisData );
+
+    % set the oversmoothing level
+    XHat = self.reconstruct( Z );
+
+    [ self.FDA.FdParamsTarget, self.FDA.LambdaTarget ] = ...
+        thisData.setFDAParameters( thisData.TSpan.Target, ...
+                                   permute(XHat, [1 3 2]) );
     
     % plot them on specified axes
     plotLatentComp( self, type = 'Smoothed', shading = true );

@@ -17,7 +17,7 @@ classdef UCRDataset < ModelDataset
                 args.SetID          double {mustBeInteger, ...
                      mustBeInRange( args.SetID, 1, 128 )} = 33
                 args.PaddingLength  double = 0
-                args.Lambda         double = 1E-9
+                args.Lambda         double = []
                 superArgs.?ModelDataset
             end
 
@@ -35,11 +35,6 @@ classdef UCRDataset < ModelDataset
             pad.Value = 1;
             pad.Same = true;
             pad.Anchoring = 'None';
-       
-            % setup fda
-            paramsFd.BasisOrder = 4;
-            paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = args.Lambda;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -52,7 +47,7 @@ classdef UCRDataset < ModelDataset
             self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
-                            fda = paramsFd, ...
+                            lambda = args.Lambda, ...
                             datasetName = name, ...
                             channelLabels = "X (no units)", ...
                             timeLabel = "Time Domain", ...
@@ -86,6 +81,11 @@ function [ X, Y, name ] = loadData( id, set )
 
     % find the identified dataset's reference
     row = find( refTable.ID==id, 1 );
+
+    if refTable.Include{row}=='N'
+        warning('Reference spreadsheet indicates dataset should not be included.');
+    end
+
     name = refTable.Name{row};
     path = [path '/' name];
 

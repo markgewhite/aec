@@ -196,8 +196,10 @@ function thisModel = runTraining( self, thisModel, thisDataset )
 
     % set the oversmoothing level
     XHatTrnAll = thisModel.reconstruct( dlZTrnAll, convert = true );
+
     [ thisModel.FDA.FdParamsTarget, thisModel.FDA.LambdaTarget ] = ...
-        thisTrnData.setTargetFdParams( permute(XHatTrnAll, [1 3 2]) );
+        thisTrnData.setFDAParameters( thisTrnData.TSpan.Target, ...
+                                      permute(XHatTrnAll, [1 3 2]) );
 
 end
     
