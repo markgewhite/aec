@@ -104,6 +104,9 @@ function [ X, Y, name ] = loadData( id, set )
     % convert to cell array
     X = num2cell( X', 1 )';
 
+    % convert labels to a sequence 1, 2, 3 ...
+    Y = double(categorical(Y));
+
     % check the length of each observation, trimming if nans
     for i = 1:length(X)
         lmax = size(X{i},1);

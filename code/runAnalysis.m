@@ -3,12 +3,12 @@
 setup = initSetup;
 
 % first investigation
-name = 'ucr';
+name = 'cv_test';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-parameters = [ "model.class", "data.args.SetID" ];
-values = {{@FullPCAModel}, [1:111, 115:128]};
+parameters = [ "model.class", "model.args.IdenticalPartitions" ];
+values = {{@FCModel},{true,false}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 

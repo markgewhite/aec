@@ -6,7 +6,14 @@ function [ R, C ] = latentComponentCorrelation( XC, arg )
         arg.summary     logical = false
     end
 
-    [nPts, nSamples, nComp, nChannels] = size( XC );
+    [~, nSamples, nComp, nChannels] = size( XC );
+
+    % remove the centre-line sample if zero
+    midSample = fix(nSamples/2)+1;
+    if sum(XC(:,midSample,:,:))==0
+        XC(:,midSample,:,:) = [];
+        nSamples = nSamples - 1;
+    end
 
     % calculate the correlation matrics across samples and channels
     R = zeros( nComp, nComp, nChannels);

@@ -88,13 +88,13 @@ classdef Investigation
                 end
 
                 % assign a folder for this evaluation
-                setup.model.args.path = folder( path, name, idx );
+                %setup.model.args.path = folder( path, name, idx );
 
                 % carry out the evaluation
                 idxC = num2cell( idx );
-                evalName = strcat( name, constructName(idx) );
+                setup.model.args.name = strcat( name, constructName(idx) );
                 self.Evaluations{ idxC{:} } = ...
-                                ModelEvaluation( evalName, setup, true );
+                                ModelEvaluation( setup.model.args.name, setup, true );
 
                 % record results               
                 self.TrainingResults = updateResults( ...
@@ -126,9 +126,9 @@ classdef Investigation
                                             self.MemoryConservation );
                 end
 
-            end
+                self.save;
 
-            self.save;
+            end
             
         end           
 
