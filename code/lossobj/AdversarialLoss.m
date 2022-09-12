@@ -65,7 +65,7 @@ classdef AdversarialLoss < LossFunction
             % Store the Z dimension input once known
             arguments
                 self            AdversarialLoss
-                thisModel       FullAEModel
+                thisModel       AEModel
             end
 
             self.ZDim = thisModel.ZDim;

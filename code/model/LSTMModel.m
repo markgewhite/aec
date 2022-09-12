@@ -167,7 +167,7 @@ classdef LSTMModel < FCModel
                 arg.convert     logical = true
             end
 
-            dlZ = predict@FullAEModel( encoder, X, arg );
+            dlZ = predict@AEModel( encoder, X, arg );
 
         end
 
