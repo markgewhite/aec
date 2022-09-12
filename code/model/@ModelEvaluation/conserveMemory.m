@@ -1,7 +1,7 @@
 function self = conserveMemory( self, level )
     % Conserve memory usage
     arguments
-        self            FullRepresentationModel
+        self            ModelEvaluation
         level           double ...
             {mustBeInRange( level, 0, 3 )} = 0
     end
@@ -12,8 +12,7 @@ function self = conserveMemory( self, level )
     end
 
     for k = 1:self.KFolds
-        self.SubModels{k} = ...
-            self.SubModels{k}.compress( self.CompressionLevel );
+        self.Models{k} = self.Models{k}.compress( level );
     end
 
 end

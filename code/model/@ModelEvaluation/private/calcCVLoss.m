@@ -4,7 +4,7 @@ function cvLoss = calcCVLoss( models, set )
     arguments
         models          cell
         set             char ...
-            {mustBeMember( set, {'Training', 'Testing'} )}
+            {mustBeMember( set, {'Training', 'Validation'} )}
     end
 
     nModels = length( models );
@@ -46,7 +46,7 @@ function cvLoss = calcCVLoss( models, set )
     end
 
     scale = mean( cell2mat(cellfun( ...
-                    @(m) m.Scale, models, UniformOutput = false )), 1 );
+                    @(m) m.Scale, models, UniformOutput = false )), 2 );
 
     for i = 1:nPairs
 

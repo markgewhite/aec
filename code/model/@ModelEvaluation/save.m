@@ -8,10 +8,10 @@ function save( self, path, name )
 
     % define a small structure for saving
     output.BespokeSetup = self.BespokeSetup;
-    output.TrainingEvaluation = self.TrainingEvaluation;
-    output.TestingEvaluation = self.TestingEvaluation;
-    output.TrainingCorrelations = self.TrainingCorrelations;
-    output.TestingCorrelations = self.TestingCorrelations;
+    output.CVComponents = self.CVComponents;
+    output.CVAuxMetrics = self.CVAuxMetrics;
+    output.CVLoss = self.CVLoss;
+    output.CVCorrelations = self.CVCorrelations;
     
     name = strcat( name, "-OverallEvaluation" );
     save( fullfile( path, name ), 'output' );

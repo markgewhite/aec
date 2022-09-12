@@ -14,14 +14,10 @@ classdef ModelEvaluation
         LossFcns            % array of loss function objects
         CVComponents        % cross-validated latent components
         CVAuxMetrics        % structure of auxiliary model/network metrics
-        ComponentOrder      % optimal arrangement of sub-model components
+        CVLoss              % structure of cross-validated losses
+        CVCorrelations      % structure of cross-validated losses
+        ComponentOrder      % optimal arrangement of model components
         ComponentDiffRMSE   % overall difference between sub-models
-        TrainingEvaluation  % cross-validated training evaluation
-        TestingEvaluation   % cross-validated testing evaluation
-        TrainingPredictions % ensemble training predictions
-        TestingPredictions  % ensemble testing evaluation
-        TrainingCorrelations % ensemble training correlations
-        TestingCorrelations  % ensemble testing correlations
         RandomSeed          % for reproducibility
         RandomSeedResets    % whether to reset the seed for each model
     end
@@ -85,29 +81,22 @@ classdef ModelEvaluation
             if args.verbose
                 disp('Training the model ...');
             end
-            self.trainModels( self.TrainingDataset, setup.model );
+            self = self.trainModels( self.TrainingDataset, setup.model );
             if args.verbose
                 disp('Training complete');
             end
 
             % evaluate the trained model
-            [ self.TrainingEvaluation, ...
-                self.TrainingPredictions, ...
-                    self.TrainingCorrelations ] ...
-                    = self.Models.evaluateSet( self.TrainingDataset );
-
-            [ self.TestingEvaluation, ...
-                self.TestingPredictions, ...
-                    self.TestingCorrelations ] ...
-                    = self.Models.evaluateSet( self.TestingDataset );
+            self = self.evaluateModels( 'Training' );
+            self = self.evaluateModels( 'Validation' );           
 
             if args.verbose
                 disp('Training evaluation:');
-                reportResult( self.TrainingEvaluation, ...
-                              self.TrainingCorrelations );
+                reportResult( self.CVLoss.Training.Mean, ...
+                              self.CVCorrelations.Training.Mean );
                 disp('Testing evaluation:');
-                reportResult( self.TestingEvaluation, ...
-                              self.TestingCorrelations );
+                reportResult( self.CVLoss.Validation.Mean, ...
+                              self.CVCorrelations.Validation.Mean );
             end
 
         end
@@ -118,6 +107,8 @@ classdef ModelEvaluation
         self = arrangeComponents( self )
 
         XC = calcCVComponents( self )
+
+        self = conserveMemory( self, level )
 
         self = initPCAModel( self, setup )
 

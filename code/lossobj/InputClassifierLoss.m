@@ -74,7 +74,7 @@ classdef InputClassifierLoss < LossFunction
             % Store the Z dimension input once known
             arguments
                 self            InputClassifierLoss
-                thisModel       FullAEModel
+                thisModel       AEModel
             end
 
             self.XDim = thisModel.XInputDim;

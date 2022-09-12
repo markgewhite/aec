@@ -7,7 +7,7 @@ function self = compress( self, level )
             {mustBeInRange( level, 0, 3 )} = 0
     end
 
-    self = compress@SubRepresentationModel( self, level );
+    self = compress@RepresentationModel( self, level );
 
     if level >= 1
         self.Trainer.LossFig = [];

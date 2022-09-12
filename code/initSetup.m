@@ -60,8 +60,8 @@ function setup = initSetup
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';
 
-    %setup.model.args.lossFcns.xcls.class = @InputClassifierLoss;
-    %setup.model.args.lossFcns.xcls.name = 'XClassifier';
+    setup.model.args.lossFcns.xcls.class = @InputClassifierLoss;
+    setup.model.args.lossFcns.xcls.name = 'XClassifier';
 
     % evaluations
     setup.eval.args.verbose = true;

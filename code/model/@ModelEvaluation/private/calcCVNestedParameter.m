@@ -10,12 +10,12 @@ function P = calcCVNestedParameter( models, param )
     try
         fld = getfield( models{1}, param{:} );
     catch
-        warning('SubModel parameter hierarchy does not exist.');
+        warning('Model parameter hierarchy does not exist.');
         return
     end
     
     if ~isnumeric(fld)
-        warning(['SubModel parameter ' param ' is not numeric.']);
+        warning(['Model parameter ' param ' is not numeric.']);
         return
     end
 
