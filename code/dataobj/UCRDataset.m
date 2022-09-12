@@ -13,7 +13,7 @@ classdef UCRDataset < ModelDataset
             arguments
                 set                 char ...
                     {mustBeMember( set, ...
-                                   {'Training', 'Testing'} )}
+                           {'Training', 'Testing', 'Combined'} )}
                 args.SetID          double {mustBeInteger, ...
                      mustBeInRange( args.SetID, 1, 128 )} = 33
                 args.PaddingLength  double = 0
@@ -69,7 +69,7 @@ function [ X, Y, name ] = loadData( id, set )
     arguments
         id              double {mustBeInteger, mustBePositive}
         set             char {mustBeMember( set, ...
-                                   {'Training', 'Testing'} )}
+                               {'Training', 'Testing', 'Combined'} )}
     end
 
     path = fileparts( which('UCRDataset.m') );
@@ -89,17 +89,18 @@ function [ X, Y, name ] = loadData( id, set )
     name = refTable.Name{row};
     path = [path '/' name];
 
-    % load the data - either TRAIN or TEST
+    % load the data - TRAIN or TEST or both
     switch set
         case 'Training'
-            suffix = '_TRAIN.txt';
+            [X, Y] = readFile( path, [name '_TRAIN.txt'] );
         case 'Testing'
-            suffix = '_TEST.txt';
+            [X, Y] = readFile( path, [name '_TEST.txt'] );
+        case 'Combined'
+            [X1, Y1] = readFile( path, [name '_TRAIN.txt'] );
+            [X2, Y2] = readFile( path, [name '_TEST.txt'] );
+            X = [X1; X2];
+            Y = [Y1; Y2];
     end
-    filename = [name suffix];
-    raw = readtable( fullfile(path, filename) );
-    X = table2array( raw(:,2:end) );
-    Y = table2array( raw(:,1) );
     
     % convert to cell array
     X = num2cell( X', 1 )';
@@ -119,6 +120,15 @@ function [ X, Y, name ] = loadData( id, set )
         X{i} = X{i}(1:lmax,:);
     end
     
+end
+
+
+function [X, Y] = readFile( path, filename )
+
+    raw = readtable( fullfile(path, filename) );
+    X = table2array( raw(:,2:end) );
+    Y = table2array( raw(:,1) );
+
 end
 
 

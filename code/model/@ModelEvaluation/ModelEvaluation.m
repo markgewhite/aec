@@ -6,7 +6,11 @@ classdef ModelEvaluation
         BespokeSetup        % structure recording the bespoke setup
         TrainingDataset     % training dataset object
         TestingDataset      % testing dataset object
-        Model               % trained model object
+        KFolds              % number of partitions
+        Partitions          % training dataset k-fold partitions
+        CVType              % type of cross-validation
+        HasIdenticalPartitions % flag for special case of identical partitions
+        Models              % trained model objects
         LossFcns            % array of loss function objects
         TrainingEvaluation  % cross-validated training evaluation
         TestingEvaluation   % cross-validated training evaluation
@@ -14,59 +18,57 @@ classdef ModelEvaluation
         TestingPredictions  % ensemble testing evaluation
         TrainingCorrelations % ensemble training correlations
         TestingCorrelations  % ensemble testing correlations
+        RandomSeed          % for reproducibility
+        RandomSeedResets    % whether to reset the seed for each model
     end
 
 
     methods
 
 
-        function self = ModelEvaluation( name, setup, verbose )
+        function self = ModelEvaluation( name, setup, args )
             % Construct and run a model evaluation object
             arguments
-                name            string
-                setup           struct
-                verbose         logical
+                name                    string
+                setup                   struct
+                args.CVType             string ...
+                        {mustBeMember( args.CVType, ...
+                        {'Holdout', 'KFold'} )} = 'Holdout'
+                args.KFolds             double ...
+                        {mustBeInteger, mustBePositive} = 1
+                args.HasIdenticalPartitions logical = false
+                args.RandomSeed         double ...
+                        {mustBeInteger, mustBePositive} = 1234
+                args.RandomSeedResets   logical = false;
+                args.verbose            logical = true
             end
 
-            % store the name for this evaluation
+            % store the name for this evaluation and its bespoke setup
             self.Name = name;
-
-            % store the specified setup
             self.BespokeSetup = setup;
 
-            % prepare data
-            try
-                argsCell = namedargs2cell( setup.data.args );
-            catch
-                argsCell = {};
+            % store other arguments
+            self.CVType = args.CVType;
+            self.KFolds = args.KFolds;
+            self.HasIdenticalPartitions = args.HasIdenticalPartitions;
+            self.RandomSeed = args.RandomSeed;
+            self.RandomSeedResets = args.RandomSeedResets;
+
+            if ~isempty( self.RandomSeed )
+                % set random seed for reproducibility
+                rng( self.RandomSeed );
             end
-            self.TrainingDataset = setup.data.class( 'Training', ...
-                                            argsCell{:} ); %#ok<*MCNPN> 
 
-            self.TestingDataset = setup.data.class( 'Testing', ...
-                                                    argsCell{:}, ...
-                    tSpan = self.TrainingDataset.TSpan.Input, ...
-                    PaddingLength = self.TrainingDataset.Padding.Length, ...
-                    Lambda = self.TrainingDataset.FDA.Lambda );
+            % prepare the data
+            self = initDatasets( self, setup );
 
-            if isequal( setup.model.class, @FullPCAModel )
-                % this is a PCA
-                if verbose
+            if args.verbose 
+                if isequal( setup.model.class, @PCAModel )
                     disp('********* PCA Model Evaluation *********');
-                end
-                self = self.initPCAModel( setup );
-
-            else
-                % this is an autoencoder model of some kind
-                if verbose
+                    setup.model.args = trimPCAArgs( setup.model.args );
+                else
                     disp('***** Autoencoder Model Evaluation *****');
                 end
-                self = self.initAEModel( setup );
-
-            end
-
-            % display setup
-            if verbose
                 disp('Data setup:')
                 disp( setup.data.class );
                 disp( setup.data.args );
@@ -76,11 +78,11 @@ classdef ModelEvaluation
             end
 
             % train the model
-            if verbose
+            if args.verbose
                 disp('Training the model ...');
             end
-            self.Model = train( self.Model, self.TrainingDataset );
-            if verbose
+            self.trainModels( self.TrainingDataset, setup.model );
+            if args.verbose
                 disp('Training complete');
             end
 
@@ -88,14 +90,14 @@ classdef ModelEvaluation
             [ self.TrainingEvaluation, ...
                 self.TrainingPredictions, ...
                     self.TrainingCorrelations ] ...
-                    = self.Model.evaluateSet( self.TrainingDataset );
+                    = self.Models.evaluateSet( self.TrainingDataset );
 
             [ self.TestingEvaluation, ...
                 self.TestingPredictions, ...
                     self.TestingCorrelations ] ...
-                    = self.Model.evaluateSet( self.TestingDataset );
+                    = self.Models.evaluateSet( self.TestingDataset );
 
-            if verbose
+            if args.verbose
                 disp('Training evaluation:');
                 reportResult( self.TrainingEvaluation, ...
                               self.TrainingCorrelations );

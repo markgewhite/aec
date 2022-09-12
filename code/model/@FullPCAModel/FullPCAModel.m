@@ -1,4 +1,4 @@
-classdef FullPCAModel < FullRepresentationModel
+classdef PCAModel < RepresentationModel
     % Class defining a PCA model
 
     properties
@@ -8,7 +8,7 @@ classdef FullPCAModel < FullRepresentationModel
 
     methods
 
-        function self = FullPCAModel( thisDataset, superArgs, args )
+        function self = PCAModel( thisDataset, superArgs, args )
             % Initialize the model
             arguments
                 thisDataset     ModelDataset
@@ -19,7 +19,7 @@ classdef FullPCAModel < FullRepresentationModel
 
             superArgsCell = namedargs2cell(superArgs);
             argsCell = namedargs2cell(args);
-            self@FullRepresentationModel( thisDataset, ...
+            self@RepresentationModel( thisDataset, ...
                                           superArgsCell{:}, ...
                                           argsCell{:}, ...
                                           NumCompLines = 2 );

@@ -28,16 +28,12 @@ classdef FullAEModel < FullRepresentationModel
     methods
 
         function self = FullAEModel( thisDataset, ...
-                                     lossFcns, ...
                                      superArgs, ...
                                      superArgs2, ...
                                      args )
             % Initialize the model
             arguments
                 thisDataset         ModelDataset
-            end
-            arguments (Repeating)
-                lossFcns            LossFunction
             end
             arguments
                 superArgs.?FullRepresentationModel
@@ -56,6 +52,7 @@ classdef FullAEModel < FullRepresentationModel
                                     {mustBeNumeric,mustBeVector} = 1
                 args.Trainer        struct = []
                 args.Optimizer      struct = []
+                args.LossFcns       struct = []
             end
 
             % set the superclass's properties
@@ -96,7 +93,8 @@ classdef FullAEModel < FullRepresentationModel
             self.Optimizer = args.Optimizer;
 
             % copy over the loss functions associated
-            % and any networks with them for later training 
+            % and any networks with them for later training
+            
             self = self.addLossFcns( lossFcns{:}, weights = args.Weights );
 
             self.NumLoss = sum( self.LossFcnTbl.NumLosses );

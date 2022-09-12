@@ -1,7 +1,7 @@
 function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
     % Validate the model so far
     arguments
-        thisModel       SubAEModel
+        thisModel       AEModel
         valType         string
         dlXVal          dlarray
         dlYVal          dlarray

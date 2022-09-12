@@ -1,5 +1,5 @@
 classdef RepresentationModel
-    % Super class encompassing all dimensional reduction models
+    % Super class encompassing all individual dimensional reduction models
 
     properties
         XInputDim       % X dimension (number of points) for input
@@ -12,18 +12,25 @@ classdef RepresentationModel
         Info            % information about the dataset
         Scale           % scaling factor for reconstruction loss
         AuxModelType    % type of auxiliary model to use
-        MeanCurve       % estimated mean curve
-        Loss            % collated losses from sub-models
-        CVLoss          % aggregate cross-validated losses
-        CVAuxiliary     % aggregate paramteres for auxiliary models
-        CVCorrelation   % mean correlation matrices
-        CVLatentComponents % cross-validated latent components
-        ComponentOrder  % optimal arrangement of sub-model components
-        ComponentDiffRMSE % overall difference between sub-models
+        AuxModel        % auxiliary model
+        AuxModelZMean   % mean used in standardizing Z prior to fitting (apply before prediction)
+        AuxModelZStd    % standard deviation used prior to fitting (apply before prediction)
+        AuxModelALE     % auxiliary model's Accumulated Local Effects
+        ALEQuantiles    % quantiles of Z used in computing ALE
+
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
         NumCompLines    % number of lines in the component plot
+
+        MeanCurve       % estimated mean curve
+        ComponentType   % type of components generated (Mean or PDP)
+        LatentComponents % computed components across partitions
+
+        Predictions      % training and validation predictions
+        Loss             % training and validation losses
+        Correlations     % training and validation correlations
+
         RandomSeed      % for reproducibility
         RandomSeedResets % whether to reset the seed for each sub-model
         CompressionLevel % degree of compression when saving
@@ -31,7 +38,6 @@ classdef RepresentationModel
                          % 1 = Clear Figures
                          % 2 = Clear Predictions
                          % 3 = Clear Optimizer
-
     end
 
     methods
@@ -70,7 +76,7 @@ classdef RepresentationModel
             self.Info = thisDataset.Info;
 
             % set the scaling factor(s) based on all X
-            self = self.setScalingFactor( thisDataset.XTarget );
+            self.Scale = scalingFactor( thisDataset.XTarget );
 
             self.ZDim = args.ZDim;
 
@@ -100,50 +106,54 @@ classdef RepresentationModel
                         initializePlots( self.XChannels, self.ZDim );
             end
 
+
         end
 
         % class methods
 
-        self = arrangeComponents( self )
+        [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
 
-        self = computeCVCorrelations( self )
+        [ varProp, compVar ] = calcExplainedVariance( self, X, XC, offsets )
 
-        self = computeCVLosses( self )
+        self = compress( self, level )
 
-        self = computeCVParameters( self )
+        self = evaluate( self, thisTrnSet, thisValSet )
 
-        self = conserveMemory( self, level )
+        [auxALE, Q] = getAuxALE( self, thisDataset, args )
 
-        [ ZFold, ZMean, ZSD ] = encode( self, thisDataset )
+        [ XA, Q, XC ] = getLatentResponse( self, thisDataset )
 
-        [ eval, pred, cor ] = evaluateSet( self, thisData )
+        plotALE( self, args )
 
-        self = plotAllALE( self, arg )
+        plotLatentComp( self, args )
 
-        self = plotAllLatentComponents( self, arg )
+        plotZClusters( self, Z, args )
 
-        [ YHatFold, YHatMaj ] = predictAux( self, Z )
-
-        [ XHatFold, XHatMean, XHatSD ] = reconstruct( self, Z )
-
-        save( self )
-
-        self = setLatentComponents( self )
-
-        self = setScalingFactor( self, data )
-
-        self = train( self, thisDataset )
+        plotZDist( self, Z, args )
+        
+        [ YHat, YHatScore] = predictAuxModel( self, Z )
 
     end
 
+    
     methods (Static)
 
-        P = calcCVParameter( subModels, param )
-
-        P = calcCVNestedParameter( subModels, param )
-
+        [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     end
 
+    
+    methods (Abstract)
+
+        % Train the model on the data provided
+        self = train( self, thisDataset )
+
+        % Encode features Z from X using the model - placeholder
+        Z = encode( self, X )
+
+        % Reconstruct X from Z using the model - placeholder
+        XHat = reconstruct( self, Z )
+
+    end
 
 end

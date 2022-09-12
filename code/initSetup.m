@@ -30,40 +30,45 @@ function setup = initSetup
     %setup.data.args.adaptiveTimeSpan = true;
     %setup.data.args.resampleRate = 1;
 
-    % loss functions
-    setup.lossFcns.recon.class = @ReconstructionLoss;
-    setup.lossFcns.recon.name = 'Reconstruction';
-
-    %setup.lossFcns.adv.class = @AdversarialLoss;
-    %setup.lossFcns.adv.name = 'Discriminator';
-    %setup.lossFcns.adv.args.Distribution = 'DoubleGaussian';
-    
-    setup.lossFcns.cls.class = @ClassifierLoss;
-    setup.lossFcns.cls.name = 'ZClassifier';
-
-    %setup.lossFcns.xcls.class = @InputClassifierLoss;
-    %setup.lossFcns.xcls.name = 'XClassifier';
-
     % model
     setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
     setup.model.args.ZDim = 4;
     setup.model.args.InitZDimActive = 1;
-    setup.model.args.KFolds = 5;
-    setup.model.args.IdenticalPartitions = true;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 100;
+    setup.model.args.trainer.updateFreq = 1;
     setup.model.args.trainer.valType = 'Reconstruction';
-    setup.model.args.trainer.numEpochs = 200;
+    setup.model.args.trainer.numEpochs = 1;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 40;
     setup.model.args.trainer.holdout = 0;
+
+    % loss functions
+    setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
+    setup.model.args.lossFcns.recon.name = 'Reconstruction';
+
+    %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
+    %setup.model.args.lossFcns.adv.name = 'Discriminator';
+    %setup.model.args.lossFcns.adv.args.Distribution = 'DoubleGaussian';
+    
+    setup.model.args.lossFcns.cls.class = @ClassifierLoss;
+    setup.model.args.lossFcns.cls.name = 'ZClassifier';
+
+    %setup.model.args.lossFcns.xcls.class = @InputClassifierLoss;
+    %setup.model.args.lossFcns.xcls.name = 'XClassifier';
+
+    % evaluations
+    setup.eval.args.verbose = true;
+    setup.eval.args.CVType = 'KFold';
+    setup.eval.args.KFolds = 10;
+    setup.eval.args.HasIdenticalPartitions = true;
+
 
 
 end

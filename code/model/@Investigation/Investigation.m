@@ -93,8 +93,16 @@ classdef Investigation
                 % carry out the evaluation
                 idxC = num2cell( idx );
                 setup.model.args.name = strcat( name, constructName(idx) );
+                try
+                    argsCell = namedargs2cell( setup.eval.args );
+                catch
+                    argsCell = {};
+                end
+
                 self.Evaluations{ idxC{:} } = ...
-                                ModelEvaluation( setup.model.args.name, setup, true );
+                                ModelEvaluation( setup.model.args.name, ...
+                                                 setup, ...
+                                                 argsCell{:} );
 
                 % record results               
                 self.TrainingResults = updateResults( ...

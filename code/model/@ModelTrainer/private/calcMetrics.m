@@ -1,7 +1,7 @@
 function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
     % Compute various supporting metrics
     arguments
-        thisModel   SubAEModel
+        thisModel   AEModel
         dlX         dlarray
     end
 

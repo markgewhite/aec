@@ -27,7 +27,7 @@ function self = train( self, thisDataset )
         thisValSet = thisDataset.partition( ~self.Partitions(:,k) );
         
         % initialize the sub-model
-        self = self.initSubModel( k );
+        self = self.initModel( k );
 
         if self.RandomSeedResets && ~isempty( self.RandomSeed )
             % reset the random seed for the submodel

@@ -2,7 +2,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     % Run the training loop for the model
     arguments
         self            ModelTrainer
-        thisModel       SubAEModel
+        thisModel       AEModel
         thisDataset     ModelDataset
     end
 
