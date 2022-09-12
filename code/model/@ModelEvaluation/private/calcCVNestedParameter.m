@@ -1,14 +1,14 @@
-function P = calcCVNestedParameter( subModels, param )
+function P = calcCVNestedParameter( models, param )
     % Average a given nested parameter from submodels
     arguments
-        subModels           cell
-        param               cell
+        models          cell
+        param           cell
     end
 
     P = 0;
     % check if parameter exists
     try
-        fld = getfield( subModels{1}, param{:} );
+        fld = getfield( models{1}, param{:} );
     catch
         warning('SubModel parameter hierarchy does not exist.');
         return
@@ -21,9 +21,9 @@ function P = calcCVNestedParameter( subModels, param )
 
     fldDim = size(fld);
     P = zeros( fldDim );
-    nModels = length( subModels );
+    nModels = length( models );
     for k = 1:nModels
-       P = P + getfield( subModels{k}, param{:} );
+       P = P + getfield( models{k}, param{:} );
     end
     P = P/nModels;
 

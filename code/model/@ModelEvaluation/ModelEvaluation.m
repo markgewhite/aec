@@ -12,8 +12,12 @@ classdef ModelEvaluation
         HasIdenticalPartitions % flag for special case of identical partitions
         Models              % trained model objects
         LossFcns            % array of loss function objects
+        CVComponents        % cross-validated latent components
+        CVAuxMetrics        % structure of auxiliary model/network metrics
+        ComponentOrder      % optimal arrangement of sub-model components
+        ComponentDiffRMSE   % overall difference between sub-models
         TrainingEvaluation  % cross-validated training evaluation
-        TestingEvaluation   % cross-validated training evaluation
+        TestingEvaluation   % cross-validated testing evaluation
         TrainingPredictions % ensemble training predictions
         TestingPredictions  % ensemble testing evaluation
         TrainingCorrelations % ensemble training correlations
@@ -111,13 +115,17 @@ classdef ModelEvaluation
 
         % methods
 
-        plotModel( self )
+        self = arrangeComponents( self )
 
-        save( self, path, name )
+        XC = calcCVComponents( self )
 
         self = initPCAModel( self, setup )
 
         self = initAEModel( self, setup )
+
+        plotModel( self )
+
+        save( self, path, name )
 
 
     end

@@ -1,21 +1,21 @@
-function aggrCorr = calcCVCorrelations( subModels, set )
+function aggrCorr = calcCVCorrelations( models, set )
     % Average correlations from submodels
     arguments
-        subModels       cell
+        models          cell
         set             char ...
             {mustBeMember( set, {'Training', 'Validation'} )}
     end
 
-    nModels = length( subModels );
-    fields = fieldnames( subModels{1}.Correlations.(set) );
+    nModels = length( models );
+    fields = fieldnames( models{1}.Correlations.(set) );
     nFields = length( fields );
 
     for i = 1:nFields
 
-        fldDim = size( subModels{1}.Correlations.(set).(fields{i}) );
+        fldDim = size( models{1}.Correlations.(set).(fields{i}) );
         R = zeros( fldDim );
         for k = 1:nModels
-           R = R + subModels{k}.Correlations.(set).(fields{i});
+           R = R + models{k}.Correlations.(set).(fields{i});
         end
         aggrCorr.(fields{i}) = R/nModels;
 

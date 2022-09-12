@@ -24,12 +24,12 @@ classdef RepresentationModel
         NumCompLines    % number of lines in the component plot
 
         MeanCurve       % estimated mean curve
-        ComponentType   % type of components generated (Mean or PDP)
+        ComponentType   % type of components generated
         LatentComponents % computed components across partitions
 
-        Predictions      % training and validation predictions
-        Loss             % training and validation losses
-        Correlations     % training and validation correlations
+        Predictions     % training and validation predictions
+        Loss            % training and validation losses
+        Correlations    % training and validation correlations
 
         RandomSeed      % for reproducibility
         RandomSeedResets % whether to reset the seed for each sub-model

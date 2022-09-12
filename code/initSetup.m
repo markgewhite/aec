@@ -66,7 +66,7 @@ function setup = initSetup
     % evaluations
     setup.eval.args.verbose = true;
     setup.eval.args.CVType = 'KFold';
-    setup.eval.args.KFolds = 10;
+    setup.eval.args.KFolds = 2;
     setup.eval.args.HasIdenticalPartitions = true;
 
 

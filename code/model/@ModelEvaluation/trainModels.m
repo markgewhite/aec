@@ -41,4 +41,17 @@ function self = trainModels( self, thisDataset, modelSetup )
 
     end
 
+    % find the optimal arrangement of model components
+    if self.KFolds > 1
+        self = self.arrangeComponents;
+    end
+
+    % average the latent components across the models
+    self.CVComponents = self.calcCVComponents;
+
+    % average the auxiliary model coefficients
+    self.CVAuxMetrics.AuxModelBeta = calcCVNestedParameter( ...
+                                        self.Models, {'AuxModel', 'Beta'} );
+
+
 end

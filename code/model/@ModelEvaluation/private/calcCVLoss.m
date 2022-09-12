@@ -1,13 +1,13 @@
-function cvLoss = calcCVLoss( subModels, set )
+function cvLoss = calcCVLoss( models, set )
     % Calculate the aggregate cross-validated losses across all submodels
     % drawing on the pre-computed predictions 
     arguments
-        subModels       cell
+        models          cell
         set             char ...
-            {mustBeMember( set, {'Training', 'Validation'} )}
+            {mustBeMember( set, {'Training', 'Testing'} )}
     end
 
-    nModels = length( subModels );
+    nModels = length( models );
 
     pairs = [   {'XTarget', 'XHat'}; ...
                 {'XTarget', 'XHatSmoothed'}; ...
@@ -20,7 +20,7 @@ function cvLoss = calcCVLoss( subModels, set )
     fields = unique( pairs );
     nPairs = length( pairs );
     for i = 1:nPairs
-        if ~isfield( subModels{1}.Predictions.(set), fields{i} )
+        if ~isfield( models{1}.Predictions.(set), fields{i} )
             pairs{i,:} = [];
         end
     end
@@ -35,7 +35,7 @@ function cvLoss = calcCVLoss( subModels, set )
 
         for k = 1:nModels
 
-            data = subModels{k}.Predictions.(set).(fields{i});
+            data = models{k}.Predictions.(set).(fields{i});
             if doPermute
                 data = permute( data, [2 1 3] );
             end
@@ -46,7 +46,7 @@ function cvLoss = calcCVLoss( subModels, set )
     end
 
     scale = mean( cell2mat(cellfun( ...
-                    @(m) m.Scale, subModels, UniformOutput = false )), 1 );
+                    @(m) m.Scale, models, UniformOutput = false )), 1 );
 
     for i = 1:nPairs
 
