@@ -12,6 +12,10 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisTrnData = thisDataset.partition( trainObs );
     thisValData = thisDataset.partition( ~trainObs );
 
+    % set the mean curve for these training data
+    thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
+    thisModel.MeanCurve = thisTrnData.XInputRegularMean;
+
     % setup the minibatch queues
     mbqTrn = thisTrnData.getMiniBatchQueue( ...
                                 self.BatchSize, ...
@@ -22,6 +26,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     if self.Holdout > 0
         % get the validation data (one-time only)
         [ dlXVal, dlYVal ] = thisValData.getDLInput( thisModel.XDimLabels );
+        dlXNVal = thisValData.XTarget;
     end
 
     % setup whole training set
@@ -132,7 +137,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
             % compute relevant loss
             self.LossVal(v) = validationCheck( thisModel, ...
                                             self.ValType, ...
-                                            dlXVal, dlYVal );
+                                            dlXVal, dlXNVal, dlYVal );
             if v > 2*vp-1
                 if mean(self.LossVal(v-2*vp+1:v-vp)) ...
                         < mean(self.LossVal(v-vp+1:v))
@@ -189,10 +194,6 @@ function thisModel = runTraining( self, thisModel, thisDataset )
                                 thisModel.AuxModelType, ...
                                 dlZTrnAll, ...
                                 dlYTrnAll );
-
-    % set the mean curve for these training data
-    thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
-    thisModel.MeanCurve = thisTrnData.XInputRegularMean;
 
     % set the oversmoothing level
     XHatTrnAll = thisModel.reconstruct( dlZTrnAll, convert = true );

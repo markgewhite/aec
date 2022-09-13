@@ -1,9 +1,10 @@
-function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
+function lossVal = validationCheck( thisModel, valType, dlXVal, dlXNVal, dlYVal )
     % Validate the model so far
     arguments
         thisModel       AEModel
         valType         string
         dlXVal          dlarray
+        dlXNVal         dlarray
         dlYVal          dlarray
     end
 
@@ -12,7 +13,7 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlYVal )
     switch valType
         case 'Reconstruction'
             dlXValHat = squeeze(thisModel.reconstruct( dlZVal, convert = false ));
-            lossVal = reconLoss( dlXVal, dlXValHat, thisModel.Scale );
+            lossVal = reconLoss( dlXNVal, dlXValHat, thisModel.Scale );
 
         case 'AuxNetwork'
             dlYHatVal = predict( thisModel.Nets.(thisModel.auxNetwork), dlZVal );
