@@ -23,6 +23,7 @@ function self = initDatasets( self, setup )
                     Lambda = self.TrainingDataset.FDA.Lambda );
             self.Partitions = [];
             self.KFolds = 1;
+            self.KFoldRepeats = 1;
 
         case 'KFold'
             self.TrainingDataset = setup.data.class( 'Combined', ...
@@ -36,7 +37,9 @@ function self = initDatasets( self, setup )
     end
 
     self.Partitions = self.TrainingDataset.getCVPartition( ...
-                            KFold = self.KFolds, ...
+                            KFolds = self.KFolds, ...
+                            Repeats = self.KFoldRepeats, ...
                             Identical = self.HasIdenticalPartitions );
+    self.NumModels = size( self.Partitions, 2 );
 
 end

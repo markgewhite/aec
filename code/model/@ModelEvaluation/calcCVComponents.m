@@ -6,7 +6,7 @@ function XC = calcCVComponents( self )
     end
 
     XC = self.Models{1}.LatentComponents;
-    for k = 2:self.KFolds
+    for k = 2:self.NumModels
 
         if isempty( self.ComponentOrder )
             % use model arrangement
@@ -20,6 +20,6 @@ function XC = calcCVComponents( self )
     
     end
 
-    XC = XC/self.KFolds;
+    XC = XC/self.NumModels;
 
 end

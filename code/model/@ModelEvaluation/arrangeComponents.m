@@ -7,8 +7,8 @@ function self = arrangeComponents( self )
 
     aModel = self.Models{1};
     permOrderIdx = perms( 1:aModel.ZDim );
-    lb = [ length(permOrderIdx) ones( 1, self.KFolds-1 ) ];
-    ub = length(permOrderIdx)*ones( 1, self.KFolds );
+    lb = [ length(permOrderIdx) ones( 1, self.NumModels-1 ) ];
+    ub = length(permOrderIdx)*ones( 1, self.NumModels );
     options = optimoptions( 'ga', ...
                             'PopulationSize', 400, ...
                             'EliteCount', 80, ...
@@ -21,8 +21,8 @@ function self = arrangeComponents( self )
 
     % pre-compile latent components across the sub-models for speed
     latentComp = zeros( aModel.XInputDim, aModel.NumCompLines, ...
-                        aModel.ZDim, aModel.XChannels, self.KFolds );
-    for k = 1:self.KFolds
+                        aModel.ZDim, aModel.XChannels, self.NumModels );
+    for k = 1:self.NumModels
         latentComp(:,:,:,:,k) = self.Models{k}.LatentComponents;
     end
     
@@ -31,12 +31,12 @@ function self = arrangeComponents( self )
     
     % run the genetic algorithm optimization
     [ componentPerms, componentMSE ] = ...
-                        ga( objFcn, self.KFolds, [], [], [], [], ...
-                            lb, ub, [], 1:self.KFolds, options );
+                        ga( objFcn, self.NumModels, [], [], [], [], ...
+                            lb, ub, [], 1:self.NumModels, options );
 
     % generate the order from list of permutations
-    self.ComponentOrder = zeros( self.KFolds, aModel.ZDim );
-    for k = 1:self.KFolds
+    self.ComponentOrder = zeros( self.NumModels, aModel.ZDim );
+    for k = 1:self.NumModels
         self.ComponentOrder( k, : ) = permOrderIdx( componentPerms(k), : );
     end
     self.ComponentDiffRMSE = sqrt( componentMSE );

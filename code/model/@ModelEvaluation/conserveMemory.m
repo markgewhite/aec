@@ -11,7 +11,7 @@ function self = conserveMemory( self, level )
         self.Axes = [];
     end
 
-    for k = 1:self.KFolds
+    for k = 1:self.NumModels
         self.Models{k} = self.Models{k}.compress( level );
     end
 

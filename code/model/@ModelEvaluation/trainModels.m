@@ -14,9 +14,9 @@ function self = trainModels( self, thisDataset, modelSetup )
     end
 
     % run the cross validation loop
-    for k = 1:self.KFolds
+    for k = 1:self.NumModels
     
-        disp(['Fold ' num2str(k) '/' num2str(self.KFolds)]);
+        disp(['Fold ' num2str(k) '/' num2str(self.NumModels)]);
         
         % set the kth partitions
         thisTrnSet = thisDataset.partition( self.Partitions(:,k) );
@@ -42,7 +42,7 @@ function self = trainModels( self, thisDataset, modelSetup )
     end
 
     % find the optimal arrangement of model components
-    if self.KFolds > 1
+    if self.NumModels > 1
         self = self.arrangeComponents;
     end
 

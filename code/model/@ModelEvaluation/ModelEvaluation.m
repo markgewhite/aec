@@ -7,9 +7,11 @@ classdef ModelEvaluation
         TrainingDataset     % training dataset object
         TestingDataset      % testing dataset object
         KFolds              % number of partitions
+        KFoldRepeats        % number of k-fold repetitions
         Partitions          % training dataset k-fold partitions
         CVType              % type of cross-validation
         HasIdenticalPartitions % flag for special case of identical partitions
+        NumModels           % number of models
         Models              % trained model objects
         LossFcns            % array of loss function objects
         CVComponents        % cross-validated latent components
@@ -36,6 +38,8 @@ classdef ModelEvaluation
                         {'Holdout', 'KFold'} )} = 'Holdout'
                 args.KFolds             double ...
                         {mustBeInteger, mustBePositive} = 1
+                args.KFoldRepeats       double ...
+                        {mustBeInteger, mustBePositive} = 1
                 args.HasIdenticalPartitions logical = false
                 args.RandomSeed         double ...
                         {mustBeInteger, mustBePositive} = 1234
@@ -50,6 +54,7 @@ classdef ModelEvaluation
             % store other arguments
             self.CVType = args.CVType;
             self.KFolds = args.KFolds;
+            self.KFoldRepeats = args.KFoldRepeats;
             self.HasIdenticalPartitions = args.HasIdenticalPartitions;
             self.RandomSeed = args.RandomSeed;
             self.RandomSeedResets = args.RandomSeedResets;
