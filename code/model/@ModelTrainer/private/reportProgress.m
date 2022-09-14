@@ -28,7 +28,7 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
     fprintf('\n');
 
     % compute the AE components for plotting
-    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( dlZ );
+    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( dlZ, smooth = true );
 
     % plot them on specified axes
     if thisModel.HasCentredDecoder

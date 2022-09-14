@@ -26,6 +26,7 @@ function plotLatentComp( self, args )
         if self.XChannels==1
             XMean = permute( XMean, [1 3 2] );
         end
+        tSpanMean = self.TSpan.Regular;
     else
         % use the mean curve specified
         if isa( args.XMean, 'dlarray' )
@@ -33,38 +34,58 @@ function plotLatentComp( self, args )
         else
             XMean = args.XMean;
         end
+        switch size( XMean, 1 )
+            case length(self.TSpan.Regular)
+                tSpanMean = self.TSpan.Regular;
+            case length(self.TSpan.Target)
+                tSpanMean = self.TSpan.Target;
+            otherwise
+                tSpanMean = linspace( self.TSpan.Original(1), ...
+                                      self.TSpan.Original(end), length(XMean) );
+        end
     end
 
     if isempty( args.XC )
         % use the pre-calculated latent components
         XC = self.LatentComponents;
+        tSpanXC = self.TSpan.Regular;
+
     else
         % use the latent components specified
         if isa( args.XC, 'dlarray' )
             XC = double( extractdata( args.XC ) );
         else
             XC = args.XC;
-        end        
-    end
-
-    if isempty( args.XMean ) || isempty( args.XC )
-        % set the appropriate timespans and FD parameters
-        tSpanXC = self.TSpan.Regular;
-        fdParams = self.FDA.FdParamsRegular;
-    else
-        % set the appropriate timespans and FD parameters
-        tSpanXC = self.TSpan.Target;
-        fdParams = self.FDA.FdParamsTarget;
+        end
+        switch size( XC, 1 )
+            case length(self.TSpan.Regular)
+                tSpanXC = self.TSpan.Regular;
+            case length(self.TSpan.Target)
+                tSpanXC = self.TSpan.Target;
+            otherwise
+                tSpanXC = linspace( self.TSpan.Original(1), ...
+                                    self.TSpan.Original(end), length(XMean) );
+        end
     end
 
     % get dimensions
     [nPts, nSamples, nDim, nChannels, ] = size( XC );
 
-    % smooth and re-evaluate all curves
+    % interpolate all curves over the plot's points
     tSpanPlot = linspace( self.TSpan.Original(1), ...
                           self.TSpan.Original(end), 101 );
 
-    XMeanSmth = smoothSeries( XMean, tSpanXC, tSpanPlot, fdParams );
+    XMeanPlot = zeros( 101, nDim, nChannels );
+    XCPlot = zeros( 101, nSamples, nDim, nChannels ); 
+    for c = 1:nChannels
+        for d = 1:nDim
+            XMeanPlot(:,d,c) = interp1( tSpanMean, XMean(:,:,d,c), tSpanPlot );
+            for s = 1:nSamples
+                XCPlot(:,s,d,c) = XMeanPlot(:,d,c)' + ...
+                                    interp1( tSpanXC, XC(:,s,d,c), tSpanPlot );
+            end
+        end
+    end
 
     % set the colours: red=positive, blue=negative
     compColours = [ 0.0000 0.4470 0.7410; ...
@@ -105,9 +126,6 @@ function plotLatentComp( self, args )
 
     for c = 1:nChannels
 
-        XCsmth = XMeanSmth(:,c,:) + smoothSeries( XC(:,:,:,c), ...
-                                           tSpanXC, tSpanPlot, fdParams );
-
         for i = compIdx
 
             axis = axes(c,i);
@@ -131,8 +149,8 @@ function plotLatentComp( self, args )
                     if args.shading
                         plotShadedArea( axis, ...
                                         tSpanPlot, ...
-                                        XCsmth( :,j,i ), ...
-                                        XMeanSmth( :,c,i ), ...
+                                        XCPlot( :,j,i,c ), ...
+                                        XMeanPlot( :,i,c ), ...
                                         compColours( s,: ), ...
                                         name = names(s) );
                     end
@@ -157,14 +175,14 @@ function plotLatentComp( self, args )
                         % include in legend
                         l = l+1;
                         pltObj(l) = plot( axis, ...
-                                          tSpanPlot, XCsmth( :,j,i ), ...
+                                          tSpanPlot, XCPlot( :,j,i,c ), ...
                                           Color = compColours( s,: ), ...
                                           LineWidth = width, ...
                                           DisplayName = names(s));
                     else
                         % don't record it for the legend
                         plot( axis, ...
-                                          tSpanPlot, XCsmth( :,j,i ), ...
+                                          tSpanPlot, XCPlot( :,j,i,c ), ...
                                           Color = compColours( s,: ), ...
                                           LineWidth = width );
                     end
@@ -176,7 +194,7 @@ function plotLatentComp( self, args )
             % plot the mean curve
             l = l+1;
             pltObj(l) = plot( axis, ...
-                              tSpanPlot, XMeanSmth( :,c,i ), ...
+                              tSpanPlot, XMeanPlot( :,i,c ), ...
                               Color = black, ...
                               LineWidth = 1.0, ...
                               DisplayName = 'Mean' );
