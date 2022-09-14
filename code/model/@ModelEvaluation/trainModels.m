@@ -1,9 +1,8 @@
-function self = trainModels( self, thisDataset, modelSetup )
+function self = trainModels( self, modelSetup )
     % Run the cross-validation training loop
     arguments
-        self            ModelEvaluation
-        thisDataset     ModelDataset
-        modelSetup      struct
+        self                ModelEvaluation
+        modelSetup          struct
     end
 
     % prepare the bespoke arguments
@@ -18,9 +17,16 @@ function self = trainModels( self, thisDataset, modelSetup )
     
         disp(['Fold ' num2str(k) '/' num2str(self.NumModels)]);
         
-        % set the kth partitions
-        thisTrnSet = thisDataset.partition( self.Partitions(:,k) );
-        thisValSet = thisDataset.partition( ~self.Partitions(:,k) );
+        switch self.CVType
+            case 'Holdout'
+                % set the training and holdout data sets
+                thisTrnSet = self.TrainingDataset;
+                thisValSet = self.TestingDataset;
+            case 'KFold'
+                % set the kth partitions
+                thisTrnSet = self.TrainingDataset.partition( self.Partitions(:,k) );
+                thisValSet = self.TrainingDataset.partition( ~self.Partitions(:,k) );
+        end
         
         % initialize the model
         self.Models{k} = modelSetup.class( thisTrnSet, argsModel{:} );

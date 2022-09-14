@@ -86,7 +86,7 @@ classdef ModelEvaluation
             if args.verbose
                 disp('Training the model ...');
             end
-            self = self.trainModels( self.TrainingDataset, setup.model );
+            self = self.trainModels( setup.model );
             if args.verbose
                 disp('Training complete');
             end
