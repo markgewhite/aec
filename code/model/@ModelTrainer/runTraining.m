@@ -139,8 +139,8 @@ function thisModel = runTraining( self, thisModel, thisDataset )
                                             self.ValType, ...
                                             dlXVal, dlXNVal, dlYVal );
             if v > 2*vp-1
-                if mean(self.LossVal(v-2*vp+1:v-vp)) ...
-                        < mean(self.LossVal(v-vp+1:v))
+                if min(self.LossVal(1:v)) ...
+                        < min(self.LossVal(v-vp+1:v))
                     disp(['Stopping criterion met. Epoch = ' num2str(epoch)]);
                     break
                 end
