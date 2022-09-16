@@ -41,8 +41,8 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 100;
-    setup.model.args.trainer.numEpochs = 1000;
+    setup.model.args.trainer.updateFreq = 1;
+    setup.model.args.trainer.numEpochs = 1;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.activeZFreq = 10;
     setup.model.args.trainer.batchSize = 150;
@@ -62,7 +62,7 @@ function setup = initSetup
 
     % evaluations
     setup.eval.args.verbose = true;
-    setup.eval.args.CVType = 'KFold';
+    setup.eval.args.CVType = 'Holdout';
     setup.eval.args.KFolds = 2;
     setup.eval.args.KFoldRepeats = 2;
     setup.eval.args.HasIdenticalPartitions = false;

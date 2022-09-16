@@ -36,7 +36,7 @@ function self = initLossFcns( self, setup )
     % store the loss functions' details 
     % and relevant details for easier access when training
     self = self.setLossInfoTbl;
-    self.NumLoss = sum( self.LossFcnTbl.NumLosses );
+    self.NumLoss = sum( self.LossFcnTbl.NumLosses.*self.LossFcnTbl.DoCalcLoss );
 
     self.LossFcnTbl.Types = categorical( self.LossFcnTbl.Types );
     self.LossFcnTbl.Inputs = categorical( self.LossFcnTbl.Inputs );

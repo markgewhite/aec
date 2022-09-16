@@ -6,6 +6,10 @@ function self = arrangeComponents( self )
     end
 
     aModel = self.Models{1};
+    if aModel.ZDim > 10
+        % astronmical number of permutations
+        return
+    end
     permOrderIdx = perms( 1:aModel.ZDim );
     lb = [ length(permOrderIdx) ones( 1, self.NumModels-1 ) ];
     ub = length(permOrderIdx)*ones( 1, self.NumModels );

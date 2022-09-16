@@ -1,6 +1,7 @@
 function [fig, lossLines] = initializeLossPlots( lossFcnTbl )
     % Setup plots for tracking progress
    
+    lossFcnTbl = lossFcnTbl( lossFcnTbl.DoCalcLoss, : );
     nAxes = size( lossFcnTbl, 1 );
     [ rows, cols ] = sqdim( nAxes );
     
