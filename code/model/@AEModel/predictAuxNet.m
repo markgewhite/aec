@@ -39,18 +39,22 @@ function [ dlYHat, dlYHatScore ] = predictAuxNet( self, Z, args )
         [ dlYHat, dlYHatScore ] = predict( self.Nets.(auxNetName), ...
                                            dlZ, ...
                                            Outputs = {outLayer, fcLayer} );
+        if args.convert
+            dlYHatScore = double(extractdata( dlYHatScore ));
+        end
+
     else
         dlYHat = predict( self.Nets.(auxNetName), dlZ );
         dlYHatScore = [];
+
     end
 
-    if args.convert
-        if args.hotdecode
-            dlYHat = onehotdecode( dlYHat, 1:self.CDim, 1 );
-        else
-            dlYHat = double(extractdata( dlYHat ));
-        end
-        dlYHatScore = double(extractdata( dlYHatScore ));
+    if args.hotdecode
+        dlYHat = dlarray(single(onehotdecode( dlYHat, 1:self.CDim, 1 )), 'CB' );
+    end
+
+    if args.convert        
+        dlYHat = double(extractdata( dlYHat ));
     end
 
 end

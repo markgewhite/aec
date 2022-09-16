@@ -17,7 +17,7 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlXNVal, dlYVal 
     end
 
     if any(strcmp( valType, {'AuxNetwork', 'Both'} ))
-        dlYHatVal = thisModel.predictAuxNet( dlZVal, convert = false );
+        dlYHatVal = thisModel.predictAuxNet( dlZVal, convert = false, hotdecode = false );
         auxNetwork = thisModel.LossFcnTbl.Names(thisModel.LossFcnTbl.Types=="Auxiliary");
         cLabels = thisModel.LossFcns.(auxNetwork).CLabels;
         dlYVal = dlarray( onehotencode( cLabels(dlYVal), 1 ), 'CB' );
