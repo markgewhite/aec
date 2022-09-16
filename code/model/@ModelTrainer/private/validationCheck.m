@@ -10,17 +10,19 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlXNVal, dlYVal 
 
     dlZVal = thisModel.encode( dlXVal, convert = false );
 
-    switch valType
-        case 'Reconstruction'
-            dlXValHat = squeeze(thisModel.reconstruct( dlZVal, convert = false ));
-            lossVal = reconLoss( dlXNVal, dlXValHat, thisModel.Scale );
-
-        case 'AuxNetwork'
-            dlYHatVal = predict( thisModel.Nets.(thisModel.auxNetwork), dlZVal );
-            cLabels = thisModel.LossFcns.(thisModel.auxNetwork).CLabels;
-            dlYHatVal = double( onehotdecode( dlYHatVal, single(cLabels), 1 ));
-            lossVal = sum( dlYHatVal~=dlYVal )/length(dlYVal);
+    lossVal = 0;
+    if any(strcmp( valType, {'Reconstruction', 'Both'} ))
+        dlXValHat = squeeze(thisModel.reconstruct( dlZVal, convert = false ));
+        lossVal = lossVal + reconLoss( dlXNVal, dlXValHat, thisModel.Scale );
     end
 
+    if any(strcmp( valType, {'AuxNetwork', 'Both'} ))
+        dlYHatVal = thisModel.predictAuxNet( dlZVal, convert = false );
+        auxNetwork = thisModel.LossFcnTbl.Names(thisModel.LossFcnTbl.Types=="Auxiliary");
+        cLabels = thisModel.LossFcns.(auxNetwork).CLabels;
+        dlYVal = dlarray( onehotencode( cLabels(dlYVal), 1 ), 'CB' );
+        lossVal = lossVal + 0.1*crossentropy( dlYHatVal, dlYVal, ...
+                                  'TargetCategories', 'Independent' );
+    end
 
 end

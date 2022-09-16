@@ -1,8 +1,10 @@
-function [ YHat, YHatScore] = predictAuxNet( self, Z )
+function [ dlYHat, dlYHatScore ] = predictAuxNet( self, Z, args )
     % Make prediction from Z using an auxiliary network
     arguments
         self            AEModel
         Z               {mustBeA(Z, {'double', 'dlarray'})}
+        args.convert    logical = true
+        args.hotdecode  logical = true
     end
         
     if isa( Z, 'dlarray' )
@@ -29,17 +31,26 @@ function [ YHat, YHatScore] = predictAuxNet( self, Z )
 
     auxNetName = self.LossFcnTbl.Names( auxNet );
 
-    % get the network's prediction with softmax
-    fcLayer = self.Nets.(auxNetName).Layers(end-1).Name;
-    outLayer = self.Nets.(auxNetName).Layers(end).Name;
+    if nargout==2
+        % get the network's prediction with softmax
+        fcLayer = self.Nets.(auxNetName).Layers(end-1).Name;
+        outLayer = self.Nets.(auxNetName).Layers(end).Name;
+    
+        [ dlYHat, dlYHatScore ] = predict( self.Nets.(auxNetName), ...
+                                           dlZ, ...
+                                           Outputs = {outLayer, fcLayer} );
+    else
+        dlYHat = predict( self.Nets.(auxNetName), dlZ );
+        dlYHatScore = [];
+    end
 
-    [ dlYHat, dlYHatScore ] = predict( self.Nets.(auxNetName), ...
-                                       dlZ, ...
-                                       Outputs = {outLayer, fcLayer} );
-
-    YHat = double(extractdata( dlYHat ));
-    YHatScore = double(extractdata( dlYHatScore ));
-
-    YHat = double(onehotdecode( YHat', 1:self.CDim, 2 ))';
+    if args.convert
+        if args.hotdecode
+            dlYHat = onehotdecode( dlYHat, 1:self.CDim, 1 );
+        else
+            dlYHat = double(extractdata( dlYHat ));
+        end
+        dlYHatScore = double(extractdata( dlYHatScore ));
+    end
 
 end

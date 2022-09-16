@@ -3,12 +3,12 @@
 setup = initSetup;
 
 % first investigation
-name = 'test_kfoldrepeats';
+name = 'test';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
 parameters = [ "model.class" ];
-values = {{@PCAModel,@FCModel,@ConvolutionalModel}};
+values = {{@FCModel, @ConvolutionalModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 
