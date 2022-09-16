@@ -13,7 +13,7 @@ function save( self, path, name )
     output.CVLoss = self.CVLoss;
     output.CVCorrelations = self.CVCorrelations;
     
-    name = strcat( name, "-OverallEvaluation" );
+    name = strcat( name, "-Evaluation" );
     save( fullfile( path, name ), 'output' );
 
 end   
