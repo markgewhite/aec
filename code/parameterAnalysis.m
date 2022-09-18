@@ -3,6 +3,7 @@
 clear;
 
 runAnalysis = true;
+resume = true;
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/parameterAnalysis.m') );
@@ -11,7 +12,7 @@ pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
 setup.data.class = @UCRDataset;
-datasets = [17 31]; %[ 17, 31, 38, 74, 104 ];
+datasets = [ 17, 31, 38, 74, 104 ];
 
 % -- model setup --
 setup.model.args.ZDim = 4;
@@ -36,14 +37,14 @@ setup.model.args.trainer.UpdateFreq = 200;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.Holdout = 0.2;
 setup.model.args.trainer.ValType = 'Both';
-setup.model.args.trainer.ValFreq = 5;
-setup.model.args.trainer.ValPatience = 40;
+setup.model.args.trainer.ValFreq = 10;
+setup.model.args.trainer.ValPatience = 20;
 
 % evaluations
 setup.eval.args.verbose = true;
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
-setup.eval.args.KFoldRepeats = 1;
+setup.eval.args.KFoldRepeats = 2;
 
 names = [ "ZDimRelation", ...
           "XInputDimRelation", ...
@@ -63,17 +64,17 @@ if runAnalysis
                 parameters = [ "model.class", ...
                                "model.args.ZDim", ...
                                "data.args.SetID" ];
-                 % [2 3 4 6 8 10 15 20], ...
 
-                values = {{@FCModel, @PCAModel, @FCModel, @ConvolutionalModel}, ...
-                          [2 3], ...
+                values = {{@PCAModel, @FCModel, @ConvolutionalModel}, ...
+                          [2 3 4 6 8 10 15 20], ...
                           datasets };
             otherwise
                 error(['Undefined grid search for i = ' num2str(i)]);
         end
     
         thisRun = Investigation( names(i), path, ...
-                                 parameters, values, setup, memorySaving );
+                                 parameters, values, setup, ...
+                                 memorySaving, resume );
         results{i} = thisRun.getResults;
         clear thisRun;
     

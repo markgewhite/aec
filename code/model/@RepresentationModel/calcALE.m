@@ -48,8 +48,7 @@ function [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
     end
     QMid = prc(1:end-1) + diff(prc)/2;
     ZQ = quantile( Z, prc, 2 );
-    %ZQ = [ min(Z,[],2) ZQ max(Z,[],2) ];
-    K = length(ZQ)-1;
+    K = size(ZQ, 2)-1;
 
     % identify bin assignments across dimensions
     A = zeros( self.ZDim, nObs );

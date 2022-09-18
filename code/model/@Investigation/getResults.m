@@ -6,6 +6,7 @@ function report = getResults( self )
 
     % define a small structure for saving
     report.BaselineSetup = self.BaselineSetup;
+    report.Parameters = self.Parameters;
     report.GridSearch = self.GridSearch;
     report.TrainingResults = self.TrainingResults;
     report.TestingResults = self.TestingResults;

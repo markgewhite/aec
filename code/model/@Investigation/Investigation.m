@@ -22,7 +22,8 @@ classdef Investigation
     methods
 
         function self = Investigation( name, path, parameters, ...
-                                       searchValues, setup, memorySaving )
+                                       searchValues, setup, ...
+                                       memorySaving, resume )
             % Construct an investigation comprised of evaluations
             arguments
                 name            string
@@ -32,6 +33,7 @@ classdef Investigation
                 setup           struct
                 memorySaving    double {mustBeInteger, ...
                     mustBeInRange( memorySaving, 0, 4 )} = 0
+                resume          logical = false
             end
 
             % create a folder for this investigation
@@ -49,13 +51,20 @@ classdef Investigation
             setup.model.args.name = name;
             setup.model.args.path = path;
 
-            self.BaselineSetup = setup;
-
-            self.Parameters = parameters;
-            self.NumParameters = length( parameters );
+            if resume
+                self = self.load;
+            else  
+                self.BaselineSetup = setup;
+                self.Parameters = parameters;
+                self.GridSearch = searchValues;
+                self.TrainingResults.Mean = [];
+                self.TrainingResults.SD = [];
+                self.TestingResults.Mean = [];
+                self.TestingResults.SD = [];
+            end
 
             % setup the grid search
-            self.GridSearch = searchValues;
+            self.NumParameters = length( parameters );
             self.SearchDims = cellfun( @length, self.GridSearch ); 
 
             % initialize evaluation arrays 
@@ -67,19 +76,24 @@ classdef Investigation
 
             self.Evaluations = cell( allocation );
 
-            self.TrainingResults.Mean = [];
-            self.TrainingResults.SD = [];
-            self.TestingResults.Mean = [];
-            self.TestingResults.SD = [];
-
             nEval = prod( self.SearchDims );
             % run the evaluation loop
             for i = 1:nEval
 
-                setup = self.BaselineSetup;
                 idx = getIndices( i, self.SearchDims );
+                idxC = num2cell( idx );
+
+                if ~isempty(self.TrainingResults.Mean)
+                    if self.TrainingResults.Mean.ReconLoss(idxC{:})~=0
+                        % evaluation already performed, move to next one
+                        disp(['Evaluation (' num2str(idx') ...
+                              ') previously completed.']);
+                        continue
+                    end
+                end
 
                 % apply the respective settings
+                setup = self.BaselineSetup;
                 for j = 1:self.NumParameters
 
                     setup = applySetting( setup, ...
@@ -96,7 +110,6 @@ classdef Investigation
                 %setup.model.args.path = folder( path, name, idx );
 
                 % carry out the evaluation
-                idxC = num2cell( idx );
                 setup.model.args.name = strcat( name, constructName(idx) );
                 try
                     argsCell = namedargs2cell( setup.eval.args );
@@ -104,42 +117,48 @@ classdef Investigation
                     argsCell = {};
                 end
 
-                self.Evaluations{ idxC{:} } = ...
+                try
+                    self.Evaluations{ idxC{:} } = ...
                                 ModelEvaluation( setup.model.args.name, ...
                                                  setup, ...
                                                  argsCell{:} );
-
-                % record results               
-                self.TrainingResults.Mean = updateResults( ...
-                        self.TrainingResults.Mean, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVLoss.Training.Mean );
-                self.TrainingResults.SD = updateResults( ...
-                        self.TrainingResults.SD, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVLoss.Training.SD );
-
-                self.TrainingResults.Mean = updateResults( ...
-                        self.TrainingResults.Mean, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVCorrelations.Training.Mean );
-                self.TrainingResults.SD = updateResults( ...
-                        self.TrainingResults.SD, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVCorrelations.Training.SD );
-
-                self.TestingResults.Mean = updateResults( ...
-                        self.TestingResults.Mean, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVLoss.Validation.Mean );
-                self.TestingResults.SD = updateResults( ...
-                        self.TestingResults.SD, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVLoss.Validation.SD );
-
-                self.TestingResults.Mean = updateResults( ...
-                        self.TestingResults.Mean, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVCorrelations.Validation.Mean );
-                self.TestingResults.SD = updateResults( ...
-                        self.TestingResults.SD, idxC, allocation, ...
-                        self.Evaluations{ idxC{:} }.CVCorrelations.Validation.SD );
+                    % record results               
+                    self.TrainingResults.Mean = updateResults( ...
+                            self.TrainingResults.Mean, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVLoss.Training.Mean );
+                    self.TrainingResults.SD = updateResults( ...
+                            self.TrainingResults.SD, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVLoss.Training.SD );
     
-                % save the evaluations
-                self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
+                    self.TrainingResults.Mean = updateResults( ...
+                            self.TrainingResults.Mean, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVCorrelations.Training.Mean );
+                    self.TrainingResults.SD = updateResults( ...
+                            self.TrainingResults.SD, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVCorrelations.Training.SD );
+    
+                    self.TestingResults.Mean = updateResults( ...
+                            self.TestingResults.Mean, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVLoss.Validation.Mean );
+                    self.TestingResults.SD = updateResults( ...
+                            self.TestingResults.SD, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVLoss.Validation.SD );
+    
+                    self.TestingResults.Mean = updateResults( ...
+                            self.TestingResults.Mean, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVCorrelations.Validation.Mean );
+                    self.TestingResults.SD = updateResults( ...
+                            self.TestingResults.SD, idxC, allocation, ...
+                            self.Evaluations{ idxC{:} }.CVCorrelations.Validation.SD );
+        
+                    % save the evaluations
+                    self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
+                
+                catch
+                
+                    warning('Evaluation failed.')
+                
+                end
 
                 % conserve memory - essential in a long run
                 if self.MemoryConservation == 4
