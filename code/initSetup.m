@@ -33,7 +33,7 @@ function setup = initSetup
     % model
     setup.model.class = @FCModel;
     %setup.model.args.HasFCDecoder = false;
-    setup.model.args.ZDim = 4;
+    setup.model.args.ZDim = 10;
     setup.model.args.InitZDimActive = 1;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
@@ -62,9 +62,9 @@ function setup = initSetup
 
     % evaluations
     setup.eval.args.verbose = true;
-    setup.eval.args.CVType = 'Holdout';
+    setup.eval.args.CVType = 'KFold';
     setup.eval.args.KFolds = 2;
-    setup.eval.args.KFoldRepeats = 2;
+    setup.eval.args.KFoldRepeats = 1;
     setup.eval.args.HasIdenticalPartitions = false;
 
 

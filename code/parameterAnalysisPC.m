@@ -2,9 +2,8 @@
 
 clear;
 
-runAnalysis = false;
+runAnalysis = true;
 resume = true;
-reportIdx = 1;
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/parameterAnalysis.m') );
@@ -14,12 +13,6 @@ pathResults = [path0 '/../paper/results/'];
 % -- data setup --
 setup.data.class = @UCRDataset;
 datasets = [ 17, 31, 38, 74, 104 ];
-datasetNames = [ "DistalPhalanx", ...
-                 "GunPoint", ...
-                 "ItalyPowerDemand", ...
-                 "TwoLeadECG", ...
-                 "PowerCons" ];
-legendNames = [ "PCA", "FC", "Conv" ];
 
 % -- model setup --
 setup.model.args.ZDim = 4;
@@ -64,7 +57,7 @@ thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
-    for i = reportIdx
+    for i = 2:nReports
     
         switch i
             case 1 % ZDim
@@ -76,6 +69,15 @@ if runAnalysis
                           [2 3 4 6 8 10 15 20], ...
                           datasets };
 
+            case 2 % XInputDim
+                parameters = [ "model.class", ...
+                               "model.args.XInputDim", ...
+                               "data.args.SetID" ];
+
+                values = {{@PCAModel, @FCModel, @ConvolutionalModel}, ...
+                          [25 50 75 100 150 200], ...
+                          datasets };
+
             case 3 % XTargetDim
                 parameters = [ "model.class", ...
                                "model.args.XTargetDim", ...
@@ -84,6 +86,7 @@ if runAnalysis
                 values = {{@PCAModel, @FCModel, @ConvolutionalModel}, ...
                           [25 50 75 100 150 200], ...
                           datasets };
+
             otherwise
                 error(['Undefined grid search for i = ' num2str(i)]);
         end
@@ -99,7 +102,7 @@ if runAnalysis
 else
 
     % load from files instead
-    for i = reportIdx
+    for i = 1:nReports
         filename = strcat( names(i), "/", names(i), "-Investigation" );
         load( fullfile( path, filename ), 'report' );
         results{i} = report;
@@ -107,36 +110,31 @@ else
 
 end
 
-% generate the associated plots
-for i = reportIdx
+% compile results for the paper
+fields = [ "ReconLoss", "ReconLossSmoothed", "ReconLossRegular", ...
+           "ReconBias", "ReconVar", ...
+           "AuxModelLoss", "AuxNetworkLoss", "ComparatorLoss", ...
+           "ZCorrelation", "XCCorrelation" ];
 
-    switch i
-        case 1
-            plotParam = "Z Dimension";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                          "AuxModelErrorRate", "Aux. Model Error Rate"];
-        otherwise
-            error(['Undefined parameters for report = ' num2str(i)]);
+groupSizes = [ 3, 3, 3, ...
+               2, 2, ...
+               3, 2, 2, ...
+               3, 3 ];
+    
+T0 = genPaperResultsTable( results, fields, groupSizes );
 
-    end
+TestNames = [ "2L:S1-C2"; ...
+             "3L:S12-C3"; ...
+             "3L:S1-C23"; ...
+             "4L:S12-C34"; ...
+             "4L:S123-C4"; ...
+             "4L:S123-C4-W1"; ...
+             "4L:S123-C4-W2"; ...
+             "4L:S123-C4-W2*" ];
 
-    for j = 1:size(plotMetrics,1)
-        
-        fig = plotParamRelation(   results{i}, plotParam, ...
-                                   plotMetrics(j,1), plotMetrics(j,2), ...
-                                   datasetNames, legendNames ); 
+T0 = addvars( T0, TestNames, Before = 1 );
 
-        filename = strcat( names(i), "-", plotMetrics(j,1), ".pdf" );
-        fig = formatIEEEFig( fig, ...
-                             width = "Page", ...
-                             size = "Medium", ...
-                             keepYAxisTicks = true, ...
-                             keepTitle = true, ...
-                             keepLegend = false, ...
-                             filename = filename );
-
-    end
-
-end
+filename = strcat( "Synthetic3-Results.csv" );
+writetable( T0, fullfile( pathResults, filename ) );
 
 
