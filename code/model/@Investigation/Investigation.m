@@ -117,7 +117,7 @@ classdef Investigation
                     argsCell = {};
                 end
 
-                try
+                %try
                     self.Evaluations{ idxC{:} } = ...
                                 ModelEvaluation( setup.model.args.name, ...
                                                  setup, ...
@@ -154,11 +154,11 @@ classdef Investigation
                     % save the evaluations
                     self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
                 
-                catch
+                %catch
                 
-                    warning('Evaluation failed.')
+                    %warning('Evaluation failed.')
                 
-                end
+                %end
 
                 % conserve memory - essential in a long run
                 if self.MemoryConservation == 4

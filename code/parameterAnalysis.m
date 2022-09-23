@@ -2,9 +2,9 @@
 
 clear;
 
-runAnalysis = true;
+runAnalysis = false;
 resume = false;
-reportIdx = [3 4 5];
+reportIdx = [4];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/parameterAnalysis.m') );
@@ -120,7 +120,7 @@ if runAnalysis
 
             case 5 % HasAdaptiveTimeSpan
                 parameters = [ "model.class", ...
-                               "model.args.HasAdaptiveTimeSpan", ...
+                               "data.args.HasAdaptiveTimeSpan", ...
                                "data.args.SetID" ];
 
                 values = {{@PCAModel, @FCModel, @ConvolutionalModel}, ...
@@ -212,7 +212,7 @@ for i = reportIdx
             plotParam = "Has Centred Decoder";
             plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
                            "AuxModelErrorRate", "Aux. Model Error Rate"; ...
-                           "ReconLossBias", "Reconstruction Loss Bias"];
+                           "ReconBias", "Reconstruction Loss Bias"];
 
         case 5
             plotParam = "Has Adaptive Time Span";
