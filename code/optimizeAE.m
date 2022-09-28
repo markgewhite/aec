@@ -49,36 +49,39 @@ switch dataset
     
 end
 
-% -- loss functions --
-setup.lossFcns.recon.class = @ReconstructionLoss;
-setup.lossFcns.recon.name = 'Reconstruction';
-%setup.lossFcns.zcls.class = @ClassifierLoss;
-%setup.lossFcns.zcls.name = 'ZClassifier';
-
 % -- model setup --
-setup.model.class = @ConvolutionalModel; % @FCModel; 
+setup.model.class = @FCModel;
 setup.model.args.ZDim = 4;
-setup.model.args.InitZDimActive = 0;
-setup.model.args.KFolds = 1;
 setup.model.args.AuxModel = 'Logistic';
-setup.model.args.randomSeed = 1234;
-setup.model.args.CompressionLevel = 3;
+setup.model.args.HasCentredDecoder = true;
+setup.model.args.RandomSeed = 1234;
 setup.model.args.ShowPlots = false;
-setup.model.args.HasFCDecoder = false;
-setup.model.args.FCFactor = 1;
-setup.model.args.NumFC = 128;
-%setup.model.args.NumConvHidden = 5;
-%setup.model.args.DilationFactor = 1;
+
+% -- loss functions --
+setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
+setup.model.args.lossFcns.recon.name = 'Reconstruction';
+
+setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
+setup.model.args.lossFcns.zcls.name = 'ZClassifier';
+setup.model.args.lossFcns.zcls.args.DoCalcLoss = false;
+
+setup.model.args.lossFcns.adv.class = @AdversarialLoss;
+setup.model.args.lossFcns.adv.name = 'Discriminator';
+setup.model.args.lossFcns.adv.args.DoCalcLoss = false;
+
+setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
+setup.model.args.lossFcns.kl.name = 'KLDivergence';
+setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.numEpochs = 400; % 400
-setup.model.args.trainer.numEpochsPreTrn = 0; %10
-setup.model.args.trainer.updateFreq = 50;
-setup.model.args.trainer.batchSize = 50;
-setup.model.args.trainer.holdout = 0;
+setup.model.args.trainer.NumEpochs = 100;
+setup.model.args.trainer.UpdateFreq = 200;
+setup.model.args.trainer.BatchSize = 50;
+setup.model.args.trainer.Holdout = 0;
+
 
 % -- optimizer setup --
-setup.opt.objective = 'AuxModelLoss';
+setup.opt.objective = 'ReconLoss';
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'data_args_HasAdaptiveTimeSpan', ...
@@ -123,8 +126,8 @@ varDef(10) = optimizableVariable( 'model_args_InputDropout', ...
         Optimize = false );
 
 varDef(11) = optimizableVariable( 'model_args_Dropout', ...
-        [0.01 0.5], Type = 'real', Transform = 'log', ... 
-        Optimize = false );
+        [0.01 0.9], Type = 'real', Transform = 'log', ... 
+        Optimize = true );
 
 
 % data hyperparameters
@@ -156,7 +159,7 @@ varDef(17) = optimizableVariable( 'model_args_NumFilters', ...
 % new centring parameter
 varDef(18) = optimizableVariable( 'model_args_HasCentredDecoder', ...
         ["false" "true"], Type = 'categorical', ...
-        Optimize = true );
+        Optimize = false );
 
 
 % setup objective function

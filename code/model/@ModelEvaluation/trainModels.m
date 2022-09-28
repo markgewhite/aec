@@ -15,7 +15,9 @@ function self = trainModels( self, modelSetup )
     % run the cross validation loop
     for k = 1:self.NumModels
     
-        disp(['Fold ' num2str(k) '/' num2str(self.NumModels)]);
+        if modelSetup.args.ShowPlots
+            disp(['Fold ' num2str(k) '/' num2str(self.NumModels)]);
+        end
         
         switch self.CVType
             case 'Holdout'

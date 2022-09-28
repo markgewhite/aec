@@ -19,25 +19,26 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
     end
     
     % initialize and run the evaluation
-    %try
-        thisEvaluation = ModelEvaluation( "Optimization", setup, false );
-    %    constraint = -1;
-    %catch
-    %    constraint = 1;
-    %    obj = NaN;
-    %    return
-    %end
+    try
+        thisEvaluation = ModelEvaluation( "Optimization", setup, ...
+                                          verbose = false );
+        constraint = -1;
+    catch
+        constraint = 1;
+        obj = NaN;
+        return
+    end
     
     % set the objective function's output
     switch setup.opt.objective
         case 'ReconLoss'
-            obj = thisEvaluation.TestingEvaluation.ReconLoss;
+            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLoss;
         case 'ReconLossSmoothed'
-            obj = thisEvaluation.TestingEvaluation.ReconLossSmoothed;
+            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLossSmoothed;
         case 'ReconLossRegular'
-            obj = thisEvaluation.TestingEvaluation.ReconLossRegular;
-        case 'AuxModelLoss'
-            obj = thisEvaluation.TestingEvaluation.AuxModelLoss;
+            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLossRegular;
+        case 'AuxModelErrorRate'
+            obj = thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
     end
 
 
