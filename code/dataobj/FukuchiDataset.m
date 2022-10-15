@@ -10,6 +10,7 @@ classdef FukuchiDataset < ModelDataset
         HasGRF              % whether data includes ground reaction force
         HasVGRFOnly         % whether GRF data has only vertical axis force
         HasCOP              % whether data includes centre of pressure
+        SagittalPlaneOnly   % whether angles are in sagittal plane only (1D)
         HasPelvisAngles     % whether data includes pelvis joint angles
         HasHipAngles        % whether data includes hip joint angles
         HasKneeAngles       % whether data includes knee joint angles
@@ -39,6 +40,7 @@ classdef FukuchiDataset < ModelDataset
                 args.HasGRF             logical = true
                 args.HasVGRFOnly        logical = true
                 args.HasCOP             logical = false
+                args.SagittalPlaneOnly  logical = false
                 args.HasPelvisAngles    logical = false
                 args.HasHipAngles       logical = false
                 args.HasKneeAngles      logical = false
@@ -98,6 +100,7 @@ classdef FukuchiDataset < ModelDataset
             self.YReference = args.YReference;
             self.HasGRF = args.HasGRF;
             self.HasCOP = args.HasCOP;
+            self.SagittalPlaneOnly = args.SagittalPlaneOnly;
             self.HasPelvisAngles = args.HasPelvisAngles;
             self.HasHipAngles = args.HasHipAngles;
             self.HasKneeAngles = args.HasKneeAngles;
@@ -380,6 +383,10 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
         fields = [ fields 14 15 16 ];
         names = [names, ...
           "Foot Dorsi/Plantarflexion", "Foot Inv/Eversion", "Foot Add/Abduction"];
+    end
+
+    if args.SagittalPlaneOnly
+        fields = fields( mod( fields+1, 3 )==0 );
     end
 
     % read in the data, file by file
