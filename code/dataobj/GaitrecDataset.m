@@ -2,6 +2,7 @@ classdef GaitrecDataset < ModelDataset
     % Subclass for loading the GaitRec dataset
 
     properties
+        Stratified          % if classes are evenly distributed
         Grouping            % classification scheme
         ShodCondition       % footwear condition
         Speed               % trial speed condition
@@ -27,12 +28,14 @@ classdef GaitrecDataset < ModelDataset
                     {'Training', 'Testing'} )}
                 args.ObsMax         double ...
                     {mustBePositive, mustBeInteger} = []
+                args.Stratified     logical = false
                 args.Grouping       char ...
                     {mustBeMember( args.Grouping, ...
                     {'ControlsVsDisorders', 'Disorders'} )} = 'ControlsVsDisorders'
                 args.ShodCondition  char ...
                     {mustBeMember( args.ShodCondition, ...
-                    {'All', 'Barefoot/Socks', 'Shoes'} )} = 'Barefoot/Socks'
+                    {'All', 'Barefoot/Socks', ...
+                     'Shoes', 'OrthopedicShoes' } )} = 'Barefoot/Socks'
                 args.Speed          char ...
                     {mustBeMember( args.Speed, ...
                     {'All', 'Slow', ...
@@ -41,7 +44,7 @@ classdef GaitrecDataset < ModelDataset
                 args.SessionType    char ...
                     {mustBeMember( args.SessionType, ...
                     {'All', 'Initial', ...
-                     'Control', 'ReadmissionInitial'} )} = 'Control'
+                     'Control', 'ReadmissionInitial'} )} = 'All'
                 args.HasGRF         logical = true
                 args.HasVGRFOnly    logical = true
                 args.HasCOP         logical = false
@@ -92,6 +95,7 @@ classdef GaitrecDataset < ModelDataset
                             classLabels = classLabels, ...
                             channelLimits = [] );
 
+            self.Stratified = args.Stratified;
             self.Grouping = args.Grouping;
             self.ShodCondition = args.ShodCondition;
             self.Speed = args.Speed;
@@ -279,12 +283,23 @@ function [X, Y, S, channelNames, classNames ] = loadData( set, args )
     end
 
     % trim back the arrays
-    if ~isempty( args.ObsMax )
-        kEnd = min( kEnd, args.ObsMax );
+    if isempty( args.ObsMax )
+        selection = 1:kEnd;
+    else
+        if args.Stratified
+            w = ones( kEnd, 1 );
+            for i = 1:length(unique( Y(1:kEnd) ))
+                w( Y==i ) = 1/sum( Y==i );
+            end
+            w = w./sum(w);
+        else
+            w = ones( kEnd, 1 )/kEnd;
+        end
+        selection = randsample( kEnd, args.ObsMax, true, w );
     end
-    X = X( 1:kEnd, :, : );
-    Y = Y( 1:kEnd )';
-    S = S( 1:kEnd );
+    X = X( selection, :, : );
+    Y = Y( selection )';
+    S = S( selection );
     
     % convert to a cell array
     X = num2cell( X, [2 3] );
@@ -304,12 +319,15 @@ function filter = setFilter( metaData, set, args )
             filter=  metaData.TEST==1;
     end
 
+
     % filter by shod condition
     switch args.ShodCondition
         case 'Barefoot/Socks'
             filter = filter & metaData.SHOD_CONDITION==1;
         case 'Shoes'
-            filter = filter & metaData.SHOD_CONDITION==2;          
+            filter = filter & metaData.SHOD_CONDITION==2;
+        case 'OrthopedicShoes'
+            filter = filter & metaData.SHOD_CONDITION==3;
     end
 
     % filter by speed

@@ -2,6 +2,7 @@ classdef FukuchiDataset < ModelDataset
     % Subclass for loading the Fukuchi et al (2018) dataset
 
     properties
+        Stratified          % if classes are evenly distributed
         Category            % type of data 
         YReference          % chosen Y variable
         SubjectID           % array of subject IDs matching X and Y
@@ -27,6 +28,7 @@ classdef FukuchiDataset < ModelDataset
                     {'Training', 'Testing'} )}
                 args.ObsMax             double ...
                     {mustBePositive, mustBeInteger} = []
+                args.Stratified         logical = false
                 args.RandomSeed         double = 1234
                 args.YReference         char ...
                     {mustBeMember( args.YReference, ...
@@ -91,6 +93,7 @@ classdef FukuchiDataset < ModelDataset
                             classLabels = classes, ...
                             channelLimits = [] );
 
+            self.Stratified = args.Stratified;
             self.Category = args.Category;
             self.YReference = args.YReference;
             self.HasGRF = args.HasGRF;
@@ -312,13 +315,25 @@ function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
 
     end
 
-    if ~isempty( args.ObsMax )
-        kEnd = min( kEnd, args.ObsMax );
+    % trim back the arrays
+    if isempty( args.ObsMax )
+        selection = 1:kEnd;
+    else
+        if args.Stratified
+            w = ones( kEnd, 1 );
+            for i = 1:length(unique( Y(1:kEnd) ))
+                w( Y==i ) = 1/sum( Y==i );
+            end
+            w = w./sum(w);
+        else
+            w = ones( kEnd, 1 )/kEnd;
+        end
+        selection = randsample( kEnd, args.ObsMax, true, w );
     end
-    X = X( 1:kEnd );
-    Y = Y( 1:kEnd );
-    S = S( 1:kEnd );
-    side = side( 1:kEnd );
+    X = X( selection );
+    Y = Y( selection );
+    S = S( selection );
+    side = side( selection );
 
 end
 
@@ -396,13 +411,25 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
 
     end
 
-    if ~isempty( args.ObsMax )
-        k = min( k, args.ObsMax );
+    % trim back the arrays
+    if isempty( args.ObsMax )
+        selection = 1:k;
+    else
+        if args.Stratified
+            w = ones( k, 1 );
+            for i = 1:length(unique( Y(1:k) ))
+                w( Y==i ) = 1/sum( Y==i );
+            end
+            w = w./sum(w);
+        else
+            w = ones( k, 1 )/k;
+        end
+        selection = randsample( k, args.ObsMax, true, w );
     end
-    X = X( 1:k );
-    Y = Y( 1:k );
-    S = S( 1:k );
-    side = side( 1:k );
+    X = X( selection );
+    Y = Y( selection );
+    S = S( selection );
+    side = side( selection );
 
 end
 
