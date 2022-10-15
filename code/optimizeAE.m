@@ -2,7 +2,7 @@
 
 clear;
 
-dataset = "Jumps";
+dataset = "UCR";
 
 exploration = 2;
 
@@ -20,6 +20,11 @@ switch dataset
         setup.data.args.Normalization = 'PAD';
         setup.data.args.HasNormalizedInput = true;
         setup.data.args.ResampleRate = 10;
+
+    case "UCR"
+        setup.data.class = @UCRDataset;
+        datasets = [ 17, 31, 38, 74, 104 ];
+        setup.data.args.SetID = datasets(1);
 
     case "Synthetic"
         setup.data.class = @SyntheticDataset;
@@ -50,7 +55,7 @@ switch dataset
 end
 
 % -- model setup --
-setup.model.class = @FCModel;
+setup.model.class = @ConvolutionalModel;
 setup.model.args.ZDim = 4;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
@@ -74,8 +79,8 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumEpochs = 100;
-setup.model.args.trainer.UpdateFreq = 200;
+setup.model.args.trainer.NumEpochs = 200;
+setup.model.args.trainer.UpdateFreq = 500;
 setup.model.args.trainer.BatchSize = 50;
 setup.model.args.trainer.Holdout = 0;
 

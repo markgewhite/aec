@@ -25,13 +25,14 @@ classdef GaitrecDataset < ModelDataset
                 set                 char ...
                     {mustBeMember( set, ...
                     {'Training', 'Testing'} )}
+                args.ObsMax         double ...
+                    {mustBePositive, mustBeInteger} = []
                 args.Grouping       char ...
                     {mustBeMember( args.Grouping, ...
                     {'ControlsVsDisorders', 'Disorders'} )} = 'ControlsVsDisorders'
                 args.ShodCondition  char ...
                     {mustBeMember( args.ShodCondition, ...
-                    {'All', 'Barefoot/Socks', ...
-                     'Shoes', 'OrthopaedicShoes'} )} = 'Barefoot/Socks'
+                    {'All', 'Barefoot/Socks', 'Shoes'} )} = 'Barefoot/Socks'
                 args.Speed          char ...
                     {mustBeMember( args.Speed, ...
                     {'All', 'Slow', ...
@@ -52,6 +53,7 @@ classdef GaitrecDataset < ModelDataset
                 args.HasDelta       logical = false
                 args.FromMatlabFile logical = true
                 args.PaddingLength  double = 0
+                args.Lambda         double = []
                 superArgs.?ModelDataset
             end
 
@@ -76,11 +78,6 @@ classdef GaitrecDataset < ModelDataset
             pad.Anchoring = 'Both';
 
             tSpan= linspace( 0, 100, 101 );
-        
-            % setup fda
-            paramsFd.BasisOrder = 4;
-            paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = 1E-3;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -88,7 +85,7 @@ classdef GaitrecDataset < ModelDataset
             self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
-                            fda = paramsFd, ...
+                            lambda = args.Lambda, ...
                             datasetName = "GaitRec", ...
                             channelLabels = channelLabels, ...
                             timeLabel = "% Stance", ...
@@ -184,7 +181,10 @@ function [X, Y, S, channelNames, classNames ] = loadData( set, args )
     channelsPerTrial = nFiles*(1 + args.HasDerivative + args.HasDelta);
 
     % initialize arrays, assuming max of 10 trials per session
-    nSessions = size( metaData, 1 );          
+    nSessions = size( metaData, 1 );
+    if nSessions==0
+        error('No data with this combination of filters.');
+    end
     X = zeros( nSessions*10, 101, channelsPerTrial );
 
     if args.FromMatlabFile ...
@@ -279,6 +279,9 @@ function [X, Y, S, channelNames, classNames ] = loadData( set, args )
     end
 
     % trim back the arrays
+    if ~isempty( args.ObsMax )
+        kEnd = min( kEnd, args.ObsMax );
+    end
     X = X( 1:kEnd, :, : );
     Y = Y( 1:kEnd )';
     S = S( 1:kEnd );
@@ -307,8 +310,6 @@ function filter = setFilter( metaData, set, args )
             filter = filter & metaData.SHOD_CONDITION==1;
         case 'Shoes'
             filter = filter & metaData.SHOD_CONDITION==2;          
-        case 'OrthopaedicShoes'
-            filter = filter & metaData.SHOD_CONDITION==3;
     end
 
     % filter by speed

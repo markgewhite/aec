@@ -71,7 +71,7 @@ classdef projectAndReshapeLayer < nnet.layer.Layer & ...
             
             % Reshape.
             outputSize = layer.OutputSize;
-            switch length( outputSize )
+            switch ndims( outputSize )
                 case 2
                     if outputSize(2)==1
                         Z = reshape(X, outputSize(1), outputSize(3), []);

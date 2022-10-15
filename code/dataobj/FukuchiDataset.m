@@ -25,6 +25,8 @@ classdef FukuchiDataset < ModelDataset
                 set                     char ...
                     {mustBeMember( set, ...
                     {'Training', 'Testing'} )}
+                args.ObsMax             double ...
+                    {mustBePositive, mustBeInteger} = []
                 args.RandomSeed         double = 1234
                 args.YReference         char ...
                     {mustBeMember( args.YReference, ...
@@ -40,8 +42,9 @@ classdef FukuchiDataset < ModelDataset
                 args.HasKneeAngles      logical = false
                 args.HasAnkleAngles     logical = false
                 args.HasFootAngles      logical = false
-                args.FromMatlabFile     logical = true
+                args.FromMatlabFile     logical = false
                 args.PaddingLength      double = 0
+                args.Lambda             double = []
                 superArgs.?ModelDataset
             end
 
@@ -66,18 +69,13 @@ classdef FukuchiDataset < ModelDataset
             pad.Same = true;
             pad.Anchoring = 'Both';
 
-            % setup fda
-            paramsFd.BasisOrder = 4;
-            paramsFd.PenaltyOrder = 2;
             switch args.Category
                 case 'GRF'
                     tSpan= (0:pad.Length-1)/300;
                     label = "Stance Time (s)";
-                    paramsFd.Lambda = 1E-6;
                 case 'JointAngles'
                     tSpan = 0:100;
                     label = "Percentage Stance (%)";
-                    paramsFd.Lambda = 1E-4;
             end          
          
             % process the data and complete the initialization
@@ -86,7 +84,7 @@ classdef FukuchiDataset < ModelDataset
             self = self@ModelDataset( XRaw, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
-                            fda = paramsFd, ...
+                            lambda = args.Lambda, ...
                             datasetName = "Fukuchi", ...
                             channelLabels = channels, ...
                             timeLabel = label, ...
@@ -314,6 +312,9 @@ function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
 
     end
 
+    if ~isempty( args.ObsMax )
+        kEnd = min( kEnd, args.ObsMax );
+    end
     X = X( 1:kEnd );
     Y = Y( 1:kEnd );
     S = S( 1:kEnd );
@@ -395,6 +396,9 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
 
     end
 
+    if ~isempty( args.ObsMax )
+        k = min( k, args.ObsMax );
+    end
     X = X( 1:k );
     Y = Y( 1:k );
     S = S( 1:k );
