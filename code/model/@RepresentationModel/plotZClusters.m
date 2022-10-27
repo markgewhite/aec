@@ -40,7 +40,7 @@ function plotZClusters( self, Z, args )
     % thin-out in case of large numbers of rows
     nObs = min( size(Z,1), args.maxObs );
     subset = randsample(size(Z,1), nObs);
-    Z = Z( subset, : );
+    Z = Z( subset, 1:self.ZDimAux );
     Y = Y (subset );
 
     switch args.type

@@ -47,7 +47,8 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, epoch, args )
     plotZClusters( thisModel, dlZ, Y = dlY );
 
     % fit the auxiliary model and compute the ALE curves
-    thisModel.AuxModel = trainAuxModel( thisModel.AuxModelType, dlZ, dlY );
+    dlZAux = dlZ( 1:thisModel.ZDimAux, : );
+    thisModel.AuxModel = trainAuxModel( thisModel.AuxModelType, dlZAux, dlY );
     [auxALE, Q] = thisModel.calcALE( dlZ, ...
                                   modelFcn = @predictAuxModel, ...
                                   maxObs = 500 );

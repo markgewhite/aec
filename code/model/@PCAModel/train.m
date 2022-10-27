@@ -25,19 +25,20 @@ function self = train( self, thisData )
     Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
 
     % standardize
-    self.AuxModelZMean = mean( Z );
-    self.AuxModelZStd = std( Z );
+    ZAux = Z( :, 1:self.ZDimAux );
+    self.AuxModelZMean = mean( ZAux );
+    self.AuxModelZStd = std( ZAux );
     Z = (Z-self.AuxModelZMean)./self.AuxModelZStd;
 
     % train the auxiliary model
     switch self.AuxModelType
         case 'Logistic'
-            self.AuxModel = fitclinear( Z, thisData.Y, ...
+            self.AuxModel = fitclinear( ZAux, thisData.Y, ...
                                         Learner = "logistic");
         case 'Fisher'
-            self.AuxModel = fitcdiscr( Z, thisData.Y );
+            self.AuxModel = fitcdiscr( ZAux, thisData.Y );
         case 'SVM'
-            self.AuxModel = fitcecoc( Z, thisData.Y );
+            self.AuxModel = fitcecoc( ZAux, thisData.Y );
     end
 
     % compute the mean curve directly

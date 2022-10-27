@@ -5,6 +5,7 @@ classdef RepresentationModel
         XInputDim       % X dimension (number of points) for input
         XTargetDim      % X dimension for output
         ZDim            % Z dimension (number of features)
+        ZDimAux         % Z dimension for the auxiliary model
         CDim            % C dimension (number of classes)
         XChannels       % number of channels in X
         TSpan           % time-spans used in fitting
@@ -48,6 +49,8 @@ classdef RepresentationModel
                 thisDataset             ModelDataset
                 args.ZDim               double ...
                     {mustBeInteger, mustBePositive}
+                args.ZDimAux            double ...
+                    {mustBeInteger, mustBePositive} = 0
                 args.AuxModelType       string ...
                         {mustBeMember( args.AuxModelType, ...
                         {'Logistic', 'Fisher', 'SVM'} )} = 'Logistic'
@@ -79,6 +82,18 @@ classdef RepresentationModel
             self.Scale = scalingFactor( thisDataset.XTarget );
 
             self.ZDim = args.ZDim;
+
+            if args.ZDimAux==0
+                self.ZDimAux = self.ZDim;
+            else
+                if args.ZDimAux <= self.ZDim
+                    self.ZDimAux = args.ZDimAux;
+                else
+                    eid = 'RepModel:ZDimAuxOutsideRange';
+                    msg = 'Z dimension for the auxiliary model is outside correct range.';
+                throwAsCaller( MException(eid,msg) );
+                end
+            end
 
             if self.CDim < 3
                 self.AuxModelType = args.AuxModelType;

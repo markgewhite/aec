@@ -2,7 +2,7 @@ classdef ClassifierLoss < LossFunction
     % Subclass for classifier loss using an auxiliary network
 
     properties
-        ZDim                % latent codes dimension size
+        ZDimAux             % latent codes dimension size
         CDim                % number of possible classes
         NumHidden           % number of hidden layers
         NumFC               % number of fully connected nodes at widest
@@ -76,7 +76,7 @@ classdef ClassifierLoss < LossFunction
                 thisModel       AEModel
             end
 
-            self.ZDim = thisModel.ZDim;
+            self.ZDimAux = thisModel.ZDimAux;
             self.CDim = thisModel.CDim;
             self.CLabels = categorical( 1:self.CDim );
 
@@ -96,7 +96,7 @@ classdef ClassifierLoss < LossFunction
             end 
 
             % create the input layer
-            layers = featureInputLayer( self.ZDim, 'Name', 'in' );
+            layers = featureInputLayer( self.ZDimAux, 'Name', 'in' );
             
             % create the hidden layers
             for i = 1:self.NumHidden
@@ -130,11 +130,13 @@ classdef ClassifierLoss < LossFunction
                 dlC      dlarray  % actual distribution
             end
 
+            dlZAux = dlZGen( 1:self.ZDimAux, : );
+
             if self.HasNetwork                    
-                [ loss, state ] = self.networkLoss( net, dlZGen, dlC );
+                [ loss, state ] = self.networkLoss( net, dlZAux, dlC );
             
             else
-                loss = self.nonNetworkLoss( self.ModelType, dlZGen, dlC );
+                loss = self.nonNetworkLoss( self.ModelType, dlZAux, dlC );
                 state = [];
 
             end

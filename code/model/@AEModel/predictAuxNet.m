@@ -16,6 +16,8 @@ function [ dlYHat, dlYHatScore ] = predictAuxNet( self, Z, args )
         dlZ = dlarray( Z, 'CB' );
     end
 
+    dlZ = dlZ( 1:self.ZDimAux, : );
+
     auxNet = (self.LossFcnTbl.Types == 'Auxiliary');
     if ~any( auxNet )
         eid = 'aeModel:NoAuxiliaryFunction';

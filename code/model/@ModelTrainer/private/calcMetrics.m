@@ -7,10 +7,11 @@ function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
 
     % generate full-set encoding
     dlZ = thisModel.encode( dlX, convert = false );
+    dlZAux = dlZ( 1:thisModel.ZDimAux, : );
 
     % record latent codes correlation
     [ metric.ZCorrelation, metric.ZCovariance ] = ...
-                    latentCodeCorrelation( dlZ, summary = true );
+                    latentCodeCorrelation( dlZAux, summary = true );
 
     % generate validation components
     XC = thisModel.calcLatentComponents( dlZ );

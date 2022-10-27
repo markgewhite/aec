@@ -12,6 +12,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     % generate latent encoding using the trained model
     pred.Z = thisModel.encode( thisDataset );
+    pred.ZAux = pred.Z( :, 1:thisModel.ZDimAux );
 
     % reconstruct the curves
     [ pred.XHat, pred.XHatSmoothed, pred.XHatRegular ] = ...
@@ -81,7 +82,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
         latentComponentCorrelation( thisModel.LatentComponents );
 
     % compute the auxiliary loss using the model
-    ZLong = reshape( pred.Z, size( pred.Z, 1 ), [] );
+    ZLong = reshape( pred.ZAux, size( pred.ZAux, 1 ), [] );
     ZLong = (ZLong-thisModel.AuxModelZMean)./thisModel.AuxModelZStd;
 
     pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
