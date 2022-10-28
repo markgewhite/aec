@@ -43,7 +43,7 @@ function setup = initSetup
     
     % training
     setup.model.args.trainer.updateFreq = 25;
-    setup.model.args.trainer.numEpochs = 200;
+    setup.model.args.trainer.numEpochs = 500;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.batchSize = 150;
     setup.model.args.trainer.holdout = 0;
@@ -52,10 +52,14 @@ function setup = initSetup
     setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
     setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-    setup.model.args.lossFcns.adv.class = @AdversarialLoss;
-    setup.model.args.lossFcns.adv.name = 'Discriminator';
-    setup.model.args.lossFcns.adv.args.distribution = 'Cauchy';
-    
+    %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
+    %setup.model.args.lossFcns.adv.name = 'Discriminator';
+    %setup.model.args.lossFcns.adv.args.distribution = 'Cauchy';
+
+    setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
+    setup.model.args.lossFcns.kl.name = 'KLDivergence';
+    setup.model.args.lossFcns.kl.args.beta = 0.1;
+
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';
 
