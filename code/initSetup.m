@@ -52,8 +52,9 @@ function setup = initSetup
     setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
     setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-    %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
-    %setup.model.args.lossFcns.adv.name = 'Discriminator';
+    setup.model.args.lossFcns.adv.class = @AdversarialLoss;
+    setup.model.args.lossFcns.adv.name = 'Discriminator';
+    setup.model.args.lossFcns.adv.args.distribution = 'Cauchy';
     
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';

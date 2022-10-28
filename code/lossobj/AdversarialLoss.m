@@ -23,11 +23,12 @@ classdef AdversarialLoss < LossFunction
                     {mustBeMember( args.distribution, ...
                                     {'Gaussian', ...
                                      'DoubleGaussian', ...
+                                     'Cauchy', ...
                                      'Categorical'} )} = 'Gaussian'
                 args.numHidden  double ...
-                            {mustBeInteger, mustBePositive} = 3
+                            {mustBeInteger, mustBePositive} = 2
                 args.numFC      double ...
-                            {mustBeInteger, mustBePositive} = 256
+                            {mustBeInteger, mustBePositive} = 64
                 args.fcFactor   double ...
                             {mustBeInteger, mustBePositive} = 2
                 args.scale      double ...
@@ -96,7 +97,7 @@ classdef AdversarialLoss < LossFunction
             % create final layers
             layers = [ layers; ...    
                             fullyConnectedLayer( 1, 'Name', 'fcout' )
-                            softmaxLayer( 'Name', 'out' )
+                            sigmoidLayer( 'Name', 'out' )
                             ];
             
             lgraph = layerGraph( layers );
@@ -125,12 +126,16 @@ classdef AdversarialLoss < LossFunction
             switch self.Distribution
                 case 'Gaussian'
                     dlZReal = dlarray( randn( ZSize, batchSize ), 'CB' );
+
                 case 'DoubleGaussian'
                     dlZReal = dlarray( randn( ZSize, batchSize ), 'CB' );
                     dlZReal(:,1:fix(batchSize/2)) = ...
                                     dlZReal(:,1:fix(batchSize/2)) - 2;
                     dlZReal(:,fix(batchSize/2)+1:end) = ...
                                 dlZReal(:,fix(batchSize/2)+1:end) + 2;
+
+                case 'Cauchy'
+                    dlZReal = dlarray( trnd( 1, ZSize, batchSize ), 'CB' );
 
                 case 'Categorical'
                     dlZReal = dlarray( randi( ZSize, batchSize ), 'CB' );
