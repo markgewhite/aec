@@ -56,12 +56,17 @@ function setup = initSetup
     %setup.model.args.lossFcns.adv.name = 'Discriminator';
     %setup.model.args.lossFcns.adv.args.distribution = 'Cauchy';
 
-    setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
-    setup.model.args.lossFcns.kl.name = 'KLDivergence';
-    setup.model.args.lossFcns.kl.args.beta = 0.1;
+    %setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
+    %setup.model.args.lossFcns.kl.name = 'KLDivergence';
+    %setup.model.args.lossFcns.kl.args.beta = 0.1;
 
+    setup.model.args.lossFcns.fid.class = @FidelityLoss;
+    setup.model.args.lossFcns.fid.name = 'Fidelity';
+    setup.model.args.lossFcns.fid.args.useLoss = true;
+            
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';
+    setup.model.args.lossFcns.cls.args.useLoss = true;
 
     %setup.model.args.lossFcns.xcls.class = @InputClassifierLoss;
     %setup.model.args.lossFcns.xcls.name = 'XClassifier';

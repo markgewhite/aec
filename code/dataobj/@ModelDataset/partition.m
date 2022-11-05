@@ -23,6 +23,7 @@ function thisSubset = partition( self, idx )
     thisSubset.Padding = self.Padding;
     thisSubset.FDA = self.FDA;
     thisSubset.ResampleRate = self.ResampleRate;
+    thisSubset.Perplexity = self.Perplexity;
 
     thisSubset.XInputDim = self.XInputDim;
     thisSubset.XTargetDim = self.XTargetDim;

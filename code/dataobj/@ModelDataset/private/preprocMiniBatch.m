@@ -1,5 +1,5 @@
-function [ X, XN, Y ] = preprocMiniBatch( XCell, XNCell, YCell, ...
-                                          padValue, padLoc )
+function [ X, XN, P, Y ] = preprocMiniBatch( XCell, XNCell, YCell, ...
+                                          padValue, padLoc, perplexity )
     % Preprocess a sequence batch for training
 
     X = padData( XCell, 0, padValue, Longest = true, Location = padLoc  );
@@ -10,6 +10,8 @@ function [ X, XN, Y ] = preprocMiniBatch( XCell, XNCell, YCell, ...
         XN = [];
     end
     
+    P = calcXDistribution( X, perplexity );
+
     if ~isempty( YCell )
         Y = cat( 2, YCell{:} );
     else

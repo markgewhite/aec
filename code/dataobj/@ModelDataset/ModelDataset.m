@@ -33,6 +33,7 @@ classdef ModelDataset
         AdaptiveLowerBound  % lower limit on point density
         AdaptiveUpperBound  % upper limit on point density
         ResampleRate        % downsampling rate
+        Perplexity          % for density estimation in X
 
         Info            % dataset information (used for plotting)
     end
@@ -80,6 +81,8 @@ classdef ModelDataset
                 args.adaptiveUpperBound     double = 5
                 args.resampleRate           double ...
                     {mustBeNumeric} = 1
+                args.perplexity             double ...
+                    {mustBeNumeric} = 15
                 args.datasetName            string
                 args.timeLabel              string = "Time"
                 args.channelLabels          string
@@ -111,6 +114,7 @@ classdef ModelDataset
             self.AdaptiveLowerBound = args.adaptiveLowerBound;
             self.AdaptiveUpperBound = args.adaptiveUpperBound;
             self.ResampleRate = args.resampleRate;
+            self.Perplexity = args.perplexity;
 
             self.Info.DatasetName = args.datasetName;
             self.Info.ChannelLabels = args.channelLabels;
