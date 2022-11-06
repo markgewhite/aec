@@ -17,11 +17,10 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisModel.MeanCurve = thisTrnData.XInputRegularMean;
 
     % setup the minibatch queues
-    mbqTrn = thisTrnData.getMiniBatchQueue( ...
+    mbqTrn = getMiniBatchQueue( thisTrnData, ...
                                 self.BatchSize, ...
                                 thisModel.XDimLabels, ...
-                                thisModel.XNDimLabels, ...
-                                partialBatch = self.PartialBatch );
+                                thisModel.XNDimLabels );
 
     if self.Holdout > 0
         % get the validation data (one-time only)
@@ -33,19 +32,18 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput( thisModel.XDimLabels );
 
     % initialize counters
-    nIter = iterationsPerEpoch( mbqTrn );           
     j = 0;
     v = 0;
     vp = self.ValPatience;
     
     % initialize logs
-    nTrnLogs = nIter*self.NumEpochs;
+    nTrnLogs = mbqTrn.NumBatches*self.NumEpochs;
     nValLogs = max( ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
                                 /self.ValFreq ), 1 );
     self.LossTrn = zeros( nTrnLogs, thisModel.NumLoss );
     self.LossVal = zeros( nValLogs, 1 );
 
-    nMetricLogs = max( nTrnLogs/(nIter*self.UpdateFreq), 1 );
+    nMetricLogs = max( nTrnLogs/(mbqTrn.NumBatches*self.UpdateFreq), 1 );
     self.Metrics = table( ...
         zeros( nMetricLogs, 1 ), ...
         zeros( nMetricLogs, 1 ), ...
@@ -91,7 +89,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
         end
     
         % loop over mini-batches
-        for i = 1:nIter
+        for i = 1:mbqTrn.NumBatches
             
             j = j + 1;
             
@@ -168,7 +166,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
             reportProgress( thisModel, ...
                             dlZTrnAll, ...
                             thisTrnData.Y, ...
-                            self.LossTrn( j-nIter+1:j, : ), ...
+                            self.LossTrn( j-mbqTrn.NumBatches+1:j, : ), ...
                             epoch, ...
                             lossVal = lossValArg );
         end
