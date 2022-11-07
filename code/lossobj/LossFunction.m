@@ -11,6 +11,7 @@ classdef LossFunction
         HasState    % flag if network has a state to be carried forward
         DoCalcLoss  % flag whether to compute the specified loss
         UseLoss     % flag whether to include loss in overall calculation
+        YLim        % y-axis limits for plotting the loss function
     end
 
     methods
@@ -39,9 +40,10 @@ classdef LossFunction
                     {mustBeInteger,mustBePositive} = 1
                 args.lossNets    = {'Encoder'}
                 args.hasNetwork  logical = false
-                args.hasState     logical = false
+                args.hasState    logical = false
                 args.doCalcLoss  logical = true
                 args.useLoss     logical = true
+                args.yLim        double = [0, 1.5]
             end
 
             self.Name = name;
@@ -53,6 +55,7 @@ classdef LossFunction
             self.UseLoss = args.useLoss;
             self.HasNetwork = args.hasNetwork;
             self.HasState = args.hasState;
+            self.YLim = args.yLim;
 
         end
 

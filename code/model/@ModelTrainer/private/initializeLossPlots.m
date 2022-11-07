@@ -24,15 +24,7 @@ function [fig, lossLines] = initializeLossPlots( lossFcnTbl )
         
         title( axis, thisName );
         xlabel( axis, 'Iteration' );
-
-        switch lossFcnTbl.Types(i)
-            case 'Reconstruction'
-                ylim( axis, [0 0.25] );
-            case 'Regularization'
-                ylim( axis, [0 1.5] );
-            case {'Auxiliary', 'Comparator'}
-                ylim( axis, [0 1.5] );
-        end
+        ylim( axis, lossFcnTbl.YLim{i} );
 
     end
 

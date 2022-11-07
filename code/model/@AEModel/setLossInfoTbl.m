@@ -10,6 +10,7 @@ function self = setLossInfoTbl( self )
     HasNetwork = false( nFcns, 1 );
     DoCalcLoss = false( nFcns, 1 );
     UseLoss = false( nFcns, 1 );
+    YLim = cell( nFcns, 1 );
 
     for i = 1:nFcns
         
@@ -21,6 +22,7 @@ function self = setLossInfoTbl( self )
         HasNetwork(i) = thisLossFcn.HasNetwork;
         DoCalcLoss(i) = thisLossFcn.DoCalcLoss;
         UseLoss(i) = thisLossFcn.UseLoss;
+        YLim{i} = thisLossFcn.YLim;
 
         nFcnNets = length( thisLossFcn.LossNets );
         for j = 1:nFcnNets
@@ -38,6 +40,6 @@ function self = setLossInfoTbl( self )
     end
 
     self.LossFcnTbl = table( Names, Types, Inputs, NumLosses, ...
-            LossNets, HasNetwork, DoCalcLoss, UseLoss );
+            LossNets, HasNetwork, DoCalcLoss, UseLoss, YLim );
 
 end
