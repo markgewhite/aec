@@ -3,15 +3,17 @@ classdef OrthogonalLoss < LossFunction
     % Code adapted from https://github.com/WangDavey/COAE
 
     properties
-
+        Alpha           % scaling factor for loss
     end
 
     methods
 
-        function self = OrthogonalLoss( name, superArgs )
+        function self = OrthogonalLoss( name, args, superArgs )
             % Initialize the loss function
             arguments
-                name                 char {mustBeText}
+                name                char {mustBeText}
+                args.Alpha          double ...
+                    {mustBeGreaterThan(args.Alpha,0)} = 0.001
                 superArgs.?LossFunction
             end
 
@@ -19,7 +21,10 @@ classdef OrthogonalLoss < LossFunction
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
                                  input = 'Z', ...
-                                 lossNets = {'Encoder'} );
+                                 lossNets = {'Encoder'}, ...
+                                 yLim = [0, 0.25]);
+
+            self.Alpha = args.Alpha;
 
         end
 
@@ -32,12 +37,11 @@ classdef OrthogonalLoss < LossFunction
             end
             
             % get the variance and covariance
-            [ dlVar, dlCoVar ] = dlVarianceCovariance( dlZ );
+            [ ~, dlCoVar ] = dlVarianceCovariance( dlZ );
 
             % penalise high covariance
-            loss = mean( dlCoVar.^2, 'all' );
-            % and variation in variance between components
-            % loss = loss + var( dlVar );
+            loss = self.Alpha*mean( dlCoVar.^2, 'all' );
+
 
         end
 

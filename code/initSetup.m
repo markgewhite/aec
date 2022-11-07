@@ -63,6 +63,11 @@ function setup = initSetup
     setup.model.args.lossFcns.fid.class = @FidelityLoss;
     setup.model.args.lossFcns.fid.name = 'Fidelity';
     setup.model.args.lossFcns.fid.args.useLoss = true;
+
+    setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+    setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+    setup.model.args.lossFcns.zorth.args.alpha = 0.001;
+    setup.model.args.lossFcns.zorth.args.useLoss = true;
             
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';
