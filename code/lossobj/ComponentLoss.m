@@ -113,7 +113,7 @@ function loss = innerProduct( dlXC, nChannels, nSamples, nComp )
         for k = 1:nSamples
             for i = 1:nComp
                 for j = i+1:nComp
-                    orth(c) = orth(c) + mean(dlXC(:,c,k,i).*dlXC(:,c,k,j)).^2;
+                    orth(c) = orth(c) + mean(dlXC(:,c,k,i).*dlXC(:,c,k,j));
                 end
             end
         end
@@ -135,13 +135,13 @@ function loss = orthogonality( dlXC, nChannels, nSamples )
             dlXCsample = squeeze( dlXC(:,c,k,:) );
             dlXCsample = permute( dlXCsample, [2 1] );
             [dlVar, dlCov] = dlVarianceCovariance( dlXCsample );
-            loss = mean( dlCov.^2, 'all' );
-            loss = loss + var(dlVar);
+            loss = mean( dlCov, 'all' );
+            %loss = loss + var(dlVar);
             orth(c) = orth(c) + loss;
         end
     end
 
-    loss = mean(orth)/nSamples;
+    loss = 0.001*mean(orth)/nSamples;
 
 end
 
