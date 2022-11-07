@@ -39,7 +39,8 @@ classdef ModelDataset
     end
 
     properties (Dependent = true)
-        XInput          % processed input data (variable length)       
+        XInput          % processed input data (variable length)
+        PInput          % distribution of XInput
         XTarget         % target output
         XTargetMean     % target output mean
         XInputRegular   % processed input with regularly spaced time span
@@ -279,6 +280,17 @@ classdef ModelDataset
             else
                 XMean = mean( self.XTarget, 3 );
             end
+
+        end
+
+
+        function PInput = get.PInput( self )
+            % Calculate distribution of XInput
+            arguments
+                self            ModelDataset            
+            end
+
+            PInput = calcXDistribution( self.XTarget, self.Perplexity );
 
         end
 
