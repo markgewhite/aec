@@ -19,7 +19,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
             thisModel.reconstruct( pred.Z, convert = true );
        
     % compute reconstruction loss
-    eval.ReconLoss = reconLoss( thisDataset.XTarget, pred.XHat, thisModel.Scale );
+    eval.ReconLoss = reconLoss( pred.XTarget, pred.XHat, thisModel.Scale );
     eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
                                         thisModel.Scale );
 
@@ -28,7 +28,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
                                        thisModel.Scale );
 
     % compute the bias and variance
-    eval.ReconBias = reconBias( thisDataset.XTarget, pred.XHat, thisModel.Scale );
+    eval.ReconBias = reconBias( pred.XTarget, pred.XHat, thisModel.Scale );
     eval.ReconVar = eval.ReconLoss - eval.ReconBias^2;              
     
     % compute the mean squared error as a function of time
