@@ -42,8 +42,8 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.updateFreq = 200;
-    setup.model.args.trainer.numEpochs = 100;
+    setup.model.args.trainer.updateFreq = 5;
+    setup.model.args.trainer.numEpochs = 10;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.batchSize = 150;
     setup.model.args.trainer.holdout = 0;
@@ -68,9 +68,9 @@ function setup = initSetup
     setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
     setup.model.args.lossFcns.zorth.args.useLoss = true;
 
-    setup.model.args.lossFcns.xorth.class = @ComponentLoss;
-    setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
-    setup.model.args.lossFcns.xorth.args.useLoss = true;
+    %setup.model.args.lossFcns.xorth.class = @ComponentLoss;
+    %setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
+    %setup.model.args.lossFcns.xorth.args.useLoss = true;
             
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';

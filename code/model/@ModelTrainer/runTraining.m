@@ -52,6 +52,9 @@ function thisModel = runTraining( self, thisModel, thisDataset )
         VariableNames = {'ZCorrelation', 'XCCorrelation', ...
                          'ZCovariance', 'XCCovariance'} );
 
+    thisModel.Timing.Training.ValCheckTime = 0;
+    thisModel.Timing.Training.ReportingTime = 0;
+
     for epoch = 1:self.NumEpochs
         
         self.CurrentEpoch = epoch;
@@ -134,9 +137,13 @@ function thisModel = runTraining( self, thisModel, thisDataset )
             v = v + 1;
            
             % compute relevant loss
+            tic;
             self.LossVal(v) = validationCheck( thisModel, ...
                                             self.ValType, ...
                                             dlXVal, dlXNVal, dlYVal );
+            thisModel.Timing.Training.ValCheckTime = ...
+                            thisModel.Timing.Training.ValCheckTime + toc;
+
             if v > 2*vp-1
                 if min(self.LossVal(1:v)) ...
                         < min(self.LossVal(v-vp+1:v))
@@ -150,6 +157,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
         % update progress on screen
         if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots
             
+            tic
             if ~self.PreTraining && self.Holdout > 0 && v > 0
                 % include validation
                 lossValArg = self.LossVal( v );
@@ -169,6 +177,9 @@ function thisModel = runTraining( self, thisModel, thisDataset )
                             self.LossTrn( j-mbqTrn.NumBatches+1:j, : ), ...
                             epoch, ...
                             lossVal = lossValArg );
+            thisModel.Timing.Training.ReportingTime = ...
+                thisModel.Timing.Training.ReportingTime + toc;
+
         end
     
         % update the number of dimensions, if required
@@ -186,6 +197,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
    
 
     % train the auxiliary model
+    tic;
     dlZTrnAll = thisModel.encode( dlXTrnAll, convert = false );
     dlZTrnAllAux = dlZTrnAll( 1:thisModel.ZDimAux, : );
     [thisModel.AuxModel, ...
@@ -194,6 +206,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
                                 thisModel.AuxModelType, ...
                                 dlZTrnAllAux, ...
                                 dlYTrnAll );
+    thisModel.Timing.Training.AuxModelTime = toc;
 
     % set the oversmoothing level
     XHatTrnAll = thisModel.reconstruct( dlZTrnAll, convert = true );

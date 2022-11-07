@@ -11,5 +11,7 @@ function self = evaluateModels( self, set )
     self.CVLoss.(set).Aggregated = calcCVLoss( self.Models, set );
 
     self.CVCorrelations.(set) = calcCVParameters( self.Models, 'Correlations', set );
+
+    self.CVTiming.(set) = calcCVParameters( self.Models, 'Timing', set );
    
 end

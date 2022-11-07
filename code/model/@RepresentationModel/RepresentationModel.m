@@ -31,6 +31,7 @@ classdef RepresentationModel
         Predictions     % training and validation predictions
         Loss            % training and validation losses
         Correlations    % training and validation correlations
+        Timing          % training and evaluation execution times
 
         RandomSeed      % for reproducibility
         RandomSeedResets % whether to reset the seed for each sub-model

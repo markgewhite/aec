@@ -18,6 +18,7 @@ classdef ModelEvaluation
         CVAuxMetrics        % structure of auxiliary model/network metrics
         CVLoss              % structure of cross-validated losses
         CVCorrelations      % structure of cross-validated losses
+        CVTiming            % structure of cross-validated execution times
         ComponentOrder      % optimal arrangement of model components
         ComponentDiffRMSE   % overall difference between sub-models
         RandomSeed          % for reproducibility

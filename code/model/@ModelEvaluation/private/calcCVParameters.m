@@ -3,7 +3,7 @@ function aggrP = calcCVParameters( models, group, set )
     arguments
         models          cell
         group           char ...
-            {mustBeMember( group, {'Loss', 'Correlations'} )}
+            {mustBeMember( group, {'Loss', 'Correlations', 'Timing'} )}
         set             char ...
             {mustBeMember( set, {'Training', 'Validation'} )}
     end
