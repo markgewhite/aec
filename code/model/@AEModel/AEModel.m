@@ -88,14 +88,30 @@ classdef AEModel < RepresentationModel
 
             % initialize the trainer
             try
+                if strcmpi( fields(args.Trainer), 'useparallelprocessing' )
+                    useParallelProcessing = true;
+                else
+                    useParallelProcessing = false;
+                end
+            catch
+                useParallelProcessing = false;
+            end
+                    
+            try
                 argsCell = namedargs2cell( args.Trainer );
             catch
                 argsCell = {};
             end
-            self.Trainer = ModelTrainer( self.LossFcnTbl, ...
-                                         argsCell{:}, ...
-                                         showPlots = self.ShowPlots );
-        
+            if useParallelProcessing
+                self.Trainer = ParallelModelTrainer( self.LossFcnTbl, ...
+                                             argsCell{:}, ...
+                                             showPlots = self.ShowPlots );
+            else
+                self.Trainer = ModelTrainer( self.LossFcnTbl, ...
+                                             argsCell{:}, ...
+                                             showPlots = self.ShowPlots );
+            end
+
             % initialize the optimizer
             try
                 argsCell = namedargs2cell( args.Optimizer );
