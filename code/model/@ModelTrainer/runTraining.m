@@ -20,7 +20,8 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     mbqTrn = getMiniBatchQueue( thisTrnData, ...
                                 self.BatchSize, ...
                                 thisModel.XDimLabels, ...
-                                thisModel.XNDimLabels );
+                                thisModel.XNDimLabels, ...
+                                partialBatch = self.PartialBatch );
 
     if self.Holdout > 0
         % get the validation data (one-time only)
@@ -32,18 +33,19 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput( thisModel.XDimLabels );
 
     % initialize counters
+    nIter = iterationsPerEpoch( mbqTrn );
     j = 0;
     v = 0;
     vp = self.ValPatience;
     
     % initialize logs
-    nTrnLogs = mbqTrn.NumBatches*self.NumEpochs;
+    nTrnLogs = nIter*self.NumEpochs;
     nValLogs = max( ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
                                 /self.ValFreq ), 1 );
     self.LossTrn = zeros( nTrnLogs, thisModel.NumLoss );
     self.LossVal = zeros( nValLogs, 1 );
 
-    nMetricLogs = max( nTrnLogs/(mbqTrn.NumBatches*self.UpdateFreq), 1 );
+    nMetricLogs = max( nTrnLogs/(nIter*self.UpdateFreq), 1 );
     self.Metrics = table( ...
         zeros( nMetricLogs, 1 ), ...
         zeros( nMetricLogs, 1 ), ...
@@ -92,7 +94,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
         end
     
         % loop over mini-batches
-        for i = 1:mbqTrn.NumBatches
+        for i = 1:nIter
             
             j = j + 1;
             
@@ -174,7 +176,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
             reportProgress( thisModel, ...
                             dlZTrnAll, ...
                             thisTrnData.Y, ...
-                            self.LossTrn( j-mbqTrn.NumBatches+1:j, : ), ...
+                            self.LossTrn( j-nIter+1:j, : ), ...
                             epoch, ...
                             lossVal = lossValArg );
             thisModel.Timing.Training.ReportingTime = ...
