@@ -57,6 +57,17 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisModel.Timing.Training.ValCheckTime = 0;
     thisModel.Timing.Training.ReportingTime = 0;
 
+    % setup monitoring functions
+    validationFcn = @(model) validationCheck( model, ...
+                                              self.ValType, ...
+                                              dlXVal, dlXNVal, dlYVal );
+    metricsFcn = @(model) calcMetrics( model, dlXTrnAll );
+    reportFcn = @(model, z, l1, l2, e) ...
+            reportProgress( model, z, thisTrnData.Y, l1, l2, e );
+
+    % execute the custom training loop
+    %self = self.runTrainingLoop;
+
     for epoch = 1:self.NumEpochs
         
         self.CurrentEpoch = epoch;
@@ -140,9 +151,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
            
             % compute relevant loss
             tic;
-            self.LossVal(v) = validationCheck( thisModel, ...
-                                            self.ValType, ...
-                                            dlXVal, dlXNVal, dlYVal );
+            self.LossVal(v) = validationFcn( thisModel );
             thisModel.Timing.Training.ValCheckTime = ...
                             thisModel.Timing.Training.ValCheckTime + toc;
 
@@ -162,23 +171,22 @@ function thisModel = runTraining( self, thisModel, thisDataset )
             tic
             if ~self.PreTraining && self.Holdout > 0 && v > 0
                 % include validation
-                lossValArg = self.LossVal( v );
+                lossVal = self.LossVal( v );
             else
                 % exclude validation
-                lossValArg = [];
+                lossVal = [];
             end
 
             % record relevant metrics
             [ self.Metrics( epoch/self.UpdateFreq, : ), ...
-                dlZTrnAll ] = calcMetrics( thisModel, dlXTrnAll );
+                dlZTrnAll ] = metricsFcn( thisModel );
 
             % report 
-            reportProgress( thisModel, ...
-                            dlZTrnAll, ...
-                            thisTrnData.Y, ...
-                            self.LossTrn( j-nIter+1:j, : ), ...
-                            epoch, ...
-                            lossVal = lossValArg );
+            reportFcn( thisModel, ...
+                       dlZTrnAll, ...
+                       self.LossTrn( j-nIter+1:j, : ), ...
+                       lossVal, ...
+                       epoch );
             thisModel.Timing.Training.ReportingTime = ...
                 thisModel.Timing.Training.ReportingTime + toc;
 

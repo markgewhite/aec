@@ -46,7 +46,7 @@ function setup = initSetup
     setup.model.args.trainer.numEpochs = 10;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.batchSize = 150;
-    setup.model.args.trainer.holdout = 0;
+    setup.model.args.trainer.holdout = 0.2;
 
     % loss functions
     setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
