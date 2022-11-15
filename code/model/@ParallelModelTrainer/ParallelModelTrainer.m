@@ -48,7 +48,7 @@ classdef ParallelModelTrainer < ModelTrainer
                             ./repmat( self.NumWorkers, 1, self.NumWorkers));
             remainder = self.BatchSize - sum( self.WorkerBatchSize );
             self.WorkerBatchSize = self.WorkerBatchSize ...
-                + [ones(1, remainder) zeros(1, self.numWorkers-remainder)];
+                + [ones(1, remainder) zeros(1, self.NumWorkers-remainder)];
 
         end
 
@@ -60,6 +60,8 @@ classdef ParallelModelTrainer < ModelTrainer
                                      metricsFcn, ...
                                      reportFcn, ...
                                      isFixedLength )
+
+        %i = iterationsPerEpoch( mbq )
 
     end
 

@@ -13,8 +13,6 @@ function self = train( self, thisData )
     self = self.initLossFcnNetworks;
 
     % perform training using the trainer
-    if self.UseParallelProcessing
-        self = self.Trainer.runTraining( self, thisData );
     self = self.Trainer.runTraining( self, thisData );
     
     % set other elements

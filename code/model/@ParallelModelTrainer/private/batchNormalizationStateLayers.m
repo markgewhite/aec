@@ -2,7 +2,7 @@ function hasStateLayer = batchNormalizationStateLayers( nets )
     % Identify which network layers are batch normalization states
 
     netNames = fields( nets );
-    for i = 1:len(netNames)
+    for i = 1:length(netNames)
         thisNetName = netNames{i};
 
         % identify batch normalization layers
@@ -13,11 +13,11 @@ function hasStateLayer = batchNormalizationStateLayers( nets )
         layerNames = string({nets.(thisNetName).Layers(bnLayers).Name});
 
         hasStateLayer.(thisNetName).Mean = ...
-                    ismember( nets.State.Layer, layerNames ) ...
-                            & nets.State.Parameter == "TrainedMean";
+                    ismember( nets.(thisNetName).State.Layer, layerNames ) ...
+                            & nets.(thisNetName).State.Parameter == "TrainedMean";
         hasStateLayer.(thisNetName).Variance = ...
-                    ismember( nets.State.Layer, layerNames ) ...
-                            & nets.State.Parameter == "TrainedVariance";
+                    ismember( nets.(thisNetName).State.Layer, layerNames ) ...
+                            & nets.(thisNetName).State.Parameter == "TrainedVariance";
 
     end               
 

@@ -42,6 +42,7 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
+    setup.model.args.trainer.useParallelProcessing = true;
     setup.model.args.trainer.updateFreq = 5;
     setup.model.args.trainer.numEpochs = 10;
     setup.model.args.trainer.numEpochsPreTrn = 0;

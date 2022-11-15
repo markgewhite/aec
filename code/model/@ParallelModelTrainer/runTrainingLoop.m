@@ -18,7 +18,7 @@ function thisModel = runTrainingLoop( self, ...
     end
 
     % initialize counters
-    nIter = iterationsPerEpoch( mbqTrn );
+    nIter = 2; % iterationsPerEpoch( mbqTrn );
     i = 0;
     v = 0;
     vp = self.ValPatience;
@@ -70,14 +70,15 @@ function thisModel = runTrainingLoop( self, ...
     stopRequest = false;
     
     % begin the parallel training - each worker runs this code
-    spmd
-    
-        % partition datastore to divide it up among the workers
-        wkDSTrn = partition( mbqTrn, numWorkers, spmdIndex );
+    %spmd
+    spmdIndex = 1;
+
+        % partition mini-batch queue to divide it up among the workers
+        wkDSTrn = partition( mbqTrn, self.NumWorkers, spmdIndex );
     
         % create minibatchqueue using partitioned datastore on each worker
         wkMbqTrn = minibatchqueue( wkDSTrn, 4, ...
-                      MiniBatchSize = wkMiniBatchSize(spmdIndex), ...
+                      MiniBatchSize = self.WorkerBatchSize(spmdIndex), ...
                       PartialMiniBatch = mbqTrn.PartialMiniBatch, ...
                       MiniBatchFcn = mbqTrn.MiniBatchFcn, ...
                       MiniBatchFormat = mbqTrn.MiniBatchFormat );
@@ -238,6 +239,6 @@ function thisModel = runTrainingLoop( self, ...
 
         end
 
-    end
+    %end
 
 end

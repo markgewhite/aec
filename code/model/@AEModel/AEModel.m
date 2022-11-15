@@ -86,22 +86,25 @@ classdef AEModel < RepresentationModel
             % initialize the loss functions
             self = self.initLossFcns( args.LossFcns );
 
-            % initialize the trainer
-            try
-                if strcmpi( fields(args.Trainer), 'useparallelprocessing' )
-                    useParallelProcessing = true;
-                else
-                    useParallelProcessing = false;
-                end
-            catch
+            % check if trainer arguments include parallel processing
+            flds = fields(args.Trainer);
+            fldIdx = find(strcmpi(flds, 'useparallelprocessing'));
+            if ~isempty(fldIdx)
+                % set a flag to construct the appropriate trainer object
+                useParallelProcessing = args.Trainer.(flds{fldIdx});
+                % remove this argument so it is not passed to the constructor
+                args.Trainer = rmfield( args.Trainer, flds{fldIdx} );
+            else
                 useParallelProcessing = false;
             end
-                    
+
+            % initialize the trainer
             try
                 argsCell = namedargs2cell( args.Trainer );
             catch
                 argsCell = {};
             end
+
             if useParallelProcessing
                 self.Trainer = ParallelModelTrainer( self.LossFcnTbl, ...
                                              argsCell{:}, ...
