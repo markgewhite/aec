@@ -297,6 +297,8 @@ classdef ModelDataset
 
         % class methods
 
+        dsFull = getDatastore( self )
+
         selection = getCVPartition( self, args )
 
         [ X, Y ] = getDLInput( self, labels, arg )

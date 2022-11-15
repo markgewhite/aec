@@ -1,11 +1,20 @@
-function dsFull = createDatastore( X, XN, P, Y, doSort )
-   
-    if doSort
+function dsFull = getDatastore( self )
+    % Create a super datastore of individual datastores for each variable
+    arguments
+        self            ModelDataset
+    end
+
+    X = self.XInput;
+    XN = self.XTarget;
+    P = self.PInput;
+    Y = self.Y;
+
+    if ~self.HasNormalizedInput
         % sort them in ascending order of length
-        XLen = cellfun( @length, X );
-        [ ~, orderIdx ] = sort( XLen, 'descend' );
+        [ ~, orderIdx ] = sort( self.NumObs, 'descend' );
         X = X( orderIdx );
         XN = XN( orderIdx );
+        P = P( orderIdx );
         Y = Y( orderIdx );
     end
 
