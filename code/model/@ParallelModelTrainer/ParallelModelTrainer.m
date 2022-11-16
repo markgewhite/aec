@@ -36,8 +36,11 @@ classdef ParallelModelTrainer < ModelTrainer
             end
             self.NumWorkers = self.Pool.NumWorkers;
 
-            % scale-up batch proportional to the number of workers
-            self.BatchSize = self.BatchSize.*self.NumWorkers;
+            % set the minibatch sizes
+            if self.ExecutionEnvironment == "gpu"
+                % scale-up batch proportional to the number of workers
+                self.BatchSize = self.BatchSize.*self.NumWorkers;
+            end
 
             % determine batch size per worker
             self.WorkerBatchSize = floor(self.BatchSize ...
