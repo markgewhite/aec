@@ -44,10 +44,10 @@ function setup = initSetup
     % training
     setup.model.args.trainer.useParallelProcessing = true;
     setup.model.args.trainer.valFreq = 1;
-    setup.model.args.trainer.updateFreq = 10;
+    setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.numEpochs = 100;
     setup.model.args.trainer.numEpochsPreTrn = 0;
-    setup.model.args.trainer.batchSize = 150;
+    setup.model.args.trainer.batchSize = 500;
     setup.model.args.trainer.holdout = 0;
 
     % loss functions
@@ -83,10 +83,10 @@ function setup = initSetup
 
     % evaluations
     setup.eval.args.verbose = true;
-    setup.eval.args.CVType = 'Holdout';
-    setup.eval.args.KFolds = 2;
+    setup.eval.args.CVType = 'KFold';
+    setup.eval.args.KFolds = 4;
     setup.eval.args.KFoldRepeats = 1;
-    setup.eval.args.HasIdenticalPartitions = false;
+    setup.eval.args.HasIdenticalPartitions = true;
 
 
 

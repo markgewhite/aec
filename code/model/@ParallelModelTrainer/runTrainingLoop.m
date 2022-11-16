@@ -44,14 +44,14 @@ function thisModel = runTrainingLoop( self, ...
     afterEach( dataQueueReport, reportFcn );
 
     % initialize logs
-    nIter = 100; % self.iterationsPerEpoch( wkMbqTrn );
+    nIter = numpartitions( dsTrn, self.Pool );
     nTrnLogs = nIter*self.NumEpochs;
-    nValLogs = max( ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
+    nValLogs = max( ceil( (self.NumEpochs-self.NumEpochsPreTrn)*nIter ...
                                 /self.ValFreq ), 1 );
     lossTrn = zeros( nTrnLogs, thisModel.NumLoss );
     lossVal = zeros( nValLogs, 1 );
 
-    nMetricLogs = max( nTrnLogs/(nIter*self.UpdateFreq), 1 );
+    nMetricLogs = max( ceil(nTrnLogs/self.UpdateFreq), 1 );
     metrics = table( ...
         zeros( nMetricLogs, 1 ), ...
         zeros( nMetricLogs, 1 ), ...
@@ -170,71 +170,66 @@ function thisModel = runTrainingLoop( self, ...
                 end               
     
                 % update network parameters
-                nets  = thisModel.Optimizer.updateNets( nets, wkGrads, i );   
-
-            end
-
-            % stop training if the Stop button has been clicked
-            stopRequest = spmdPlus( stopTrainingEventQueue.QueueLength );
-
-            if spmdIndex == validationWorker
- 
-                if ~self.PreTraining ...
-                        && mod( epoch, self.ValFreq )==0 ...
-                        && self.Holdout > 0
-                    
-                    % run a validation check
-                    v = v + 1;
-                    tic;
-                    lossVal(v) = validationFcn( thisModel );
-                    valCheckTime = valCheckTime + toc;
+                nets  = thisModel.Optimizer.updateNets( nets, wkGrads, i );
         
-                    if v > 2*vp-1
-                        if min(lossVal(1:v)) < min(lossVal(v-vp+1:v))
-                            disp(['Stopping criterion met. Epoch = ' num2str(epoch)]);
-                            stopRequest = true;
-                        end
+                if mod( i, self.LRFreq )==0
+                    % update learning rates
+                    optimizer = optimizer.updateLearningRates( preTraining );
+                end
+
+                % stop training if the Stop button has been clicked
+                stopRequest = spmdPlus( stopTrainingEventQueue.QueueLength );
+           
+                if spmdIndex == lossLineWorker
+    
+                    % update progress on screen
+                    if mod( i, self.UpdateFreq )==0 && self.ShowPlots                   
+                        % update loss plots (no other plots to save time)
+                        tic
+                        fcnData = [i, lossTrn(i,:)];
+                        send( dataQueueLoss, gather(fcnData) );
+                        reportingTime = reportingTime + toc;
                     end
     
                 end
-
-            end
-        
-            if spmdIndex == lossLineWorker
-
-                % update progress on screen
-                if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots                   
-                    % update loss plots (no other plots to save time)
-                    tic
-                    fcnData = [i, lossTrn(i,:)];
-                    send( dataQueueLoss, gather(fcnData) );
-                    reportingTime = reportingTime + toc;
-                end
-
-            end
-
-            if spmdIndex == metricsWorker
-                if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots                   
-                    % record relevant metrics
-                    tic;
-                    metrics( epoch/self.UpdateFreq, : ) = metricsFcn( thisModel );
-                    reportingTime = reportingTime + toc;
-                end
-            end
-            
-            % update the number of dimensions, if required
-            %if mod( epoch, self.ActiveZFreq )==0
-            %    thisModel = thisModel.incrementActiveZDim;
-            %end
     
-            if mod( epoch, self.LRFreq )==0
-                % update learning rates
-                optimizer = optimizer.updateLearningRates( preTraining );
-            end
-
+                if spmdIndex == metricsWorker
+                    if mod( i, self.UpdateFreq )==0 && self.ShowPlots                   
+                        % record relevant metrics
+                        tic;
+                        metrics( i/self.UpdateFreq, : ) = metricsFcn( thisModel );
+                        reportingTime = reportingTime + toc;
+                    end
+                end
+                
+                if spmdIndex == validationWorker
+     
+                    if ~self.PreTraining ...
+                            && mod( i, self.ValFreq )==0 ...
+                            && self.Holdout > 0
+                        
+                        % run a validation check
+                        v = v + 1;
+                        tic;
+                        lossVal(v) = validationFcn( thisModel );
+                        valCheckTime = valCheckTime + toc;
+            
+                        if v > 2*vp-1
+                            if min(lossVal(1:v)) < min(lossVal(v-vp+1:v))
+                                disp(['Stopping criterion met. Epoch = ' num2str(epoch)]);
+                                stopRequest = true;
+                            end
+                        end
+        
+                    end
+    
+                end
+    
             end
 
         end
+
+    end
 
     % update the trainer using the first worker's logs
     self.LossTrn = lossTrn{1};

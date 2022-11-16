@@ -41,7 +41,7 @@ function thisModel = runTrainingLoop( self, ...
     self.LossTrn = zeros( nTrnLogs, thisModel.NumLoss );
     self.LossVal = zeros( nValLogs, 1 );
 
-    nMetricLogs = max( nTrnLogs/(nIter*self.UpdateFreq), 1 );
+    nMetricLogs = max( ceil(nTrnLogs/(nIter*self.UpdateFreq)), 1 );
     self.Metrics = table( ...
         zeros( nMetricLogs, 1 ), ...
         zeros( nMetricLogs, 1 ), ...
@@ -60,9 +60,6 @@ function thisModel = runTrainingLoop( self, ...
 
         % Pre-training
         self.PreTraining = (epoch<=self.NumEpochsPreTrn);
-
-        thisModel.LossFcnTbl.DoCalcLoss( thisModel.LossFcnTbl.Types=="Reconstruction" ) ...
-            = ~self.PreTraining;
     
         if isFixedLength && self.HasMiniBatchShuffle
             
@@ -126,68 +123,68 @@ function thisModel = runTrainingLoop( self, ...
                 fcnData = [ j, self.LossTrn(j,:) ];
                 lossLinesFcn( fcnData );
             end
-
-        end
                        
-        if ~self.PreTraining ...
-                && mod( epoch, self.ValFreq )==0 ...
-                && self.Holdout > 0
-            
-            % run a validation check
-            v = v + 1;
-           
-            % compute relevant loss
-            tic;
-            self.LossVal(v) = validationFcn( thisModel );
-            thisModel.Timing.Training.ValCheckTime = ...
-                            thisModel.Timing.Training.ValCheckTime + toc;
-
-            if v > 2*vp-1
-                if min(self.LossVal(1:v)) ...
-                        < min(self.LossVal(v-vp+1:v))
-                    disp(['Stopping criterion met. Epoch = ' num2str(epoch)]);
-                    break
+            if ~self.PreTraining ...
+                    && mod( i, self.ValFreq )==0 ...
+                    && self.Holdout > 0
+                
+                % run a validation check
+                v = v + 1;
+               
+                % compute relevant loss
+                tic;
+                self.LossVal(v) = validationFcn( thisModel );
+                thisModel.Timing.Training.ValCheckTime = ...
+                                thisModel.Timing.Training.ValCheckTime + toc;
+    
+                if v > 2*vp-1
+                    if min(self.LossVal(1:v)) ...
+                            < min(self.LossVal(v-vp+1:v))
+                        disp(['Stopping criterion met. Epoch = ' num2str(epoch)]);
+                        break
+                    end
                 end
+    
+            end
+        
+            % update progress on screen
+            if mod( i, self.UpdateFreq )==0 && self.ShowPlots
+                
+                tic
+                if ~self.PreTraining && self.Holdout > 0 && v > 0
+                    % include validation
+                    lossVal = self.LossVal( v );
+                else
+                    % exclude validation
+                    lossVal = [];
+                end
+    
+                % record relevant metrics
+                [ self.Metrics( epoch/self.UpdateFreq, : ), ...
+                    dlZTrnAll ] = metricsFcn( thisModel );
+    
+                % report 
+                reportFcn( thisModel, ...
+                           dlZTrnAll, ...
+                           self.LossTrn( j-nIter+1:j, : ), ...
+                           lossVal, ...
+                           epoch );
+                thisModel.Timing.Training.ReportingTime = ...
+                    thisModel.Timing.Training.ReportingTime + toc;
+    
+            end
+        
+            % update the number of dimensions, if required
+            if mod( i, self.ActiveZFreq )==0
+                thisModel = thisModel.incrementActiveZDim;
+            end
+    
+            if mod( i, self.LRFreq )==0
+                % update learning rates
+                thisModel.Optimizer = ...
+                    thisModel.Optimizer.updateLearningRates( self.PreTraining );
             end
 
-        end
-    
-        % update progress on screen
-        if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots
-            
-            tic
-            if ~self.PreTraining && self.Holdout > 0 && v > 0
-                % include validation
-                lossVal = self.LossVal( v );
-            else
-                % exclude validation
-                lossVal = [];
-            end
-
-            % record relevant metrics
-            [ metrics( epoch/self.UpdateFreq, : ), ...
-                dlZTrnAll ] = metricsFcn( thisModel );
-
-            % report 
-            reportFcn( thisModel, ...
-                       dlZTrnAll, ...
-                       self.LossTrn( j-nIter+1:j, : ), ...
-                       lossVal, ...
-                       epoch );
-            thisModel.Timing.Training.ReportingTime = ...
-                thisModel.Timing.Training.ReportingTime + toc;
-
-        end
-    
-        % update the number of dimensions, if required
-        if mod( epoch, self.ActiveZFreq )==0
-            thisModel = thisModel.incrementActiveZDim;
-        end
-
-        if mod( epoch, self.LRFreq )==0
-            % update learning rates
-            thisModel.Optimizer = ...
-                thisModel.Optimizer.updateLearningRates( self.PreTraining );
         end
 
     end
