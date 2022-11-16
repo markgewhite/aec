@@ -32,8 +32,7 @@ classdef ParallelModelTrainer < ModelTrainer
                 self.Pool = parpool( numGPUs );
             else
                 self.ExecutionEnvironment = 'cpu';
-                delete( gcp('nocreate') );
-                self.Pool = parpool;
+                self.Pool = gcp;
             end
             self.NumWorkers = self.Pool.NumWorkers;
 
@@ -60,8 +59,6 @@ classdef ParallelModelTrainer < ModelTrainer
                                      metricsFcn, ...
                                      reportFcn, ...
                                      isFixedLength )
-
-        %i = iterationsPerEpoch( mbq )
 
     end
 

@@ -7,8 +7,8 @@ name = 'test';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-parameters = [ "model.class" ];
-values = {{@FCModel}};
+parameters = [ "model.class", "model.args.trainer.useParallelProcessing" ];
+values = {{@FCModel}, {true, false}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 

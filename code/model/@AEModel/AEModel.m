@@ -51,6 +51,7 @@ classdef AEModel < RepresentationModel
                 args.Optimizer          struct = []
             end
 
+            tic;
             % set the superclass's properties
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
@@ -122,6 +123,8 @@ classdef AEModel < RepresentationModel
                 argsCell = {};
             end
             self.Optimizer = ModelOptimizer( self.NetNames, argsCell{:} );
+
+            self.Timing.Training.InitializationTime = toc;
 
         end
 

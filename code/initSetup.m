@@ -43,11 +43,12 @@ function setup = initSetup
     
     % training
     setup.model.args.trainer.useParallelProcessing = true;
+    setup.model.args.trainer.valFreq = 1;
     setup.model.args.trainer.updateFreq = 10;
     setup.model.args.trainer.numEpochs = 100;
     setup.model.args.trainer.numEpochsPreTrn = 0;
     setup.model.args.trainer.batchSize = 150;
-    setup.model.args.trainer.holdout = 0.2;
+    setup.model.args.trainer.holdout = 0;
 
     % loss functions
     setup.model.args.lossFcns.recon.class = @ReconstructionLoss;

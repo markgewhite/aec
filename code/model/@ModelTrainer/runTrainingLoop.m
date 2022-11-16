@@ -29,7 +29,7 @@ function thisModel = runTrainingLoop( self, ...
                                          thisModel.XNDimLabels, 'CB', 'CB'} );
 
     % initialize counters
-    nIter = iterationsPerEpoch( mbqTrn );
+    nIter = self.iterationsPerEpoch( mbqTrn );
     j = 0;
     v = 0;
     vp = self.ValPatience;
