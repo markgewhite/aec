@@ -145,7 +145,7 @@ function thisModel = runTrainingLoop( self, ...
 
                 % aggregate the losses across all workers
                 wkNormFactor = self.WorkerBatchSize(spmdIndex)./self.BatchSize;
-                lossTrn = spmdPlus( wkNormFactor*extractdata(wkLossTrn) );
+                lossTrn = spmdPlus( wkNormFactor*wkLossTrn );
                 self.LossTrn(i,1+self.PreTraining:end) = lossTrn;
     
                 % aggregate the network states and gradients across all workers
@@ -172,15 +172,10 @@ function thisModel = runTrainingLoop( self, ...
             % stop training if the Stop button has been clicked
             stopRequest = spmdPlus( stopTrainingEventQueue.QueueLength );
 
-            if spmdIndex == 1
+            if spmdIndex == 1 
+
                 % send monitoring information to the client
   
-                if self.ShowPlots
-                    % update loss plots
-                    data = [i, self.LossTrn(i,:)];
-                    send( dataQueueLoss, gather(data) );
-                end
-
                 if ~self.PreTraining ...
                         && mod( epoch, self.ValFreq )==0 ...
                         && self.Holdout > 0
@@ -206,6 +201,10 @@ function thisModel = runTrainingLoop( self, ...
                 if mod( epoch, self.UpdateFreq )==0 && self.ShowPlots
                     
                     tic
+                    % update loss plots
+                    fcnData = [i, self.LossTrn(i,:)];
+                    send( dataQueueLoss, gather(fcnData) );
+
                     if ~self.PreTraining && self.Holdout > 0 && v > 0
                         % include validation
                         lossVal = self.LossVal( v );
@@ -244,5 +243,7 @@ function thisModel = runTrainingLoop( self, ...
         end
 
     end
+
+    thisModel = thisModel{1};
 
 end

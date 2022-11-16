@@ -1,11 +1,10 @@
 function state = aggregateState( state, ...
                                  factor, ...
-                                 isBatchNormalizationStateMean, ...
-                                 isBatchNormalizationStateVariance )
+                                 hasStateLayer )
     % Aggregate the network states across all workers
 
-    stateMeans = state.Value( isBatchNormalizationStateMean) ;
-    stateVariances = state.Value( isBatchNormalizationStateVariance );
+    stateMeans = state.Value( hasStateLayer.Mean ) ;
+    stateVariances = state.Value( hasStateLayer.Variance );
     
     for j = 1:numel(stateMeans)
         meanVal = stateMeans{j};
@@ -22,7 +21,7 @@ function state = aggregateState( state, ...
         stateVariances{j} = spmdPlus(varTerm);
     end
     
-    state.Value( isBatchNormalizationStateMean ) = stateMeans;
-    state.Value( isBatchNormalizationStateVariance ) = stateVariances;
+    state.Value( hasStateLayer.Mean ) = stateMeans;
+    state.Value( hasStateLayer.Variance ) = stateVariances;
 
 end

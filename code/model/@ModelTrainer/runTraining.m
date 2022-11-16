@@ -34,7 +34,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput( thisModel.XDimLabels );
    
     % setup monitoring functions
-    lossLinesFcn = @(i, l) updateLossLines( self.LossLines, i, l );
+    lossLinesFcn = @(data) updateLossLines( self.LossLines, data );
     validationFcn = @(model) validationCheck( model, ...
                                               self.ValType, ...
                                               dlXVal, dlXNVal, dlYVal );

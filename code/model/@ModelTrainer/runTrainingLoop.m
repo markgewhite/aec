@@ -123,7 +123,8 @@ function thisModel = runTrainingLoop( self, ...
 
             if self.ShowPlots
                 % update loss plots
-                lossLinesFcn( j, self.LossTrn(j,:) );
+                fcnData = [ j, self.LossTrn(j,:) ];
+                lossLinesFcn( fcnData );
             end
 
         end
