@@ -78,6 +78,7 @@ function thisModel = runTrainingLoop( self, ...
     optimizer = thisModel.Optimizer;
 
     i = 0;
+    j = 0;
     v = 0;
     vp = self.ValPatience;
     stopRequest = false;
@@ -197,7 +198,8 @@ function thisModel = runTrainingLoop( self, ...
                     if mod( i, self.UpdateFreq )==0 && self.ShowPlots                   
                         % record relevant metrics
                         tic;
-                        metrics( i/self.UpdateFreq, : ) = metricsFcn( thisModel );
+                        j = j + 1;
+                        metrics( j, : ) = metricsFcn( thisModel );
                         reportingTime = reportingTime + toc;
                     end
                 end
@@ -236,7 +238,9 @@ function thisModel = runTrainingLoop( self, ...
     % trim back logs to actual length
     self.LossTrn = self.LossTrn( 1:i{1}, : );
     self.LossVal = lossVal{validationWorker};
+    self.LossVal = self.LossVal(1:v{validationWorker});
     self.Metrics = metrics{metricsWorker};
+    self.Metrics = self.Metrics(1:j{metricsWorker},:);
 
     % update the model in the same way
     thisModel.Nets = nets{1};
