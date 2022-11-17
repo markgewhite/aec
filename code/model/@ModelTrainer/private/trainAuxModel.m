@@ -8,8 +8,8 @@ function [model, ZTrnMean, ZTrnSD] = trainAuxModel( modelType, dlZTrn, dlYTrn )
     end
     
     % convert to double for models which don't take dlarrays
-    ZTrn = double(extractdata( dlZTrn ))';
-    YTrn = double(extractdata( dlYTrn ));
+    ZTrn = double(extractdata( gather(dlZTrn) ))';
+    YTrn = double(extractdata( gather(dlYTrn) ));
 
     % standardize
     ZTrnMean = mean( ZTrn );

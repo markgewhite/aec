@@ -19,7 +19,7 @@ function dlZ = encode( self, X, arg )
     dlZ = predict( self.Nets.Encoder, dlX );
     
     if arg.convert
-        dlZ = double(extractdata( dlZ ))';
+        dlZ = double(extractdata(gather(dlZ)))';
     end
 
 end

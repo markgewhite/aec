@@ -24,7 +24,7 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
     if args.convert
 
         if isa( dlXHat, 'dlarray' )
-            dlXHat = double(extractdata( dlXHat ));
+            dlXHat = double(extractdata(gather(dlXHat)));
         end
         dlXHat = permute( dlXHat, [1 3 2] );
         dlXHat = squeeze( dlXHat ); 
