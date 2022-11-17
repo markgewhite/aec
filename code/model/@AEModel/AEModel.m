@@ -95,6 +95,13 @@ classdef AEModel < RepresentationModel
                 useParallelProcessing = args.Trainer.(flds{fldIdx});
                 % remove this argument so it is not passed to the constructor
                 args.Trainer = rmfield( args.Trainer, flds{fldIdx} );
+                if ~useParallelProcessing
+                    % remove the doUseGPU field, if present
+                    fldIdx = find(strcmpi(flds, 'dousegpu'));
+                    if ~isempty(fldIdx)
+                        args.Trainer = rmfield( args.Trainer, flds{fldIdx} );
+                    end
+                end
             else
                 useParallelProcessing = false;
             end

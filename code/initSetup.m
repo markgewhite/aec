@@ -43,6 +43,7 @@ function setup = initSetup
     
     % training
     setup.model.args.trainer.useParallelProcessing = true;
+    setup.model.args.trainer.doUseGPU = true;
     setup.model.args.trainer.valFreq = 1;
     setup.model.args.trainer.updateFreq = 100;
     setup.model.args.trainer.numEpochs = 400;
