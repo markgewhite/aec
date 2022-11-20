@@ -39,6 +39,8 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
             obj = thisEvaluation.CVLoss.Validation.Mean.ReconLossRegular;
         case 'AuxModelErrorRate'
             obj = thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
+        case 'ExecutionTime'
+            obj = thisEvaluation.CVTiming.Training.Mean.TotalTime;
     end
 
 

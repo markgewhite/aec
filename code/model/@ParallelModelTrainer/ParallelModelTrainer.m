@@ -15,6 +15,8 @@ classdef ParallelModelTrainer < ModelTrainer
             arguments
                 lossFcnTbl                  table
                 superArgs.?ModelTrainer
+                args.MaxBatchSize           double ...
+                    {mustBeInteger, mustBePositive} = 100
                 args.DoUseGPU               logical = false
             end
 
@@ -26,7 +28,7 @@ classdef ParallelModelTrainer < ModelTrainer
 
             % setup the environment
             if canUseGPU && args.DoUseGPU
-                self.ExecutionEnvironment = "gpu";
+                self.ExecutionEnvironment = 'gpu';
                 numGPUs = gpuDeviceCount('available');
                 delete( gcp('nocreate') );
                 self.Pool = parpool( numGPUs );
@@ -37,10 +39,8 @@ classdef ParallelModelTrainer < ModelTrainer
             self.NumWorkers = self.Pool.NumWorkers;
 
             % set the minibatch sizes
-            if self.ExecutionEnvironment == "gpu"
-                % scale-up batch proportional to the number of workers
-                self.BatchSize = self.BatchSize.*self.NumWorkers;
-            end
+            self.BatchSize = min( self.BatchSize.*self.NumWorkers, ...
+                                  args.MaxBatchSize );
 
             % determine batch size per worker
             self.WorkerBatchSize = floor(self.BatchSize ...
@@ -48,6 +48,10 @@ classdef ParallelModelTrainer < ModelTrainer
             remainder = self.BatchSize - sum( self.WorkerBatchSize );
             self.WorkerBatchSize = self.WorkerBatchSize ...
                 + [ones(1, remainder) zeros(1, self.NumWorkers-remainder)];
+
+            % report setup
+            disp(['Execution environment = ' self.ExecutionEnvironment]);
+            disp(['Worker batch sizes = ' num2str(self.WorkerBatchSize)]);
 
         end
 

@@ -4,7 +4,7 @@ clear;
 
 dataset = "UCR";
 
-exploration = 2;
+exploration = 0.5;
 
 % set the destinations for results and figures
 path = fileparts( which('code/optimizeAE.m') );
@@ -24,7 +24,8 @@ switch dataset
     case "UCR"
         setup.data.class = @UCRDataset;
         datasets = [ 17, 31, 38, 74, 104 ];
-        setup.data.args.SetID = datasets(1);
+        setup.data.args.SetID = 85;
+        setup.data.args.HasNormalizedInput = true;
 
     case "Synthetic"
         setup.data.class = @SyntheticDataset;
@@ -55,7 +56,7 @@ switch dataset
 end
 
 % -- model setup --
-setup.model.class = @ConvolutionalModel;
+setup.model.class = @FCModel;
 setup.model.args.ZDim = 4;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
@@ -79,6 +80,8 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
+setup.model.args.trainer.useParallelProcessing = true;
+setup.model.args.trainer.doUseGPU = true;
 setup.model.args.trainer.NumEpochs = 200;
 setup.model.args.trainer.UpdateFreq = 500;
 setup.model.args.trainer.BatchSize = 50;
@@ -86,7 +89,7 @@ setup.model.args.trainer.Holdout = 0;
 
 
 % -- optimizer setup --
-setup.opt.objective = 'ReconLoss';
+setup.opt.objective = 'ExecutionTime';
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'data_args_HasAdaptiveTimeSpan', ...
@@ -132,7 +135,7 @@ varDef(10) = optimizableVariable( 'model_args_InputDropout', ...
 
 varDef(11) = optimizableVariable( 'model_args_Dropout', ...
         [0.01 0.9], Type = 'real', Transform = 'log', ... 
-        Optimize = true );
+        Optimize = false );
 
 
 % data hyperparameters
@@ -165,6 +168,15 @@ varDef(17) = optimizableVariable( 'model_args_NumFilters', ...
 varDef(18) = optimizableVariable( 'model_args_HasCentredDecoder', ...
         ["false" "true"], Type = 'categorical', ...
         Optimize = false );
+
+% parallel processing parameters
+varDef(19) = optimizableVariable( 'model_args_trainer_batchSize', ...
+        [30 300], Type = 'integer', Transform = 'log', ...
+        Optimize = true );
+
+varDef(30) = optimizableVariable( 'model_args_trainer_useParallelProcessing', ...
+        ["false" "true"], Type = 'categorical', ...
+        Optimize = true );
 
 
 % setup objective function

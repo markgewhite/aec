@@ -3,7 +3,7 @@ function setup = initSetup
 
     % dataset
     setup.data.class = @UCRDataset;
-    setup.data.args.SetID = 85;
+    setup.data.args.SetID = 29;
 
     %setup.data.class = @JumpGRFDataset;
     %setup.data.args.Normalization = 'PAD';
@@ -46,9 +46,9 @@ function setup = initSetup
     setup.model.args.trainer.doUseGPU = true;
     setup.model.args.trainer.valFreq = 1;
     setup.model.args.trainer.updateFreq = 100;
-    setup.model.args.trainer.numEpochs = 400;
+    setup.model.args.trainer.numEpochs = 1;
     setup.model.args.trainer.numEpochsPreTrn = 0;
-    setup.model.args.trainer.batchSize = 500;
+    setup.model.args.trainer.batchSize = 2455;
     setup.model.args.trainer.holdout = 0;
 
     % loss functions
