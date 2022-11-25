@@ -185,7 +185,7 @@ function thisModel = runTrainingLoop( self, ...
             if mod( i, self.LRFreq )==0
                 % update learning rates
                 thisModel.Optimizer = ...
-                    thisModel.Optimizer.updateLearningRates( self.PreTraining );
+                    thisModel.Optimizer.updateLearningRates( preTraining );
             end
 
         end
