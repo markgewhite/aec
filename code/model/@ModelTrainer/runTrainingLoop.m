@@ -30,18 +30,19 @@ function thisModel = runTrainingLoop( self, ...
 
     % initialize counters
     nIter = self.iterationsPerEpoch( mbqTrn );
-    j = 0;
+    i = 0;
     v = 0;
     vp = self.ValPatience;
+    epoch = 0;
 
     % initialize logs
-    nTrnLogs = nIter*self.NumEpochs;
-    nValLogs = max( ceil( (self.NumEpochs-self.NumEpochsPreTrn) ...
+    nTrnLogs = self.NumIterations;
+    nValLogs = max( ceil( (self.NumIterations-self.NumIterPreTrn) ...
                                 /self.ValFreq ), 1 );
     self.LossTrn = zeros( nTrnLogs, thisModel.NumLoss );
     self.LossVal = zeros( nValLogs, 1 );
 
-    nMetricLogs = max( ceil(nTrnLogs/(nIter*self.UpdateFreq)), 1 );
+    nMetricLogs = max( ceil(nTrnLogs/self.UpdateFreq), 1 );
     self.Metrics = table( ...
         zeros( nMetricLogs, 1 ), ...
         zeros( nMetricLogs, 1 ), ...
@@ -54,12 +55,10 @@ function thisModel = runTrainingLoop( self, ...
     thisModel.Timing.Training.ValCheckTime = 0;
     thisModel.Timing.Training.ReportingTime = 0;
     
-    for epoch = 1:self.NumEpochs
+    while i < self.NumIterations
         
+        epoch = epoch + 1;
         self.CurrentEpoch = epoch;
-
-        % Pre-training
-        self.PreTraining = (epoch<=self.NumEpochsPreTrn);
     
         if isFixedLength && self.HasMiniBatchShuffle
             
@@ -88,15 +87,19 @@ function thisModel = runTrainingLoop( self, ...
         end
     
         % loop over mini-batches
-        for i = 1:nIter
+        while hasdata( mbqTrn ) 
             
-            j = j + 1;
+            i = i + 1;
+            self.CurrentIteration = i;
+
+            % Pre-training
+            preTraining = (i<=self.NumIterPreTrn);
             
             % read mini-batch of data
             [ dlXTTrn, dlXNTrn, dlPTrn, dlYTrn ] = next( mbqTrn );
             
             % evaluate the model gradients 
-            [ grads, states, self.LossTrn(j,1+self.PreTraining:end) ] = ...
+            [ grads, states, self.LossTrn(i,1+preTraining:end) ] = ...
                               dlfeval(  @self.gradients, ...
                                         thisModel.Nets, ...
                                         thisModel, ...
@@ -104,7 +107,7 @@ function thisModel = runTrainingLoop( self, ...
                                         dlXNTrn, ...
                                         dlPTrn, ...
                                         dlYTrn, ...
-                                        self.PreTraining );
+                                        preTraining );
 
             % store revised network states
             for m = 1:thisModel.NumNetworks
@@ -116,15 +119,15 @@ function thisModel = runTrainingLoop( self, ...
 
             % update network parameters
             thisModel.Nets  = thisModel.Optimizer.updateNets( ...
-                                    thisModel.Nets, grads, j );
+                                    thisModel.Nets, grads, i );
 
             if self.ShowPlots
                 % update loss plots
-                fcnData = [ j, self.LossTrn(j,:) ];
+                fcnData = [ i, self.LossTrn(i,:) ];
                 lossLinesFcn( fcnData );
             end
                        
-            if ~self.PreTraining ...
+            if ~preTraining ...
                     && mod( i, self.ValFreq )==0 ...
                     && self.Holdout > 0
                 
@@ -166,7 +169,7 @@ function thisModel = runTrainingLoop( self, ...
                 % report 
                 reportFcn( thisModel, ...
                            dlZTrnAll, ...
-                           self.LossTrn( j-nIter+1:j, : ), ...
+                           self.LossTrn( i-nIter+1:i, : ), ...
                            lossVal, ...
                            epoch );
                 thisModel.Timing.Training.ReportingTime = ...

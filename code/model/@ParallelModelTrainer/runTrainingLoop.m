@@ -44,9 +44,8 @@ function thisModel = runTrainingLoop( self, ...
     afterEach( dataQueueReport, reportFcn );
 
     % initialize logs
-    nIter = numpartitions( dsTrn, self.Pool );
-    nTrnLogs = nIter*self.NumEpochs;
-    nValLogs = max( ceil( (self.NumEpochs-self.NumEpochsPreTrn)*nIter ...
+    nTrnLogs = self.NumIterations;
+    nValLogs = max( ceil( (self.NumIterations-self.NumIterPreTrn) ...
                                 /self.ValFreq ), 1 );
     lossTrn = zeros( nTrnLogs, thisModel.NumLoss );
     lossVal = zeros( nValLogs, 1 );
@@ -100,13 +99,10 @@ function thisModel = runTrainingLoop( self, ...
     
         epoch = 0;
 
-        while epoch < self.NumEpochs && ~stopRequest
+        while i < self.NumIterations && ~stopRequest
 
             epoch = epoch + 1;
             
-            % Pre-training
-            preTraining = (epoch<=self.NumEpochsPreTrn);
-
             if isFixedLength && self.HasMiniBatchShuffle
                 
                 % reset with a shuffled order
@@ -134,8 +130,12 @@ function thisModel = runTrainingLoop( self, ...
             end
         
             % loop over mini-batches
-            while spmdReduce(@and, hasdata(wkMbqTrn)) && ~stopRequest         
+            while spmdReduce(@and, hasdata(wkMbqTrn)) && ~stopRequest
+
                 i = i + 1;
+
+                % Pre-training
+                preTraining = (i<=self.NumIterPreTrn);
                 
                 % read mini-batch of data
                 [ wkXTTrn, wkXNTrn, wkPTrn, wkYTrn ] = next( wkMbqTrn );
@@ -206,7 +206,7 @@ function thisModel = runTrainingLoop( self, ...
                 
                 if spmdIndex == validationWorker
      
-                    if ~self.PreTraining ...
+                    if ~preTraining ...
                             && mod( i, self.ValFreq )==0 ...
                             && self.Holdout > 0
                         
@@ -235,6 +235,7 @@ function thisModel = runTrainingLoop( self, ...
 
     % update the trainer using the first worker's logs
     self.LossTrn = lossTrn{1};
+
     % trim back logs to actual length
     self.LossTrn = self.LossTrn( 1:i{1}, : );
     self.LossVal = lossVal{validationWorker};
@@ -251,6 +252,7 @@ function thisModel = runTrainingLoop( self, ...
             reportingTime{lossLineWorker} + reportingTime{metricsWorker};
 
     % update trainer with final position
+    self.CurrentIteration = i{1};
     self.CurrentEpoch = epoch{1};
 
 

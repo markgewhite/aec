@@ -34,6 +34,7 @@ classdef ParallelModelTrainer < ModelTrainer
                 self.Pool = parpool( numGPUs );
             else
                 self.ExecutionEnvironment = 'cpu';
+                delete( gcp('nocreate') );
                 self.Pool = gcp;
             end
             self.NumWorkers = self.Pool.NumWorkers;

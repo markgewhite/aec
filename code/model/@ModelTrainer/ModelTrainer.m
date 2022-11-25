@@ -2,8 +2,9 @@ classdef ModelTrainer < handle
     % Class defining a model trainer
 
     properties
-        NumEpochs        % maximum number of epochs for training
-        NumEpochsPreTrn  % number of epochs for pretraining
+        NumIterations    % maximum number of iterations for training
+        NumIterPreTrn    % number of iterations for pretraining
+        CurrentIteration % iteration counter
         CurrentEpoch     % epoch counter
         BatchSize        % minibatch size
         PartialBatch     % what to do with an incomplete batch
@@ -24,9 +25,6 @@ classdef ModelTrainer < handle
         LossVal          % record of validation losses
 
         Metrics          % record of training metrics
-        
-        PreTraining      % flag to indicate AE training
-        PostTraining     % flag to indicate whether to continue training
 
         ShowPlots        % flag whether to show plots
         LossFig          % figure for the loss lines
@@ -39,11 +37,11 @@ classdef ModelTrainer < handle
             % Initialize the model
             arguments
                 lossFcnTbl          table
-                args.NumEpochs      double ...
+                args.NumIterations  double ...
                     {mustBeInteger, mustBePositive} = 1000;
-                args.NumEpochsPreTrn  double ...
+                args.NumIterPreTrn  double ...
                     {mustBeInteger, ...
-                     mustBeGreaterThanOrEqual(args.NumEpochsPreTrn,0) } = 0;
+                     mustBeGreaterThanOrEqual(args.NumIterPreTrn,0) } = 0;
                 args.BatchSize      double ...
                     {mustBeInteger, mustBePositive} = 40;
                 args.PartialBatch   char ...
@@ -73,8 +71,8 @@ classdef ModelTrainer < handle
             end
 
             % initialize the training parameters
-            self.NumEpochs = args.NumEpochs;
-            self.NumEpochsPreTrn = args.NumEpochsPreTrn;
+            self.NumIterations = args.NumIterations;
+            self.NumIterPreTrn = args.NumIterPreTrn;
             self.CurrentEpoch = 0;
             self.BatchSize = args.BatchSize;
             self.PartialBatch = args.PartialBatch;
@@ -94,9 +92,6 @@ classdef ModelTrainer < handle
             self.NumLossFcns = size( lossFcnTbl,1 );
             self.LossTrn = [];
             self.LossVal = [];
-
-            self.PreTraining = true;
-            self.PostTraining = args.PostTraining;
 
             self.ShowPlots = args.ShowPlots;
 

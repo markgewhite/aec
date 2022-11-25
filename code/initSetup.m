@@ -42,12 +42,11 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.useParallelProcessing = true;
+    setup.model.args.trainer.useParallelProcessing = false;
     setup.model.args.trainer.doUseGPU = true;
     setup.model.args.trainer.valFreq = 1;
     setup.model.args.trainer.updateFreq = 100;
-    setup.model.args.trainer.numEpochs = 1;
-    setup.model.args.trainer.numEpochsPreTrn = 0;
+    setup.model.args.trainer.numIterations = 10;
     setup.model.args.trainer.batchSize = 2455;
     setup.model.args.trainer.holdout = 0;
 

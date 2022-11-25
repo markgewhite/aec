@@ -82,14 +82,14 @@ setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 % -- trainer setup --
 setup.model.args.trainer.useParallelProcessing = true;
 setup.model.args.trainer.doUseGPU = true;
-setup.model.args.trainer.NumEpochs = 200;
+setup.model.args.trainer.NumIterations = 100;
 setup.model.args.trainer.UpdateFreq = 500;
 setup.model.args.trainer.BatchSize = 50;
 setup.model.args.trainer.Holdout = 0;
 
 
 % -- optimizer setup --
-setup.opt.objective = 'ExecutionTime';
+setup.opt.objective = 'ReconLoss';
 
 % define optimizable variables
 varDef(1) = optimizableVariable( 'data_args_HasAdaptiveTimeSpan', ...
