@@ -3,6 +3,7 @@
 clear;
 
 runAnalysis = true;
+inParallel = true;
 resume = false;
 reportIdx = 1:9;
 
@@ -13,12 +14,18 @@ pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
 setup.data.class = @UCRDataset;
-datasets = [ 17, 31, 38, 74, 104 ];
-datasetNames = [ "DistalPhalanx", ...
-                 "GunPoint", ...
-                 "ItalyPowerDemand", ...
-                 "TwoLeadECG", ...
-                 "PowerCons" ];
+datasets = [ 11, 17, 19, 33, 67, 80, 84, 85, 92, 104, 115 ];
+datasetNames = [ "Computers", ...
+                 "DistalPhalanxOutlineCorrect", ...
+                 "Earthquakes", ...
+                 "HandOutlines", ...
+                 "Strawberry", ...
+                 "Wafer", ...
+                 "WormsTwoClass", ...
+                 "Yoga", ...
+                 "FreezerRegularTrain", ...
+                 "PowerCons", ...
+                 "SemgHandGenderCh2" ];
 
 datasetsVarLen = [ 87, 88, 89, 99, 103, 105, 109, 110 ];
 datasetVarLenNames = [  "AllGestureWiimoteX", ...
@@ -52,15 +59,13 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 10;
-setup.model.args.trainer.BatchSize = 1000;
+setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.UpdateFreq = 2000;
-
-setup.model.args.trainer.Holdout = 0;
+setup.model.args.trainer.Holdout = 0.2;
 setup.model.args.trainer.ValType = 'Both';
 setup.model.args.trainer.ValFreq = 10;
 setup.model.args.trainer.ValPatience = 20;
-
 
 % evaluations
 setup.eval.args.verbose = true;
@@ -82,8 +87,12 @@ thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
-    delete( gcp('nocreate') );
-    pool = parpool;
+
+    if inParallel
+        delete( gcp('nocreate') );
+        pool = parpool;
+    end
+
     for i = reportIdx
     
         switch i
@@ -174,10 +183,16 @@ if runAnalysis
 
         end
     
-        results(i) = parfeval( pool, @investigationResults, 1, ...
-                               names(i), path, ...
-                               parameters, values, setup, ...
-                               memorySaving, resume );
+        if inParallel
+            results(i) = parfeval( pool, @investigationResults, 1, ...
+                                   names(i), path, ...
+                                   parameters, values, setup, ...
+                                   memorySaving, resume );
+        else
+            results(i) = investigationResults( names(i), path, ...
+                                               parameters, values, setup, ...
+                                               memorySaving, resume );
+        end
     
     end
 

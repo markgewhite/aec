@@ -77,7 +77,9 @@ function [ X, Y, name ] = loadData( id, set )
 
     % read the master reference table
     refTable = readtable( fullfile(path, 'DataSummaryExpanded_v03.xlsx'), ...
-                           VariableNamingRule = 'Preserve' );
+                          NumHeaderLines = 0, ...
+                          ReadVariableNames = true, ...
+                          VariableNamingRule = 'Preserve' );
 
     % find the identified dataset's reference
     row = find( refTable.ID==id, 1 );
