@@ -82,7 +82,7 @@ setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 % -- trainer setup --
 setup.model.args.trainer.useParallelProcessing = true;
 setup.model.args.trainer.doUseGPU = true;
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 100;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 50;
 setup.model.args.trainer.Holdout = 0;
@@ -176,8 +176,11 @@ varDef(19) = optimizableVariable( 'model_args_trainer_batchSize', ...
 
 varDef(30) = optimizableVariable( 'model_args_trainer_useParallelProcessing', ...
         ["false" "true"], Type = 'categorical', ...
-        Optimize = true );
+        Optimize = false );
 
+varDef(31) = optimizableVariable( 'model_args_trainer_partialBatch', ...
+        ["discard" "return"], Type = 'categorical', ...
+        Optimize = true );
 
 % setup objective function
 objFcn = @(x) objectiveFcnAE( x, setup );

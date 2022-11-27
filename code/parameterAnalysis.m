@@ -2,9 +2,9 @@
 
 clear;
 
-runAnalysis = false;
+runAnalysis = true;
 resume = false;
-reportIdx = [4];
+reportIdx = 1:9;
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/parameterAnalysis.m') );
@@ -37,6 +37,7 @@ setup.model.args.ZDim = 4;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
+setup.model.args.ShowPlots = false;
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
@@ -51,12 +52,15 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.UpdateFreq = 200;
-setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.Holdout = 0.2;
+setup.model.args.trainer.NumIterations = 10;
+setup.model.args.trainer.BatchSize = 1000;
+setup.model.args.trainer.UpdateFreq = 2000;
+
+setup.model.args.trainer.Holdout = 0;
 setup.model.args.trainer.ValType = 'Both';
 setup.model.args.trainer.ValFreq = 10;
 setup.model.args.trainer.ValPatience = 20;
+
 
 % evaluations
 setup.eval.args.verbose = true;
@@ -74,11 +78,12 @@ names = [ "ZDimRelation", ...
           "HasKLLoss", ...
           "HasAdversarialLoss" ];
 nReports = length( names );
-results = cell( nReports, 1 );
 thisData = cell( nReports, 1 );
 memorySaving = 4;
 
 if runAnalysis
+    delete( gcp('nocreate') );
+    pool = parpool;
     for i = reportIdx
     
         switch i
@@ -169,11 +174,10 @@ if runAnalysis
 
         end
     
-        thisRun = Investigation( names(i), path, ...
-                                 parameters, values, setup, ...
-                                 memorySaving, resume );
-        results{i} = thisRun.getResults;
-        clear thisRun;
+        results(i) = parfeval( pool, @investigationResults, 1, ...
+                               names(i), path, ...
+                               parameters, values, setup, ...
+                               memorySaving, resume );
     
     end
 
@@ -186,81 +190,81 @@ else
         results{i} = report;
     end
 
-end
-
-% generate the associated plots
-for i = reportIdx
-
-    switch i
-        case 1
-            plotParam = "Z Dimension";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate"];
-
-        case 2
-            plotParam = "X Resampling Rate";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate"];
-
-        case 3
-            plotParam = "\hat{X} Dimension";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate"; ...
-                           "XCCorrelation", "X_{C} Mean Correlation"];
-
-        case 4
-            plotParam = "Has Centred Decoder";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate"; ...
-                           "ReconBias", "Reconstruction Loss Bias"];
-
-        case 5
-            plotParam = "Has Adaptive Time Span";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate"];
-
-        case 6
-            plotParam = "Has Time-Normalized Input";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate"];
-
-        case 7
-            plotParam = "Has Classifier Loss";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate", ...
-                           "AuxNetworkErrorRate", "Aux. Network Error Rate"];
-
-        case 8
-            plotParam = "Has KL Loss";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate", ...
-                           "AuxNetworkErrorRate", "Aux. Network Error Rate"];
-
-        case 9
-            plotParam = "Has Adversarial Loss";
-            plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
-                           "AuxModelErrorRate", "Aux. Model Error Rate", ...
-                           "AuxNetworkErrorRate", "Aux. Network Error Rate"];
-
-        otherwise
-            error(['Undefined parameters for report = ' num2str(i)]);
-
-    end
-
-    for j = 1:size(plotMetrics,1)
-        
-        fig = plotParamRelation(   results{i}, plotParam, ...
-                                   plotMetrics(j,1), plotMetrics(j,2), ...
-                                   datasetNames, legendNames ); 
-
-        filename = strcat( names(i), "-", plotMetrics(j,1), ".pdf" );
-        fig = formatIEEEFig( fig, ...
-                             width = "Page", ...
-                             size = "Medium", ...
-                             keepYAxisTicks = true, ...
-                             keepTitle = true, ...
-                             keepLegend = false, ...
-                             filename = filename );
+    % generate the associated plots
+    for i = reportIdx
+    
+        switch i
+            case 1
+                plotParam = "Z Dimension";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate"];
+    
+            case 2
+                plotParam = "X Resampling Rate";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate"];
+    
+            case 3
+                plotParam = "\hat{X} Dimension";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate"; ...
+                               "XCCorrelation", "X_{C} Mean Correlation"];
+    
+            case 4
+                plotParam = "Has Centred Decoder";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate"; ...
+                               "ReconBias", "Reconstruction Loss Bias"];
+    
+            case 5
+                plotParam = "Has Adaptive Time Span";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate"];
+    
+            case 6
+                plotParam = "Has Time-Normalized Input";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate"];
+    
+            case 7
+                plotParam = "Has Classifier Loss";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate", ...
+                               "AuxNetworkErrorRate", "Aux. Network Error Rate"];
+    
+            case 8
+                plotParam = "Has KL Loss";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate", ...
+                               "AuxNetworkErrorRate", "Aux. Network Error Rate"];
+    
+            case 9
+                plotParam = "Has Adversarial Loss";
+                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                               "AuxModelErrorRate", "Aux. Model Error Rate", ...
+                               "AuxNetworkErrorRate", "Aux. Network Error Rate"];
+    
+            otherwise
+                error(['Undefined parameters for report = ' num2str(i)]);
+    
+        end
+    
+        for j = 1:size(plotMetrics,1)
+            
+            fig = plotParamRelation(   results{i}, plotParam, ...
+                                       plotMetrics(j,1), plotMetrics(j,2), ...
+                                       datasetNames, legendNames ); 
+    
+            filename = strcat( names(i), "-", plotMetrics(j,1), ".pdf" );
+            fig = formatIEEEFig( fig, ...
+                                 width = "Page", ...
+                                 size = "Medium", ...
+                                 keepYAxisTicks = true, ...
+                                 keepTitle = true, ...
+                                 keepLegend = false, ...
+                                 filename = filename );
+    
+        end
 
     end
 
