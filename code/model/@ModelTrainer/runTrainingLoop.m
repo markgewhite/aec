@@ -34,6 +34,7 @@ function thisModel = runTrainingLoop( self, ...
     v = 0;
     vp = self.ValPatience;
     epoch = 0;
+    stopping = false;
 
     % initialize logs
     nTrnLogs = self.NumIterations;
@@ -55,7 +56,7 @@ function thisModel = runTrainingLoop( self, ...
     thisModel.Timing.Training.ValCheckTime = 0;
     thisModel.Timing.Training.ReportingTime = 0;
     
-    while i < self.NumIterations
+    while i < self.NumIterations && ~stopping
         
         epoch = epoch + 1;
         self.CurrentEpoch = epoch;
@@ -87,7 +88,7 @@ function thisModel = runTrainingLoop( self, ...
         end
     
         % loop over mini-batches
-        while hasdata( mbqTrn ) 
+        while hasdata( mbqTrn ) && ~stopping
             
             i = i + 1;
             self.CurrentIteration = i;
@@ -144,7 +145,7 @@ function thisModel = runTrainingLoop( self, ...
                     if min(self.LossVal(1:v)) ...
                             < min(self.LossVal(v-vp+1:v))
                         disp(['Stopping criterion met. Epoch = ' num2str(epoch)]);
-                        break
+                        stopping = true;
                     end
                 end
     

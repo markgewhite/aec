@@ -69,9 +69,7 @@ setup.model.args.trainer.ValPatience = 20;
 
 % evaluations
 setup.eval.args.verbose = true;
-setup.eval.args.CVType = 'KFold';
-setup.eval.args.KFolds = 2;
-setup.eval.args.KFoldRepeats = 2;
+setup.eval.args.CVType = 'Holdout';
 
 names = [ "ZDimRelation", ...
           "ResampleRateRelation", ...
