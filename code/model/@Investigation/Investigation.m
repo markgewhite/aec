@@ -107,7 +107,7 @@ classdef Investigation
                 end
 
                 % assign a folder for this evaluation
-                %setup.model.args.path = folder( path, name, idx );
+                setup.model.args.path = folder( path, name, idx );
 
                 % carry out the evaluation
                 setup.model.args.name = strcat( name, constructName(idx) );
@@ -130,7 +130,7 @@ classdef Investigation
                 
                 %catch
                 
-                    %warning('Evaluation failed.')
+                 %   warning('Evaluation failed.')
                 
                 %end
 

@@ -13,6 +13,7 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
         args.showTitle      logical = true
         args.showXAxis      logical = true
         args.showYAxis      logical = true
+        args.subPlotDim     double = []
     end
     
     nDim = length( report.GridSearch );
@@ -28,11 +29,15 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
     fig = figure;
     axes = gobjects( nDatasets, 1 );
     colours = lines( 3 );
+    if isempty(args.subPlotDim)
+        args.subPlotDim = [1 nDatasets];
+    end
 
     % plot the relations
     for i = 1:nDatasets
 
-        axes(i) = subplot( 1, nDatasets, i );
+        axes(i) = subplot( args.subPlotDim(1), ...
+                           args.subPlotDim(2), i );
         cla( axes(i) );
         hold( axes(i), 'on' );
         pltObj = gobjects( nModels, 1 );

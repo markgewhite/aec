@@ -155,7 +155,7 @@ function thisModel = runTrainingLoop( self, ...
             if mod( i, self.UpdateFreq )==0 && self.ShowPlots
                 
                 tic
-                if ~self.PreTraining && self.Holdout > 0 && v > 0
+                if ~preTraining && self.Holdout > 0 && v > 0
                     % include validation
                     lossVal = self.LossVal( v );
                 else

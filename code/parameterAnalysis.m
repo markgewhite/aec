@@ -3,9 +3,10 @@
 clear;
 
 runAnalysis = true;
-inParallel = true;
+inParallel = false;
 resume = false;
 reportIdx = 1:9;
+plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/parameterAnalysis.m') );
@@ -14,11 +15,10 @@ pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
 setup.data.class = @UCRDataset;
-datasets = [ 11, 17, 19, 33, 67, 80, 84, 85, 92, 104, 115 ];
+datasets = [ 11, 17, 19, 67, 80, 84, 85, 92, 104, 115 ];
 datasetNames = [ "Computers", ...
                  "DistalPhalanxOutlineCorrect", ...
                  "Earthquakes", ...
-                 "HandOutlines", ...
                  "Strawberry", ...
                  "Wafer", ...
                  "WormsTwoClass", ...
@@ -44,7 +44,7 @@ setup.model.args.ZDim = 4;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
-setup.model.args.ShowPlots = false;
+setup.model.args.ShowPlots = true;
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
@@ -59,9 +59,9 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 5; %1000
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 2000;
+setup.model.args.trainer.UpdateFreq = 10; % 2000
 setup.model.args.trainer.Holdout = 0.2;
 setup.model.args.trainer.ValType = 'Both';
 setup.model.args.trainer.ValFreq = 10;
@@ -99,7 +99,7 @@ if runAnalysis
                                "model.args.ZDim", ...
                                "data.args.SetID" ];
 
-                values = {{@PCAModel, @FCModel, @ConvolutionalModel}, ...
+                values = {{@ConvolutionalModel}, ...
                           [2 3 4 6 8 10 15 20], ...
                           datasets };
 
@@ -141,7 +141,7 @@ if runAnalysis
 
             case 6 % Normalization
                 parameters = [ "model.class", ...
-                               "model.args.HasNormalizedInput", ...
+                               "model.args.HasInputNormalization", ...
                                "data.args.SetID" ];
 
                 values = {{@ConvolutionalModel}, ...
@@ -266,7 +266,8 @@ else
             
             fig = plotParamRelation(   results{i}, plotParam, ...
                                        plotMetrics(j,1), plotMetrics(j,2), ...
-                                       datasetNames, legendNames ); 
+                                       datasetNames, legendNames, ...
+                                       subPlotDim = plotDim ); 
     
             filename = strcat( names(i), "-", plotMetrics(j,1), ".pdf" );
             fig = formatIEEEFig( fig, ...

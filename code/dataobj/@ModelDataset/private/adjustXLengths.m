@@ -13,5 +13,6 @@ function XLen = adjustXLengths( XLen, tSpan, tSpanAdaptive, padding )
 
         end
     end
+    XLen = max( XLen, 2 );
 
 end
