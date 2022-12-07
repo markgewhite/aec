@@ -15,6 +15,12 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
         args.showYAxis      logical = true
         args.squarePlot     logical = false
         args.subPlotDim     double = []
+        args.tileSpacing    string ...
+            {mustBeMember( args.tileSpacing, ...
+                {'Loose', 'Compact', 'Tight', 'None'} )} = 'Compact'
+        args.legendPlot     string ...
+            {mustBeMember( args.legendPlot, ...
+                {'First', 'BottomMiddle'} )} = 'BottomMiddle'
     end
     
     nDim = length( report.GridSearch );
@@ -34,11 +40,14 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
         args.subPlotDim = [1 nDatasets];
     end
 
+    tiledlayout( fig, args.subPlotDim(1), args.subPlotDim(2), ...
+                 TileSpacing = args.tileSpacing );
+
     % plot the relations
     for i = 1:nDatasets
 
-        axes(i) = subplot( args.subPlotDim(1), ...
-                           args.subPlotDim(2), i );
+        axes(i) = nexttile;
+
         cla( axes(i) );
         hold( axes(i), 'on' );
         pltObj = gobjects( nModels, 1 );
@@ -49,6 +58,8 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
 
         isBottomRow = (i > (args.subPlotDim(1)-1)*args.subPlotDim(2));
         isFirstCol = (mod( i, args.subPlotDim(2) ) == 1);
+        isMiddleCol = (mod( i, args.subPlotDim(2) ) == ...
+                                        floor(args.subPlotDim(2)/2)+1 );
 
         for j = 1:nModels
 
@@ -77,8 +88,23 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
             title( axes(i), datasetNames(i) );
         end
 
-        if args.showLegend && i==1
-            legend( axes(i), pltObj, Location = 'best' );
+        if args.showLegend 
+            switch args.legendPlot
+                case 'First'
+                    if i==1
+                        legend( axes(i), pltObj, Location = 'best' );
+                    end
+                case 'BottomMiddle'
+                    if isBottomRow && isMiddleCol
+                        legendObj = legend( axes(i), pltObj, ...
+                                            Location = 'south', ...
+                                            Orientation = 'horizontal');
+                        legendObj.Units = 'normalized';
+                        legendObj.Position(2) = 0.02;
+                        legendObj.Position(4) = 0.07;
+                        legendObj.Box = false;
+                    end
+            end
         end
         
         if args.showXAxis && isBottomRow
@@ -95,10 +121,11 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
             axes(i).XAxis.TickLabels = [];
         end
 
-        if args.showYAxis && isFirstCol
-            if isBottomRow
-                ylabel( axes(i), metricName );
-            end
+        if args.showYAxis && isBottomRow && isFirstCol
+            ylabel( axes(i), metricName );
+        end
+
+        if args.showYAxis
             ymin = round( axes(i).YAxis.Limits(1), 2 );
             ymax = round( axes(i).YAxis.Limits(2), 2 );
             if ymin == 0
