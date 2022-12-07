@@ -4,9 +4,9 @@ function fig = formatIEEEFig( fig, args )
         fig
         args.width              string ...
             {mustBeMember( args.width, ...
-                    {'Column', 'Page', 'Dataset', ...
-                    'Components', 'Bespoke'} )} = 'Page'
-        args.inches             double = 0
+                {'Column', 'Page', ...
+                 'Dataset', 'Components'} )} = 'Page'
+        args.height             double = 1.50
         args.size               string ...
             {mustBeMember( args.size, ...
                     {'Small', 'Medium', 'Large'} )} = 'Medium'
@@ -25,30 +25,28 @@ function fig = formatIEEEFig( fig, args )
     
     switch args.size
         case 'Small'
-            figHeight = 1.25;
+            plotWidth = 0.50;
+            plotHeight = 0.50;
+            margin = 0.05;
+        case 'Medium'
             plotWidth = 0.75;
             plotHeight = 0.75;
-        case 'Medium'
-            figHeight = 1.75;
-            plotWidth = 1.0;
-            plotHeight = 1.0;
+            margin = 0.10;
         case 'Large'
-            figHeight = 2.00;
-            plotWidth = 1.25;
-            plotHeight = 1.25;
+            plotWidth = 1.00;
+            plotHeight = 1.00;
+            margin = 0.15;
     end
 
     switch args.width
         case 'Column'
-            dim = [ 3.45 figHeight ];
+            dim = [ 3.45 args.height ];
         case 'Page'
-            dim = [ 7.11 figHeight ];
+            dim = [ 7.11 args.height ];
         case 'Dataset'
-            dim = [ 1.8 figHeight ];
+            dim = [ 1.8 args.height ];
         case 'Components'
-            dim = [ 6.01 figHeight ];
-        case 'Bespoke'
-            dim = [ args.inches figHeight ];
+            dim = [ 6.01 args.height ];
     end
 
     fig.Position(3:4) = dim;   
@@ -106,14 +104,13 @@ function fig = formatIEEEFig( fig, args )
 
     end
 
-    margin = 0.2;
     spacing = (fig.Position(3)-2*margin)/p;
     for i = 1:p
 
         child = fig.Children( plotIdx(i) );
 
-        child.InnerPosition(1) = (p-i+0.5)*spacing - 0.5*margin;
-        child.InnerPosition(2) = plotCentre(p,2)-0.5*plotHeight;
+        %child.InnerPosition(1) = (p-i+0.5)*spacing - 0.5*margin;
+        %child.InnerPosition(2) = plotCentre(p,2)-0.5*plotHeight;
         child.InnerPosition(3) = plotWidth;
         child.InnerPosition(4) = plotHeight;
 

@@ -13,6 +13,7 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
         args.showTitle      logical = true
         args.showXAxis      logical = true
         args.showYAxis      logical = true
+        args.squarePlot     logical = false
         args.subPlotDim     double = []
     end
     
@@ -42,16 +43,30 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
         hold( axes(i), 'on' );
         pltObj = gobjects( nModels, 1 );
 
+        if args.squarePlot
+            axes(i).PlotBoxAspectRatio = [1 1 1 ];
+        end
+
+        isBottomRow = (i > (args.subPlotDim(1)-1)*args.subPlotDim(2));
+        isFirstCol = (mod( i, args.subPlotDim(2) ) == 1);
+
         for j = 1:nModels
 
             xp = x + 0.01*(max(x)-min(x))*randn(1,nValues); 
-            pltObj(j) = scatter( axes(i), xp, y(j,:,i), ...
-                                 10, colours(j,:), "o", "Filled", ...
+
+            pltObj(j) = plot( axes(i), xp, y(j,:,i), ...
+                                 LineWidth = 1, ...
+                                 Color = colours(j,:), ...
                                  DisplayName = legendNames(j) );
-            errorbar( axes(i), xp, y(j,:,i), ySD(j,:,i), ...
-                      CapSize = 2, ... 
-                      LineWidth = 1, Color=colours(j,:), ...
-                      LineStyle= "none" );
+
+            scatter( axes(i), xp, y(j,:,i), ...
+                                 12, colours(j,:), "o", "Filled" );
+            if ySD(j,:,i) > 0
+                errorbar( axes(i), xp, y(j,:,i), ySD(j,:,i), ...
+                          CapSize = 2, ... 
+                          LineWidth = 1, Color=colours(j,:), ...
+                          LineStyle= "none" );
+            end
 
         end
 
@@ -66,8 +81,8 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
             legend( axes(i), pltObj, Location = 'best' );
         end
         
-        if args.showXAxis
-            if i == 1
+        if args.showXAxis && isBottomRow
+            if isFirstCol
                 xlabel( axes(i), paramName );
             end
             if isa( x, 'logical' )
@@ -80,8 +95,8 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
             axes(i).XAxis.TickLabels = [];
         end
 
-        if args.showYAxis
-            if i==1
+        if args.showYAxis && isFirstCol
+            if isBottomRow
                 ylabel( axes(i), metricName );
             end
             ymin = round( axes(i).YAxis.Limits(1), 2 );
