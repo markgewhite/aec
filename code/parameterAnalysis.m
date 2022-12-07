@@ -71,6 +71,8 @@ setup.model.args.trainer.ValPatience = 20;
 % evaluations
 setup.eval.args.verbose = true;
 setup.eval.args.CVType = 'Holdout';
+setup.eval.args.KFolds = 2;
+setup.eval.args.KFoldRepeats = 5;
 
 names = [ "ZDimRelation", ...
           "ResampleRateRelation", ...
@@ -104,6 +106,8 @@ if runAnalysis
                           [2 3 4 6 8 10 15 20], ...
                           datasets };
 
+                setup.eval.args.CVType = 'Holdout';
+
             case 2 % ResampleRate
                 parameters = [ "model.class", ...
                                "data.args.ResampleRate", ...
@@ -112,6 +116,8 @@ if runAnalysis
                 values = {modelClasses, ...
                           [1 5/4 3/2 2 4 5], ...
                           datasets };
+
+                setup.eval.args.CVType = 'Holdout';
 
             case 3 % NormalizedPts
                 parameters = [ "model.class", ...
@@ -122,6 +128,8 @@ if runAnalysis
                           [25 50 75 100 150 200], ...
                           datasets };
 
+                setup.eval.args.CVType = 'Holdout';
+
             case 4 % HasCentredDecoder
                 parameters = [ "model.class", ...
                                "model.args.HasCentredDecoder", ...
@@ -130,6 +138,8 @@ if runAnalysis
                 values = {modelClasses, ...
                           [false true], ...
                           datasets };
+
+                setup.eval.args.CVType = 'KFold';
 
             case 5 % HasAdaptiveTimeSpan
                 parameters = [ "model.class", ...
@@ -140,6 +150,8 @@ if runAnalysis
                           [false true], ...
                           datasets };
 
+                setup.eval.args.CVType = 'KFold';
+
             case 6 % Normalization
                 parameters = [ "model.class", ...
                                "model.args.HasInputNormalization", ...
@@ -148,6 +160,8 @@ if runAnalysis
                 values = {{@ConvolutionalModel}, ...
                           [false true], ...
                           datasetsVarLen };
+
+                setup.eval.args.CVType = 'KFold';
 
             case 7 % Classifier Loss
                 parameters = [ "model.class", ...
@@ -158,6 +172,8 @@ if runAnalysis
                           [false true], ...
                           datasets };
 
+                setup.eval.args.CVType = 'KFold';
+
             case 8 % KL Divergence Loss
                 parameters = [ "model.class", ...
                                "model.args.lossFcns.kl.args.DoCalcLoss", ...
@@ -166,6 +182,8 @@ if runAnalysis
                 values = {modelClasses, ...
                           [false true], ...
                           datasets };
+
+                setup.eval.args.CVType = 'KFold';
 
             case 9 % Adversarial Loss
                 parameters = [ "model.class", ...
@@ -176,6 +194,7 @@ if runAnalysis
                           [false true], ...
                           datasets };
 
+                setup.eval.args.CVType = 'KFold';
 
             otherwise
                 error(['Undefined grid search for i = ' num2str(i)]);
@@ -262,12 +281,19 @@ else
                 error(['Undefined parameters for report = ' num2str(i)]);
     
         end
-    
+
+        if i==6
+            thisLegend = 'Conv';
+        else
+            thisLegend = legendNames;
+        end
+
         for j = 1:size(plotMetrics,1)
             
             fig = plotParamRelation(   results{i}, plotParam, ...
                                        plotMetrics(j,1), plotMetrics(j,2), ...
-                                       datasetNames, legendNames, ...
+                                       datasetNames, ...
+                                       thisLegend, ...
                                        subPlotDim = plotDim, ...
                                        squarePlot = true ); 
 
