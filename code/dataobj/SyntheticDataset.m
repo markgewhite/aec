@@ -21,7 +21,7 @@ classdef SyntheticDataset < ModelDataset
     methods
 
         function self = SyntheticDataset( set, args, superArgs )
-            % Load the countermovement jump GRF dataset
+            % Generate the synthetic dataset
             arguments
                 set                 char ...
                     {mustBeMember( set, ...
@@ -42,6 +42,7 @@ classdef SyntheticDataset < ModelDataset
                 args.SharedLevel    double = 3
                 args.WarpLevel      double = 2
                 args.PaddingLength  double = 0
+                args.Lambda         double = []
                 superArgs.?ModelDataset
             end
 
@@ -71,11 +72,6 @@ classdef SyntheticDataset < ModelDataset
             pad.Value = 1;
             pad.Same = true;
             pad.Anchoring = 'None';
-       
-            % setup fda
-            paramsFd.BasisOrder = 4;
-            paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = 1E-9;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -88,7 +84,7 @@ classdef SyntheticDataset < ModelDataset
             self = self@ModelDataset( XRaw, Y, args.TSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
-                            fda = paramsFd, ...
+                            lambda = args.Lambda, ...
                             datasetName = "Synthetic Data", ...
                             channelLabels = "X (no units)", ...
                             timeLabel = "Time Domain", ...

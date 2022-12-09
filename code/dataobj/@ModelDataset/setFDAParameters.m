@@ -16,7 +16,9 @@ function [fdParams, lambda] = setFDAParameters( self, tSpan, X )
         gcvFcn = @(L) gcv( L, X, tSpan, basis1Fd, self.FDA.PenaltyOrder );
     
         % find the loglambda where GCV is minimized
-        logLambda = fminbnd( gcvFcn, -10, 10 );
+        warning( 'off', 'Wid2:reduce' );
+        logLambda = fminbnd( gcvFcn, -8, 6 );
+        warning( 'on', 'Wid2:reduce' );
         lambda = 10^round( logLambda, 1 );
     else
         lambda = self.FDA.Lambda;
