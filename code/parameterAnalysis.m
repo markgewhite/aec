@@ -238,10 +238,10 @@ else
                                "AuxModelErrorRate", "Aux. Model Error Rate"];
     
             case 3
-                plotParam = "\hat{X} Dimension";
+                plotParam = "$\hat{X}$ Dimension";
                 plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
                                "AuxModelErrorRate", "Aux. Model Error Rate"; ...
-                               "XCCorrelation", "X_{C} Mean Correlation"];
+                               "XCCorrelation", "$X_{C}$ Mean Correlation"];
     
             case 4
                 plotParam = "Has Centred Decoder";

@@ -17,7 +17,8 @@ classdef ExemplarDataset < ModelDataset
         PeakCovariance      % within-class peak variations
         Noise               % noise
         HasVariableLength   % time series have variable
-        TerminationValue    % truncate the series at this value, if variable length
+        TerminationValues   % truncate when passing through value [lower, upper], if variable length
+        TerminationType     % truncate when going above or below TerminationValues [lower, upper]
     end
 
     methods
@@ -31,7 +32,7 @@ classdef ExemplarDataset < ModelDataset
                 args.randomSeeds        (1,2) double = [ 1234 5678 ]
                 args.FeatureType        char ...
                         {mustBeMember( args.FeatureType, ...
-                                   {'Gaussian'} )} = 'Gaussian'
+                               {'Gaussian', 'Sigmoid'} )} = 'Gaussian'
                 args.ClassSizes         double ...
                         {mustBeInteger, mustBePositive} = 500
                 args.ClassElements      double ...
@@ -44,8 +45,12 @@ classdef ExemplarDataset < ModelDataset
                 args.PeakCovariance     cell
                 args.Noise              double = 0.002
                 args.HasVariableLength  logical = false
-                args.TerminationValue   double = 0
+                args.TerminationValues  (1, 2) double = [0 0]
+                args.TerminationTypes   (1, 2) string ...
+                        {mustBeMember( args.TerminationTypes, ...
+                               {'Above', 'Below'} )} = 'Below'
                 args.PaddingLength      double = 0
+                args.Lambda             double = []
                 superArgs.?ModelDataset
             end
 
@@ -55,7 +60,10 @@ classdef ExemplarDataset < ModelDataset
             switch args.FeatureType
                 case 'Gaussian'
                     featureFcn = @(x, ampl, mu, sigma) ...
-                                    (ampl*exp(-0.5*((x-mu)/sigma).^2));
+                                    ampl*exp(-0.5*((x-mu)/sigma).^2);
+                case 'Sigmoid'
+                    featureFcn = @(x, ampl, mu, sigma) ...
+                                    ampl./(exp(-(x-mu)/sigma)+1);
             end
 
             % setup the timespan
@@ -105,11 +113,6 @@ classdef ExemplarDataset < ModelDataset
             pad.Anchoring = 'None';
 
             tSpan= args.tSpan;
-        
-            % setup fda
-            paramsFd.BasisOrder = 4;
-            paramsFd.PenaltyOrder = 2;
-            paramsFd.Lambda = 1E-10;
          
             % process the data and complete the initialization
             superArgsCell = namedargs2cell( superArgs );
@@ -119,7 +122,7 @@ classdef ExemplarDataset < ModelDataset
             self = self@ModelDataset( X, Y, tSpan, ...
                             superArgsCell{:}, ...
                             padding = pad, ...
-                            fda = paramsFd, ...
+                            lambda = args.Lambda, ...
                             datasetName = name, ...
                             channelLabels = "\bf{\it{x_n(t)}}", ...
                             timeLabel = "\bf{\it{t}}", ...
@@ -137,7 +140,8 @@ classdef ExemplarDataset < ModelDataset
             self.PeakCovariance = args.PeakCovariance;
             self.Noise = args.Noise;
             self.HasVariableLength = args.HasVariableLength;
-            self.TerminationValue = args.TerminationValue;
+            self.TerminationValues = args.TerminationValues;
+            self.TerminationTypes = args.TerminationTypes;
 
             figure(4);
             plot( self.TSpan.Target, self.XTarget );
@@ -152,7 +156,7 @@ end
 function [ X, Y ] = generateData( c, fcn, args )
     % Generate gaussian shaped curves
     arguments
-        c             double
+        c               double
         fcn             function_handle
         args            struct
     end
@@ -190,27 +194,35 @@ function [ X, Y ] = generateData( c, fcn, args )
 
     end
 
+    % add in noise
+    for i = 1:nObs
+        X{i} = X{i} + args.Noise*randn( size(X{i}) );
+    end
+
     % truncate the series, if required
     if args.HasVariableLength
         for i = 1:nObs
-            adjX = X{i}-args.TerminationValue;
-            prod = adjX(1:end-1).*adjX(2:end);
-            first = find( prod < 0, 1 );
+            switch args.TerminationTypes(1)
+                case 'Above'
+                    first = find( X{i} < args.TerminationValues(1), 1 );
+                case 'Below'
+                    first = find( X{i} > args.TerminationValues(1), 1 );
+            end
             if isempty( first )
                 first = 1;
             end
-            last = find( prod < 0, 1, 'last' );
+            switch args.TerminationTypes(2)
+                case 'Above'
+                    last = find( X{i} > args.TerminationValues(2), 1, 'last' );
+                case 'Below'
+                    last = find( X{i} < args.TerminationValues(2), 1, 'last' );
+            end
             if isempty( last ) || last==first
                 last = length(X{i});
             end
             X{i} = X{i}( first:last );
         end
 
-    end
-
-    % add in noise
-    for i = 1:nObs
-        X{i} = X{i} + args.Noise*randn( size(X{i}) );
     end
 
 end
