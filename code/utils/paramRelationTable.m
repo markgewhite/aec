@@ -1,13 +1,12 @@
 function T = paramRelationTable( report, ...
-                                   paramName, metric, metricName, ...
-                                   legendNames, resultSet )
+                                   paramName, metric, ...
+                                   rowNames, resultSet )
     % Generate a table from an investigation report for a given metric
     arguments
         report              struct
         paramName           string
         metric              string
-        metricName          string
-        legendNames         string
+        rowNames            string
         resultSet           string = "TestingResults"
     end
     
@@ -36,8 +35,10 @@ function T = paramRelationTable( report, ...
 
     end
 
-    T0 = array2table( v );
-    T1 = array2table( r );
+    % setup the table
+    colNames = arrayfun( @(z) ['Col' num2str(z)], 1:nValues, UniformOutput = false );
+    T1 = array2table( v, VariableNames = colNames, RowNames = rowNames );
+    T2 = array2table( r );
 
     if nModels > 1
         embolden = "Columns";
@@ -45,9 +46,14 @@ function T = paramRelationTable( report, ...
         embolden = "None";
     end
         
-    T = genPaperTableCSV( T0, T1, [], ...
+    % apply latex formating for CSV
+    T = genPaperTableCSV( T1, T2, ...
                           direction = embolden, ...
                           criterion = "Smallest", ...
                           type = 'Rank');
+
+    % insert header row
+    T0 = array2table( x, VariableNames = colNames, RowNames = paramName );
+    T = [T0; T];
 
 end

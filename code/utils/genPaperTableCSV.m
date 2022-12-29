@@ -1,10 +1,9 @@
-function Tout = genPaperTableCSV( Tin, TinDev, TF, args )
+function Tout = genPaperTableCSV( Tin, TinDev, args )
     % Format tables with numeric elements for CSV output
     % Embolden best (highest/lowest) by row or by column
     arguments
         Tin                 table
         TinDev              table = []
-        TF                  table = []
         args.type           string {mustBeMember( ...
                     args.type, {'PlusMinus', 'Rank'})} = 'PlusMinus'
         args.format         string = '%1.3f'
@@ -19,9 +18,9 @@ function Tout = genPaperTableCSV( Tin, TinDev, TF, args )
 
     % format table as strings
     Tout = tableOfStrings( Tin, TinDev, ...
-                              Format = args.format, ...
-                              Format2 = args.format2, ...
-                              Type = args.type );
+                           Format = args.format, ...
+                           Format2 = args.format2, ...
+                           Type = args.type );
 
     % set the criterion function
     switch args.criterion
@@ -33,17 +32,6 @@ function Tout = genPaperTableCSV( Tin, TinDev, TF, args )
 
     Ain = table2array( Tin );
     [ nRows, nCols ] = size( Tin );
-
-    % mark the elements that are significantly different from the control
-    if ~isempty( TF )
-        for i = 1:nRows
-            for j = 1:nCols
-                if TF{i,j}<args.threshold && TF{i,j}~=0
-                    Tout{i,j} = strcat( Tout{i,j}, "\textsuperscript{*}" );
-                end
-            end
-        end
-    end
 
     % highlight the elements which are best according to criterion
     switch args.direction

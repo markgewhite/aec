@@ -11,12 +11,14 @@ function T0 = tableOfStrings( T1, T2, args )
     end
 
     formatFcn = @(s) string(num2str( s, args.format ));
-    vars = T1.Properties.VariableNames;
+    varNames = T1.Properties.VariableNames;
+    rowNames = T1.Properties.RowNames;
 
     if isempty( T2 )
         % only one table input, so can use varfun
         T0 = varfun( formatFcn, T1 );
-        T0.Properties.VariableNames = vars;
+        T0.Properties.VariableNames = varNames;
+        T0.Properties.RowNames = rowNames;
 
     else
         % two tables, so use loops to combine elements
@@ -47,7 +49,8 @@ function T0 = tableOfStrings( T1, T2, args )
             end
         end
         T0 = array2table( V0 );
-        T0.Properties.VariableNames = vars;
+        T0.Properties.VariableNames = varNames;
+        T0.Properties.RowNames = rowNames;
 
     end
 
