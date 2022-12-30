@@ -1,14 +1,18 @@
-function fig = plotParamRelation( report, paramName, metric, metricName, ...
-                                  datasetNames, legendNames, args )
+function fig = plotParamRelation( x, y, ySD, ...
+                                  xAxisLabel, ...
+                                  yAxisLabel, ...
+                                  legendNames, ...
+                                  datasetNames, ...
+                                  args )
     % Plot the parameter relationships from investigation reports
     arguments
-        report              struct
-        paramName           string
-        metric              string
-        metricName          string
-        datasetNames        string
+        x                   {mustBeA( x, {'double', 'string', 'logical'})}
+        y                   double
+        ySD                 double
+        xAxisLabel          string
+        yAxisLabel          string
         legendNames         string
-        args.resultSet      string = "TestingResults"
+        datasetNames        string
         args.showLegend     logical = true
         args.showTitle      logical = true
         args.showXAxis      logical = true
@@ -23,19 +27,12 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
                 {'First', 'BottomMiddle'} )} = 'BottomMiddle'
     end
     
-    nDim = length( report.GridSearch );
-    nModels = length( report.GridSearch{1} );
-    nValues = length( report.GridSearch{2} );
-    nDatasets = length( report.GridSearch{3} );
-
-    x = report.GridSearch{2};
-    y = report.(args.resultSet).Mean.(metric);
-    ySD = report.(args.resultSet).SD.(metric);
+    [nModels, nValues, nDatasets] = size( y );
 
     % initialize the plot
     fig = figure;
     axes = gobjects( nDatasets, 1 );
-    colours = lines( 3 );
+    colours = lines( nModels );
     if isempty(args.subPlotDim)
         args.subPlotDim = [1 nDatasets];
     end
@@ -109,7 +106,7 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
         
         if args.showXAxis && isBottomRow
             if isFirstCol
-                xlabel( axes(i), paramName );
+                xlabel( axes(i), xAxisLabel );
             end
             if isa( x, 'logical' )
                 xlim( axes(i), [-0.5 1.5] );
@@ -122,7 +119,7 @@ function fig = plotParamRelation( report, paramName, metric, metricName, ...
         end
 
         if args.showYAxis && isBottomRow && isFirstCol
-            ylabel( axes(i), metricName );
+            ylabel( axes(i), yAxisLabel );
         end
 
         if args.showYAxis
