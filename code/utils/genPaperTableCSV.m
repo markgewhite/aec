@@ -27,7 +27,7 @@ function Tout = genPaperTableCSV( Tin, TinDev, args )
         case 'Smallest'
             critFcn = @(x) min(abs(x));
         case 'Largest'
-            critFcn = @(X) max(abs(x));
+            critFcn = @(x) max(abs(x));
     end
 
     Ain = table2array( Tin );

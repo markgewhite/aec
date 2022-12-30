@@ -229,7 +229,8 @@ else
         switch i
             case 1
                 plotParam = "Z Dimension";
-                plotMetrics = ["ReconLossRegular", "Reconstruction Loss"; ...
+                plotMetrics = ["AuxModelCoeff", "Aux. Model Coefficients"; ...
+                               "ReconLossRegular", "Reconstruction Loss"; ...
                                "AuxModelErrorRate", "Aux. Model Error Rate"];
     
             case 2
@@ -290,9 +291,15 @@ else
 
         for j = 1:size(plotMetrics,1)
 
+            if strcmp( plotMetrics(j,1), 'AuxModelCoeff' )
+                best = 'Largest';
+            else
+                best = 'Smallest';
+            end
             tbl = paramRelationTable(  results{i}, plotParam, ...
                                        plotMetrics(j,1), ...
-                                       thisLegend );
+                                       thisLegend, ...
+                                       Highlight = best );
             filename = strcat( names(i), "-", plotMetrics(j,1), ".csv" );
             writetable( tbl, fullfile(pathResults, filename), ...
                         WriteRowNames = true );
