@@ -15,7 +15,7 @@ function T = paramRelationTable( report, ...
     nDatasets = length( report.GridSearch{3} );
 
     x = report.GridSearch{2};
-    y = report.(resultSet).Mean.(metric);
+    y = abs(report.(resultSet).Mean.(metric));
     
     % initialize the mean rankings and mean values array
     r = zeros( nModels, nValues);
@@ -26,7 +26,7 @@ function T = paramRelationTable( report, ...
 
         % determine the rankings for each data set
         for j = 1:nDatasets
-            [~, ranking(:,j)] = sort( y(:, i, j) );
+            ranking(:,j) = floor(tiedrank( y(:, i, j) ));
         end
         
         % compute the mean rankings and mean metrics for each value
@@ -36,7 +36,7 @@ function T = paramRelationTable( report, ...
     end
 
     % setup the table
-    colNames = arrayfun( @(z) ['Col' num2str(z)], 1:nValues, UniformOutput = false );
+    colNames = arrayfun( @num2str, x, UniformOutput = false );
     T1 = array2table( v, VariableNames = colNames, RowNames = rowNames );
     T2 = array2table( r );
 
@@ -53,7 +53,7 @@ function T = paramRelationTable( report, ...
                           type = 'Rank');
 
     % insert header row
-    T0 = array2table( x, VariableNames = colNames, RowNames = paramName );
-    T = [T0; T];
+    %T0 = array2table( x, VariableNames = colNames, RowNames = paramName );
+    %T = [T0; T];
 
 end
