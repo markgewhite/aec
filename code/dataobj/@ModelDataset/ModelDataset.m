@@ -309,6 +309,8 @@ classdef ModelDataset
 
         thisSubset = partition( self, idx )
 
+        fig = plot( self, args )
+
         [ fdParams, lambda ] = setTargetFdParams( self, X )
 
     end

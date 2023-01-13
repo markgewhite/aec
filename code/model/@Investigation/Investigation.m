@@ -129,8 +129,7 @@ classdef Investigation
                     self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
                 
                 %catch
-                
-                 %   warning('Evaluation failed.')
+                    %warning('Evaluation failed.')
                 
                 %end
 

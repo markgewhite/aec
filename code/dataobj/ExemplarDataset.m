@@ -18,7 +18,7 @@ classdef ExemplarDataset < ModelDataset
         Noise               % noise
         HasVariableLength   % time series have variable
         TerminationValues   % truncate when passing through value [lower, upper], if variable length
-        TerminationType     % truncate when going above or below TerminationValues [lower, upper]
+        TerminationTypes    % truncate when going above or below TerminationValues [lower, upper]
     end
 
     methods

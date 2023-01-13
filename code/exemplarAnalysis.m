@@ -31,7 +31,7 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 500;
+setup.model.args.trainer.NumIterations = 5; %500
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
@@ -50,7 +50,7 @@ memorySaving = 4;
 % -- grid search --
 nDims = 4;
 parameters = [ "model.class" ];
-values = {{@FCModel, @ConvolutionalModel, @FullPCAModel}}; 
+values = {{@FCModel}}; % {{@FCModel, @ConvolutionalModel, @PCAModel}}; 
 N = 500;
 sigma = 0.8;
 
