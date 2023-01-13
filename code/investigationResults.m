@@ -3,9 +3,12 @@ function results = investigationResults( names, path, ...
                                          memorySaving, resume )
 
     thisRun = Investigation( names, path, ...
-                             parameters, values, setup, ...
-                             memorySaving, resume );
+                             parameters, values, setup, resume );
 
     results = thisRun.getResults;
+
+    thisRun.conserveMemory( memorySaving );
+
+    thisRun.save;
 
 end

@@ -45,7 +45,7 @@ names = [ "Dataset A", ...
           "Dataset C" ];
 nReports = length( names );
 thisData = cell( nReports, 1 );
-memorySaving = 4;
+memorySaving = 3;
 
 % -- grid search --
 nDims = 4;

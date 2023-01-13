@@ -12,10 +12,6 @@ classdef Investigation
         Evaluations         % array of evaluation objects
         TrainingResults     % structure summarising results from evaluations
         TestingResults      % structure summarising results from evaluations
-        MemoryConservation  % degree of memory conservation employed
-                            % 0 = none; 1 = graphics cleared; 
-                            % 2 = graphics and predictions cleared;
-                            % 3 = graphics, predictions, and optimzer cleared
     end
 
 
@@ -23,7 +19,7 @@ classdef Investigation
 
         function self = Investigation( name, path, parameters, ...
                                        searchValues, setup, ...
-                                       memorySaving, resume )
+                                       resume )
             % Construct an investigation comprised of evaluations
             arguments
                 name            string
@@ -31,8 +27,6 @@ classdef Investigation
                 parameters      string
                 searchValues
                 setup           struct
-                memorySaving    double {mustBeInteger, ...
-                    mustBeInRange( memorySaving, 0, 4 )} = 0
                 resume          logical = false
             end
 
@@ -45,7 +39,6 @@ classdef Investigation
             % initialize properties
             self.Name = name;
             self.Path = path;
-            self.MemoryConservation = memorySaving;
 
             % add the name and path to the model properties
             setup.model.args.name = name;
@@ -133,20 +126,6 @@ classdef Investigation
                 
                 %end
 
-                % conserve memory - essential in a long run
-                if self.MemoryConservation == 4
-                    % maximum conservation: erase the evaluation
-                    % useful if the grid search is extensive
-                    self.Evaluations{ idxC{:} } = [];
-                else
-                    % scaled memory conservation
-                    self.Evaluations{ idxC{:} } = ...
-                        self.Evaluations{ idxC{:} }.conserveMemory( ...
-                                                self.MemoryConservation );
-                end
-
-                self.save;
-
             end
             
         end           
@@ -154,11 +133,11 @@ classdef Investigation
 
         % class methods
 
+        self = conserveMemory( self, level )
+
         datasets = getDatasets( self, args )
         
         report = getResults( self )
-
-        %self = self.logResults( idxC, allocation );
 
     end
 
