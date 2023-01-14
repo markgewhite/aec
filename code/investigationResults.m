@@ -5,14 +5,10 @@ function results = investigationResults( names, path, ...
     thisInvestigation = Investigation( names, path, ...
                              parameters, values, setup, resume );
 
-    results = thisInvestigation.getResults;
-
-    thisDataset = thisInvestigation.getDatasets;
-
-    fig = thisDataset.plot;
+    thisInvestigation.saveDataPlot;
 
     thisInvestigation.conserveMemory( memorySaving );
 
-    thisInvestigation.save;
+    results = thisInvestigation.save;
 
 end

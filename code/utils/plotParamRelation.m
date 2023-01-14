@@ -123,29 +123,8 @@ function fig = plotParamRelation( x, y, ySD, ...
         end
 
         if args.showYAxis
-            ymin = round( axes(i).YAxis.Limits(1), 2 );
-            ymax = round( axes(i).YAxis.Limits(2), 2 );
-            if ymin == 0
-                ymin = axes(i).YAxis.Limits(1);
-            end
-            if ymax == 0
-                ymax = axes(i).YAxis.Limits(2);
-            end
-            if 2*round(ymax/2, 2)~=ymax
-                ymax = ymax+0.01;
-            end
-            if 2*round(ymin/2, 2)~=ymin
-                ymax = ymax-0.01;
-            end
-            if ymin >= 0
-                ylim( axes(i), [0 ymax] );
-                axes(i).YAxis.TickValues = [0, ymax/2, ymax];
-            else
-                ylim( axes(i), [ymin ymax] );
-                axes(i).YAxis.TickValues = [ymin, 0, ymax];
-            end
+            setMinimalAxisTicks( axes(i), 'YAxis' );
             axes(i).YAxis.TickLabelFormat = '%.2f';
-
         else
             axes(i).YAxis.TickLabels = [];
         end            

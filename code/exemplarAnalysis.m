@@ -31,7 +31,7 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5; %500
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
@@ -43,14 +43,12 @@ setup.eval.args.CVType = 'Holdout';
 names = [ "Dataset A", ...
           "Dataset B", ...
           "Dataset C" ];
-nReports = length( names );
-thisData = cell( nReports, 1 );
 memorySaving = 3;
 
 % -- grid search --
 nDims = 4;
 parameters = [ "model.class" ];
-values = {{@FCModel}}; % {{@FCModel, @ConvolutionalModel, @PCAModel}}; 
+values = {{@FCModel, @ConvolutionalModel, @PCAModel}}; 
 N = 500;
 sigma = 0.8;
 

@@ -142,6 +142,8 @@ classdef Investigation
         
         report = getResults( self )
 
+        fig = saveDataPlot( self, args )
+
     end
 
 end

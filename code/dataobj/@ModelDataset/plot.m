@@ -24,7 +24,7 @@ function fig = plot( self, args )
                           self.TSpan.Original(end), 101 );
 
     % initialize the plot
-    fig = figure;
+    fig = figure(4);
     axes = gobjects( self.XChannels, 1 );
     pltObj = gobjects( self.CDim, 1 );
     for c = 1:self.XChannels
@@ -54,7 +54,7 @@ function fig = plot( self, args )
                 % plot the curve straight
                 plot( axes(c), ...
                       tSpanPlot, X( :, i, c ), ...
-                      LineWidth = 0.5, ...
+                      LineWidth = 1, ...
                       Color = rgb );
             else
                 % plot the curve and update the legend
@@ -63,7 +63,7 @@ function fig = plot( self, args )
                 pltObj( Y(i) ) = plot( axes(c), ...
                                   tSpanPlot, X( :, i, c ), ...
                                   Color = rgb, ...
-                                  LineWidth = 0.5, ...
+                                  LineWidth = 1, ...
                                   DisplayName = classLabel );
 
             end
@@ -99,6 +99,7 @@ function fig = plot( self, args )
             ylim( axes(c), self.Info.ChannelLimits(c,:) );
         end               
 
+        axes(c).PlotBoxAspectRatio = [1 1 1 ];
         finalisePlot( axes(c) );
 
     end
