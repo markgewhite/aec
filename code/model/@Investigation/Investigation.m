@@ -110,7 +110,7 @@ classdef Investigation
                     argsCell = {};
                 end
 
-                %try
+                try
                     self.Evaluations{ idxC{:} } = ...
                                 ModelEvaluation( setup.model.args.name, ...
                                                  setup, ...
@@ -121,10 +121,13 @@ classdef Investigation
                     % save the evaluations
                     self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
                 
-                %catch
-                    %warning('Evaluation failed.')
+                catch ME
+                    warning('Evaluation failed.')
+                    disp(['Error Message: ' ME.message]);
+                    disp([ME.stack(1).name ', (line ' ...
+                                         num2str(ME.stack(1).line) ')']);
                 
-                %end
+                end
 
             end
             

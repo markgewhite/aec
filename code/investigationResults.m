@@ -2,13 +2,17 @@ function results = investigationResults( names, path, ...
                                          parameters, values, setup, ...
                                          memorySaving, resume )
 
-    thisRun = Investigation( names, path, ...
+    thisInvestigation = Investigation( names, path, ...
                              parameters, values, setup, resume );
 
-    results = thisRun.getResults;
+    results = thisInvestigation.getResults;
 
-    thisRun.conserveMemory( memorySaving );
+    thisDataset = thisInvestigation.getDatasets;
 
-    thisRun.save;
+    fig = thisDataset.plot;
+
+    thisInvestigation.conserveMemory( memorySaving );
+
+    thisInvestigation.save;
 
 end
