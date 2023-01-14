@@ -100,6 +100,10 @@ classdef ExemplarDataset < ModelDataset
 
             end
 
+            % set y limits
+            ylimits = [floor(min(cellfun(@min, X))) ...
+                       ceil(max(cellfun(@max, X)))];
+
             % setup padding
             if args.PaddingLength==0
                 pad.Length = length( args.tSpan );
@@ -127,7 +131,7 @@ classdef ExemplarDataset < ModelDataset
                             channelLabels = "\bf{\it{x_n(t)}}", ...
                             timeLabel = "\bf{\it{t}}", ...
                             classLabels = labels, ...
-                            channelLimits = [-1 5] );
+                            channelLimits = ylimits );
 
             self.FeatureType = args.FeatureType;
             self.ClassSizes = args.ClassSizes;
@@ -143,9 +147,6 @@ classdef ExemplarDataset < ModelDataset
             self.TerminationValues = args.TerminationValues;
             self.TerminationTypes = args.TerminationTypes;
 
-            figure(4);
-            plot( self.TSpan.Target, self.XTarget );
-
         end
 
     end
@@ -153,7 +154,7 @@ classdef ExemplarDataset < ModelDataset
 end
 
 
-function [ X, Y ] = generateData( c, fcn, args )
+function X = generateData( c, fcn, args )
     % Generate gaussian shaped curves
     arguments
         c               double
