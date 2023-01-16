@@ -26,8 +26,7 @@ function self = conserveMemory( self, level )
         else
             % scaled memory conservation
             self.Evaluations{ idxC{:} } = ...
-                self.Evaluations{ idxC{:} }.conserveMemory( ...
-                                        self.MemoryConservation );
+                self.Evaluations{ idxC{:} }.conserveMemory( level );
         end
 
     end

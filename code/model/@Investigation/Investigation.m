@@ -124,8 +124,10 @@ classdef Investigation
                 catch ME
                     warning('Evaluation failed.')
                     disp(['Error Message: ' ME.message]);
-                    disp([ME.stack(1).name ', (line ' ...
-                                         num2str(ME.stack(1).line) ')']);
+                    for i = 1:length(ME.stack)
+                        disp([ME.stack(i).name ', (line ' ...
+                                             num2str(ME.stack(i).line) ')']);
+                    end
                 
                 end
 

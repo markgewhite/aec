@@ -2,7 +2,7 @@
 
 clear;
 
-runAnalysis = false;
+runAnalysis = true;
 inParallel = false;
 resume = false;
 reportIdx = 1:3;
@@ -30,7 +30,7 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 2;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
@@ -48,7 +48,7 @@ memorySaving = 3;
 dims = [4];
 parameters = [ "model.class", "model.args.ZDim" ];
 values = {{@FCModel, @ConvolutionalModel, @PCAModel}, dims}; 
-N = 500;
+N = 200; %500
 sigma = 0.8;
 
 nReports = length( reportIdx );
