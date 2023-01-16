@@ -2,10 +2,10 @@
 
 clear;
 
-runAnalysis = false;
+runAnalysis = true;
 inParallel = false;
 resume = false;
-reportIdx = 1:3;
+reportIdx = 3;
 plotDim = [2 5];
 
 % set the destinations for results and figures
@@ -30,7 +30,7 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
@@ -45,11 +45,11 @@ names = [ "Dataset A", ...
 memorySaving = 3;
 
 % -- grid search --
-dims = [4];
 parameters = [ "model.class", "model.args.ZDim" ];
+dims = [1 2 3 4];
 values = {{@FCModel, @ConvolutionalModel, @PCAModel}, dims}; 
-N = 200; %500
-sigma = 0.8;
+N = 500;
+sigma = 0.5;
 
 nReports = length( reportIdx );
 nModels = length( values{1} );
@@ -71,34 +71,34 @@ if runAnalysis
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
                 setup.data.args.ClassElements = 1;
-                setup.data.args.ClassMeans = [ -1; 1 ];
-                setup.data.args.ClassSDs = [ 0.25; 0.5 ];
-                setup.data.args.ClassPeaks = [ 2.0; 1.0 ];
+                setup.data.args.ClassPeaks = [ 2.0; 1.5 ];
+                setup.data.args.ClassPositions = [ 0; 0 ];
+                setup.data.args.ClassWidths = [ 1.0; 1.5 ];
         
-                setup.data.args.PeakCovariance{1} = sigma;
-                setup.data.args.MeanCovariance{1} = sigma;
-                setup.data.args.SDCovariance{1} = sigma;
-    
-                setup.data.args.PeakCovariance{2} = sigma;
-                setup.data.args.MeanCovariance{2} = sigma;
-                setup.data.args.SDCovariance{2} = sigma;
-    
+                setup.data.args.Covariance{1} = 0.1*[1 0 -sigma; 
+                                                     0 1 0;
+                                                     -sigma 0 1];
+                setup.data.args.Covariance{2} = 0.05*[1 0 -sigma; 
+                                                     0 1 0;
+                                                     -sigma 0 1];
+
             case 2
                 % Data set B: two double-Gaussian classes
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
                 setup.data.args.ClassElements = 2;
-                setup.data.args.ClassMeans = [ -0.5 0; 0 0.5 ];
-                setup.data.args.ClassSDs = [ 0.5 0.3; 0.2 0.1 ];
-                setup.data.args.ClassPeaks = [ 2.0 1.5; 2.0 1.0 ];
-        
-                setup.data.args.PeakCovariance{1} = 0.1*[1 -sigma; -sigma 1];
-                setup.data.args.MeanCovariance{1} = 0.1*[1 -sigma; -sigma 1];
-                setup.data.args.SDCovariance{1} = 0.1*[1 -sigma; -sigma 1];
-    
-                setup.data.args.PeakCovariance{2} = 0.2*[1 -sigma; -sigma 1];
-                setup.data.args.MeanCovariance{2} = 0.2*[1 -sigma; -sigma 1];
-                setup.data.args.SDCovariance{2} = 0.2*[1 -sigma; -sigma 1];
+                setup.data.args.ClassPeaks = [ 2.0 1.0; 1.0 1.5 ];
+                setup.data.args.ClassPositions = [ -1 1; -1 2 ];
+                setup.data.args.ClassWidths = [ 1.0 0.2; 0.8 0.1 ];
+      
+                setup.data.args.Covariance{1} = 0.1*[1 0 -sigma; 
+                                                     0 1 0;
+                                                     -sigma 0 1];
+
+                setup.data.args.Covariance{2} = 0.05*[1 0 -sigma; 
+                                                     0 1 0;
+                                                     -sigma 0 1];
+
 
             case 3
                 % Data set C: two single-sigmoid classes of variable length
@@ -109,17 +109,14 @@ if runAnalysis
 
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
                 setup.data.args.ClassElements = 1;
-                setup.data.args.ClassMeans = [ 0; 0 ];
-                setup.data.args.ClassSDs = [ 0.25; 0.5 ];
-                setup.data.args.ClassPeaks = [ 1.0; 1.0 ];
+                setup.data.args.ClassPeaks = [ 2.0; 2.0 ];
+                setup.data.args.ClassPositions = [ -1; 1 ];
+                setup.data.args.ClassWidths = [ 0.5; 0.5 ];
         
-                setup.data.args.PeakCovariance{1} = sigma;
-                setup.data.args.MeanCovariance{1} = sigma;
-                setup.data.args.SDCovariance{1} = sigma;
-    
-                setup.data.args.PeakCovariance{2} = sigma;
-                setup.data.args.MeanCovariance{2} = sigma;
-                setup.data.args.SDCovariance{2} = sigma;
+                setup.data.args.Covariance{1} = 0.01*[1 0 -sigma; 
+                                                     0 1 0;
+                                                     -sigma 0 1];
+                setup.data.args.Covariance{2} = setup.data.args.Covariance{1};
               
             case 4
                 % Double Gaussian with peak inverse covariance

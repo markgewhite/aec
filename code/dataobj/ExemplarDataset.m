@@ -6,15 +6,12 @@ classdef ExemplarDataset < ModelDataset
         FeatureType         % formula type for the feature element
         ClassSizes          % number observations per class (vector)
         ClassElements       % number of elements per class
-        ClassMeans          % positions of features
-                            % columns are elements, rows are classes
-        ClassSDs            % standard deviations of classes
-        ClassPeaks          % amplitudes of classes
-        MeanCovariance      % within-class position variations
-                            % cell array element per class
-                            % symmetric, positive-definite array per class
-        SDCovariance        % within-class SD variations
-        PeakCovariance      % within-class peak variations
+        ClassPeaks          % features' amplitudes (row per class)
+        ClassPositions      % features' temporal positions (row per class)
+        ClassWidths         % features' widths (row per class)
+        Covariances         % covariance of feature positions, widths and peaks
+                            % symmetric, positive-definite matrix per class
+                            % applies to all elements within that class
         Noise               % noise
         HasVariableLength   % time series have variable
         TerminationValues   % truncate when passing through value [lower, upper], if variable length
@@ -37,13 +34,11 @@ classdef ExemplarDataset < ModelDataset
                         {mustBeInteger, mustBePositive} = 500
                 args.ClassElements      double ...
                         {mustBeInteger, mustBePositive} = 1
-                args.ClassMeans         double
-                args.ClassSDs           double
                 args.ClassPeaks         double
-                args.MeanCovariance     cell
-                args.SDCovariance       cell
-                args.PeakCovariance     cell
-                args.Noise              double = 0.002
+                args.ClassPositions     double
+                args.ClassWidths        double
+                args.Covariances        cell
+                args.Noise              double = 0
                 args.HasVariableLength  logical = false
                 args.TerminationValues  (1, 2) double = [0 0]
                 args.TerminationTypes   (1, 2) string ...
@@ -136,12 +131,10 @@ classdef ExemplarDataset < ModelDataset
             self.FeatureType = args.FeatureType;
             self.ClassSizes = args.ClassSizes;
             self.ClassElements = args.ClassElements;
-            self.ClassMeans = args.ClassMeans;
-            self.ClassSDs = args.ClassSDs;
             self.ClassPeaks = args.ClassPeaks;
-            self.MeanCovariance = args.MeanCovariance;
-            self.SDCovariance = args.SDCovariance;
-            self.PeakCovariance = args.PeakCovariance;
+            self.ClassPositions = args.ClassPositions;
+            self.ClassWidths = args.ClassWidths;
+            self.Covariances = args.Covariances;
             self.Noise = args.Noise;
             self.HasVariableLength = args.HasVariableLength;
             self.TerminationValues = args.TerminationValues;
@@ -171,25 +164,19 @@ function X = generateData( c, fcn, args )
         X{i} = zeros( nPts, 1 );
     end
 
-    % generate the parameters according to mean and covariance
-    ampl  = mvnrndChi2( args.ClassPeaks( c, : ), ...
-                        args.PeakCovariance{c}, ...
-                        nObs, 4 );
-
-    mu    = mvnrnd( args.ClassMeans( c, : ), ...
-                    args.MeanCovariance{c}, ...
-                    nObs );
-
-    sigma = mvnrndChi2( args.ClassSDs( c, : ), ...
-                        args.SDCovariance{c}, ...
-                        nObs, 4 );  
-
     % produce the curves by layering on feature elements
     for j = 1:args.ClassElements
 
+        % generate the parameters according to mean and covariance
+        spec = [ args.ClassPeaks( c, j )
+                 args.ClassPositions( c, j )
+                 args.ClassWidths( c, j ) ];
+    
+        param  = mvnrnd( spec, args.Covariances{c}, nObs );
+
         for i = 1:nObs
 
-            X{i} = X{i} + fcn( args.tSpan, ampl(i,j), mu(i,j), sigma(i,j) );
+            X{i} = X{i} + fcn( args.tSpan, param(i,1), param(i,2), param(i,3) );
 
         end
 
