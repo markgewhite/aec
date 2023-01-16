@@ -2,7 +2,7 @@
 
 clear;
 
-runAnalysis = true;
+runAnalysis = false;
 inParallel = false;
 resume = false;
 reportIdx = 1:3;

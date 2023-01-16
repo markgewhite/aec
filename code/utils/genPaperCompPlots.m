@@ -13,18 +13,13 @@ function genPaperCompPlots( path, title, names, nDims, nReports, nModels )
         for d = 1:nDims
             for j = 1:nModels
 
-                if not(nDims==1 || nModels==1)
-                    evalCode = strcat(num2str(j), ",", num2str(d));
-                elseif nDims==1
-                    evalCode = num2str(j);
-                else
-                    evalCode = num2str(d);
-                end
+                evalCode = strcat(num2str(j), ",", num2str(d));
 
                 figpath = strcat( path, "/", names(i), "/", ...
                     names(i), "-Eval(", evalCode, ")/comp" );
             
-                figfilename = strcat( names(i), "(1).fig" );
+                figfilename = strcat( names(i), "(", ...
+                                      evalCode, ").fig" );
                 fig = openfig( fullfile(figpath, figfilename) );
                 filename = strcat( title, "-", names(i), "-Comp(", ...
                     num2str(j), ",", num2str(d), ").pdf" );
@@ -33,6 +28,7 @@ function genPaperCompPlots( path, title, names, nDims, nReports, nModels )
                                      width = "Components", ...
                                      keepXAxisLabels = false, ...
                                      keepYAxisLabels = false, ...
+                                     keepLegend = false, ...
                                      filename = filename );
     
     

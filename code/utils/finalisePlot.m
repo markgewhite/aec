@@ -15,6 +15,7 @@ function finalisePlot( ax, args )
     ax.XLabel.Interpreter = 'latex';
     ax.YLabel.Interpreter = 'latex';
     ax.Title.Interpreter = 'latex';
+    ax.Title.VerticalAlignment = 'cap';
     
     if args.square
         ax.PlotBoxAspectRatio = [1 1 1];
