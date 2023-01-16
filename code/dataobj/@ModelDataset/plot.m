@@ -25,10 +25,11 @@ function fig = plot( self, args )
 
     % initialize the plot
     fig = figure(4);
+    tiledlayout( fig, 1, self.XChannels, TileSpacing = 'Compact' );
     axes = gobjects( self.XChannels, 1 );
     pltObj = gobjects( self.CDim, 1 );
     for c = 1:self.XChannels
-        axes(c) = subplot( 1, self.XChannels, c );
+        axes(c) = nexttile;
         cla( axes(c) );
         hold( axes(c), 'on' );
     end
@@ -100,7 +101,7 @@ function fig = plot( self, args )
         end               
 
         axes(c).PlotBoxAspectRatio = [1 1 1 ];
-        finalisePlot( axes(c) );
+        finalisePlot( axes(c), minimalTicks = true );
 
     end
 

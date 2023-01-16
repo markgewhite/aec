@@ -1,7 +1,8 @@
 function finalisePlot( ax, args )
     arguments
         ax
-        args.square     logical = false
+        args.square         logical = false
+        args.minimalTicks   logical = false
     end
 
     ax.Box = false;
@@ -17,6 +18,11 @@ function finalisePlot( ax, args )
     
     if args.square
         ax.PlotBoxAspectRatio = [1 1 1];
+    end
+
+    if args.minimalTicks
+        setMinimalAxisTicks( ax, 'XAxis' );
+        setMinimalAxisTicks( ax, 'YAxis' );
     end
 
 end

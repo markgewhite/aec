@@ -4,10 +4,11 @@ function [figs, axes]= initializePlots( XChannels, ZDim )
     % setup figure for Z distribution and clustering
     figs.LatentSpace = figure(1);
     clf;
-    axes.ZDistribution = subplot( 2, 2, 1 );
-    axes.ZClustering = subplot( 2, 2, 2 );
-    axes.AuxModel = subplot( 2, 2, 3 );
-    axes.AuxNetwork = subplot( 2, 2, 4 );
+    tiledlayout( figs.LatentSpace, 2, 2, TileSpacing = 'Compact' );
+    axes.ZDistribution = nexttile;
+    axes.ZClustering = nexttile;
+    axes.AuxModel = nexttile;
+    axes.AuxNetwork = nexttile;
 
     % setup the components figure
     figs.Components = figure(2);
@@ -15,11 +16,12 @@ function [figs, axes]= initializePlots( XChannels, ZDim )
     figs.Components.Position(4) = 50 + XChannels*200;
     
     clf;
+    tiledlayout( figs.Components, XChannels, ZDim, TileSpacing = 'Compact' );
     axes.Comp = gobjects( XChannels, ZDim );
 
     for i = 1:XChannels
         for j = 1:ZDim
-            axes.Comp(i,j) = subplot( XChannels, ZDim, (i-1)*ZDim + j );
+            axes.Comp(i,j) = nexttile;
         end
     end
 

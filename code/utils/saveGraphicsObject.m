@@ -11,6 +11,10 @@ function saveGraphicsObject( obj, filename )
         fig = obj;
     end
 
+    if isa( fig, 'matlab.graphics.layout.TiledChartLayout' )
+        fig = fig.Parent;
+    end
+
     savefig( fig, strcat( filename, '.fig' ) );
 
 
