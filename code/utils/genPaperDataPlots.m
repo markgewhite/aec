@@ -1,29 +1,25 @@
-function genPaperDataPlots( thisData, title, names )
+function genPaperDataPlots( path, title, names )
     % Compile dataset plots for the paper
     arguments
-        thisData        cell
+        path            string
         title           string
         names           string
     end
 
-    n = length( thisData );
-    if n ~= length( names )
-        error('The number of datasets and names do not match.');
-    end
-    
-    for i = 1:n
+    nDatasets = length( names );
+    for i = 1:nDatasets
 
-        fig = plotDataset( thisData{i} );
-        filename = strcat( title, "-", names(i), "-Data.pdf" );
+        figFilename = strcat( names(i), "/", names(i), "-InvestigationData" );
+        fig = openfig( fullfile(path, figFilename) );
 
-        fig = formatIEEEFig( fig, ...
-                             width = "Bespoke", ...
-                             inches = 1.5, ...
-                             size = "Medium", ...
-                             keepAxisLabels = false, ...
-                             keepAxisTicks = true, ...
-                             keepTitle = true, ...
-                             filename = filename );
+        newFilename = strcat( title, "-", names(i), "-Data Plot.pdf" );
+
+        formatIEEEFig( fig, ...
+                       width = "Dataset", ...
+                       keepLegend = false, ...
+                       keepXAxisLabels = false, ...
+                       keepYAxisLabels = false, ...
+                       filename = newFilename );
 
     end
 

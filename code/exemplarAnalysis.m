@@ -2,10 +2,10 @@
 
 clear;
 
-runAnalysis = true;
+runAnalysis = false;
 inParallel = false;
 resume = false;
-reportIdx = 3;
+reportIdx = 1:3;
 plotDim = [2 5];
 
 % set the destinations for results and figures
@@ -18,7 +18,6 @@ setup.data.class = @ExemplarDataset;
 setup.data.args.HasNormalizedInput = true;
 
 % -- model setup --
-setup.model.args.ZDim = 4;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
@@ -46,22 +45,15 @@ names = [ "Dataset A", ...
 memorySaving = 3;
 
 % -- grid search --
-nDims = 4;
-parameters = [ "model.class" ];
-values = {{@FCModel, @ConvolutionalModel, @PCAModel}}; 
+dims = [4];
+parameters = [ "model.class", "model.args.ZDim" ];
+values = {{@FCModel, @ConvolutionalModel, @PCAModel}, dims}; 
 N = 500;
 sigma = 0.8;
 
-nDatasets = 6;
+nReports = length( reportIdx );
 nModels = length( values{1} );
-nReports = 8;
-
-name = [ "1G-PeakVar", "1G-MeanVar", ...
-         "2G-PeakVar", "2G-MeanSDVar", ...
-         "1G-2Classes", "1G-2Classes-Classify", ...
-         "2G-2Classes", "2G-2Classes-Classify" ];
-results = cell( nReports, 1 );
-thisData = cell( nReports, 1 );
+nDims = length( dims );
 
 if runAnalysis
 
@@ -155,42 +147,42 @@ if runAnalysis
 else
 
     % load from files instead
-    for i = 1:nReports
-        filename = strcat( name(i), "/", name(i), "-Investigation" );
+    for i = reportIdx
+        filename = strcat( names(i), "/", names(i), "-Investigation" );
         load( fullfile( path, filename ), 'report' );
         results{i} = report;
     end
 
-end
-
-% compile results for the paper
-fields = [ "ReconLossRegular", "AuxModelLoss", ...
-           "ZCorrelation", "XCCorrelation" ];
-nFields = length( fields );
-
-for d = 1:nDims
-
-    for i = 1:nFields
-        for j = 1:nModels
-            fieldName = strcat( fields(i), num2str(j) );
-            T.(fieldName) = zeros( nReports, 1 );
-            for k = 1:nReports
-                T.(fieldName)(k) = results{k}.TestingResults.(fields(i))(j,d);
+    % compile results for the paper
+    fields = [ "ReconLossRegular", "AuxModelErrorRate", ...
+               "ZCorrelation", "XCCorrelation" ];
+    nFields = length( fields );
+    
+    for d = 1:nDims
+    
+        for i = 1:nFields
+            for j = 1:nModels
+                fieldName = strcat( fields(i), num2str(j) );
+                T.(fieldName) = zeros( nReports, 1 );
+                for k = reportIdx
+                    T.(fieldName)(k) = results{k}.TestingResults.Mean.(fields(i))(j,d);
+                end
             end
         end
+        T0 = struct2table( T );
+    
+        T0 = genPaperTableCSV( T0, direction = "Rows", criterion = "Smallest", ...
+                               groups = [ {1:nModels}, {3*nModels+1:4*nModels} ] );
+    
+        filename = strcat( "Exemplars-Dim", num2str(d), ".csv" );
+        writetable( T0, fullfile( pathResults, filename ) );
+    
     end
-    T0 = struct2table( T );
-
-    T0 = genPaperTableCSV( T0, direction = "Rows", criterion = "Lowest", ...
-                           groups = [ {1:nModels}, {3*nModels+1:4*nModels} ] );
-
-    filename = strcat( "Exemplars-Dim", num2str(d), ".csv" );
-    writetable( T0, fullfile( path2, filename ) );
+    
+    % save the dataset plots
+    genPaperDataPlots( path, "Exemplars", names );
+    
+    % re-save the component plots
+    genPaperCompPlots( path, "Exemplars", names, nDims, nReports, nModels );
 
 end
-
-% save the dataset plots
-genPaperDataPlots( thisData, "Exemplars", name );
-
-% re-save the component plots
-genPaperCompPlots( path, "Exemplars", name, 2, nReports, nModels ) 

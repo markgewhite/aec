@@ -36,7 +36,6 @@ function fig = formatIEEEFig( fig, args )
     path = fileparts( which('utils/formatIEEEFig.m') );
     path = [path '/../../paper/figures/'];
 
-    p = 0;
     for i = 1:length(fig.Children)
 
         child = fig.Children(i);
@@ -72,11 +71,12 @@ function updateGraphicsObject( obj, args )
             if ~args.keepXAxisLabels
                 obj.XAxis.Label = [];
             end
+            obj.XAxis.Label.Position(1) = obj.XAxis.Label.Position(1)*0.90;
 
             if ~args.keepYAxisLabels
                 obj.YAxis.Label = [];
             end
-            obj.YAxis.Label.Position(1) = obj.YAxis.Label.Position(1)*1.05;
+            obj.YAxis.Label.Position(1) = obj.YAxis.Label.Position(1)*0.90;
 
             if ~args.keepXAxisTicks
                 obj.XAxis.TickValues = [];
