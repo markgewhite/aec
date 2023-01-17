@@ -5,12 +5,13 @@ clear;
 runAnalysis = true;
 inParallel = false;
 resume = false;
-reportIdx = 3;
+catchErrors = false;
+reportIdx = 1:3;
 plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/exemplars/'];
+path = [path0 '/../results/exemplars_test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -30,7 +31,7 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 1;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
@@ -48,7 +49,7 @@ memorySaving = 3;
 parameters = [ "model.class", "model.args.ZDim" ];
 dims = [1 2 3 4];
 values = {{@FCModel, @ConvolutionalModel, @PCAModel}, dims}; 
-N = 500;
+N = 50;
 sigma = 0.5;
 
 nReports = length( reportIdx );
@@ -132,11 +133,11 @@ if runAnalysis
             results(i) = parfeval( pool, @investigationResults, 1, ...
                                    names(i), path, ...
                                    parameters, values, setup, ...
-                                   memorySaving, resume );
+                                   memorySaving, resume, catchErrors );
         else
             results(i) = investigationResults( names(i), path, ...
                                                parameters, values, setup, ...
-                                               memorySaving, resume );
+                                               memorySaving, resume, catchErrors );
         end
     
     end

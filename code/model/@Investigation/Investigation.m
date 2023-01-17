@@ -12,6 +12,7 @@ classdef Investigation
         Evaluations         % array of evaluation objects
         TrainingResults     % structure summarising results from evaluations
         TestingResults      % structure summarising results from evaluations
+        CatchErrors         % falg indicating if try-catch should be used
     end
 
 
@@ -19,7 +20,7 @@ classdef Investigation
 
         function self = Investigation( name, path, parameters, ...
                                        searchValues, setup, ...
-                                       resume )
+                                       resume, catchErrors )
             % Construct an investigation comprised of evaluations
             arguments
                 name            string
@@ -28,6 +29,7 @@ classdef Investigation
                 searchValues
                 setup           struct
                 resume          logical = false
+                catchErrors     logical = true
             end
 
             % create a folder for this investigation
@@ -110,25 +112,34 @@ classdef Investigation
                     argsCell = {};
                 end
 
-                try
-                    self.Evaluations{ idxC{:} } = ...
-                                ModelEvaluation( setup.model.args.name, ...
-                                                 setup, ...
-                                                 argsCell{:} );
-                    % record results
-                    self = self.logResults( idxC, allocation );
-        
-                    % save the evaluations
-                    self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );
-                
-                catch ME
-                    warning('Evaluation failed.')
-                    disp(['Error Message: ' ME.message]);
-                    for i = 1:length(ME.stack)
-                        disp([ME.stack(i).name ', (line ' ...
-                                             num2str(ME.stack(i).line) ')']);
+                if catchErrors
+                    try
+                        self.Evaluations{ idxC{:} } = ...
+                                    ModelEvaluation( setup.model.args.name, ...
+                                                     setup, ...
+                                                     argsCell{:} );
+                        % record results
+                        self = self.logResults( idxC, allocation );
+            
+                        % save the evaluations
+                        self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );    
+                    catch ME
+                        warning('Evaluation failed.')
+                        disp(['Error Message: ' ME.message]);
+                        for i = 1:length(ME.stack)
+                            disp([ME.stack(i).name ', (line ' ...
+                                                 num2str(ME.stack(i).line) ')']);
+                        end
+                    
                     end
                 
+                else
+                        self.Evaluations{ idxC{:} } = ...
+                                    ModelEvaluation( setup.model.args.name, ...
+                                                     setup, ...
+                                                     argsCell{:} );
+                        self = self.logResults( idxC, allocation );
+                        self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );    
                 end
 
             end
