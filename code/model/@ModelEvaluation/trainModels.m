@@ -40,15 +40,20 @@ function self = trainModels( self, modelSetup )
             rng( self.RandomSeed );
         end
 
-        % train the sub-model and time it
+        % train the model and time it
         tStart = tic;
         self.Models{k} = self.Models{k}.train( thisTrnSet );
         self.Models{k}.Timing.Training.TotalTime = toc(tStart);
 
-        % evaluate the sub-model
+        % evaluate the model
         tStart = tic;
         self.Models{k} = self.Models{k}.evaluate( thisTrnSet, thisValSet );
         self.Models{k}.Timing.Validation.TotalTime = toc(tStart);
+
+        % generate the model plots
+        if self.Models{k}.ShowPlots
+            self.Models{k}.showAllPlots;
+        end
 
         % save the model
         self.Models{k}.save;

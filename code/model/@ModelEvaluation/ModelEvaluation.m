@@ -120,8 +120,6 @@ classdef ModelEvaluation
 
         self = initAEModel( self, setup )
 
-        plotModel( self )
-
         save( self, path, name )
 
 

@@ -54,14 +54,5 @@ function self = train( self, thisData )
     [ self.FDA.FdParamsTarget, self.FDA.LambdaTarget ] = ...
         thisData.setFDAParameters( thisData.TSpan.Target, ...
                                    permute(XHat, [1 3 2]) );
-    
-    % plot them on specified axes
-    self.plotLatentComp( type = 'Smoothed', shading = true );
-
-    % plot the Z distributions
-    self.plotZDist( Z );
-
-    % plot the Z clusters
-    self.plotZClusters( Z, Y = thisData.Y );
 
 end

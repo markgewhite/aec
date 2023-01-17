@@ -208,6 +208,8 @@ classdef AEModel < RepresentationModel
 
         self = setLossScalingFactor( self )
 
+        showAllPlots( self, args )
+
     end
 
 

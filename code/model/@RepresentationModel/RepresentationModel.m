@@ -150,6 +150,8 @@ classdef RepresentationModel
         
         [ YHat, YHatScore] = predictAuxModel( self, Z )
 
+        showAllPlots( self )
+
     end
 
     

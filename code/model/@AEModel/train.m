@@ -23,17 +23,4 @@ function self = train( self, thisData )
         self.AuxNetworkALE = self.getAuxALE( thisData, auxFcn = @predictAuxNet );
     end
 
-    if self.ShowPlots
-        % generate final plots
-        plotLatentComp( self, type = 'Smoothed', shading = true );
-    
-        plotALE( self, type = 'Model' );
-    
-        if any(self.LossFcnTbl.Types == 'Auxiliary')
-            plotALE( self, type = 'Network' );
-        end
-    
-        drawnow;
-    end
-
 end
