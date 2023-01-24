@@ -49,7 +49,7 @@ memorySaving = 3;
 % -- grid search --
 parameters = [ "model.class", "model.args.ZDim" ];
 dims = 2; %[1 2 3 4];
-values = {{@PCAModel, @FCModel, @ConvolutionalModel}, dims}; 
+values = {{@FCModel, @ConvolutionalModel, @PCAModel}, dims}; 
 N = 50;
 sigma = 0.5;
 

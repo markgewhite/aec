@@ -137,6 +137,8 @@ classdef RepresentationModel
 
         [ varProp, compVar ] = calcExplainedVariance( self, X, XC, offsets )
 
+        [F, Q, Z, offsets] = calcResponse( self, dlZ, args )
+
         self = compress( self, level )
 
         self = evaluate( self, thisTrnSet, thisValSet )
