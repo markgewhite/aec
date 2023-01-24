@@ -56,6 +56,7 @@ function plotZClusters( self, Z, args )
         case 'TSNE'
             % t-distribution stochastic neighbour embedding
             perplexity = min( size(Z,1), args.perplexity );
+            warning( 'off', 'stats:tsne:BinarySearchNotConverge' );
             ZT = tsne( Z, ...
                        Perplexity = perplexity, ...
                        Standardize = true ); 

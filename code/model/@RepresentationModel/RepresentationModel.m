@@ -135,6 +135,8 @@ classdef RepresentationModel
 
         [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
 
+        [F, prc, ZQ, offsets ] = calcPDP( self, dlZ, args )
+
         [ varProp, compVar ] = calcExplainedVariance( self, X, XC, offsets )
 
         [F, Q, Z, offsets] = calcResponse( self, dlZ, args )

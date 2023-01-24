@@ -18,6 +18,8 @@ function [F, Q, Z, offsets] = calcResponse( self, dlZ, args )
     switch self.ComponentType
         case {'ALE', 'FPC'}
             [F, Q, Z, offsets] = calcALE( self, dlZ, argsCell{:} );
+        case 'PDP'
+            [F, Q, Z, offsets] = calcPDP( self, dlZ, argsCell{:} );
         otherwise
             F = [];
             Q = [];
