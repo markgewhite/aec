@@ -16,8 +16,8 @@ classdef RepresentationModel
         AuxModel        % auxiliary model
         AuxModelZMean   % mean used in standardizing Z prior to fitting (apply before prediction)
         AuxModelZStd    % standard deviation used prior to fitting (apply before prediction)
-        AuxModelALE     % auxiliary model's Accumulated Local Effects
-        ALEQuantiles    % quantiles of Z used in computing ALE
+        AuxModelResponse % auxiliary model's effects response (PDP or ALE)
+        ResponseQuantiles % Z values used for aux model response
 
         ShowPlots       % flag whether to show plots
         Figs            % figures holding the plots
@@ -63,6 +63,9 @@ classdef RepresentationModel
                 args.RandomSeedResets   logical = false;
                 args.NumCompLines       double...
                     {mustBeInteger, mustBePositive} = 5
+                args.ComponentType      string ...
+                        {mustBeMember( args.ComponentType, ...
+                        {'FPC', 'PDP', 'ALE'} )} = 'FPC'
                 args.ShowPlots          logical = true
                 args.IdenticalPartitions logical = false
                 args.Name               string = "[ModelName]"
@@ -102,6 +105,8 @@ classdef RepresentationModel
             else
                 self.AuxModelType = 'SVM';
             end
+
+            self.ComponentType = args.ComponentType;
             
             if isfield( args, 'randomSeed' )
                 self.RandomSeed = args.RandomSeed;
@@ -136,11 +141,11 @@ classdef RepresentationModel
 
         self = evaluate( self, thisTrnSet, thisValSet )
 
-        [auxALE, Q] = getAuxALE( self, thisDataset, args )
+        self = getAuxResponse( self, thisDataset, args )
 
         [ XA, Q, XC ] = getLatentResponse( self, thisDataset )
 
-        plotALE( self, args )
+        plotAuxResponse( self, args )
 
         plotLatentComp( self, args )
 

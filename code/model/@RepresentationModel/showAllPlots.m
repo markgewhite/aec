@@ -17,7 +17,7 @@ function showAllPlots( self, args )
         self.plotLatentComp( type = 'Smoothed', shading = true );
 
         % plot the ALE distribution
-        self.plotALE( type = 'Model' );
+        self.plotAuxResponse( type = 'Model' );
     
     else
         % graphics objects must have been cleared

@@ -124,7 +124,7 @@ classdef Investigation
                         % save the evaluations
                         self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );    
                     catch ME
-                        warning('Evaluation failed.')
+                        warning('*****!!!!! Evaluation failed !!!!!*****')
                         disp(['Error Message: ' ME.message]);
                         for i = 1:length(ME.stack)
                             disp([ME.stack(i).name ', (line ' ...

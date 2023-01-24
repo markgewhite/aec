@@ -11,7 +11,7 @@ function showAllPlots( self, args )
     showAllPlots@RepresentationModel( self, argsCell{:} );
 
     if any(self.LossFcnTbl.Types == 'Auxiliary')
-        self.plotALE( type = 'Network' );
+        self.plotAuxResponse( type = 'Network' );
     end
 
 end

@@ -1,7 +1,7 @@
-function plotALE( self, args )
-    % Update the Accumulated Local Effects plot
+function plotAuxResponse( self, args )
+    % Update the auxiliary model/network response (ALE or PDP)
     arguments
-        self           RepresentationModel
+        self                RepresentationModel
         args.quantiles      double = []
         args.pts            double = []
         args.type           char ...
@@ -11,11 +11,11 @@ function plotALE( self, args )
 
     switch args.type
         case 'Network'
-            A = self.AuxNetworkALE;
+            A = self.AuxNetResponse;
             axis = self.Axes.AuxNetwork;
             name = 'Auxiliary Network';
         case 'Model'
-            A = self.AuxModelALE;
+            A = self.AuxModelResponse;
             axis = self.Axes.AuxModel;
             name = 'Auxiliary Model';
     end
@@ -25,7 +25,7 @@ function plotALE( self, args )
     end
 
     if isempty(args.quantiles)
-        Q = self.ALEQuantiles;
+        Q = self.ResponseQuantiles;
     else
         Q = args.quantiles;
     end
@@ -48,7 +48,7 @@ function plotALE( self, args )
     title( axis, name );
     xlim( axis, [0,1] );
     xlabel( axis, 'Quantiles' );
-    ylabel( axis, 'ALE' );   
+    ylabel( axis, self.ComponentType );   
     axis.YAxis.TickLabelFormat = '%.2f';
     
     finalisePlot( axis, square = true );

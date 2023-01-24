@@ -52,14 +52,14 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch, args )
     [auxALE, Q] = thisModel.calcALE( dlZ, ...
                                   modelFcn = @predictAuxModel, ...
                                   maxObs = 500 );
-    plotALE( thisModel, quantiles = Q, pts = auxALE, type = 'Model' );
+    plotAuxResponse( thisModel, quantiles = Q, pts = auxALE, type = 'Model' );
 
     % compute the ALE curves for the auxiliary network, if present
     if any(thisModel.LossFcnTbl.Types == 'Auxiliary')
         [auxALE, Q] = thisModel.calcALE( dlZ, ...
                                       modelFcn = @predictAuxNet, ...
                                       maxObs = 500 );
-        plotALE( thisModel, quantiles = Q, pts = auxALE, type = 'Network' );
+        plotAuxResponse( thisModel, quantiles = Q, pts = auxALE, type = 'Network' );
 
     end
     drawnow;

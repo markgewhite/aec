@@ -44,9 +44,11 @@ function self = train( self, thisData )
     % compute the mean curve directly
     self.MeanCurve = eval_fd( self.TSpan.Regular, self.MeanFd );
 
-    % compute the components' explained variance
-    [self.AuxModelALE, self.ALEQuantiles, ...
-        self.LatentComponents ] = self.getLatentResponse( thisData );
+    % get the auxiliary model's response to each Z element
+    self = self.getAuxResponse( thisData );
+
+    % compute the functional components
+    self.LatentComponents = self.getLatentResponse( thisData );
 
     % set the oversmoothing level
     XHat = self.reconstruct( Z );

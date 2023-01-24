@@ -18,7 +18,7 @@ classdef AEModel < RepresentationModel
         ComponentCentring % how to centre the generated components
         HasCentredDecoder % whether the decoder predicts centred X
         MeanCurveTarget   % mean curve for the X target time span
-        AuxNetworkALE  % auxiliary network Accumulated Local Effects
+        AuxNetResponse % auxiliary network effect response
     end
 
     properties (Dependent = true)
@@ -53,6 +53,13 @@ classdef AEModel < RepresentationModel
 
             tic;
             % set the superclass's properties
+            if isfield( superArgs, 'ComponentType' )
+                if strcmp(superArgs.ComponentType, 'PCA')
+                    eid = 'AEModel:FPCComponent';
+                    msg = 'FPC component type specified for AE model.';
+                    throwAsCaller( MException(eid,msg) );
+                end
+            end
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
             self = self@RepresentationModel( thisDataset, ...
@@ -189,6 +196,8 @@ classdef AEModel < RepresentationModel
         [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ )
 
         [ dlZ, state ] = forwardEncoder( self, encoder, dlX )
+
+        self = getAuxResponse( self, thisDataset, args )
 
         self = incrementActiveZDim( self )
 

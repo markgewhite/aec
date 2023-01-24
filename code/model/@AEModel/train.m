@@ -15,12 +15,10 @@ function self = train( self, thisData )
     % perform training using the trainer
     self = self.Trainer.runTraining( self, thisData );
     
-    % set other elements
-    [self.AuxModelALE, self.ALEQuantiles, ...
-        self.LatentComponents ] = self.getLatentResponse( thisData );
-
-    if any(self.LossFcnTbl.Types=='Auxiliary')
-        self.AuxNetworkALE = self.getAuxALE( thisData, auxFcn = @predictAuxNet );
-    end
+    % get the auxiliary model's response to each Z element
+    self = self.getAuxResponse( thisData );
+    
+    % generate the functional components
+    self.LatentComponents = self.getLatentResponse( thisData );
 
 end

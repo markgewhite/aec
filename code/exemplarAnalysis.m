@@ -5,8 +5,8 @@ clear;
 runAnalysis = true;
 inParallel = false;
 resume = false;
-catchErrors = false;
-reportIdx = 1:3;
+catchErrors = true;
+reportIdx = 3;
 plotDim = [2 5];
 
 % set the destinations for results and figures
@@ -19,6 +19,7 @@ setup.data.class = @ExemplarDataset;
 setup.data.args.HasNormalizedInput = true;
 
 % -- model setup --
+setup.model.args.ComponentType = 'ALE';
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
@@ -31,9 +32,9 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5;
+setup.model.args.trainer.NumIterations = 2;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 2000;
+setup.model.args.trainer.UpdateFreq = 1;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -47,8 +48,8 @@ memorySaving = 3;
 
 % -- grid search --
 parameters = [ "model.class", "model.args.ZDim" ];
-dims = [1 2 3 4];
-values = {{@FCModel, @ConvolutionalModel, @PCAModel}, dims}; 
+dims = 2; %[1 2 3 4];
+values = {{@PCAModel, @FCModel, @ConvolutionalModel}, dims}; 
 N = 50;
 sigma = 0.5;
 

@@ -21,6 +21,7 @@ classdef PCAModel < RepresentationModel
                 args.path           string
             end
 
+            superArgs.ComponentType = 'FPC';
             superArgsCell = namedargs2cell(superArgs);
             argsCell = namedargs2cell(args);
             self@RepresentationModel( thisDataset, ...
