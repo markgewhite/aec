@@ -5,7 +5,7 @@ clear;
 runAnalysis = true;
 inParallel = false;
 resume = false;
-catchErrors = true;
+catchErrors = false;
 reportIdx = 3;
 plotDim = [2 5];
 
@@ -32,9 +32,9 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 200;
+setup.model.args.trainer.NumIterations = 20;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 100;
+setup.model.args.trainer.UpdateFreq = 10;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
