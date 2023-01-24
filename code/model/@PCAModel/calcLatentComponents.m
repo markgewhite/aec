@@ -1,15 +1,19 @@
-function [ XC, XMean, offsets ] = calcLatentComponents( self, Z, args )
+function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
     % Present the FPCs in form consistent with autoencoder model
     arguments
         self            PCAModel
-        Z               double % redundant
+        Z               double
         args.forward    logical = false % redundant
         args.smooth     logical = false % redundant
     end
 
     % compute the components
     nSample = self.NumCompLines;
-    offsets = norminv(linspace( 0.050, 0.950, nSample ));
+    % set z-score levels
+    zs = linspace( -2, 2, nSample );
+
+    % calculate the standard deviation
+    ZSD = std( Z );
     
     % XC structure: Points, Samples, Components, Channels
     XC = zeros( length(self.PCATSpan), nSample, self.ZDim, self.XChannels );
@@ -18,7 +22,7 @@ function [ XC, XMean, offsets ] = calcLatentComponents( self, Z, args )
         FPC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
         for c = 1:self.XChannels
             for j = 1:nSample
-                XC(:,j,i,c) = offsets(j)*FPC(:,c);
+                XC(:,j,i,c) = zs(j)*ZSD(1,i,c)*FPC(:,c);
             end
         end
     end
