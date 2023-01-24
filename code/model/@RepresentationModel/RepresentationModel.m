@@ -133,13 +133,13 @@ classdef RepresentationModel
 
         % class methods
 
-        [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
+        [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
 
-        [F, prc, ZQ, offsets ] = calcPDP( self, dlZ, args )
+        [ F, prc, ZQ ] = calcPDP( self, dlZ, args )
 
         [ varProp, compVar ] = calcExplainedVariance( self, X, XC, offsets )
 
-        [F, Q, Z, offsets] = calcResponse( self, dlZ, args )
+        [F, Q, Z] = calcResponse( self, dlZ, args )
 
         self = compress( self, level )
 

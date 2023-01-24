@@ -1,6 +1,6 @@
 function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
     % Calculate the funtional components using the decoder network
-    % from Z code generated using Accumulated Local Estimation 
+    % from Z code generated using the response function
     arguments
         self            AEModel
         dlZ             {mustBeA( dlZ, {'dlarray', 'double'} )}
@@ -17,7 +17,7 @@ function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
     end
     dispatchArgsCell = namedargs2cell( dispatchArgs );
 
-    [XC, ~, ~, offsets] = self.calcResponse( dlZ, ...
+    [XC, offsets] = self.calcResponse( dlZ, ...
                       sampling = 'Component', ...
                       modelFcn = @decodeDispatcher, ...
                       modelFcnArgs = dispatchArgsCell, ...

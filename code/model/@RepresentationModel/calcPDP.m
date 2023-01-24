@@ -1,4 +1,4 @@
-function [F, prc, ZQ, offsets ] = calcPDP( self, dlZ, args )
+function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
     % Partial Dependence Plot
     % For latent component generation and the auxiliary model
     arguments
@@ -12,50 +12,39 @@ function [F, prc, ZQ, offsets ] = calcPDP( self, dlZ, args )
         args.modelFcn       function_handle
         args.modelFcnArgs   cell = []
     end
-    
-    if isa( dlZ, 'dlarray' )
-        % convert to double for quantiles, sort and other functions
-        Z = double(extractdata( dlZ ));
-    else
-        if size(dlZ,1) ~= self.ZDim
-            % transpose into standard dimensions:
-            % 1st=ZDim and 2nd=observations
-            dlZ = dlZ';
-        end
-        Z = dlZ;
-    end
 
     nObs = size( dlZ, 2 );
     if nObs > args.maxObs
         % data too large - subsample
         subset = randsample( nObs, args.maxObs );
         dlZ = dlZ( :, subset );
-        Z = Z( :, subset );
     end
 
-    % generate the quantiles and required Z values
+    % generate the required Z values from z-scores
     K = args.nSample;
     switch args.sampling
         case 'Regular'
-            prc = linspace( 0, 1, K+1 );
+            zs = linspace( -2, 2, K+1 );
         case 'Component'
-            prc = linspace( 0.05, 0.95, self.NumCompLines );
+            zs = linspace( -2, 2, self.NumCompLines );
     end
-    offsets = norminv( prc ); % z-scores
-    ZQ = quantile( Z, prc, 2 );
-    K = size(ZQ, 2);
+    K = length(zs);
 
-    % take the mean to obtain reference values
-    dlZM = mean( dlZ, 2 );
+    % take the mean and standard deviation
+    dlZMean = mean( dlZ, 2 );
+    dlZSD = std( dlZ, [], 2 );
 
+    ZQ = zeros( self.ZDim, K );
     for d = 1:self.ZDim
 
         for k = 1:K
    
             % set all elements to the median
-            dlZC = dlZM;
+            dlZC = dlZMean;
             % set the dth element to the kth value
-            dlZC(d) = ZQ( d, k );
+            dlZC(d) = dlZMean(d) + zs(k)*dlZSD(d);
+
+            % call the model function to generate a response
             if isempty( args.modelFcnArgs )
                 YHat = args.modelFcn( self, dlZC );
             else
@@ -77,6 +66,9 @@ function [F, prc, ZQ, offsets ] = calcPDP( self, dlZ, args )
 
             % assign YHat to response array
             F( d, k, : ) = YHat;
+
+            % store Z
+            ZQ( d, k ) = dlZC(d);
 
         end
 

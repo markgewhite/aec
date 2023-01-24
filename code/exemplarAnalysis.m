@@ -19,7 +19,7 @@ setup.data.class = @ExemplarDataset;
 setup.data.args.HasNormalizedInput = true;
 
 % -- model setup --
-setup.model.args.ComponentType = 'PDP';
+setup.model.args.ComponentType = 'ALE';
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
@@ -32,9 +32,9 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 500;
+setup.model.args.trainer.NumIterations = 2000;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 50;
+setup.model.args.trainer.UpdateFreq = 100;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---

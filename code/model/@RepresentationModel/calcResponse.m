@@ -1,4 +1,4 @@
-function [F, Q, Z, offsets] = calcResponse( self, dlZ, args )
+function [F, Q, Z] = calcResponse( self, dlZ, args )
     % Call the relevant response function
     % for latent component generation and the auxiliary model
     arguments
@@ -17,14 +17,13 @@ function [F, Q, Z, offsets] = calcResponse( self, dlZ, args )
     argsCell = namedargs2cell( args );
     switch self.ComponentType
         case {'ALE', 'FPC'}
-            [F, Q, Z, offsets] = calcALE( self, dlZ, argsCell{:} );
+            [F, Q, Z] = calcALE( self, dlZ, argsCell{:} );
         case 'PDP'
-            [F, Q, Z, offsets] = calcPDP( self, dlZ, argsCell{:} );
+            [F, Q, Z] = calcPDP( self, dlZ, argsCell{:} );
         otherwise
             F = [];
             Q = [];
             Z = [];
-            offsets = [];
     end
 
 end

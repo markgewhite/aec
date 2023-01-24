@@ -1,4 +1,4 @@
-function [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
+function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
     % Accumulated Local Estimation 
     % For latent component generation and the auxiliary model
     arguments
@@ -35,27 +35,38 @@ function [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
     end
 
     % generate the quantiles and required Z values
-    K = args.nSample;
     switch args.sampling
         case 'Regular'
-            prc = linspace( 0, 1, K+1 );
-            offsets = norminv( prc ); % z-scores
-
+            zsMid = linspace( -2, 2, args.nSample );
         case 'Component'
-            q = linspace( 0.05, 0.95, self.NumCompLines );
-            prc = sort( [q-0.05 q+0.05] );
-            offsets = norminv( q ); % z-scores
+            zsMid = linspace( -2, 2, self.NumCompLines );
     end
-    QMid = prc(1:end-1) + diff(prc)/2;
-    ZQ = quantile( Z, prc, 2 );
-    K = size(ZQ, 2)-1;
+    zsEdge = [-5, (zsMid(1:end-1)+zsMid(2:end))/2, 5];
+    % set the number of bins
+    K = length(zsMid);
+
+    % take the mean and standard deviation
+    dlZMean = mean( dlZ, 2 );
+    dlZSD = std( dlZ, [], 2 );
+
+    % generate ZQ and ZQMid values from z-scores
+    ZQ = zeros( self.ZDim, K+1 );
+    ZQMid = zeros( self.ZDim, K );
+    for d = 1:self.ZDim
+        for k = 1:K+1
+            ZQ( d, k ) = dlZMean(d) + zsEdge(k)*dlZSD(d);
+        end
+        for k = 1:K
+            ZQMid( d, k ) = dlZMean(d) + zsMid(k)*dlZSD(d);
+        end
+    end
 
     % identify bin assignments across dimensions
     A = zeros( self.ZDim, nObs );
     for d = 1:self.ZDim
-        [~, order] = sort( Z(d,:) );
+        [~, orderIdx] = sort( Z(d,:) );
         j = 1;
-        for i = order
+        for i = orderIdx
             if Z(d,i)<=ZQ(d,j+1)
                 A(d,i) = j;
             else
@@ -103,7 +114,10 @@ function [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
         % and cumulatively sum
         if FDim(2)==1
             for i = 1:K
-                FBin(i,:) = mean( delta(:,A(d,:)==i), 2 );
+                binIdx = (A(d,:)==i);
+                if any(binIdx)
+                    FBin(i,:) = mean( delta(:,binIdx), 2 );
+                end
             end
             FMeanCS = [ zeros(1,FDim(1)); cumsum(FBin) ];
             FMeanMid = (FMeanCS(1:K,:) + FMeanCS(2:K+1,:))/2;
@@ -111,7 +125,10 @@ function [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
 
         else
             for i = 1:K
-                FBin(i,:,:) = mean( delta(:,:,A(d,:)==i), 3 );
+                binIdx = (A(d,:)==i);
+                if any(binIdx)
+                    FBin(i,:,:) = mean( delta(:,:,binIdx), 3 );
+                end
             end
             FMeanCS = [ zeros(1,FDim(1),FDim(2)); cumsum(FBin) ];
             FMeanMid = (FMeanCS(1:K,:,:) + FMeanCS(2:K+1,:,:))/2;
@@ -119,13 +136,6 @@ function [F, QMid, ZQMid, offsets ] = calcALE( self, dlZ, args )
 
         end
 
-    end
-
-    ZQMid = ((ZQ(:,1:K) + ZQ(:,2:K+1))/2);
-
-    if strcmp( args.sampling, 'Component' )
-        % remove surplus samples
-        F = F( :, 1:2:K, :, : );
     end
 
 end
