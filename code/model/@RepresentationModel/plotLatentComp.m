@@ -123,6 +123,8 @@ function plotLatentComp( self, args )
         throwAsCaller( MException(eid,msg) );
     end
 
+    % set shading transparency
+    alpha = max( 0.025*(18-nSamples), 0.10 );
 
     for c = 1:nChannels
 
@@ -145,19 +147,20 @@ function plotLatentComp( self, args )
 
                 isOuterCurve = (j==1 || j==nSamples);
                 if isOuterCurve
-                    % fill-up shading area
-                    if args.shading
-                        plotShadedArea( axis, ...
-                                        tSpanPlot, ...
-                                        XCPlot( :,j,i,c ), ...
-                                        XMeanPlot( :,i,c ), ...
-                                        compColours( s,: ), ...
-                                        name = names(s) );
-                    end
-                    width = 1.0;
-                
+                    width = 1.0;               
                 else
                     width = 0.5;
+                end
+
+                % fill-up shading area
+                if args.shading
+                    plotShadedArea( axis, ...
+                                    tSpanPlot, ...
+                                    XCPlot( :,j,i,c ), ...
+                                    XMeanPlot( :,i,c ), ...
+                                    compColours( s,: ), ...
+                                    name = names(s), ...
+                                    alpha = alpha );
                 end
 
                 % plot gradation curve

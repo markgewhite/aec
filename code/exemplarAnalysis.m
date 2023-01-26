@@ -17,8 +17,10 @@ pathResults = [path0 '/../paper/results/'];
 % -- data setup --
 setup.data.class = @ExemplarDataset;   
 setup.data.args.HasNormalizedInput = true;
+setup.data.args.NormalizedPts = 5;
 
 % -- model setup --
+setup.model.args.ZDim = 4;
 setup.model.args.ComponentType = 'PDP';
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
@@ -32,9 +34,9 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1;
+setup.model.args.trainer.NumIterations = 200;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 2000;
+setup.model.args.trainer.UpdateFreq = 500;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -47,13 +49,11 @@ names = [ "Dataset A", ...
 memorySaving = 3;
 
 % -- grid search --
-dims = [1 2 3 4];
+dims = 2; %[1 2 3 4];
 pts = [5, 10, 20, 50, 100];
-%parameters = [ "model.class", "model.args.ZDim", ...
-%               "data.args.NormalizedPts", "model.args.ComponentType" ];
-parameters = [ "model.class", "model.args.ZDim" ];
-%values = {{@FCModel, @ConvolutionalModel}, dims, pts, {'PDP', 'ALE'}}; 
-values = {{@FCModel, @ConvolutionalModel}, dims}; 
+clines = [5, 7, 9, 11, 15];
+parameters = [ "model.class" ];
+values = {{@FCModel}, clines}; 
 
 N = 200;
 sigma = 0.5;

@@ -57,7 +57,7 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
                 YHat = args.modelFcn( self, dlZC, args.modelFcnArgs{:} );
             end
 
-            if d==1
+            if d==1 && k==1
                 % allocate arrays knowing the size of YHat
                 if size(YHat,3)==1
                     FDim(1) = size( YHat, 1 );

@@ -64,8 +64,7 @@ classdef AEModel < RepresentationModel
             superArgs2Cell = namedargs2cell( superArgs2 );
             self = self@RepresentationModel( thisDataset, ...
                                              superArgsCell{:}, ...
-                                             superArgs2Cell{:}, ...
-                                             NumCompLines = 5 );
+                                             superArgs2Cell{:} );
 
             % check dataset is suitable
             if thisDataset.isFixedLength == args.HasSeqInput
