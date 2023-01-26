@@ -12,7 +12,7 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
         dlZ = dlarray( Z', 'CB' );
     end
 
-    dlXHat = decodeDispatcher( self, dlZ, forward = false );
+    dlXHat = predict( self.Nets.Decoder, dlZ );
 
     if self.HasCentredDecoder
         dlXHat = dlXHat + self.MeanCurveTarget;

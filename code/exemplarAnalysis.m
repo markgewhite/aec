@@ -3,15 +3,15 @@
 clear;
 
 runAnalysis = true;
-inParallel = false;
+inParallel = true;
 resume = false;
-catchErrors = false;
+catchErrors = true;
 reportIdx = 1:3;
 plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/test/'];
+path = [path0 '/../results/exemplars_norm/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -34,7 +34,7 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 200;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.UpdateFreq = 20;
 setup.model.args.trainer.Holdout = 0;
@@ -49,12 +49,14 @@ names = [ "Dataset A", ...
 memorySaving = 3;
 
 % -- grid search --
-dims = 2; %[1 2 3 4];
+dims = [1 2 3 4];
 pts = [5, 10, 20, 50, 100];
-parameters = [ "model.class", "model.args.ComponentType" ];
-values = {{@PCAModel}, {'FPC', 'PDP', 'ALE'}}; 
+parameters = [ "model.class", "model.args.ZDim", ...
+               "data.args.NormalizedPts", "model.args.ComponentType" ];
+values = {{@FCModel, @ConvolutionalModel}, dims, ...
+            pts, {'PDP', 'ALE'}}; 
 
-N = 200;
+N = 400;
 sigma = 0.5;
 
 nReports = length( reportIdx );

@@ -179,8 +179,6 @@ classdef AEModel < RepresentationModel
 
         self = compress( self, level )
 
-        dlX = decodeDispatcher( self, dlZ, args )
-
         dlZ = encode( self, X, arg )
 
         [ dlZ, dlXHat, state ] = forward( self, encoder, decoder, dlX )
