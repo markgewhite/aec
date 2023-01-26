@@ -49,15 +49,17 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch, args )
     % fit the auxiliary model and compute the ALE curves
     dlZAux = dlZ( 1:thisModel.ZDimAux, : );
     thisModel.AuxModel = trainAuxModel( thisModel.AuxModelType, dlZAux, dlY );
+    thisResponseFcn = @(Z) predictAuxModel( thisModel, Z );
     [auxALE, Q] = thisModel.calcResponse( dlZ, ...
-                                  modelFcn = @predictAuxModel, ...
+                                  modelFcn = thisResponseFcn, ...
                                   maxObs = 500 );
     plotAuxResponse( thisModel, quantiles = Q, pts = auxALE, type = 'Model' );
 
     % compute the ALE curves for the auxiliary network, if present
     if any(thisModel.LossFcnTbl.Types == 'Auxiliary')
+        thisResponseFcn = @(dlZ) predictAuxNet( thisModel, dlZ );
         [auxALE, Q] = thisModel.calcResponse( dlZ, ...
-                                              modelFcn = @predictAuxNet, ...
+                                              modelFcn = thisResponseFcn, ...
                                               maxObs = 500 );
         plotAuxResponse( thisModel, quantiles = Q, pts = auxALE, type = 'Network' );
 

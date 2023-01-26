@@ -10,7 +10,6 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
         args.nSample        double {mustBeInteger} = 20
         args.maxObs         double = 1000
         args.modelFcn       function_handle
-        args.modelFcnArgs   cell = []
     end
     
     if isa( dlZ, 'dlarray' )
@@ -83,13 +82,10 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
         dlZC2 = dlZ;
         dlZC1(d,:) = ZQ(d, A(d,:));
         dlZC2(d,:) = ZQ(d, A(d,:)+1);
-        if isempty( args.modelFcnArgs )
-            YHat1 = args.modelFcn( self, dlZC1 );
-            YHat2 = args.modelFcn( self, dlZC2 );
-        else
-            YHat1 = args.modelFcn( self, dlZC1, args.modelFcnArgs{:} );
-            YHat2 = args.modelFcn( self, dlZC2, args.modelFcnArgs{:} );
-        end
+
+        % call the model function to generate responses
+        YHat1 = args.modelFcn( dlZC1 );
+        YHat2 = args.modelFcn( dlZC2 );
         delta = YHat2 - YHat1;
 
         if d==1

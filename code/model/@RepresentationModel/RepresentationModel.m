@@ -26,7 +26,9 @@ classdef RepresentationModel
 
         MeanCurve       % estimated mean curve
         ComponentType   % type of components generated
+        ComponentCentering % how to centre the generated components
         LatentComponents % computed components across partitions
+        LatentResponseFcn % method to generate output using Z
 
         Predictions     % training and validation predictions
         Loss            % training and validation losses
@@ -65,7 +67,10 @@ classdef RepresentationModel
                     {mustBeInteger, mustBePositive} = 9
                 args.ComponentType      string ...
                         {mustBeMember( args.ComponentType, ...
-                        {'FPC', 'PDP', 'ALE'} )} = 'FPC'
+                        {'FPC', 'PDP', 'ALE'} )} = 'PDP'
+                args.ComponentCentering string ...
+                    {mustBeMember( args.ComponentCentering, ...
+                                    {'Z', 'X', 'None'} )} = 'Z'
                 args.ShowPlots          logical = true
                 args.IdenticalPartitions logical = false
                 args.Name               string = "[ModelName]"
@@ -107,6 +112,7 @@ classdef RepresentationModel
             end
 
             self.ComponentType = args.ComponentType;
+            self.ComponentCentering = args.ComponentCentering;
             
             if isfield( args, 'randomSeed' )
                 self.RandomSeed = args.RandomSeed;
@@ -138,6 +144,8 @@ classdef RepresentationModel
         [ F, prc, ZQ ] = calcPDP( self, dlZ, args )
 
         [ varProp, compVar ] = calcExplainedVariance( self, X, XC, offsets )
+
+        [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
 
         [F, Q, Z] = calcResponse( self, dlZ, args )
 

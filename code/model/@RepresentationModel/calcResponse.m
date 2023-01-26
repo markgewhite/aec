@@ -10,7 +10,6 @@ function [F, Q, Z] = calcResponse( self, dlZ, args )
         args.nSample        double {mustBeInteger} = 20
         args.maxObs         double = 1000
         args.modelFcn       function_handle
-        args.modelFcnArgs   cell = []
     end
     
     % calculate the response of the specified type

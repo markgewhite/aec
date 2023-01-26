@@ -2,7 +2,7 @@
 
 clear;
 
-runAnalysis = false;
+runAnalysis = true;
 inParallel = false;
 resume = false;
 catchErrors = false;
@@ -36,7 +36,7 @@ setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 200;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 500;
+setup.model.args.trainer.UpdateFreq = 20;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -51,8 +51,8 @@ memorySaving = 3;
 % -- grid search --
 dims = 2; %[1 2 3 4];
 pts = [5, 10, 20, 50, 100];
-parameters = [ "model.class" ];
-values = {{@FCModel}}; 
+parameters = [ "model.class", "model.args.ComponentType" ];
+values = {{@PCAModel}, {'FPC', 'PDP', 'ALE'}}; 
 
 N = 200;
 sigma = 0.5;

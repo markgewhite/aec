@@ -10,7 +10,6 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
         args.nSample        double {mustBeInteger} = 20
         args.maxObs         double = 1000
         args.modelFcn       function_handle
-        args.modelFcnArgs   cell = []
     end
 
     if size(dlZ,1) ~= self.ZDim
@@ -51,11 +50,7 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
             dlZC(d) = dlZMean(d) + zs(k)*dlZSD(d);
 
             % call the model function to generate a response
-            if isempty( args.modelFcnArgs )
-                YHat = args.modelFcn( self, dlZC );
-            else
-                YHat = args.modelFcn( self, dlZC, args.modelFcnArgs{:} );
-            end
+            YHat = args.modelFcn( dlZC );
 
             if d==1 && k==1
                 % allocate arrays knowing the size of YHat

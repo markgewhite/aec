@@ -1,10 +1,20 @@
 function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
-    % Present the FPCs in form consistent with autoencoder model
+    % Calculate the functional principal components
+    % Or use the response function
     arguments
-        self            PCAModel
-        Z               double
-        args.forward    logical = false % redundant
-        args.smooth     logical = false % redundant
+        self                PCAModel
+        Z                   double
+        args.maxObs         double {mustBeInteger} = 500
+        args.smooth         logical = false
+        args.responseFcn    function_handle
+    end
+
+    if ~strcmp( self.ComponentType, 'FPC' )
+        % generate a PDP or ALE type component
+        argsCell = namedargs2cell( args );
+        [XC, XMean, zs] = ...
+            calcLatentComponents@RepresentationModel( self, Z, argsCell{:} );
+        return
     end
 
     % compute the components

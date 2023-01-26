@@ -15,7 +15,6 @@ classdef AEModel < RepresentationModel
         Optimizer      % optimizer object
         InitZDimActive % initial number of Z dimensions active
         ZDimActive     % number of dimensions currently active
-        ComponentCentring % how to centre the generated components
         HasCentredDecoder % whether the decoder predicts centred X
         MeanCurveTarget   % mean curve for the X target time span
         AuxNetResponse % auxiliary network effect response
@@ -42,9 +41,6 @@ classdef AEModel < RepresentationModel
                 args.HasSeqInput        logical = false
                 args.InitZDimActive     double ...
                     {mustBeInteger} = 1
-                args.ComponentCentring  string ...
-                    {mustBeMember( args.ComponentCentring, ...
-                                    {'Z', 'X', 'None'} )} = 'Z'
                 args.HasCentredDecoder  logical = true
                 args.LossFcns           struct = []
                 args.Trainer            struct = []
@@ -54,7 +50,7 @@ classdef AEModel < RepresentationModel
             tic;
             % set the superclass's properties
             if isfield( superArgs, 'ComponentType' )
-                if strcmp(superArgs.ComponentType, 'PCA')
+                if strcmp(superArgs.ComponentType, 'FPC')
                     eid = 'AEModel:FPCComponent';
                     msg = 'FPC component type specified for AE model.';
                     throwAsCaller( MException(eid,msg) );
@@ -81,7 +77,6 @@ classdef AEModel < RepresentationModel
             self.NumNetworks = 2;
             self.FlattenInput = args.FlattenInput;
             self.HasSeqInput = args.HasSeqInput;
-            self.ComponentCentring = args.ComponentCentring;
             self.HasCentredDecoder = args.HasCentredDecoder;
 
             if args.InitZDimActive==0
@@ -181,8 +176,6 @@ classdef AEModel < RepresentationModel
         end
 
         % class methods
-
-        [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
 
         self = compress( self, level )
 

@@ -8,6 +8,7 @@ function self = compress( self, level )
     if level >= 1
         self.Figs = [];
         self.Axes = [];
+        self.LatentResponseFcn = [];
     end
 
     if level >= 2

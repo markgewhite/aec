@@ -21,13 +21,11 @@ classdef PCAModel < RepresentationModel
                 args.path           string
             end
 
-            superArgs.ComponentType = 'FPC';
             superArgsCell = namedargs2cell(superArgs);
             argsCell = namedargs2cell(args);
             self@RepresentationModel( thisDataset, ...
                                       superArgsCell{:}, ...
-                                      argsCell{:}, ...
-                                      NumCompLines = 2 );
+                                      argsCell{:} );
 
             self.PCATSpan = thisDataset.TSpan.Regular;
             self.PCAFdParams = thisDataset.FDA.FdParamsRegular;
