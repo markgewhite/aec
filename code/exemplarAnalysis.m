@@ -2,7 +2,7 @@
 
 clear;
 
-runAnalysis = true;
+runAnalysis = false;
 inParallel = false;
 resume = false;
 catchErrors = false;
@@ -51,9 +51,8 @@ memorySaving = 3;
 % -- grid search --
 dims = 2; %[1 2 3 4];
 pts = [5, 10, 20, 50, 100];
-clines = [5, 7, 9, 11, 15];
 parameters = [ "model.class" ];
-values = {{@FCModel}, clines}; 
+values = {{@FCModel}}; 
 
 N = 200;
 sigma = 0.5;
@@ -152,7 +151,7 @@ else
 
     % load from files instead
     for i = reportIdx
-        filename = strcat( names(i), "/", names(i), "-Investigation" );
+        filename = strcat( names(i), "-InvestigationReport" );
         load( fullfile( path, filename ), 'report' );
         results{i} = report;
     end

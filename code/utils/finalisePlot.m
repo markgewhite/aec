@@ -11,11 +11,11 @@ function finalisePlot( ax, args )
     ax.YAxis.LineWidth = 0.75;
     ax.FontName = 'Arial';
     ax.FontSize = 8;
-    ax.TickLabelInterpreter = 'latex';
-    ax.XLabel.Interpreter = 'latex';
-    ax.YLabel.Interpreter = 'latex';
-    ax.Title.Interpreter = 'latex';
-    ax.Title.VerticalAlignment = 'cap';
+    %ax.TickLabelInterpreter = 'latex';
+    %ax.XLabel.Interpreter = 'latex';
+    %ax.YLabel.Interpreter = 'latex';
+    %ax.Title.Interpreter = 'latex';
+    ax.Title.VerticalAlignment = 'baseline';
     
     if args.square
         ax.PlotBoxAspectRatio = [1 1 1];

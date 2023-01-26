@@ -38,7 +38,7 @@ function fig = plot( self, args )
     colours = colours( 3:9, : );
 
     % plot the curves
-    X = self.XTarget;
+    X = self.XInputRegular;
     Y = self.Y;
     classInLegend = false( self.CDim, 1 );
 
