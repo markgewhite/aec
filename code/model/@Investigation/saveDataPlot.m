@@ -14,6 +14,6 @@ function fig = saveDataPlot( self, args )
     fig  = thisDataset.plot;
     
     name = strcat( self.Name, "-InvestigationData" );
-    saveGraphicsObject( fig, fullfile( self.Path, name ) );
+    saveGraphicsObject( fig, self.Path, name );
 
 end

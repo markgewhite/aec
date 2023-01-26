@@ -11,58 +11,37 @@ function savePlots( gObjs, path, name )
     if isfield( gObjs, 'ZDistribution' )
         % save the Z distribution plot
         fullpath = strcat( path, '/zdist/' );
-        if ~isfolder( fullpath )
-            mkdir( fullpath)
-        end
         saveGraphicsObject( gObjs.ZDistribution, ...
-                            fullfile( fullpath, name ) );
+                            fullpath, name );
     end
 
     if isfield( gObjs, 'ZClustering' )
         % save the Z clustering plot
         fullpath = strcat( path, '/zclust/' );
-        if ~isfolder( fullpath )
-            mkdir( fullpath)
-        end
         saveGraphicsObject( gObjs.ZClustering, ...
-                            fullfile( fullpath, name ) );
+                            fullpath, name );
     end
-
 
     if isfield( gObjs, 'LossFig' )
-
         % save the loss plots
         fullpath = strcat( path, '/loss/' );
-        if ~isfolder( fullpath )
-            mkdir( fullpath)
-        end
         saveGraphicsObject( gObjs.LossFig, ...
-                            fullfile( fullpath, name ) );
-        
+                            fullpath, name );       
     end
 
-    % save the components (as a whole and individually)
-    fullpath = strcat( path, '/comp/' );
-    if ~isfolder( fullpath )
-        mkdir( fullpath)
-    end
     if isfield( gObjs, 'Components' )
-
+        % save the components (as a whole and individually)
+        fullpath = strcat( path, '/comp/' );
         saveGraphicsObject( gObjs.Components, ...
-                            fullfile( fullpath, name ) );
+                            fullpath, name );
 
     end
 
     if isfield( gObjs, 'Response' )
-
         % save the ALE plots
         fullpath = strcat( path, '/aux/' );
-        if ~isfolder( fullpath )
-            mkdir( fullpath)
-        end
         saveGraphicsObject( gObjs.AuxResponse, ...
-                            fullfile( fullpath, name ) );
-        
+                            fullpath, name );        
     end
 
 end   

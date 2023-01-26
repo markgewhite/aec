@@ -6,12 +6,12 @@ runAnalysis = true;
 inParallel = false;
 resume = false;
 catchErrors = false;
-reportIdx = 3;
+reportIdx = 1:3;
 plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/exemplars_test/'];
+path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -32,9 +32,9 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 20;
+setup.model.args.trainer.NumIterations = 1;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 10;
+setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -47,10 +47,15 @@ names = [ "Dataset A", ...
 memorySaving = 3;
 
 % -- grid search --
+dims = [1 2 3 4];
+pts = [5, 10, 20, 50, 100];
+%parameters = [ "model.class", "model.args.ZDim", ...
+%               "data.args.NormalizedPts", "model.args.ComponentType" ];
 parameters = [ "model.class", "model.args.ZDim" ];
-dims = 2; %[1 2 3 4];
-values = {{@PCAModel, @FCModel, @ConvolutionalModel}, dims}; 
-N = 50;
+%values = {{@FCModel, @ConvolutionalModel}, dims, pts, {'PDP', 'ALE'}}; 
+values = {{@FCModel, @ConvolutionalModel}, dims}; 
+
+N = 200;
 sigma = 0.5;
 
 nReports = length( reportIdx );
@@ -134,11 +139,11 @@ if runAnalysis
             results(i) = parfeval( pool, @investigationResults, 1, ...
                                    names(i), path, ...
                                    parameters, values, setup, ...
-                                   memorySaving, resume, catchErrors );
+                                   resume, catchErrors, memorySaving );
         else
             results(i) = investigationResults( names(i), path, ...
                                                parameters, values, setup, ...
-                                               memorySaving, resume, catchErrors );
+                                               resume, catchErrors, memorySaving );
         end
     
     end
@@ -185,3 +190,10 @@ else
     genPaperCompPlots( path, "Exemplars", names, nDims, nReports, nModels );
 
 end
+
+% Code the execute when the parallel processing is complete 
+%diary = strings(length(reportIdx),1); 
+%for i = reportIdx 
+%    diary(i) = results(i).Diary; 
+%end
+%save( fullfile(path, 'diaries'), 'diary' );

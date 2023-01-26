@@ -3,6 +3,7 @@ classdef ModelEvaluation
 
     properties
         Name                % name of the evaluation
+        Path                % folder for storing results
         BespokeSetup        % structure recording the bespoke setup
         TrainingDataset     % training dataset object
         TestingDataset      % testing dataset object
@@ -29,10 +30,11 @@ classdef ModelEvaluation
     methods
 
 
-        function self = ModelEvaluation( name, setup, args )
+        function self = ModelEvaluation( name, path, setup, args )
             % Construct and run a model evaluation object
             arguments
                 name                    string
+                path                    string {mustBeFolder}
                 setup                   struct
                 args.CVType             string ...
                         {mustBeMember( args.CVType, ...
@@ -50,6 +52,7 @@ classdef ModelEvaluation
 
             % store the name for this evaluation and its bespoke setup
             self.Name = name;
+            self.Path = path;
             self.BespokeSetup = setup;
 
             % store other arguments
@@ -120,7 +123,9 @@ classdef ModelEvaluation
 
         self = initAEModel( self, setup )
 
-        save( self, path, name )
+        save( self )
+
+        saveReport( self )
 
 
     end

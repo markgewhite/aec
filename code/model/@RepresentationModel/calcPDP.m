@@ -13,6 +13,12 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
         args.modelFcnArgs   cell = []
     end
 
+    if size(dlZ,1) ~= self.ZDim
+        % transpose into standard dimensions:
+        % 1st=ZDim and 2nd=observations
+        dlZ = dlZ';
+    end
+
     nObs = size( dlZ, 2 );
     if nObs > args.maxObs
         % data too large - subsample

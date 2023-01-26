@@ -1,7 +1,13 @@
-function saveGraphicsObject( obj, filename )
+function saveGraphicsObject( obj, path, name )
+    % Save plot as a PDF and a Matlab figure
 
+    if ~isfolder( path )
+        mkdir( path )
+    end
+
+    filename = strcat( fullfile( path, name ), '.pdf' );
     exportgraphics( obj, ...
-                    strcat( filename, '.pdf' ), ...
+                    filename, ...
                     ContentType= 'vector', ...
                     Resolution = 300 );
 
@@ -15,7 +21,12 @@ function saveGraphicsObject( obj, filename )
         fig = fig.Parent;
     end
 
-    savefig( fig, strcat( filename, '.fig' ) );
+    figPath = fullfile( path, 'figs' );
+    if ~isfolder( figPath )
+        mkdir( figPath)
+    end
 
+    filename = strcat( fullfile( figPath, name ), '.fig' );
+    savefig( fig, filename );
 
 end

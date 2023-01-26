@@ -1,15 +1,15 @@
 function results = investigationResults( names, path, ...
                                          parameters, values, setup, ...
-                                         memorySaving, resume, catchErrors )
+                                         resume, catchErrors, memorySaving )
 
     thisInvestigation = Investigation( names, path, ...
                              parameters, values, setup, ...
-                             resume, catchErrors );
+                             resume, catchErrors, memorySaving );
 
     thisInvestigation.saveDataPlot;
+    results = thisInvestigation.saveReport;
 
     thisInvestigation.conserveMemory( memorySaving );
-
-    results = thisInvestigation.save;
+    thisInvestigation.save;
 
 end

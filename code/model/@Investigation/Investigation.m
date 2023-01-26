@@ -12,7 +12,8 @@ classdef Investigation
         Evaluations         % array of evaluation objects
         TrainingResults     % structure summarising results from evaluations
         TestingResults      % structure summarising results from evaluations
-        CatchErrors         % falg indicating if try-catch should be used
+        CatchErrors         % flag indicating if try-catch should be used
+        MemorySaving        % memory saving level
     end
 
 
@@ -20,7 +21,7 @@ classdef Investigation
 
         function self = Investigation( name, path, parameters, ...
                                        searchValues, setup, ...
-                                       resume, catchErrors )
+                                       resume, catchErrors, memorySaving )
             % Construct an investigation comprised of evaluations
             arguments
                 name            string
@@ -30,21 +31,21 @@ classdef Investigation
                 setup           struct
                 resume          logical = false
                 catchErrors     logical = true
-            end
-
-            % create a folder for this investigation
-            path = fullfile( path, name );
-            if ~isfolder( path )
-                mkdir( path )
+                memorySaving    double {mustBeInteger, ...
+                                mustBeInRange( memorySaving, 0, 3 )} = 0
             end
 
             % initialize properties
             self.Name = name;
             self.Path = path;
+            self.CatchErrors = catchErrors;
+            self.MemorySaving = memorySaving;
 
-            % add the name and path to the model properties
-            setup.model.args.name = name;
-            setup.model.args.path = path;
+            % create a folder for this investigation
+            setup.model.args.path = fullfile( path, name );
+            if ~isfolder( setup.model.args.path )
+                mkdir( setup.model.args.path )
+            end
 
             if resume
                 self = self.load;
@@ -101,9 +102,6 @@ classdef Investigation
                 
                 end
 
-                % assign a folder for this evaluation
-                setup.model.args.path = folder( path, name, idx );
-
                 % carry out the evaluation
                 setup.model.args.name = strcat( name, constructName(idx) );
                 try
@@ -112,17 +110,15 @@ classdef Investigation
                     argsCell = {};
                 end
 
+                thisEvaluation = self.Evaluations{ idxC{:} };
+
                 if catchErrors
                     try
-                        self.Evaluations{ idxC{:} } = ...
-                                    ModelEvaluation( setup.model.args.name, ...
-                                                     setup, ...
-                                                     argsCell{:} );
-                        % record results
-                        self = self.logResults( idxC, allocation );
-            
-                        % save the evaluations
-                        self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );    
+                        thisEvaluation = ModelEvaluation( ...
+                                                    setup.model.args.name, ...
+                                                    setup.model.args.path, ...
+                                                    setup, ...
+                                                    argsCell{:} );
                     catch ME
                         warning('*****!!!!! Evaluation failed !!!!!*****')
                         disp(['Error Message: ' ME.message]);
@@ -134,13 +130,21 @@ classdef Investigation
                     end
                 
                 else
-                        self.Evaluations{ idxC{:} } = ...
-                                    ModelEvaluation( setup.model.args.name, ...
-                                                     setup, ...
-                                                     argsCell{:} );
-                        self = self.logResults( idxC, allocation );
-                        self.Evaluations{ idxC{:} }.save( setup.model.args.path, name );    
+                    thisEvaluation = ModelEvaluation( ...
+                                                setup.model.args.name, ...
+                                                setup.model.args.path, ...
+                                                setup, ...
+                                                argsCell{:} );
+
                 end
+   
+                % save the evaluations
+                thisEvaluation = thisEvaluation.conserveMemory( self.MemorySaving );
+                thisEvaluation.save;
+
+                % record results
+                self.Evaluations{ idxC{:} } = thisEvaluation;
+                self = self.logResults( idxC, allocation );
 
             end
             
@@ -155,7 +159,11 @@ classdef Investigation
         
         report = getResults( self )
 
+        save( self )
+
         fig = saveDataPlot( self, args )
+
+        report = saveReport( self )
 
     end
 

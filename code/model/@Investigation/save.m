@@ -1,12 +1,10 @@
-function report = save( self )
-    % Save the investigation to a specified path
+function save( thisInvestigation )
+    % Save the investigation object
     arguments
-        self        Investigation
+        thisInvestigation        Investigation
     end
 
-    report = self.getResults;
-    
-    name = strcat( self.Name, "-Investigation" );
-    save( fullfile( self.Path, name ), 'report' );
+    name = strcat( thisInvestigation.Name, "-Investigation" );
+    save( fullfile( thisInvestigation.Path, name ), 'thisInvestigation' );
 
 end

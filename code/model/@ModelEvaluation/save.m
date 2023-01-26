@@ -1,19 +1,10 @@
-function save( self, path, name )
-    % Save the evaluation to a specified path
+function save( thisEvaluation )
+    % Save the evaluation
     arguments
-        self        ModelEvaluation
-        path        string {mustBeFolder}
-        name        string
+        thisEvaluation        ModelEvaluation
     end
-
-    % define a small structure for saving
-    output.BespokeSetup = self.BespokeSetup;
-    output.CVComponents = self.CVComponents;
-    output.CVAuxMetrics = self.CVAuxMetrics;
-    output.CVLoss = self.CVLoss;
-    output.CVCorrelations = self.CVCorrelations;
-    
-    name = strcat( name, "-Evaluation" );
-    save( fullfile( path, name ), 'output' );
+   
+    filename = strcat( thisEvaluation.Name, "-Evaluation" );
+    save( fullfile( thisEvaluation.Path, filename ), 'thisEvaluation' );
 
 end   
