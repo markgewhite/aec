@@ -1,12 +1,12 @@
 classdef FCModel < AEModel
     % Subclass defining a fully connected autoencoder model
     properties
-        NumHidden     % number of hidden layers
-        NumFC         % number of nodes for widest layer
-        FCFactor      % log2 scaling factor subsequent layers
-        ReLuScale     % leaky ReLu scale factor
-        InputDropout  % input dropout rate
-        Dropout       % hidden layer dropout rate
+        NumHidden             % number of hidden layers
+        NumFC                 % number of nodes for widest layer
+        FCFactor              % log2 scaling factor subsequent layers
+        ReLuScale             % leaky ReLu scale factor
+        InputDropout          % input dropout rate
+        Dropout               % hidden layer dropout rate
         HasInputNormalization % apply amplitude normalization
     end
 
@@ -87,7 +87,7 @@ classdef FCModel < AEModel
 
                 nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
 
-                [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
+                [lgraphEnc, lastLayer] = self.addBlock( lgraphEnc, i, lastLayer, ...
                                     nNodes, self.ReLuScale, self.Dropout );
 
             end
@@ -177,28 +177,34 @@ classdef FCModel < AEModel
 
     end
 
-end
+    methods (Static)
 
-
-function [ lgraph, lastLayer ] = addBlock( lgraph, i, lastLayer, ...
+        function [ lgraph, lastLayer ] = addBlock( lgraph, i, lastLayer, ...
                                            nNodes, scale, dropout )
 
-    % define block
-    block = [   fullyConnectedLayer( nNodes, ...
-                                'Name', ['fc' num2str(i)] )
-                batchNormalizationLayer( 'Name', ...
-                                ['lnorm' num2str(i)] )
-                leakyReluLayer( scale, ...
-                                'Name', ['relu' num2str(i)] )
-                dropoutLayer( dropout, ...
-                                     'Name', ['drop' num2str(i)] )
-                ];
+            % define block
+            block = [   fullyConnectedLayer( nNodes, ...
+                                        'Name', ['fc' num2str(i)] )
+                        batchNormalizationLayer( 'Name', ...
+                                        ['lnorm' num2str(i)] )
+                        leakyReluLayer( scale, ...
+                                        'Name', ['relu' num2str(i)] )
+                        dropoutLayer( dropout, ...
+                                             'Name', ['drop' num2str(i)] )
+                        ];
+        
+            % connect layers at the front
+            lgraph = addLayers( lgraph, block );
+            lgraph = connectLayers( lgraph, ...
+                                    lastLayer, ['fc' num2str(i)] );
+            
+            lastLayer = ['drop' num2str(i)];
+        
+        end
 
-    % connect layers at the front
-    lgraph = addLayers( lgraph, block );
-    lgraph = connectLayers( lgraph, ...
-                            lastLayer, ['fc' num2str(i)] );
-    
-    lastLayer = ['drop' num2str(i)];
+        
+    end
 
 end
+
+
