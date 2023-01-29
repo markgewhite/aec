@@ -2,16 +2,18 @@
 
 clear;
 
-dataset = "UCR";
+optID = 201;
+disp(['OptID = ' num2str(optID)]);
+
+dataset = "Synthetic";
 
 exploration = 0.5;
+in_parallel = true;
+numEvaluations = 30;
 
 % set the destinations for results and figures
 path = fileparts( which('code/optimizeAE.m') );
 path = [path '/../results/opt/'];
-
-path2 = fileparts( which('code/optimizeAE.m') );
-path2 = [path2 '/../paper/results/'];
 
 % -- data setup --
 switch dataset
@@ -56,7 +58,6 @@ switch dataset
 end
 
 % -- model setup --
-setup.model.class = @FCModel;
 setup.model.args.ZDim = 4;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
@@ -80,117 +81,353 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.useParallelProcessing = true;
-setup.model.args.trainer.doUseGPU = true;
-setup.model.args.trainer.NumIterations = 100;
+setup.model.args.trainer.NumIterations = 5000;
 setup.model.args.trainer.UpdateFreq = 5000;
-setup.model.args.trainer.BatchSize = 50;
-setup.model.args.trainer.Holdout = 0;
+setup.model.args.trainer.BatchSize = 5000;
+setup.model.args.trainer.Holdout = 0.2;
 
+
+% -- emerging optimal setup --
+setup.data.args.NormalizedPts = 10;
 
 % -- optimizer setup --
 setup.opt.objective = 'ReconLoss';
 
-% define optimizable variables
-varDef(1) = optimizableVariable( 'data_args_HasAdaptiveTimeSpan', ...
-        ["false" "true"], Type = 'categorical', ...
-        Optimize = false );
+switch optID
 
-varDef(2) = optimizableVariable( 'data_args_NormalizedPts', ...
-        [3 1000], Type = 'integer', Transform = 'log', ... 
-        Optimize = false );
+    case 101
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLossRegular';
 
-varDef(3) = optimizableVariable( 'data_args_ResampleRate', ...
-        [1 100], Type = 'real', Transform = 'log', ... 
-        Optimize = false );
+        setup.model.args.NumHidden = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
 
-varDef(4) = optimizableVariable( 'data_args_Lambda', ...
-        [1E-10 1E10], Type = 'real', Transform = 'log', ... 
-        Optimize = false );
+        varDef(1) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [3 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
 
-varDef(5) = optimizableVariable( 'model_args_HasInputNormalization', ...
-        ["false" "true"], Type = 'categorical', ...
-        Optimize = false );
+    case 102
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'AuxModelErrorRate';
 
-% FC Model hyperparameters
-varDef(6) = optimizableVariable( 'model_args_NumHidden', ...
-        [1 3], Type = 'integer', ... 
-        Optimize = false );
+        setup.model.args.NumHidden = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
 
-varDef(7) = optimizableVariable( 'model_args_NumFC', ...
-        [16 256], Type = 'integer', Transform = 'log', ... 
-        Optimize = false );
+        varDef(1) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [3 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
 
-varDef(8) = optimizableVariable( 'model_args_FCFactor', ...
-        [1 3], Type = 'integer', ... 
-        Optimize = false );
+    case 103
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'LambdaTarget';
 
-varDef(9) = optimizableVariable( 'model_args_ReLuScale', ...
-        [0.01 0.9], Type = 'real', Transform = 'log', ... 
-        Optimize = false );
+        setup.model.args.NumHidden = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
 
-varDef(10) = optimizableVariable( 'model_args_InputDropout', ...
-        [0.01 0.5], Type = 'real', Transform = 'log', ... 
-        Optimize = false );
+        varDef(1) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [3 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
 
-varDef(11) = optimizableVariable( 'model_args_Dropout', ...
-        [0.01 0.9], Type = 'real', Transform = 'log', ... 
-        Optimize = false );
+    case 104
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconVarRegular';
 
+        setup.model.args.NumHidden = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
 
-% data hyperparameters
-varDef(12) = optimizableVariable( 'data_args_NumPts', ...
-        [20 2000], Type = 'integer', Transform = 'log', ... 
-        Optimize = false );
+        varDef(1) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [3 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
 
-% TCN Model hyperparameters
-varDef(13) = optimizableVariable( 'model_args_HasReluInside', ...
-        ["false" "true"], Type = 'categorical', ...
-        Optimize = false );
+    case 105
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconTimeVarRegular';
 
-varDef(14) = optimizableVariable( 'model_args_NumConvHidden', ...
-        [2 8], Type = 'integer', ... 
-        Optimize = false );
+        setup.model.args.NumHidden = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
 
-varDef(15) = optimizableVariable( 'model_args_DilationFactor', ...
-        [1 2], Type = 'integer', ... 
-        Optimize = false );
+        varDef(1) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [3 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
 
-varDef(16) = optimizableVariable( 'model_args_FilterSize', ...
-        [3 11], Type = 'integer', ... 
-        Optimize = false );
+    case 106
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconTimeVar';
 
-varDef(17) = optimizableVariable( 'model_args_NumFilters', ...
-        [4 64], Type = 'integer', Transform = 'log', ... 
-        Optimize = false );
+        setup.model.args.NumHidden = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
 
-% new centring parameter
-varDef(18) = optimizableVariable( 'model_args_HasCentredDecoder', ...
-        ["false" "true"], Type = 'categorical', ...
-        Optimize = false );
+        varDef(1) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [3 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
 
-% parallel processing parameters
-varDef(19) = optimizableVariable( 'model_args_trainer_batchSize', ...
-        [30 300], Type = 'integer', Transform = 'log', ...
-        Optimize = true );
+    case 111
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLoss';
 
-varDef(30) = optimizableVariable( 'model_args_trainer_useParallelProcessing', ...
-        ["false" "true"], Type = 'categorical', ...
-        Optimize = false );
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
+        setup.data.args.NormalizedPts = 21;
 
-varDef(31) = optimizableVariable( 'model_args_trainer_partialBatch', ...
-        ["discard" "return"], Type = 'categorical', ...
-        Optimize = true );
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+    case 112
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'AuxModelErrorRate';
+
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+    case 113
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLoss';
+
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.Dropout = 0;
+        setup.data.args.NormalizedPts = 101;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+    case 121
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLoss';
+
+        setup.model.args.NumHidden = 2;
+        setup.model.args.NumFC = 256;
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_ReLuScale', ...
+                [0.001 1.0], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_Dropout', ...
+                [0.001 0.200], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+
+    case 122
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'AuxModelErrorRate';
+
+        setup.model.args.NumHidden = 2;
+        setup.model.args.NumFC = 256;
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_ReLuScale', ...
+                [0.001 1.0], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_Dropout', ...
+                [0.001 0.200], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+
+    case 123
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLoss';
+
+        setup.model.args.NumHidden = 1;
+        setup.model.args.NumFC = 512;
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_ReLuScale', ...
+                [0.001 1.0], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+        
+        varDef(2) = optimizableVariable( 'model_args_Dropout', ...
+                [0.001 0.200], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+
+    case 124
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'AuxModelErrorRate';
+
+        setup.model.args.NumHidden = 2;
+        setup.model.args.NumFC = 256;
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_ReLuScale', ...
+                [0.001 1.0], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+
+    case 131
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLoss&AuxModelErrorRate';
+
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(3) = optimizableVariable( 'model_args_ReLuScale', ...
+                [0.001 1.0], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(4) = optimizableVariable( 'model_args_Dropout', ...
+                [0.001 0.200], Type = 'real', Transform = 'log', ... 
+                Optimize = true );
+
+    case 132
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a FCModel and a simplified setup
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLoss&AuxModelErrorRateEqual';
+
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.ReLuScale = 0.20;
+        setup.model.args.Dropout = 0.05;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(3) = optimizableVariable( 'model_args_FCFactor', ...
+                [1 3], Type = 'integer', ... 
+                Optimize = true );
+
+    case 201
+        % Find the best combination of output resolution and the number of
+        % nodes with one hidden layer for a ConvModel and a simplified setup
+        setup.model.class = @ConvolutionalModel;
+        setup.model.args.HasFCDecoder = true;
+        setup.opt.objective = 'AuxModelErrorRate';
+
+        seteup.data.args.ResampleRate = 5;
+        setup.model.args.NumFilters= 16;
+
+        setup.model.args.trainer.NumIterations = 1000;
+
+        setup.model.args.NumHidden = 1;
+        setup.model.args.NumFC = 256;
+        setup.model.args.FCFactor = 1;
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.ReLuScale = 0.0;
+        setup.model.args.Dropout = 0.0;
+
+        varDef(1) = optimizableVariable( 'model_args_FilterSize', ...
+                [5 13], Type = 'integer', ... 
+                Optimize = true );
+
+        numEvaluations = 15;
+        
+    otherwise
+        error('Unrecognised optID.');
+
+end
+
 
 % setup objective function
 objFcn = @(x) objectiveFcnAE( x, setup );
+objWrapperFcn = @(x) objWrapper( x, setup );
 
 % run optimisation
-output = bayesopt( objFcn, varDef, ...
+output = bayesopt( objWrapperFcn, varDef, ...
             NumCoupledConstraints = 1, ...
             ExplorationRatio = exploration, ...
-            MaxObjectiveEvaluations = 30 );
+            MaxObjectiveEvaluations = numEvaluations, ...
+            UseParallel = in_parallel);
 
+% save optimisation data
+filename = ['Bayesopt-' num2str(optID)];
+save( fullfile(path, filename), 'output', 'setup' );
 
 function [ obj, constraint ] = objWrapper( hyperparams, setup )
     % Objective function wrapper

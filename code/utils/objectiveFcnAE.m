@@ -18,9 +18,10 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
     
     end
     
+    path = pwd;
     % initialize and run the evaluation
     try
-        thisEvaluation = ModelEvaluation( "Optimization", setup, ...
+        thisEvaluation = ModelEvaluation( "Optimization", path, setup, ...
                                           verbose = false );
         constraint = -1;
     catch
@@ -37,10 +38,26 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
             obj = thisEvaluation.CVLoss.Validation.Mean.ReconLossSmoothed;
         case 'ReconLossRegular'
             obj = thisEvaluation.CVLoss.Validation.Mean.ReconLossRegular;
+        case 'ReconVar'
+            obj = thisEvaluation.CVLoss.Validation.Mean.ReconVar;
+        case 'ReconVarRegular'
+            obj = thisEvaluation.CVLoss.Validation.Mean.ReconVarRegular;
+        case 'ReconTimeVar'
+            obj = mean(thisEvaluation.CVLoss.Validation.Mean.ReconTimeVar);
+        case 'ReconTimeVarRegular'
+            obj = mean(thisEvaluation.CVLoss.Validation.Mean.ReconTimeVarRegular);
         case 'AuxModelErrorRate'
             obj = thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
         case 'ExecutionTime'
             obj = thisEvaluation.CVTiming.Training.Mean.TotalTime;
+        case 'LambdaTarget'
+            obj = thisEvaluation.Models{1}.FDA.LambdaTarget;
+        case 'ReconLoss&AuxModelErrorRate'
+            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLoss + ...
+                        0.1*thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
+        case 'ReconLoss&AuxModelErrorRateEqual'
+            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLoss + ...
+                        thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
     end
 
 

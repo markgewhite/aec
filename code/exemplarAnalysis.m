@@ -36,7 +36,7 @@ setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 20;
+setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---

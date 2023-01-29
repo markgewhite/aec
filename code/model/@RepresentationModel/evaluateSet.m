@@ -29,7 +29,9 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     % compute the bias and variance
     eval.ReconBias = reconBias( pred.XTarget, pred.XHat, thisModel.Scale );
-    eval.ReconVar = eval.ReconLoss - eval.ReconBias^2;              
+    eval.ReconVar = eval.ReconLoss - eval.ReconBias^2;
+    eval.ReconBiasRegular = reconBias( pred.XRegular, pred.XHatRegular, thisModel.Scale );
+    eval.ReconVarRegular = eval.ReconLossRegular - eval.ReconBiasRegular^2;    
     
     % compute the mean squared error as a function of time
     eval.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, thisModel.Scale );
