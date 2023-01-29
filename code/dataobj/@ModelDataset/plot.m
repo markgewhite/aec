@@ -19,10 +19,6 @@ function fig = plot( self, args )
     % select the observations/curves to plot
     curves = randsample( self.NumObs, nSample )';
 
-    % smooth and re-evaluate all curves
-    tSpanPlot = linspace( self.TSpan.Original(1), ...
-                          self.TSpan.Original(end), 101 );
-
     % initialize the plot
     fig = figure(4);
     tiledlayout( fig, 1, self.XChannels, TileSpacing = 'Compact' );
@@ -38,6 +34,7 @@ function fig = plot( self, args )
     colours = colours( 3:9, : );
 
     % plot the curves
+    t = self.TSpan.Regular;
     X = self.XInputRegular;
     Y = self.Y;
     classInLegend = false( self.CDim, 1 );
@@ -54,7 +51,7 @@ function fig = plot( self, args )
             if classInLegend( Y(i) )
                 % plot the curve straight
                 plot( axes(c), ...
-                      tSpanPlot, X( :, i, c ), ...
+                      t, X( :, i, c ), ...
                       LineWidth = 1, ...
                       Color = rgb );
             else
@@ -62,7 +59,7 @@ function fig = plot( self, args )
                 classInLegend( Y(i) ) = true;
                 classLabel = self.Info.ClassLabels( Y(i) );
                 pltObj( Y(i) ) = plot( axes(c), ...
-                                  tSpanPlot, X( :, i, c ), ...
+                                  t, X( :, i, c ), ...
                                   Color = rgb, ...
                                   LineWidth = 1, ...
                                   DisplayName = classLabel );
@@ -84,7 +81,7 @@ function fig = plot( self, args )
         
         if args.showXAxis
             xlabel( axes(c), self.Info.TimeLabel );
-            xlim( axes(c), [tSpanPlot(1) tSpanPlot(end)] );
+            xlim( axes(c), [t(1) t(end)] );
         else
             axes(c).XAxis.TickLabels = [];
         end

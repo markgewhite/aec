@@ -2,7 +2,7 @@
 
 clear;
 
-optID = 141;
+optID = 142;
 disp(['OptID = ' num2str(optID)]);
 
 dataset = "Synthetic";
@@ -43,7 +43,7 @@ switch dataset
         setup.data.args.Eta = 0.1;
         setup.data.args.Tau = 0;    
         setup.data.args.WarpLevel = 1;
-        setup.data.args.SharedLevel = 2;
+        setup.data.args.SharedLevel = 3;
 
     case 'Synthetic-Legacy'
         setup.data.class = @SyntheticDataset;
@@ -83,7 +83,7 @@ setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 5000;
 setup.model.args.trainer.UpdateFreq = 5000;
-setup.model.args.trainer.BatchSize = 50;
+setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.Holdout = 0.2;
 
 
@@ -393,6 +393,80 @@ switch optID
         setup.model.args.InputDropout = 0.0;
         setup.model.args.ReLuScale = 0.20;
         setup.model.args.Dropout = 0.05;
+
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(3) = optimizableVariable( 'model_args_FCFactor', ...
+                [1 3], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(4) = optimizableVariable( 'model_args_NumHiddenDecoder', ...
+                [1 2], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(5) = optimizableVariable( 'model_args_NumFCDecoder', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(6) = optimizableVariable( 'model_args_FCFactorDecoder', ...
+                [1 3], Type = 'integer', ... 
+                Optimize = true );
+
+    case 142
+        % Find the best combination of output resolution and the number of
+        % nodes for an asymmetric FC model
+        setup.model.class = @AsymmetricFCModel;
+        setup.opt.objective = 'AuxModelErrorRate';
+
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.ReLuScale = 0.20;
+        setup.model.args.Dropout = 0.05;
+
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(3) = optimizableVariable( 'model_args_FCFactor', ...
+                [1 3], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(4) = optimizableVariable( 'model_args_NumHiddenDecoder', ...
+                [1 2], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(5) = optimizableVariable( 'model_args_NumFCDecoder', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(6) = optimizableVariable( 'model_args_FCFactorDecoder', ...
+                [1 3], Type = 'integer', ... 
+                Optimize = true );
+
+    case 143
+        % Find the best combination of output resolution and the number of
+        % nodes for an asymmetric FC model
+        setup.model.class = @AsymmetricFCModel;
+        setup.opt.objective = 'ReconLoss&AuxModelErrorRateEqual';
+
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.ReLuScale = 0.20;
+        setup.model.args.Dropout = 0.05;
+
+        setup.data.args.NormalizedPts = 21;
 
         varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
                 [1 5], Type = 'integer', ... 
