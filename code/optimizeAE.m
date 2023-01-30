@@ -2,13 +2,13 @@
 
 clear;
 
-optID = 142;
+optID = 143;
 disp(['OptID = ' num2str(optID)]);
 
-dataset = "Synthetic";
+dataset = "Jumps";
 
 exploration = 0.5;
-in_parallel = true;
+in_parallel = false;
 numEvaluations = 30;
 
 % set the destinations for results and figures
@@ -70,7 +70,6 @@ setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
-setup.model.args.lossFcns.zcls.args.DoCalcLoss = false;
 
 setup.model.args.lossFcns.adv.class = @AdversarialLoss;
 setup.model.args.lossFcns.adv.name = 'Discriminator';
@@ -81,7 +80,7 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5000;
+setup.model.args.trainer.NumIterations = 49;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.Holdout = 0.2;
@@ -389,6 +388,7 @@ switch optID
         % nodes for an asymmetric FC model
         setup.model.class = @AsymmetricFCModel;
         setup.opt.objective = 'ReconLoss';
+        numEvaluations = 50;
 
         setup.model.args.InputDropout = 0.0;
         setup.model.args.ReLuScale = 0.20;
@@ -425,6 +425,7 @@ switch optID
         % nodes for an asymmetric FC model
         setup.model.class = @AsymmetricFCModel;
         setup.opt.objective = 'AuxModelErrorRate';
+        numEvaluations = 50;
 
         setup.model.args.InputDropout = 0.0;
         setup.model.args.ReLuScale = 0.20;
@@ -461,6 +462,7 @@ switch optID
         % nodes for an asymmetric FC model
         setup.model.class = @AsymmetricFCModel;
         setup.opt.objective = 'ReconLoss&AuxModelErrorRateEqual';
+        numEvaluations = 50;
 
         setup.model.args.InputDropout = 0.0;
         setup.model.args.ReLuScale = 0.20;
@@ -532,13 +534,14 @@ output = bayesopt( objWrapperFcn, varDef, ...
             NumCoupledConstraints = 1, ...
             ExplorationRatio = exploration, ...
             MaxObjectiveEvaluations = numEvaluations, ...
+            AcquisitionFunctionName = "expected-improvement-plus", ...
             UseParallel = in_parallel);
 
 % save optimisation data
 filename = ['Bayesopt-' num2str(optID)];
 save( fullfile(path, filename), 'output', 'setup' );
 
-function [ obj, constraint ] = objWrapper( hyperparams, setup )
+function [ obj, constraint, userdata ] = objWrapper( hyperparams, setup )
     % Objective function wrapper
     arguments
         hyperparams
@@ -550,7 +553,7 @@ function [ obj, constraint ] = objWrapper( hyperparams, setup )
             setup.data.args.TemplateSeed = randi(10000);
     end
 
-    [obj, constraint] = objectiveFcnAE( hyperparams, setup );
+    [obj, constraint, userdata] = objectiveFcnAE( hyperparams, setup );
 
 end
 

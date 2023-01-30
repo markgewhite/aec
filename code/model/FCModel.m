@@ -7,6 +7,7 @@ classdef FCModel < AEModel
         ReLuScale             % leaky ReLu scale factor
         InputDropout          % input dropout rate
         Dropout               % hidden layer dropout rate
+        HasBatchNormalization % apply batch normalization
         HasInputNormalization % apply amplitude normalization
     end
 
@@ -34,6 +35,7 @@ classdef FCModel < AEModel
                     {mustBeInRange(args.InputDropout, 0, 1)} = 0.2
                 args.Dropout    double ...
                     {mustBeInRange(args.Dropout, 0, 1)} = 0.05
+                args.HasBatchNormalization logical = true
                 args.HasInputNormalization logical = true
                 args.FlattenInput   logical = true
                 args.HasSeqInput    logical = false
@@ -56,6 +58,7 @@ classdef FCModel < AEModel
             self.ReLuScale = args.ReLuScale;
             self.InputDropout = args.InputDropout;
             self.Dropout = args.Dropout;
+            self.HasBatchNormalization = args.HasBatchNormalization;
             self.HasInputNormalization = args.HasInputNormalization;
            
         end
@@ -86,9 +89,17 @@ classdef FCModel < AEModel
             for i = 1:self.NumHidden
 
                 nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
+                if nNodes < self.ZDim
+                    eid = 'FCModel:Design';
+                    msg = 'Encoder hidden layer smaller than latent space.';
+                    throwAsCaller( MException(eid,msg) );
+                end
 
-                [lgraphEnc, lastLayer] = self.addBlock( lgraphEnc, i, lastLayer, ...
-                                    nNodes, self.ReLuScale, self.Dropout );
+                [lgraphEnc, lastLayer] = self.addBlock( ...
+                                    lgraphEnc, i, lastLayer, nNodes, ...
+                                    self.ReLuScale, ...
+                                    self.Dropout, ...
+                                    self.HasBatchNormalization );
 
             end
             
@@ -117,9 +128,17 @@ classdef FCModel < AEModel
             for i = 1:self.NumHidden
 
                 nNodes = fix( self.NumFC*2^(self.FCFactor*(-self.NumHidden+i)) );
+                if nNodes < self.ZDim
+                    eid = 'FCModel:Design';
+                    msg = 'Decoder hidden layer smaller than latent space.';
+                    throwAsCaller( MException(eid,msg) );
+                end
 
-                [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
-                                    nNodes, self.ReLuScale, self.Dropout );
+                [lgraphDec, lastLayer] = addBlock( ...
+                                    lgraphDec, i, lastLayer, nNodes, ...
+                                    self.ReLuScale, ...
+                                    self.Dropout, ...
+                                    self.HasBatchNormalization );
 
             end
 
@@ -179,19 +198,30 @@ classdef FCModel < AEModel
 
     methods (Static)
 
-        function [ lgraph, lastLayer ] = addBlock( lgraph, i, lastLayer, ...
-                                           nNodes, scale, dropout )
+        function [ lgraph, lastLayer ] = addBlock( ...
+                                        lgraph, i, lastLayer, nNodes, ...
+                                        scale, dropout, hasBatchNorm )
 
             % define block
-            block = [   fullyConnectedLayer( nNodes, ...
-                                        'Name', ['fc' num2str(i)] )
-                        batchNormalizationLayer( 'Name', ...
-                                        ['lnorm' num2str(i)] )
-                        leakyReluLayer( scale, ...
-                                        'Name', ['relu' num2str(i)] )
-                        dropoutLayer( dropout, ...
-                                             'Name', ['drop' num2str(i)] )
-                        ];
+            if hasBatchNorm
+                block = [   fullyConnectedLayer( nNodes, ...
+                                            'Name', ['fc' num2str(i)] )
+                            batchNormalizationLayer( 'Name', ...
+                                            ['lnorm' num2str(i)] )
+                            leakyReluLayer( scale, ...
+                                            'Name', ['relu' num2str(i)] )
+                            dropoutLayer( dropout, ...
+                                                 'Name', ['drop' num2str(i)] )
+                            ];
+            else
+                block = [   fullyConnectedLayer( nNodes, ...
+                                            'Name', ['fc' num2str(i)] )
+                            leakyReluLayer( scale, ...
+                                            'Name', ['relu' num2str(i)] )
+                            dropoutLayer( dropout, ...
+                                                 'Name', ['drop' num2str(i)] )
+                            ];
+            end
         
             % connect layers at the front
             lgraph = addLayers( lgraph, block );

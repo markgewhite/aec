@@ -7,6 +7,7 @@ classdef AsymmetricFCModel < FCModel
         FCFactorDecoder       % log2 scaling factor subsequent layers
         ReLuScaleDecoder      % leaky ReLu scale factor
         DropoutDecoder        % hidden layer dropout rate
+        HasBatchNormalizationDecoder % whether to include batch normalization
     end
 
     methods
@@ -31,6 +32,7 @@ classdef AsymmetricFCModel < FCModel
                     {mustBeInRange(args.ReLuScaleDecoder, 0, 1)} = 0.2
                 args.DropoutDecoder     double ...
                     {mustBeInRange(args.DropoutDecoder, 0, 1)} = 0.0
+                args.HasBatchNormalizationDecoder logical = true
             end
 
             % set the superclass's properties
@@ -47,6 +49,7 @@ classdef AsymmetricFCModel < FCModel
             self.FCFactorDecoder = args.FCFactorDecoder;
             self.ReLuScaleDecoder = args.ReLuScaleDecoder;
             self.DropoutDecoder = args.DropoutDecoder;
+            self.HasBatchNormalizationDecoder = args.HasBatchNormalizationDecoder;
            
         end
 
@@ -65,9 +68,17 @@ classdef AsymmetricFCModel < FCModel
             for i = 1:self.NumHiddenDecoder
 
                 nNodes = fix( self.NumFCDecoder*2^(self.FCFactorDecoder*(-self.NumHiddenDecoder+i)) );
-
-                [lgraphDec, lastLayer] = FCModel.addBlock( lgraphDec, i, lastLayer, ...
-                                    nNodes, self.ReLuScaleDecoder, self.DropoutDecoder );
+                if nNodes < self.ZDim
+                    eid = 'FCModel:Design';
+                    msg = 'Decoder hidden layer smaller than latent space.';
+                    throwAsCaller( MException(eid,msg) );
+                end
+                
+                [lgraphDec, lastLayer] = FCModel.addBlock( ...
+                                    lgraphDec, i, lastLayer, nNodes, ...
+                                    self.ReLuScaleDecoder, ...
+                                    self.DropoutDecoder, ...
+                                    self.HasBatchNormalizationDecoder );
 
             end
 

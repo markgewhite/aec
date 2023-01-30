@@ -1,4 +1,4 @@
-function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
+function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
     % Objective function for the autoencoder to be used for optimisation
     arguments
         hyperparams
@@ -26,7 +26,8 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
         constraint = -1;
     catch
         constraint = 1;
-        obj = NaN;
+        obj = -1;
+        userdata = [];
         return
     end
     
@@ -59,6 +60,15 @@ function [ obj, constraint ] = objectiveFcnAE( hyperparams, setup )
             obj = thisEvaluation.CVLoss.Validation.Mean.ReconLoss + ...
                         thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
     end
+
+    % add useful data
+    userdata.CurrentIteration = thisEvaluation.Models{1}.Trainer.CurrentIteration;
+    userdata.CurrentEpoch = thisEvaluation.Models{1}.Trainer.CurrentEpoch;
+    userdata.TrainingLoss = thisEvaluation.CVLoss.Training.Mean;
+    userdata.AuxModelBeta = thisEvaluation.CVAuxMetrics;
+    userdata.LossTrnTrace = thisEvaluation.Models{1}.Trainer.LossTrn;
+    userdata.LossValTrace = thisEvaluation.Models{1}.Trainer.LossVal;
+    userdata.MetricsTrace = thisEvaluation.Models{1}.Trainer.Metrics;
 
 
 end
