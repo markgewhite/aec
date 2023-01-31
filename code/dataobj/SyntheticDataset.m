@@ -29,18 +29,18 @@ classdef SyntheticDataset < ModelDataset
                 args.TemplateSeed    double = 1234
                 args.DatasetSeed     double = 9876
                 args.ClassSizes     double ...
-                    {mustBeInteger, mustBePositive} = [500 500 500]
+                    {mustBeInteger, mustBePositive} = [500 500]
                 args.NumPts         double = 101
                 args.NumTemplatePts double ...
-                    {mustBeInteger, mustBePositive} = 17
+                    {mustBeInteger, mustBePositive} = 13
                 args.Channels       double = 1
-                args.Scaling        double = [2 4 8]
-                args.Mu             double = [1 2 4]
-                args.Sigma          double = [1 1 1]
-                args.Eta            double = 0.1
-                args.Tau            double = 0
-                args.SharedLevel    double = 3
-                args.WarpLevel      double = 2
+                args.Scaling        double = [2 4 6]
+                args.Mu             double = [3 2 1]
+                args.Sigma          double = [2 1 0.5]
+                args.Eta            double = 1.0
+                args.Tau            double = 0.05
+                args.SharedLevel    double = 2
+                args.WarpLevel      double = 1
                 args.PaddingLength  double = 0
                 args.Lambda         double = []
                 superArgs.?ModelDataset
@@ -89,7 +89,7 @@ classdef SyntheticDataset < ModelDataset
                             channelLabels = "X (no units)", ...
                             timeLabel = "Time Domain", ...
                             classLabels = labels, ...
-                            channelLimits = [-3 3] );
+                            channelLimits = [] );
 
             self.ClassSizes = args.ClassSizes;
             self.Scaling = args.Scaling;
