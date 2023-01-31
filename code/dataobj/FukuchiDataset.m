@@ -33,10 +33,10 @@ classdef FukuchiDataset < ModelDataset
                 args.RandomSeed         double = 1234
                 args.YReference         char ...
                     {mustBeMember( args.YReference, ...
-                    {'AgeGroup', 'Gender', 'SpeedClass', 'GaitSpeed'} )} = 'AgeGroup'
+                    {'AgeGroup', 'Gender', 'GaitSpeed'} )} = 'AgeGroup'
                 args.Category           char ...
                     {mustBeMember( args.Category, ...
-                    {'GRF', 'JointAngles'} )} = 'GRF'
+                    {'Ground', 'JointAngles'} )} = 'Ground'
                 args.HasGRF             logical = true
                 args.HasVGRFOnly        logical = true
                 args.HasCOP             logical = false
@@ -50,12 +50,6 @@ classdef FukuchiDataset < ModelDataset
                 args.PaddingLength      double = 0
                 args.Lambda             double = []
                 superArgs.?ModelDataset
-            end
-
-            if (args.HasGRF + args.HasCOP)==0
-                eid = 'gaitrecDataset:SignalsNotSpecified';
-                msg = 'Neither GRF nor COP signals have been specified.';
-                throwAsCaller( MException(eid,msg) );
             end
 
             [ XRaw, Y, S, side, channels, classes ] = FukuchiDataset.load( set, args );
@@ -74,7 +68,7 @@ classdef FukuchiDataset < ModelDataset
             pad.Anchoring = 'Both';
 
             switch args.Category
-                case 'GRF'
+                case 'Ground'
                     tSpan= (0:pad.Length-1)/300;
                     label = "Stance Time (s)";
                 case 'JointAngles'
@@ -166,11 +160,6 @@ classdef FukuchiDataset < ModelDataset
                     refY( ~male ) = 2;
                     classLabels = unique( metaData.Gender );
 
-                case 'SpeedClass'
-                    metaData.SpeedClass = categorical( metaData.FileName(11:13) );
-                    refY = metaData.SpeedClass;
-                    classLabels = unique( metaData.SpeedClass );
-
                 case 'GaitSpeed'
                     refY = metaData.GaitSpeed;
                     classLabels = "";
@@ -188,7 +177,7 @@ classdef FukuchiDataset < ModelDataset
             else
                 % load the trial data from original files
                 switch args.Category
-                    case 'GRF'
+                    case 'Ground'
                         [ X, Y, S, side, names ] = loadGRFData( datapath, ...
                                                     metaData.FileName, ...
                                                     metaData.Subject, ...
@@ -358,36 +347,37 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
     fields = [];
     names = [];
     if args.HasPelvisAngles
-        fields = [ fields 2 3 4 ];
+        fields = [ fields 1 2 3 ];
         names = ["Pelvic Tilt", "Pelvic Obliquity", "Pelvic Rotation"];
     end
 
     if args.HasHipAngles
-        fields = [ fields 5 6 7 ];
+        fields = [ fields 4 5 6 ];
         names = [ names, ...
           "Hip Flexion/Extension", "Hip Add/Abduction", "Hip Int/External Rotation"];
     end
 
     if args.HasKneeAngles
-        fields = [ fields 8 9 10 ];
+        fields = [ fields 7 8 9 ];
         names = [names, ...
           "Knee Flexion/Extension", "Knee Add/Abduction", "Knee Int/External Rotation"];
     end
 
     if args.HasAnkleAngles
-        fields = [ fields 11 12 13 ];
+        fields = [ fields 10 11 12 ];
         names = [names, ...
           "Ankle Dorsi/Plantarflexion", "Ankle Inv/Eversion", "Ankle Add/Abduction"];
     end
 
     if args.HasFootAngles
-        fields = [ fields 14 15 16 ];
+        fields = [ fields 13 14 15 ];
         names = [names, ...
           "Foot Dorsi/Plantarflexion", "Foot Inv/Eversion", "Foot Add/Abduction"];
     end
 
     if args.SagittalPlaneOnly
-        fields = fields( mod( fields+1, 3 )==0 );
+        fields = fields( mod( fields, 3 )==1 );
+        names = names( fields );
     end
 
     % read in the data, file by file

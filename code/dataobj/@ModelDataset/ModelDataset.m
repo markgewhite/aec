@@ -14,6 +14,7 @@ classdef ModelDataset
         CDim            % number of categories
         YLabels         % Y labels
         NumObs          % number of observations
+        NumObsByClass   % number of observation by class
 
         Normalization       % structure for time-normalization 
         NormalizedPts       % standardized number of points for normalization
@@ -184,6 +185,7 @@ classdef ModelDataset
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
             self.CDim = length( self.YLabels );
+            self.NumObsByClass = groupcounts( self.Y );
 
         end
 

@@ -3,7 +3,7 @@ function fig = plot( self, args )
     % revealing the classes
     arguments
         self                ModelDataset
-        args.nSample        double = 200
+        args.nSample        double = 250
         args.showLegend     logical = true
         args.showTitle      logical = true
         args.showXAxis      logical = true
@@ -21,7 +21,7 @@ function fig = plot( self, args )
 
     % initialize the plot
     fig = figure(4);
-    tiledlayout( fig, 1, self.XChannels, TileSpacing = 'Compact' );
+    tiledlayout( fig, self.XChannels, 1, TileSpacing = 'Compact' );
     axes = gobjects( self.XChannels, 1 );
     pltObj = gobjects( self.CDim, 1 );
     for c = 1:self.XChannels
@@ -79,14 +79,14 @@ function fig = plot( self, args )
             legend( axes(c), pltObj, Location = 'best' );
         end
         
-        if args.showXAxis
+        if args.showXAxis && c==self.XChannels
             xlabel( axes(c), self.Info.TimeLabel );
             xlim( axes(c), [t(1) t(end)] );
         else
             axes(c).XAxis.TickLabels = [];
         end
 
-        if args.showYAxis && c==1
+        if args.showYAxis 
             ylabel( axes(c), self.Info.ChannelLabels(c) );
             axes(c).YAxis.TickLabelFormat = '%.1f';
         else
@@ -97,9 +97,12 @@ function fig = plot( self, args )
             ylim( axes(c), self.Info.ChannelLimits(c,:) );
         end               
 
-        axes(c).PlotBoxAspectRatio = [1 1 1 ];
         finalisePlot( axes(c), minimalTicks = true );
 
+    end
+
+    if self.XChannels==1
+        axes.PlotBoxAspectRatio = [1 1 1 ];
     end
 
 end
