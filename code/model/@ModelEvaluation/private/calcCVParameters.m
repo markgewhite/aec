@@ -5,7 +5,7 @@ function aggrP = calcCVParameters( models, group, set )
         group           char ...
             {mustBeMember( group, {'Loss', 'Correlations', 'Timing'} )}
         set             char ...
-            {mustBeMember( set, {'Training', 'Validation'} )}
+            {mustBeMember( set, {'Training', 'Testing'} )}
     end
 
     nModels = length( models );

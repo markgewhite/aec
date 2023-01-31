@@ -4,7 +4,7 @@ function cvLoss = calcCVLoss( models, set )
     arguments
         models          cell
         set             char ...
-            {mustBeMember( set, {'Training', 'Validation'} )}
+            {mustBeMember( set, {'Training', 'Testing'} )}
     end
 
     nModels = length( models );

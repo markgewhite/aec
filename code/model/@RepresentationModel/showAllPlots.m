@@ -4,7 +4,7 @@ function showAllPlots( self, args )
         self        RepresentationModel
         args.set    string ...
                 {mustBeMember( args.set, ...
-                {'Training', 'Validation'} )} = 'Training'
+                {'Training', 'Testing'} )} = 'Training'
     end
 
     if ~isempty( self.Figs ) && ~isempty( self.Axes )

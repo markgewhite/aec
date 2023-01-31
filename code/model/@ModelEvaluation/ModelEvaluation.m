@@ -97,15 +97,15 @@ classdef ModelEvaluation
 
             % evaluate the trained model
             self = self.evaluateModels( 'Training' );
-            self = self.evaluateModels( 'Validation' );           
+            self = self.evaluateModels( 'Testing' );           
 
             if args.verbose
                 disp('Training evaluation:');
                 reportResult( self.CVLoss.Training.Mean, ...
                               self.CVCorrelations.Training.Mean );
                 disp('Testing evaluation:');
-                reportResult( self.CVLoss.Validation.Mean, ...
-                              self.CVCorrelations.Validation.Mean );
+                reportResult( self.CVLoss.Testing.Mean, ...
+                              self.CVCorrelations.Testing.Mean );
             end
 
         end

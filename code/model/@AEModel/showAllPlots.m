@@ -4,7 +4,7 @@ function showAllPlots( self, args )
         self        AEModel
         args.set    string ...
                 {mustBeMember( args.set, ...
-                {'Training', 'Validation'} )} = 'Training'
+                {'Training', 'Testing'} )} = 'Training'
     end
 
     argsCell = namedargs2cell(args);

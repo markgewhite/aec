@@ -7,7 +7,7 @@ function self = logResults( self, idxC, allocation )
     end
 
     fields = {'TrainingResults', 'TestingResults'};
-    sets = {'Training', 'Validation'};
+    sets = {'Training', 'Testing'};
     categories = {'CVLoss', 'CVCorrelations', 'CVTiming'};
     
     for i = 1:length(fields)

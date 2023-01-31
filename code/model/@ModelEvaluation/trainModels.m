@@ -48,7 +48,7 @@ function self = trainModels( self, modelSetup )
         % evaluate the model
         tStart = tic;
         self.Models{k} = self.Models{k}.evaluate( thisTrnSet, thisValSet );
-        self.Models{k}.Timing.Validation.TotalTime = toc(tStart);
+        self.Models{k}.Timing.Testing.TotalTime = toc(tStart);
 
         % generate the model plots
         if self.Models{k}.ShowPlots

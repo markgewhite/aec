@@ -3,7 +3,7 @@ function self = evaluateModels( self, set )
     arguments
         self            ModelEvaluation
         set             char ...
-            {mustBeMember( set, {'Training', 'Validation'} )}
+            {mustBeMember( set, {'Training', 'Testing'} )}
     end
 
     self.CVLoss.(set) = calcCVParameters( self.Models, 'Loss', set );

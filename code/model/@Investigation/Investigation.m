@@ -110,8 +110,6 @@ classdef Investigation
                     argsCell = {};
                 end
 
-                thisEvaluation = self.Evaluations{ idxC{:} };
-
                 if catchErrors
                     try
                         thisEvaluation = ModelEvaluation( ...
@@ -126,7 +124,7 @@ classdef Investigation
                             disp([ME.stack(i).name ', (line ' ...
                                                  num2str(ME.stack(i).line) ')']);
                         end
-                    
+                        continue
                     end
                 
                 else
