@@ -99,6 +99,7 @@ classdef FukuchiDataset < ModelDataset
             self.Category = args.Category;
             self.YReference = args.YReference;
             self.HasGRF = args.HasGRF;
+            self.HasVGRFOnly = args.HasVGRFOnly;
             self.HasCOP = args.HasCOP;
             self.SagittalPlaneOnly = args.SagittalPlaneOnly;
             self.HasPelvisAngles = args.HasPelvisAngles;

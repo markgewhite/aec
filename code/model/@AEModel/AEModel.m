@@ -15,7 +15,8 @@ classdef AEModel < RepresentationModel
         Optimizer      % optimizer object
         InitZDimActive % initial number of Z dimensions active
         ZDimActive     % number of dimensions currently active
-        HasCentredDecoder % whether the decoder predicts centred X
+        HasCentredDecoder % if the decoder predicts centred X
+        UsesDensityEstimation % if the model is based on density estimation
         MeanCurveTarget   % mean curve for the X target time span
         AuxNetResponse % auxiliary network effect response
     end

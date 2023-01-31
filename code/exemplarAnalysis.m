@@ -3,7 +3,7 @@
 clear;
 
 runAnalysis = true;
-inParallel = true;
+inParallel = false;
 resume = false;
 catchErrors = true;
 reportIdx = 1:3;

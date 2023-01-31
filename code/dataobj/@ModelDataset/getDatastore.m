@@ -1,12 +1,17 @@
-function dsFull = getDatastore( self )
+function dsFull = getDatastore( self, includeP )
     % Create a super datastore of individual datastores for each variable
     arguments
         self            ModelDataset
+        includeP        logical = false
     end
 
     X = self.XInput;
     XN = self.XTarget;
-    P = self.PInput;
+    if includeP
+        P = calcXDistribution( self.XTarget, self.Perplexity );
+    else
+        P = zeros( self.NumObs, self.NumObs );
+    end
     Y = self.Y;
 
     if ~self.HasNormalizedInput

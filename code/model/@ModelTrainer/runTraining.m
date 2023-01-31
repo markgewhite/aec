@@ -17,7 +17,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisModel.MeanCurve = thisTrnData.XInputRegularMean;
 
     % create a super datastore combining individual variable datastores
-    dsTrn = thisTrnData.getDatastore;
+    dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation );
 
     % setup the minibatch preprocessing function
     preprocFcn = @( X, XN, P, Y, I ) preprocMiniBatch( X, XN, P, Y, I, ...

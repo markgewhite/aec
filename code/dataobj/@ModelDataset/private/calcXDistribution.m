@@ -1,5 +1,9 @@
 function P = calcXDistribution( X, perplexity )
     % t-SNE code for computing pairwise joint probabilities
+    arguments
+        X               double
+        perplexity      double
+    end
 
     % normalize input data
     X = X - min(X(:));

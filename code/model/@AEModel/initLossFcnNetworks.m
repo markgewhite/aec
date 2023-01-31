@@ -4,6 +4,7 @@ function self = initLossFcnNetworks( self )
         self        AEModel
     end
 
+    self.UsesDensityEstimation = false;
     for i = 1:length( self.LossFcnNames )
         thisName = self.LossFcnNames{i};
         thisLossFcn = self.LossFcns.(thisName);
@@ -15,6 +16,9 @@ function self = initLossFcnNetworks( self )
             else
                 self.Nets.(thisName) = thisLossFcn.initNetwork;
             end
+        end
+        if strcmp( thisLossFcn.Input,'P-Z' )
+            self.UsesDensityEstimation = true;
         end
     end
 
