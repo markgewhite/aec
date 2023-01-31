@@ -2,14 +2,16 @@
 
 clear;
 
-optID = 143;
+optID = 161;
 disp(['OptID = ' num2str(optID)]);
 
 dataset = "Jumps";
 
-exploration = 0.5;
-in_parallel = false;
-numEvaluations = 30;
+% -- optimizer setup --
+setup.opt.exploration = 0.5;
+setup.opt.numEvaluations = 30;
+setup.opt.in_parallel = true;
+setup.opt.acquisitionFcnName = 'expected-improvement-plus';
 
 % set the destinations for results and figures
 path = fileparts( which('code/optimizeAE.m') );
@@ -80,7 +82,7 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 49;
+setup.model.args.trainer.NumIterations = 5000;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.Holdout = 0.2;
@@ -88,9 +90,6 @@ setup.model.args.trainer.Holdout = 0.2;
 
 % -- emerging optimal setup --
 setup.data.args.NormalizedPts = 10;
-
-% -- optimizer setup --
-setup.opt.objective = 'ReconLoss';
 
 switch optID
 
@@ -388,7 +387,7 @@ switch optID
         % nodes for an asymmetric FC model
         setup.model.class = @AsymmetricFCModel;
         setup.opt.objective = 'ReconLoss';
-        numEvaluations = 50;
+        setup.opt.numEvaluations = 50;
 
         setup.model.args.InputDropout = 0.0;
         setup.model.args.ReLuScale = 0.20;
@@ -425,7 +424,7 @@ switch optID
         % nodes for an asymmetric FC model
         setup.model.class = @AsymmetricFCModel;
         setup.opt.objective = 'AuxModelErrorRate';
-        numEvaluations = 50;
+        setup.opt.numEvaluations = 50;
 
         setup.model.args.InputDropout = 0.0;
         setup.model.args.ReLuScale = 0.20;
@@ -462,7 +461,7 @@ switch optID
         % nodes for an asymmetric FC model
         setup.model.class = @AsymmetricFCModel;
         setup.opt.objective = 'ReconLoss&AuxModelErrorRateEqual';
-        numEvaluations = 50;
+        setup.opt.numEvaluations = 50;
 
         setup.model.args.InputDropout = 0.0;
         setup.model.args.ReLuScale = 0.20;
@@ -494,6 +493,70 @@ switch optID
                 [1 3], Type = 'integer', ... 
                 Optimize = true );
 
+   case 151
+        % Find the best combination of output resolution and the number of
+        % nodes for an asymmetric FC model
+        setup.model.class = @AsymmetricFCModel;
+        setup.opt.objective = 'ReconLoss';
+        setup.opt.numEvaluations = 40;
+
+        setup.model.args.FCFactor = 1;
+        setup.model.args.FCFactorDecoder = 1;
+        
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.ReLuScale = 0.20;
+        setup.model.args.Dropout = 0.05;
+
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(3) = optimizableVariable( 'model_args_NumHiddenDecoder', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(4) = optimizableVariable( 'model_args_NumFCDecoder', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+   case 161 
+        % Find the best combination of output resolution and the number of
+        % nodes for an asymmetric FC model
+        setup.model.class = @AsymmetricFCModel;
+        setup.opt.objective = 'ReconLoss';
+        setup.opt.numEvaluations = 80;
+
+        setup.model.args.FCFactor = 2;
+        setup.model.args.FCFactorDecoder = 2;
+        
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.ReLuScale = 0.20;
+        setup.model.args.Dropout = 0.05;
+
+        setup.data.args.NormalizedPts = 21;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(3) = optimizableVariable( 'model_args_NumHiddenDecoder', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(4) = optimizableVariable( 'model_args_NumFCDecoder', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+   
     case 201
         % Find the best combination of output resolution and the number of
         % nodes with one hidden layer for a ConvModel and a simplified setup
@@ -532,10 +595,10 @@ objWrapperFcn = @(x) objWrapper( x, setup );
 % run optimisation
 output = bayesopt( objWrapperFcn, varDef, ...
             NumCoupledConstraints = 1, ...
-            ExplorationRatio = exploration, ...
-            MaxObjectiveEvaluations = numEvaluations, ...
-            AcquisitionFunctionName = "expected-improvement-plus", ...
-            UseParallel = in_parallel);
+            ExplorationRatio = setup.opt.exploration, ...
+            MaxObjectiveEvaluations = setup.opt.numEvaluations, ...
+            AcquisitionFunctionName = setup.opt.acquisitionFcnName, ...
+            UseParallel = setup.opt.in_parallel);
 
 % save optimisation data
 filename = ['Bayesopt-' num2str(optID)];

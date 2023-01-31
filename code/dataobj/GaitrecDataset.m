@@ -21,7 +21,7 @@ classdef GaitrecDataset < ModelDataset
     methods
 
         function self = GaitrecDataset( set, args, superArgs )
-            % Load the countermovement jump GRF dataset
+            % Load the Gaitrec data set
             arguments
                 set                 char ...
                     {mustBeMember( set, ...
@@ -54,7 +54,7 @@ classdef GaitrecDataset < ModelDataset
                      'Affected', 'Unaffected'} )} = 'Affected'
                 args.HasDerivative  logical = false
                 args.HasDelta       logical = false
-                args.FromMatlabFile logical = true
+                args.FromMatlabFile logical = false
                 args.PaddingLength  double = 0
                 args.Lambda         double = []
                 superArgs.?ModelDataset
@@ -102,6 +102,7 @@ classdef GaitrecDataset < ModelDataset
             self.Readmission = args.Readmission;
             self.SessionType = args.SessionType;
             self.HasGRF = args.HasGRF;
+            self.HasVGRFOnly = args.HasVGRFOnly;
             self.HasCOP = args.HasCOP;
             self.Side = args.Side;
             self.HasDerivative = args.HasDerivative;

@@ -26,7 +26,7 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
         constraint = -1;
     catch
         constraint = 1;
-        obj = -1;
+        obj = NaN;
         userdata = [];
         return
     end
@@ -34,41 +34,41 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
     % set the objective function's output
     switch setup.opt.objective
         case 'ReconLoss'
-            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLoss;
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconLoss;
         case 'ReconLossSmoothed'
-            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLossSmoothed;
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconLossSmoothed;
         case 'ReconLossRegular'
-            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLossRegular;
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconLossRegular;
         case 'ReconVar'
-            obj = thisEvaluation.CVLoss.Validation.Mean.ReconVar;
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconVar;
         case 'ReconVarRegular'
-            obj = thisEvaluation.CVLoss.Validation.Mean.ReconVarRegular;
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconVarRegular;
         case 'ReconTimeVar'
-            obj = mean(thisEvaluation.CVLoss.Validation.Mean.ReconTimeVar);
+            obj = mean(thisEvaluation.CVLoss.Testing.Mean.ReconTimeVar);
         case 'ReconTimeVarRegular'
-            obj = mean(thisEvaluation.CVLoss.Validation.Mean.ReconTimeVarRegular);
+            obj = mean(thisEvaluation.CVLoss.Testing.Mean.ReconTimeVarRegular);
         case 'AuxModelErrorRate'
-            obj = thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
+            obj = thisEvaluation.CVLoss.Testing.Mean.AuxModelErrorRate;
         case 'ExecutionTime'
             obj = thisEvaluation.CVTiming.Training.Mean.TotalTime;
         case 'LambdaTarget'
             obj = thisEvaluation.Models{1}.FDA.LambdaTarget;
         case 'ReconLoss&AuxModelErrorRate'
-            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLoss + ...
-                        0.1*thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconLoss + ...
+                        0.1*thisEvaluation.CVLoss.Testing.Mean.AuxModelErrorRate;
         case 'ReconLoss&AuxModelErrorRateEqual'
-            obj = thisEvaluation.CVLoss.Validation.Mean.ReconLoss + ...
-                        thisEvaluation.CVLoss.Validation.Mean.AuxModelErrorRate;
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconLoss + ...
+                        thisEvaluation.CVLoss.Testing.Mean.AuxModelErrorRate;
     end
 
     % add useful data
     userdata.CurrentIteration = thisEvaluation.Models{1}.Trainer.CurrentIteration;
     userdata.CurrentEpoch = thisEvaluation.Models{1}.Trainer.CurrentEpoch;
     userdata.TrainingLoss = thisEvaluation.CVLoss.Training.Mean;
+    userdata.TestingLoss = thisEvaluation.CVLoss.Testing.Mean;
     userdata.AuxModelBeta = thisEvaluation.CVAuxMetrics;
     userdata.LossTrnTrace = thisEvaluation.Models{1}.Trainer.LossTrn;
     userdata.LossValTrace = thisEvaluation.Models{1}.Trainer.LossVal;
-    userdata.MetricsTrace = thisEvaluation.Models{1}.Trainer.Metrics;
 
 
 end

@@ -3,7 +3,7 @@ function fig = plot( self, args )
     % revealing the classes
     arguments
         self                ModelDataset
-        args.nSample        double = 0
+        args.nSample        double = 200
         args.showLegend     logical = true
         args.showTitle      logical = true
         args.showXAxis      logical = true
