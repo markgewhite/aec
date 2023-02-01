@@ -6,12 +6,12 @@ runAnalysis = true;
 inParallel = true;
 resume = false;
 catchErrors = true;
-reportIdx = 1;
+reportIdx = 1:4;
 plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/exemplars_new/'];
+path = [path0 '/../results/exemplars/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --

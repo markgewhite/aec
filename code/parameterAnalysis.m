@@ -5,7 +5,7 @@ clear;
 runAnalysis = true;
 inParallel = true;
 resume = false;
-catchErrors = false;
+catchErrors = true;
 reportIdx = 1:3;
 plotDim = [2 5];
 maxCoeff = 3;
