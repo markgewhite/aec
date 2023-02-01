@@ -82,7 +82,7 @@ setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5000;
+setup.model.args.trainer.NumIterations = 50;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.Holdout = 0.2;

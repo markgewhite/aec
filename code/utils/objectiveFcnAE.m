@@ -49,6 +49,8 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
             obj = mean(thisEvaluation.CVLoss.Testing.Mean.ReconTimeVarRegular);
         case 'AuxModelErrorRate'
             obj = thisEvaluation.CVLoss.Testing.Mean.AuxModelErrorRate;
+        case 'AuxNetworkErrorRate'
+            obj = thisEvaluation.CVLoss.Testing.Mean.AuxNetworkErrorRate;
         case 'ExecutionTime'
             obj = thisEvaluation.CVTiming.Training.Mean.TotalTime;
         case 'LambdaTarget'
@@ -59,6 +61,8 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
         case 'ReconLoss&AuxModelErrorRateEqual'
             obj = thisEvaluation.CVLoss.Testing.Mean.ReconLoss + ...
                         thisEvaluation.CVLoss.Testing.Mean.AuxModelErrorRate;
+        otherwise
+            error('Unrecognised objective.');
     end
 
     % add useful data
