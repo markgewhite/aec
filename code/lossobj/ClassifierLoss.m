@@ -9,6 +9,7 @@ classdef ClassifierLoss < LossFunction
         FCFactor            % node ratio specifying the power 2 index
         ReLuScale           % leaky Relu scale
         Dropout             % dropout rate
+        HasBatchNormalization % if normalizing batches
         InitLearningRate    % initial learning rate
         ModelType           % type of classifier model
         CLabels             % categorical labels
@@ -36,7 +37,8 @@ classdef ClassifierLoss < LossFunction
                 args.ReLuScale    double ...
                             {mustBeInRange(args.ReLuScale, 0, 1)} = 0.2
                 args.Dropout    double ...
-                            {mustBeInRange(args.Dropout, 0, 1)} = 0.1
+                            {mustBeInRange(args.Dropout, 0, 0.9)} = 0.1
+                args.HasBatchNormalization  logical = true
                 args.InitLearningRate     double ...
                     {mustBeInRange(args.InitLearningRate, 0, 1)} = 0.001
             end
@@ -58,6 +60,7 @@ classdef ClassifierLoss < LossFunction
             self.FCFactor = args.FCFactor;
             self.ReLuScale = args.ReLuScale;
             self.Dropout = args.Dropout;
+            self.HasBatchNormalization = args.HasBatchNormalization;
             self.ModelType = args.ModelType;
 
             if isNet
@@ -100,6 +103,7 @@ classdef ClassifierLoss < LossFunction
             
             % create the hidden layers
             for i = 1:self.NumHidden
+
                 nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
                 if nNodes <= self.CDim
                     eid = 'ClassifierLoss:NetworkDesign';
@@ -107,12 +111,21 @@ classdef ClassifierLoss < LossFunction
                     throwAsCaller( MException(eid,msg) );
                 end
 
-                layers = [ layers; ...
-                    fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
-                    batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( self.ReLuScale, 'Name', ['relu' num2str(i)] )
-                    dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
-                    ]; %#ok<AGROW> 
+                if self.HasBatchNormalization
+                    layers = [ layers; ...
+                        fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
+                        batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
+                        leakyReluLayer( self.ReLuScale, 'Name', ['relu' num2str(i)] )
+                        dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
+                        ]; %#ok<AGROW> 
+                else
+                    layers = [ layers; ...
+                        fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
+                        leakyReluLayer( self.ReLuScale, 'Name', ['relu' num2str(i)] )
+                        dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
+                        ]; %#ok<AGROW>
+                end
+
             end
             
             % create final layers

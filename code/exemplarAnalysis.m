@@ -3,7 +3,7 @@
 clear;
 
 runAnalysis = true;
-inParallel = false;
+inParallel = true;
 resume = false;
 catchErrors = true;
 reportIdx = 1;
@@ -36,9 +36,15 @@ setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
+setup.model.args.lossFcns.zcls.args.NumHidden = 1;
+setup.model.args.lossFcns.zcls.args.NumFC = 100;
+setup.model.args.lossFcns.zcls.args.FCFactor = 1;
+setup.model.args.lossFcns.zcls.args.ReLuScale = 1;
+setup.model.args.lossFcns.zcls.args.Dropout = 0;
+setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
+setup.model.args.trainer.NumIterations = 20;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 500;
 setup.model.args.trainer.Holdout = 0;
