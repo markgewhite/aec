@@ -7,7 +7,7 @@ classdef ClassifierLoss < LossFunction
         NumHidden           % number of hidden layers
         NumFC               % number of fully connected nodes at widest
         FCFactor            % node ratio specifying the power 2 index
-        Scale               % leaky Relu scale
+        ReLuScale           % leaky Relu scale
         Dropout             % dropout rate
         InitLearningRate    % initial learning rate
         ModelType           % type of classifier model
@@ -21,30 +21,30 @@ classdef ClassifierLoss < LossFunction
             arguments
                 name            char {mustBeText}
                 superArgs.?LossFunction
-                args.modelType  char ...
-                    {mustBeMember( args.modelType, ...
+                args.ModelType  char ...
+                    {mustBeMember( args.ModelType, ...
                                     {'Network', ...
                                      'Logistic', ...
                                      'Fisher', ...
                                      'SVM'} )} = 'Network'
-                args.nHidden    double ...
+                args.NumHidden    double ...
                             {mustBeInteger, mustBePositive} = 1
-                args.nFC        double ...
+                args.NumFC        double ...
                             {mustBeInteger, mustBePositive} = 100
-                args.fcFactor   double ...
+                args.FCFactor     double ...
                             {mustBeInteger, mustBePositive} = 1
-                args.scale      double ...
-                            {mustBeInRange(args.scale, 0, 1)} = 0.2
-                args.dropout    double ...
-                            {mustBeInRange(args.dropout, 0, 1)} = 0.1
-                args.initLearningRate     double ...
-                    {mustBeInRange(args.initLearningRate, 0, 1)} = 0.001
+                args.ReLuScale    double ...
+                            {mustBeInRange(args.ReLuScale, 0, 1)} = 0.2
+                args.Dropout    double ...
+                            {mustBeInRange(args.Dropout, 0, 1)} = 0.1
+                args.InitLearningRate     double ...
+                    {mustBeInRange(args.InitLearningRate, 0, 1)} = 0.001
             end
 
             superArgsCell = namedargs2cell( superArgs );
             netAssignments = {'Encoder', 'Decoder', name};
 
-            isNet = strcmp( args.modelType, 'Network' );
+            isNet = strcmp( args.ModelType, 'Network' );
 
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Auxiliary', ...
@@ -53,15 +53,15 @@ classdef ClassifierLoss < LossFunction
                                  hasNetwork = isNet, ...
                                  hasState = isNet );
 
-            self.NumHidden = args.nHidden;
-            self.NumFC = args.nFC;
-            self.FCFactor = args.fcFactor;
-            self.Scale = args.scale;
-            self.Dropout = args.dropout;
-            self.ModelType = args.modelType;
+            self.NumHidden = args.NumHidden;
+            self.NumFC = args.NumFC;
+            self.FCFactor = args.FCFactor;
+            self.ReLuScale = args.ReLuScale;
+            self.Dropout = args.Dropout;
+            self.ModelType = args.ModelType;
 
             if isNet
-                self.InitLearningRate = args.initLearningRate;
+                self.InitLearningRate = args.InitLearningRate;
             else
                 self.InitLearningRate = 0;
             end
@@ -104,7 +104,7 @@ classdef ClassifierLoss < LossFunction
                 layers = [ layers; ...
                     fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                     batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                    leakyReluLayer( self.Scale, 'Name', ['relu' num2str(i)] )
+                    leakyReluLayer( self.ReLuScale, 'Name', ['relu' num2str(i)] )
                     dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
                     ]; %#ok<AGROW> 
             end

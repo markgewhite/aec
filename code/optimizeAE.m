@@ -2,7 +2,7 @@
 
 clear;
 
-optID = 161;
+optID = 162;
 disp(['OptID = ' num2str(optID)]);
 
 dataset = "Jumps";
@@ -87,9 +87,6 @@ setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.Holdout = 0.2;
 
-
-% -- emerging optimal setup --
-setup.data.args.NormalizedPts = 10;
 
 switch optID
 
@@ -556,7 +553,112 @@ switch optID
         varDef(4) = optimizableVariable( 'model_args_NumFCDecoder', ...
                 [16 2048], Type = 'integer', Transform = 'log', ... 
                 Optimize = true );
-   
+
+   case 162
+        % Find the best combination of output resolution and the number of
+        % nodes for an asymmetric FC model, considering the auxiliary
+        % network
+        setup.model.class = @AsymmetricFCModel;
+        setup.opt.objective = 'AuxNetworkErrorRate';
+        setup.opt.numEvaluations = 80;
+
+        setup.model.args.FCFactor = 2;
+        setup.model.args.FCFactorDecoder = 2;
+        
+        setup.model.args.InputDropout = 0.0;
+        setup.model.args.ReLuScale = 0.20;
+        setup.model.args.Dropout = 0.05;
+
+        setup.data.args.NormalizedPts = 25;
+
+        varDef(1) = optimizableVariable( 'model_args_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NumFC', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(3) = optimizableVariable( 'model_args_NumHiddenDecoder', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(4) = optimizableVariable( 'model_args_NumFCDecoder', ...
+                [16 2048], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(5) = optimizableVariable( 'model_args_lossFcns_zcls_NumHidden', ...
+                [1 5], Type = 'integer', ... 
+                Optimize = true );
+
+        varDef(6) = optimizableVariable( 'model_args_lossFcns_zcls_NumFC', ...
+                [8 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+
+
+   case 171 
+        % Find a good demonstration of a simple model
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLossRegular';
+        setup.opt.numEvaluations = 20;
+
+        setup.model.args.FCFactor = 1;       
+        setup.model.args.ReLuScale = 1;
+        setup.model.args.InputDropout = 0;
+        setup.model.args.Dropout = 0;
+        setup.model.args.HasBatchNormalization = false;
+
+        varDef(1) = optimizableVariable( 'model_args_NumFC', ...
+                [4 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [5 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+   case 172
+        % Find a good demonstration of a simple model
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'AuxModelErrorRate';
+        setup.opt.numEvaluations = 20;
+
+        setup.model.args.FCFactor = 1;       
+        setup.model.args.ReLuScale = 1;
+        setup.model.args.InputDropout = 0;
+        setup.model.args.Dropout = 0;
+        setup.model.args.HasBatchNormalization = false;
+
+        varDef(1) = optimizableVariable( 'model_args_NumFC', ...
+                [4 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [5 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+   case 173
+        % Find a good demonstration of a simple model
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLoss&AuxModelErrorRateEqual';
+        setup.opt.numEvaluations = 20;
+
+        setup.model.args.FCFactor = 1;       
+        setup.model.args.ReLuScale = 1;
+        setup.model.args.InputDropout = 0;
+        setup.model.args.Dropout = 0;
+        setup.model.args.HasBatchNormalization = false;
+
+        varDef(1) = optimizableVariable( 'model_args_NumFC', ...
+                [4 512], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'data_args_NormalizedPts', ...
+                [5 100], Type = 'integer', Transform = 'log', ... 
+                Optimize = true );
+
+
+
     case 201
         % Find the best combination of output resolution and the number of
         % nodes with one hidden layer for a ConvModel and a simplified setup
