@@ -2,11 +2,11 @@
 
 clear;
 
-runAnalysis = false;
+runAnalysis = true;
 inParallel = true;
 resume = false;
-generatePlots = false;
-reportIdx = 1:9;
+catchErrors = true;
+reportIdx = 3;
 plotDim = [2 5];
 maxCoeff = 3;
 
@@ -15,79 +15,57 @@ path0 = fileparts( which('code/parameterAnalysis.m') );
 path = [path0 '/../results/params/'];
 pathResults = [path0 '/../paper/results/'];
 
-% -- data setup --
-setup.data.class = @UCRDataset;
-datasets = [ 11, 17, 19, 67, 80, 84, 85, 92, 104, 115 ];
-datasetNames = [ "Computers", ...
-                 "DistalPhalanxOutlineCorrect", ...
-                 "Earthquakes", ...
-                 "Strawberry", ...
-                 "Wafer", ...
-                 "WormsTwoClass", ...
-                 "Yoga", ...
-                 "FreezerRegularTrain", ...
-                 "PowerCons", ...
-                 "SemgHandGenderCh2" ];
-
-datasetsVarLen = [ 87, 88, 89, 99, 103, 105, 109, 110 ];
-datasetVarLenNames = [  "AllGestureWiimoteX", ...
-                        "AllGestureWiimoteY", ...
-                        "AllGestureWiimoteZ", ...
-                        "PickupGestureWiimoteZ", ...
-                        "PLAID", ...
-                        "ShakeGestureWiimoteZ", ...
-                        "GesturePebbleZ1", ...
-                        "GesturePebbleZ2" ];
-
-modelClasses = {@PCAModel, @FCModel, @ConvolutionalModel};
-legendNames = [ "PCA", "FC", "Conv" ];
-
 % -- model setup --
-setup.model.args.ZDim = 4;
+setup.model.class = @AsymmetricFCModel;
+
+setup.model.args.FCFactor = 2;
+setup.model.args.InputDropout = 0.2;
+setup.model.args.ReLuScale = 0.2;
+setup.model.args.HasBatchNormalization = true;
+setup.model.args.Dropout = 0;
+
+setup.model.args.FCFactorDecoder = setup.model.args.FCFactor;
+setup.model.args.ReLuScaleDecoder = setup.model.args.ReLuScale;
+setup.model.args.HasBatchNormalizationDecoder = setup.model.args.HasBatchNormalization;
+setup.model.args.DropoutDecoder = setup.model.args.Dropout;
+
 setup.model.args.AuxModel = 'Logistic';
+setup.model.args.ComponentType = 'PDP';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
-setup.model.args.ShowPlots = true;
+setup.model.args.ShowPlots = false;
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
-setup.model.args.lossFcns.adv.class = @AdversarialLoss;
-setup.model.args.lossFcns.adv.name = 'Discriminator';
-setup.model.args.lossFcns.adv.args.DoCalcLoss = false;
-setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
-setup.model.args.lossFcns.kl.name = 'KLDivergence';
-setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
-setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.UpdateFreq = 2000;
+setup.model.args.trainer.NumIterations = 5000;
+setup.model.args.trainer.BatchSize = 100;
+setup.model.args.trainer.UpdateFreq = 10000;
 setup.model.args.trainer.Holdout = 0.2;
-setup.model.args.trainer.ValType = 'Both';
-setup.model.args.trainer.ValFreq = 10;
-setup.model.args.trainer.ValPatience = 20;
 
-% evaluations
-setup.eval.args.verbose = true;
-setup.eval.args.CVType = 'Holdout';
+% --- evaluation setup ---
+setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 5;
 
-names = [ "ZDimRelation", ...
-          "ResampleRateRelation", ...
-          "NormalizedPts", ...
-          "HasCentredDecoder", ...
-          "HasAdaptiveTimeSpan", ...
-          "HasNormalizedInput", ...
-          "HasClassifierLoss", ...
-          "HasKLLoss", ...
-          "HasAdversarialLoss" ];
+% --- investigation setup ---
+parameters = [ "model.args.ZDim", ...
+               "data.args.NormalizedPts" ];
+values = {[2 3 4 6 8], ...
+          [10 20 30 50 100]}; 
+%values = {2, ...
+%          10}; 
+
+names = [ "JumpsVGRF", ...
+          "GaitrecGRF", ...
+          "FukuchiJointAngles" ];
 nReports = length( names );
 thisData = cell( nReports, 1 );
-memorySaving = 4;
+memorySaving = 3;
 
 if runAnalysis
 
@@ -97,123 +75,82 @@ if runAnalysis
     end
 
     for i = reportIdx
-    
+
+        if isfield(setup, 'data')
+            % reset the data settings
+            setup = rmfield( setup, 'data' );
+        end
+
+        % select the data set
         switch i
-            case 1 % ZDim
-                parameters = [ "model.class", ...
-                               "model.args.ZDim", ...
-                               "data.args.SetID" ];
 
-                values = {modelClasses, ...
-                          [2 3 4 6 8 10 15 20], ...
-                          datasets };
+            case 1
+                % Jumps vertical ground reaction force
+                setup.data.class = @JumpGRFDataset;
+                setup.data.args.Normalization = 'PAD';
+                setup.data.args.HasNormalizedInput = true;
+                setup.data.args.ResampleRate = 5;
 
-                setup.eval.args.CVType = 'Holdout';
+            case 2
+                % Gaitrec ground reaction force
+                setup.data.class = @GaitrecDataset;
+                setup.data.args.HasNormalizedInput = true;
+                setup.data.args.MaxObs = 1000;
+                setup.data.args.Grouping = 'ControlsVsDisorders';
+                setup.data.args.ShodCondition = 'Barefoot/Socks';
+                setup.data.args.Speed = 'SelfSelected';
+                setup.data.args.SessionType = 'All';
+                setup.data.args.Side = 'Affected';
 
-            case 2 % ResampleRate
-                parameters = [ "model.class", ...
-                               "data.args.ResampleRate", ...
-                               "data.args.SetID" ];
-
-                values = {modelClasses, ...
-                          [1 5/4 3/2 2 4 5], ...
-                          datasets };
-
-                setup.eval.args.CVType = 'Holdout';
-
-            case 3 % NormalizedPts
-                parameters = [ "model.class", ...
-                               "data.args.NormalizedPts", ...
-                               "data.args.SetID" ];
-
-                values = {modelClasses, ...
-                          [25 50 75 100 150 200], ...
-                          datasets };
-
-                setup.eval.args.CVType = 'Holdout';
-
-            case 4 % HasCentredDecoder
-                parameters = [ "model.class", ...
-                               "model.args.HasCentredDecoder", ...
-                               "data.args.SetID" ];
-
-                values = {modelClasses, ...
-                          [false true], ...
-                          datasets };
-
-                setup.eval.args.CVType = 'KFold';
-
-            case 5 % HasAdaptiveTimeSpan
-                parameters = [ "model.class", ...
-                               "data.args.HasAdaptiveTimeSpan", ...
-                               "data.args.SetID" ];
-
-                values = {modelClasses, ...
-                          [false true], ...
-                          datasets };
-
-                setup.eval.args.CVType = 'KFold';
-
-            case 6 % Normalization
-                parameters = [ "model.class", ...
-                               "model.args.HasInputNormalization", ...
-                               "data.args.SetID" ];
-
-                values = {{@ConvolutionalModel}, ...
-                          [false true], ...
-                          datasetsVarLen };
-
-                setup.eval.args.CVType = 'KFold';
-
-            case 7 % Classifier Loss
-                parameters = [ "model.class", ...
-                               "model.args.lossFcns.zcls.args.DoCalcLoss", ...
-                               "data.args.SetID" ];
-
-                values = {modelClasses, ...
-                          [false true], ...
-                          datasets };
-
-                setup.eval.args.CVType = 'KFold';
-
-            case 8 % KL Divergence Loss
-                parameters = [ "model.class", ...
-                               "model.args.lossFcns.kl.args.DoCalcLoss", ...
-                               "data.args.SetID" ];
-
-                values = {modelClasses, ...
-                          [false true], ...
-                          datasets };
-
-                setup.eval.args.CVType = 'KFold';
-
-            case 9 % Adversarial Loss
-                parameters = [ "model.class", ...
-                               "model.args.lossFcns.adv.args.DoCalcLoss", ...
-                               "data.args.SetID" ];
-
-                values = {modelClasses, ...
-                          [false true], ...
-                          datasets };
-
-                setup.eval.args.CVType = 'KFold';
-
+            case 3
+                % Fukuchi hip, knee and ankle joint angles
+                setup.data.class = @FukuchiDataset;
+                setup.data.args.HasNormalizedInput = true;
+                setup.data.args.YReference = 'AgeGroup';
+                setup.data.args.Category = 'JointAngles';
+                setup.data.args.HasHipAngles = true;
+                setup.data.args.HasKneeAngles = true;
+                setup.data.args.HasAnkleAngles = true;
+                setup.data.args.SagittalPlaneOnly = true;
+            
             otherwise
-                error(['Undefined grid search for i = ' num2str(i)]);
+                error('Unrecognised dataset ID.');
 
         end
     
-        if inParallel
-            results(i) = parfeval( pool, @investigationResults, 1, ...
-                                   names(i), path, ...
-                                   parameters, values, setup, ...
-                                   memorySaving, resume );
-        else
-            results(i) = investigationResults( names(i), path, ...
-                                               parameters, values, setup, ...
-                                               memorySaving, resume );
+        for j = 1:4
+            % Set the autoencoder design
+            if j<=2
+                % Low-complexity encoder
+                setup.model.args.NumHidden = 2;
+                setup.model.args.NumFC = 64;
+            else
+                % High-complexity encoder
+                setup.model.args.NumHidden = 3;
+                setup.model.args.NumFC = 1024;
+            end
+            if mod(j,2)==1
+                % Low-complexity decoder
+                setup.model.args.NumHiddenDecoder = 2;
+                setup.model.args.NumFCDecoder = 64;
+            else
+                % High-complexity decoder
+                setup.model.args.NumHiddenDecoder = 3;
+                setup.model.args.NumFCDecoder = 1024;
+            end
+        
+            if inParallel
+                results(i,j) = parfeval( pool, @investigationResults, 1, ...
+                                       names(i), path, ...
+                                       parameters, values, setup, ...
+                                       resume, catchErrors, memorySaving );
+            else
+                results(i,j) = investigationResults( names(i), path, ...
+                                                   parameters, values, setup, ...
+                                                   resume, catchErrors, memorySaving );
+            end
         end
-    
+
     end
 
 else
@@ -226,6 +163,8 @@ else
     end
 
     % generate the associated plots
+    legendNames = [ "AE-LL", "AE-LH", "AE-HL", "AE-HH" ];
+
     for i = reportIdx
     
         switch i

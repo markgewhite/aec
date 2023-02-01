@@ -26,8 +26,8 @@ classdef FukuchiDataset < ModelDataset
             arguments
                 set                     char ...
                     {mustBeMember( set, ...
-                    {'Training', 'Testing'} )}
-                args.ObsMax             double ...
+                           {'Training', 'Testing', 'Combined'} )}
+                args.MaxObs             double ...
                     {mustBePositive, mustBeInteger} = []
                 args.Stratified         logical = false
                 args.RandomSeed         double = 1234
@@ -221,6 +221,8 @@ function filter = setFilter( metaData, set, args )
             filter = ismember( metaData.Subject, subjectsForTraining );
         case 'Testing'
             filter = ~ismember( metaData.Subject, subjectsForTraining );
+        case 'Combined'
+            filter= true( height(metaData), 1 );
     end
 
     % filter for only treadmill files
@@ -345,34 +347,29 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
 
     % identify the required fields
     fields = [];
-    names = [];
+    names = ["Pelvic Tilt", "Pelvic Obliquity", "Pelvic Rotation", ...
+             "Hip Flexion/Extension", "Hip Add/Abduction", "Hip Int/External Rotation", ...
+             "Knee Flexion/Extension", "Knee Add/Abduction", "Knee Int/External Rotation", ...
+             "Ankle Dorsi/Plantarflexion", "Ankle Inv/Eversion", "Ankle Add/Abduction", ...
+             "Foot Dorsi/Plantarflexion", "Foot Inv/Eversion", "Foot Add/Abduction"];
     if args.HasPelvisAngles
         fields = [ fields 1 2 3 ];
-        names = ["Pelvic Tilt", "Pelvic Obliquity", "Pelvic Rotation"];
     end
 
     if args.HasHipAngles
         fields = [ fields 4 5 6 ];
-        names = [ names, ...
-          "Hip Flexion/Extension", "Hip Add/Abduction", "Hip Int/External Rotation"];
     end
 
     if args.HasKneeAngles
         fields = [ fields 7 8 9 ];
-        names = [names, ...
-          "Knee Flexion/Extension", "Knee Add/Abduction", "Knee Int/External Rotation"];
     end
 
     if args.HasAnkleAngles
         fields = [ fields 10 11 12 ];
-        names = [names, ...
-          "Ankle Dorsi/Plantarflexion", "Ankle Inv/Eversion", "Ankle Add/Abduction"];
     end
 
     if args.HasFootAngles
         fields = [ fields 13 14 15 ];
-        names = [names, ...
-          "Foot Dorsi/Plantarflexion", "Foot Inv/Eversion", "Foot Add/Abduction"];
     end
 
     if args.SagittalPlaneOnly
@@ -410,7 +407,7 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
     end
 
     % trim back the arrays
-    if isempty( args.ObsMax )
+    if isempty( args.MaxObs )
         selection = 1:k;
     else
         if args.Stratified
@@ -422,7 +419,7 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
         else
             w = ones( k, 1 )/k;
         end
-        selection = randsample( k, args.ObsMax, true, w );
+        selection = randsample( k, args.MaxObs, true, w );
     end
     X = X( selection );
     Y = Y( selection );

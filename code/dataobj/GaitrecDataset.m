@@ -25,8 +25,8 @@ classdef GaitrecDataset < ModelDataset
             arguments
                 set                 char ...
                     {mustBeMember( set, ...
-                    {'Training', 'Testing'} )}
-                args.ObsMax         double ...
+                           {'Training', 'Testing', 'Combined'} )}
+                args.MaxObs         double ...
                     {mustBePositive, mustBeInteger} = []
                 args.Stratified     logical = false
                 args.Grouping       char ...
@@ -284,7 +284,7 @@ function [X, Y, S, channelNames, classNames ] = loadData( set, args )
     end
 
     % trim back the arrays
-    if isempty( args.ObsMax )
+    if isempty( args.MaxObs )
         selection = 1:kEnd;
     else
         if args.Stratified
@@ -296,7 +296,7 @@ function [X, Y, S, channelNames, classNames ] = loadData( set, args )
         else
             w = ones( kEnd, 1 )/kEnd;
         end
-        selection = randsample( kEnd, args.ObsMax, true, w );
+        selection = randsample( kEnd, args.MaxObs, true, w );
     end
     X = X( selection, :, : );
     Y = Y( selection )';
@@ -318,6 +318,8 @@ function filter = setFilter( metaData, set, args )
             filter = metaData.TRAIN==1;
         case 'Testing'
             filter=  metaData.TEST==1;
+        case 'Combined'
+            filter= metaData.TRAIN==1 | metaData.TEST==1;
     end
 
 

@@ -12,7 +12,7 @@ classdef JumpGRFDataset < ModelDataset
             arguments
                 set        char ...
                     {mustBeMember( set, ...
-                                   {'Training', 'Testing'} )}
+                           {'Training', 'Testing', 'Combined'} )}
                 args.PaddingLength  double = 0
                 args.Lambda         double = []
                 superArgs.?ModelDataset
@@ -82,12 +82,46 @@ classdef JumpGRFDataset < ModelDataset
 
             dataFolder = 'Academia/Postdoc/Datasets/Jumps';
             datapath = [ rootpath dataFolder ];
-            filename = ['jumpGRFData-' set '.mat'];
             
-            % load data from file
-            load( fullfile( datapath, filename ), ...
-                  'grf', 'bwall', 'sDataID', 'sJumpID', ...
-                  'jumpOrder', 'nJumpsPerSubject' );
+            % load the data - training or testing or both
+            switch set
+
+                case 'Training'
+                    load( fullfile( datapath, 'jumpGRFData-Training.mat' ), ...
+                              'grf', 'bwall', 'sDataID', 'sJumpID', ...
+                              'jumpOrder', 'nJumpsPerSubject' );
+
+                case 'Testing'
+                    load( fullfile( datapath, 'jumpGRFData-Testing.mat' ), ...
+                              'grf', 'bwall', 'sDataID', 'sJumpID', ...
+                              'jumpOrder', 'nJumpsPerSubject' );
+
+                case 'Combined'
+                    load( fullfile( datapath, 'jumpGRFData-Testing.mat' ), ...
+                              'grf', 'bwall', 'sDataID', 'sJumpID', ...
+                              'jumpOrder', 'nJumpsPerSubject' );
+                    grfTest = grf;
+                    bwallTest = bwall;
+                    sDataIDTest = sDataID;
+                    sJumpIDTest = sJumpID;
+                    jumpOrderTest = jumpOrder;
+                    nJumpsPerSubjectTest = nJumpsPerSubject;
+
+                    load( fullfile( datapath, 'jumpGRFData-Training.mat' ), ...
+                              'grf', 'bwall', 'sDataID', 'sJumpID', ...
+                              'jumpOrder', 'nJumpsPerSubject' );
+
+                    grf.raw = [ grf.raw; grfTest.raw ];
+                    grf.initiation = [ grf.initiation; grfTest.initiation ];
+                    grf.takeoff = [ grf.takeoff; grfTest.takeoff ];
+
+                    bwall = [ bwall; bwallTest ];
+                    sDataID = [ sDataID sDataIDTest ];
+                    sJumpID = [ sJumpIDTest sJumpID ];
+                    jumpOrder = [ jumpOrderTest; jumpOrder ];
+                    nJumpsPerSubject = [ nJumpsPerSubject; nJumpsPerSubjectTest];
+                    
+            end
             
             % exclude jumps from specified subject (injury pattern) 
             subjectExclusions = find( ismember( sDataID, 100 ) );

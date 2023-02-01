@@ -279,7 +279,8 @@ classdef ModelDataset
             if self.XChannels == 1
                 XMean = mean( self.XTarget, 2 );
             else
-                XMean = mean( self.XTarget, 3 );
+                XMean = mean( self.XTarget, 2 );
+                XMean = permute( XMean, [1 3 2] );
             end
 
         end

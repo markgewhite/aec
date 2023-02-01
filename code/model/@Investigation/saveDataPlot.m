@@ -5,7 +5,7 @@ function fig = saveDataPlot( self, args )
         args.which      string {mustBeMember( ...
             args.which, {'First', 'All'} )} = 'First'
         args.set        string {mustBeMember( ...
-            args.set, {'Training', 'Testing'} )} = 'Testing'
+            args.set, {'Training', 'Testing', 'Combined'} )} = 'Testing'
     end
 
     argsCell = namedargs2cell( args );

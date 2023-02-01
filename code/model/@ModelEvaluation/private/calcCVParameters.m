@@ -17,7 +17,7 @@ function aggrP = calcCVParameters( models, group, set )
         fldDim = size( models{1}.(group).(set).(fields{i}) );
         P = zeros( [nModels fldDim] );
         for k = 1:nModels
-           P(k,:,:) = models{k}.(group).(set).(fields{i});
+           P(k,:,:,:) = models{k}.(group).(set).(fields{i});
         end
         aggrP.Mean.(fields{i}) = squeeze(mean(P,1));
         aggrP.SD.(fields{i}) = squeeze(std(P,1));

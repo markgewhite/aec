@@ -47,7 +47,6 @@ classdef ModelEvaluation
                 args.RandomSeed         double ...
                         {mustBeInteger, mustBePositive} = 1234
                 args.RandomSeedResets   logical = false;
-                args.verbose            logical = true
             end
 
             % store the name for this evaluation and its bespoke setup
@@ -68,45 +67,35 @@ classdef ModelEvaluation
                 rng( self.RandomSeed );
             end
 
+            if isequal( setup.model.class, @PCAModel )
+                disp('********* PCA Model Evaluation *********');
+                setup.model.args = trimPCAArgs( setup.model.args );
+            else
+                disp('***** Autoencoder Model Evaluation *****');
+            end
+            disp('Data setup:')
+            disp( setup.data.class );
+            disp( setup.data.args );
+            disp('Model setup:')
+            disp( setup.model.class );
+            disp( setup.model.args );
+
             % prepare the data
             self = initDatasets( self, setup );
-
-            if args.verbose 
-                if isequal( setup.model.class, @PCAModel )
-                    disp('********* PCA Model Evaluation *********');
-                    setup.model.args = trimPCAArgs( setup.model.args );
-                else
-                    disp('***** Autoencoder Model Evaluation *****');
-                end
-                disp('Data setup:')
-                disp( setup.data.class );
-                disp( setup.data.args );
-                disp('Model setup:')
-                disp( setup.model.class );
-                disp( setup.model.args );
-            end
-
+            
             % train the model
-            if args.verbose
-                disp('Training the model ...');
-            end
             self = self.trainModels( setup.model );
-            if args.verbose
-                disp('Training complete');
-            end
 
             % evaluate the trained model
             self = self.evaluateModels( 'Training' );
             self = self.evaluateModels( 'Testing' );           
 
-            if args.verbose
-                disp('Training evaluation:');
-                reportResult( self.CVLoss.Training.Mean, ...
-                              self.CVCorrelations.Training.Mean );
-                disp('Testing evaluation:');
-                reportResult( self.CVLoss.Testing.Mean, ...
-                              self.CVCorrelations.Testing.Mean );
-            end
+            disp('Training evaluation:');
+            reportResult( self.CVLoss.Training.Mean, ...
+                          self.CVCorrelations.Training.Mean );
+            disp('Testing evaluation:');
+            reportResult( self.CVLoss.Testing.Mean, ...
+                          self.CVCorrelations.Testing.Mean );
 
         end
 

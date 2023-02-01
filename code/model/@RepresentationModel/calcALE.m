@@ -90,7 +90,7 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
 
         if d==1
             % allocate arrays knowing the size of YHat
-            if size(delta,3)==1
+            if length(size(delta))==2
                 FDim(1) = size(delta,1);
                 FDim(2) = 1;
                 F = zeros( self.ZDim, K, FDim(1) );

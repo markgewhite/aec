@@ -11,6 +11,7 @@ function self = initDatasets( self, setup )
         argsCell = {};
     end
 
+    disp('Loading the data');
     switch self.CVType
         case 'Holdout'
             self.TrainingDataset = setup.data.class( 'Training', ...
