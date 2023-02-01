@@ -101,6 +101,12 @@ classdef ClassifierLoss < LossFunction
             % create the hidden layers
             for i = 1:self.NumHidden
                 nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
+                if nNodes <= self.CDim
+                    eid = 'ClassifierLoss:NetworkDesign';
+                    msg = 'Hidden layer has fewer nodes than classes.';
+                    throwAsCaller( MException(eid,msg) );
+                end
+
                 layers = [ layers; ...
                     fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                     batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
