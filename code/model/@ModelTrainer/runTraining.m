@@ -26,12 +26,11 @@ function thisModel = runTraining( self, thisModel, thisDataset )
 
     if self.Holdout > 0
         % get the validation data (one-time only)
-        [ dlXVal, dlYVal ] = thisValData.getDLInput( thisModel.XDimLabels );
-        dlXNVal = thisValData.XTarget;
+        [ dlXVal, dlYVal, dlXNVal ] = thisValData.getDLArrays( thisModel.XDimLabels );
     end
 
     % setup whole training set
-    [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLInput( thisModel.XDimLabels );
+    [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLArrays( thisModel.XDimLabels );
    
     % setup monitoring functions
     lossLinesFcn = @(data) updateLossLines( self.LossLines, data );

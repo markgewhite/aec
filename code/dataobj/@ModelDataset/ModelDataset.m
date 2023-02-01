@@ -292,7 +292,7 @@ classdef ModelDataset
 
         selection = getCVPartition( self, args )
 
-        [ X, Y ] = getDLInput( self, labels, arg )
+        [ dlX, dlY, dlXN ] = getDLArrays( self, labels, arg )
 
         mbq = getMiniBatchQueue( self, batchSize, XLabels, XNLabels, args )
 

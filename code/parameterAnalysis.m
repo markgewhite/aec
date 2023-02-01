@@ -5,8 +5,8 @@ clear;
 runAnalysis = true;
 inParallel = true;
 resume = false;
-catchErrors = true;
-reportIdx = 3;
+catchErrors = false;
+reportIdx = 1:3;
 plotDim = [2 5];
 maxCoeff = 3;
 
@@ -57,8 +57,6 @@ parameters = [ "model.args.ZDim", ...
                "data.args.NormalizedPts" ];
 values = {[2 3 4 6 8], ...
           [10 20 30 50 100]}; 
-%values = {2, ...
-%          10}; 
 
 names = [ "JumpsVGRF", ...
           "GaitrecGRF", ...

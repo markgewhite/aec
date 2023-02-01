@@ -5,7 +5,7 @@ function YHat = predictCompNet( self, thisDataset )
         thisDataset     ModelDataset
     end
 
-    dlX = thisDataset.getDLInput( self.XDimLabels );
+    dlX = thisDataset.getDLArrays( self.XDimLabels );
 
     if self.FlattenInput && size( dlX, 3 ) > 1
         dlX = flattenDLArray( dlX );

@@ -58,7 +58,7 @@ classdef LSTMSubModel < SubAEModel
             end
 
             if isa( X, 'ModelDataset' )
-                dlX = X.getDLInput( self.XDimLabels );
+                dlX = X.getDLArrays( self.XDimLabels );
             elseif isa( X, 'dlarray' )
                 dlX = X;
             else
