@@ -20,14 +20,16 @@ function thisInvestigation = conserveMemory( self, level )
         idx = getIndices( c, thisInvestigation.SearchDims );
         idxC = num2cell( idx );
 
-        if level == 4
-            % maximum conservation: erase the evaluation
-            % useful if the grid search is extensive
-            thisInvestigation.Evaluations{ idxC{:} } = [];
-        else
-            % scaled memory conservation
-            thisInvestigation.Evaluations{ idxC{:} } = ...
-                thisInvestigation.Evaluations{ idxC{:} }.conserveMemory( level );
+        if isa( thisInvestigation.Evaluations{idxC{:}}, 'ModelEvaluation' )
+            if level == 4
+                % maximum conservation: erase the evaluation
+                % useful if the grid search is extensive
+                thisInvestigation.Evaluations{ idxC{:} } = [];
+            else
+                % scaled memory conservation
+                thisInvestigation.Evaluations{ idxC{:} } = ...
+                    thisInvestigation.Evaluations{ idxC{:} }.conserveMemory( level );
+            end
         end
 
     end

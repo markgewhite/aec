@@ -7,7 +7,7 @@ function save( self, args )
     end
 
     if args.memorySaving>0
-        thisInvestigation = self.conserveMemory( level=args.memorySaving );
+        thisInvestigation = self.conserveMemory( args.memorySaving );
     else
         thisInvestigation = self;
     end
