@@ -144,6 +144,9 @@ classdef Investigation
                 self.Evaluations{ idxC{:} } = thisEvaluation;
                 self = self.logResults( idxC, allocation );
 
+                % save the current state of the investigation
+                self.save( memorySaving = 1 );
+
             end
             
         end           

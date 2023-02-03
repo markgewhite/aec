@@ -33,7 +33,7 @@ setup.model.args.AuxModel = 'Logistic';
 setup.model.args.ComponentType = 'PDP';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
-setup.model.args.ShowPlots = false;
+setup.model.args.ShowPlots = true;
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;

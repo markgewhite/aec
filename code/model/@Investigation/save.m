@@ -1,10 +1,18 @@
-function save( thisInvestigation )
+function save( self, args )
     % Save the investigation object
     arguments
-        thisInvestigation        Investigation
+        self                    Investigation
+        args.memorySaving       double {mustBeInteger, ...
+                            mustBeInRange( args.memorySaving, 0, 3 )} = 0
     end
 
-    name = strcat( thisInvestigation.Name, "-Investigation" );
-    save( fullfile( thisInvestigation.Path, name ), 'thisInvestigation' );
+    if args.memorySaving>0
+        thisInvestigation = self.conserveMemory( level=args.memorySaving );
+    else
+        thisInvestigation = self;
+    end
+
+    name = strcat( self.Name, "-Investigation" );
+    save( fullfile( self.Path, name ), 'thisInvestigation' );
 
 end

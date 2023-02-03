@@ -9,7 +9,6 @@ function results = investigationResults( names, path, ...
     thisInvestigation.saveDataPlot;
     results = thisInvestigation.saveReport;
 
-    thisInvestigation.conserveMemory( memorySaving );
-    thisInvestigation.save;
+    thisInvestigation.save( memorySaving = memorySaving );
 
 end

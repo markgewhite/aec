@@ -1,4 +1,4 @@
-function self = conserveMemory( self, level )
+function thisInvestigation = conserveMemory( self, level )
     % Converse memory by paring back the storage of the evaluations
     % Levels: 
     % 0 = none; 
@@ -12,21 +12,22 @@ function self = conserveMemory( self, level )
                                 mustBeInRange( level, 0, 4 )} = 0
     end
     
-    nEval = prod( self.SearchDims );
+    thisInvestigation = self;
+    nEval = prod( thisInvestigation.SearchDims );
     % run the evaluation loop
     for c = 1:nEval
 
-        idx = getIndices( c, self.SearchDims );
+        idx = getIndices( c, thisInvestigation.SearchDims );
         idxC = num2cell( idx );
 
         if level == 4
             % maximum conservation: erase the evaluation
             % useful if the grid search is extensive
-            self.Evaluations{ idxC{:} } = [];
+            thisInvestigation.Evaluations{ idxC{:} } = [];
         else
             % scaled memory conservation
-            self.Evaluations{ idxC{:} } = ...
-                self.Evaluations{ idxC{:} }.conserveMemory( level );
+            thisInvestigation.Evaluations{ idxC{:} } = ...
+                thisInvestigation.Evaluations{ idxC{:} }.conserveMemory( level );
         end
 
     end
