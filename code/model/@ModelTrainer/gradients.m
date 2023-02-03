@@ -23,7 +23,7 @@ function [grad, state, loss] = gradients( nets, ...
 
     if thisModel.HasCentredDecoder
         % add the target mean to the prediction
-        dlXGen = dlXGen + repmat( mean(dlXOut, 2), 1, size(dlXOut,2) );
+        dlXGen = dlXGen + repmat( thisModel.MeanCurveTarget, 1, size(dlXGen,2) );
     end
 
     % select the active loss functions
