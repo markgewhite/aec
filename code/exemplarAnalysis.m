@@ -3,7 +3,7 @@
 clear;
 
 runAnalysis = true;
-inParallel = true;
+inParallel = false;
 resume = false;
 catchErrors = true;
 reportIdx = 1:4;
@@ -11,7 +11,7 @@ plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/exemplars/'];
+path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -32,7 +32,7 @@ setup.model.args.RandomSeed = 1234;
 setup.model.args.ShowPlots = true;
 
 % -- loss functions --
-setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
+setup.model.args.lossFcns.recon.class = @L1ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
@@ -44,9 +44,9 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
+setup.model.args.trainer.NumIterations = 500;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 5000;
+setup.model.args.trainer.UpdateFreq = 50;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
