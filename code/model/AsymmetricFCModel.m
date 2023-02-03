@@ -2,12 +2,13 @@ classdef AsymmetricFCModel < FCModel
     % Subclass of a fully connected model allowing different setting 
     % for the decoder network
     properties
-        NumHiddenDecoder      % number of hidden layers for the decoder
-        NumFCDecoder          % number of nodes for widest decoder layer 
+        NumHiddenDecoder      % number of hidden layers
+        NumFCDecoder          % number of nodes for widest layer
         FCFactorDecoder       % log2 scaling factor subsequent layers
-        ReLuScaleDecoder      % leaky ReLu scale factor
+        NetNormalizationTypeDecoder  % type of batch normalization applied
+        NetActivationTypeDecoder     % type of nonlinear activation function
+        ReluScaleDecoder             % leaky ReLu scale factor
         DropoutDecoder        % hidden layer dropout rate
-        NetNormalizationTypeDecoder % type of normalization
     end
 
     methods
@@ -28,13 +29,16 @@ classdef AsymmetricFCModel < FCModel
                     {mustBeInteger, mustBePositive} = 128
                 args.FCFactorDecoder    double ...
                     {mustBeInteger, mustBePositive} = 1
-                args.ReLuScaleDecoder   double ...
-                    {mustBeInRange(args.ReLuScaleDecoder, 0, 1)} = 0.2
+                args.ReluScaleDecoder   double ...
+                    {mustBeInRange(args.ReluScaleDecoder, 0, 1)} = 0.2
                 args.DropoutDecoder     double ...
                     {mustBeInRange(args.DropoutDecoder, 0, 1)} = 0.0
                 args.NetNormalizationTypeDecoder char ...
                     {mustBeMember( args.NetNormalizationTypeDecoder, ...
                     {'None', 'Batch', 'Layer'} )} = 'None'
+                args.NetActivationTypeDecoder char ...
+                    {mustBeMember( args.NetActivationTypeDecoder, ...
+                    {'None', 'Tanh', 'Relu'} )} = 'Tanh'
             end
 
             % set the superclass's properties
@@ -49,9 +53,10 @@ classdef AsymmetricFCModel < FCModel
             self.NumHiddenDecoder = args.NumHiddenDecoder;
             self.NumFCDecoder = args.NumFCDecoder;
             self.FCFactorDecoder = args.FCFactorDecoder;
-            self.ReLuScaleDecoder = args.ReLuScaleDecoder;
+            self.ReluScaleDecoder = args.ReluScaleDecoder;
             self.DropoutDecoder = args.DropoutDecoder;
             self.NetNormalizationTypeDecoder = args.NetNormalizationTypeDecoder;
+            self.NetActivationTypeDecoder = args.NetActivationTypeDecoder;
            
         end
 
@@ -78,9 +83,10 @@ classdef AsymmetricFCModel < FCModel
                 
                 [lgraphDec, lastLayer] = FCModel.addBlock( ...
                                     lgraphDec, i, lastLayer, nNodes, ...
-                                    self.ReLuScaleDecoder, ...
+                                    self.ReluScaleDecoder, ...
                                     self.DropoutDecoder, ...
-                                    self.NetNormalizationTypeDecoder );
+                                    self.NetNormalizationTypeDecoder, ...
+                                    self.NetActivationType );
 
             end
 

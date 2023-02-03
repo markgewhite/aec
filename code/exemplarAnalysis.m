@@ -15,17 +15,17 @@ path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
-setup.data.args.HasAdaptiveTimeSpan = false;
 
 % -- model setup --
 setup.model.class = @FCModel;
 setup.model.args.NumHidden = 1;
 setup.model.args.NumFC = 100;
 setup.model.args.FCFactor = 1;       
-setup.model.args.ReLuScale = 1;
+setup.model.args.NetNormalizationType = 'Layer';
+setup.model.args.NetActivationType = 'Tanh';
+setup.model.args.ReLuScale = 0.2;
 setup.model.args.InputDropout = 0;
 setup.model.args.Dropout = 0;
-setup.model.args.NetNormalizationType = 'Layer';
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;

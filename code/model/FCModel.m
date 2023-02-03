@@ -4,10 +4,11 @@ classdef FCModel < AEModel
         NumHidden             % number of hidden layers
         NumFC                 % number of nodes for widest layer
         FCFactor              % log2 scaling factor subsequent layers
-        ReLuScale             % leaky ReLu scale factor
-        InputDropout          % input dropout rate
-        Dropout               % hidden layer dropout rate
         NetNormalizationType  % type of batch normalization applied
+        NetActivationType     % type of nonlinear activation function
+        ReluScale             % leaky ReLu scale factor
+        Dropout               % hidden layer dropout rate
+        InputDropout          % input dropout rate
         HasInputNormalization % apply amplitude normalization
     end
 
@@ -29,15 +30,18 @@ classdef FCModel < AEModel
                     {mustBeInteger, mustBePositive} = 64
                 args.FCFactor       double ...
                     {mustBeInteger, mustBePositive} = 2
-                args.ReLuScale      double ...
-                    {mustBeInRange(args.ReLuScale, 0, 1)} = 0.2
+                args.NetNormalizationType char ...
+                    {mustBeMember( args.NetNormalizationType, ...
+                    {'None', 'Batch', 'Layer'} )} = 'Layer'
+                args.NetActivationType char ...
+                    {mustBeMember( args.NetActivationType, ...
+                    {'None', 'Tanh', 'Relu'} )} = 'Tanh'
+                args.ReluScale      double ...
+                    {mustBeInRange(args.ReluScale, 0, 1)} = 0.2
                 args.InputDropout   double ...
                     {mustBeInRange(args.InputDropout, 0, 1)} = 0.2
                 args.Dropout    double ...
                     {mustBeInRange(args.Dropout, 0, 1)} = 0.05
-                args.NetNormalizationType char ...
-                    {mustBeMember( args.NetNormalizationType, ...
-                    {'None', 'Batch', 'Layer'} )} = 'Layer'
                 args.HasInputNormalization logical = true
                 args.FlattenInput   logical = true
                 args.HasSeqInput    logical = false
@@ -57,10 +61,11 @@ classdef FCModel < AEModel
             self.NumHidden = args.NumHidden;
             self.NumFC = args.NumFC;
             self.FCFactor = args.FCFactor;
-            self.ReLuScale = args.ReLuScale;
-            self.InputDropout = args.InputDropout;
-            self.Dropout = args.Dropout;
             self.NetNormalizationType = args.NetNormalizationType;
+            self.NetActivationType = args.NetActivationType;
+            self.ReluScale = args.ReluScale;
+            self.Dropout = args.Dropout;
+            self.InputDropout = args.InputDropout;
             self.HasInputNormalization = args.HasInputNormalization;
            
         end
@@ -82,11 +87,15 @@ classdef FCModel < AEModel
                                        'Name', 'in' );
             end
 
-            layersEnc = [ layersEnc; ...
-                          dropoutLayer( self.InputDropout, 'Name', 'drop0' ) ];
+            if self.InputDropout > 0
+                layersEnc = [ layersEnc; ...
+                              dropoutLayer( self.InputDropout, 'Name', 'drop0' ) ];
+                lastLayer = 'drop0';
+            else
+                lastLayer = 'in';
+            end
 
             lgraphEnc = layerGraph( layersEnc );       
-            lastLayer = 'drop0';
             
             for i = 1:self.NumHidden
 
@@ -99,9 +108,10 @@ classdef FCModel < AEModel
 
                 [lgraphEnc, lastLayer] = self.addBlock( ...
                                     lgraphEnc, i, lastLayer, nNodes, ...
-                                    self.ReLuScale, ...
+                                    self.ReluScale, ...
                                     self.Dropout, ...
-                                    self.NetNormalizationType );
+                                    self.NetNormalizationType, ...
+                                    self.NetActivationType );
 
             end
             
@@ -138,9 +148,10 @@ classdef FCModel < AEModel
 
                 [lgraphDec, lastLayer] = self.addBlock( ...
                                     lgraphDec, i, lastLayer, nNodes, ...
-                                    self.ReLuScale, ...
+                                    self.ReluScale, ...
                                     self.Dropout, ...
-                                    self.NetNormalizationType );
+                                    self.NetNormalizationType, ...
+                                    self.NetActivationType );
 
             end
 
@@ -202,7 +213,7 @@ classdef FCModel < AEModel
 
         function [ lgraph, lastLayer ] = addBlock( ...
                                         lgraph, i, lastLayer, nNodes, ...
-                                        scale, dropout, normType )
+                                        scale, dropout, normType, actType )
             % Defines block
 
             block = fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] );
@@ -219,17 +230,30 @@ classdef FCModel < AEModel
                                             ['lnorm' num2str(i)] ) ];
             end
 
-            % add the nonlinearity and dropout
-            block = [ block;
-                      leakyReluLayer( scale, 'Name', ['relu' num2str(i)] )
+            % add the nonlinearity
+            switch actType
+                case 'Tanh'
+                    block = [ block;
+                      tanhLayer( 'Name', ['tanh' num2str(i)] ) ];
+                case 'Relu'
+                    if scale < 1
+                        block = [ block;
+                          leakyReluLayer( scale, 'Name', ['relu' num2str(i)] ) ];
+                    end
+            end
+
+            % add dropout
+            if dropout > 0
+                block = [ block;
                       dropoutLayer( dropout, 'Name', ['drop' num2str(i)] ) ];
+            end
         
             % connect layers at the front
             lgraph = addLayers( lgraph, block );
             lgraph = connectLayers( lgraph, ...
                                     lastLayer, ['fc' num2str(i)] );
             
-            lastLayer = ['drop' num2str(i)];
+            lastLayer = block(end).Name;
         
         end
 
