@@ -607,7 +607,7 @@ switch optID
         setup.model.args.ReLuScale = 1;
         setup.model.args.InputDropout = 0;
         setup.model.args.Dropout = 0;
-        setup.model.args.HasBatchNormalization = false;
+        setup.model.args.NetNormalizationType = 'Layer';
 
         varDef(1) = optimizableVariable( 'model_args_NumFC', ...
                 [4 512], Type = 'integer', Transform = 'log', ... 
@@ -627,7 +627,7 @@ switch optID
         setup.model.args.ReLuScale = 1;
         setup.model.args.InputDropout = 0;
         setup.model.args.Dropout = 0;
-        setup.model.args.HasBatchNormalization = false;
+        setup.model.args.NetNormalizationType = 'Layer';
 
         varDef(1) = optimizableVariable( 'model_args_NumFC', ...
                 [4 512], Type = 'integer', Transform = 'log', ... 
@@ -647,7 +647,7 @@ switch optID
         setup.model.args.ReLuScale = 1;
         setup.model.args.InputDropout = 0;
         setup.model.args.Dropout = 0;
-        setup.model.args.HasBatchNormalization = false;
+        setup.model.args.NetNormalizationType = 'Layer';
 
         varDef(1) = optimizableVariable( 'model_args_NumFC', ...
                 [4 512], Type = 'integer', Transform = 'log', ... 

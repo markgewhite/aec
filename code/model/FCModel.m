@@ -7,7 +7,7 @@ classdef FCModel < AEModel
         ReLuScale             % leaky ReLu scale factor
         InputDropout          % input dropout rate
         Dropout               % hidden layer dropout rate
-        HasBatchNormalization % apply batch normalization
+        NetNormalizationType  % type of batch normalization applied
         HasInputNormalization % apply amplitude normalization
     end
 
@@ -35,7 +35,9 @@ classdef FCModel < AEModel
                     {mustBeInRange(args.InputDropout, 0, 1)} = 0.2
                 args.Dropout    double ...
                     {mustBeInRange(args.Dropout, 0, 1)} = 0.05
-                args.HasBatchNormalization logical = true
+                args.NetNormalizationType char ...
+                    {mustBeMember( args.NetNormalizationType, ...
+                    {'None', 'Batch', 'Layer'} )} = 'Layer'
                 args.HasInputNormalization logical = true
                 args.FlattenInput   logical = true
                 args.HasSeqInput    logical = false
@@ -58,7 +60,7 @@ classdef FCModel < AEModel
             self.ReLuScale = args.ReLuScale;
             self.InputDropout = args.InputDropout;
             self.Dropout = args.Dropout;
-            self.HasBatchNormalization = args.HasBatchNormalization;
+            self.NetNormalizationType = args.NetNormalizationType;
             self.HasInputNormalization = args.HasInputNormalization;
            
         end
@@ -99,7 +101,7 @@ classdef FCModel < AEModel
                                     lgraphEnc, i, lastLayer, nNodes, ...
                                     self.ReLuScale, ...
                                     self.Dropout, ...
-                                    self.HasBatchNormalization );
+                                    self.NetNormalizationType );
 
             end
             
@@ -138,7 +140,7 @@ classdef FCModel < AEModel
                                     lgraphDec, i, lastLayer, nNodes, ...
                                     self.ReLuScale, ...
                                     self.Dropout, ...
-                                    self.HasBatchNormalization );
+                                    self.NetNormalizationType );
 
             end
 
@@ -200,28 +202,27 @@ classdef FCModel < AEModel
 
         function [ lgraph, lastLayer ] = addBlock( ...
                                         lgraph, i, lastLayer, nNodes, ...
-                                        scale, dropout, hasBatchNorm )
+                                        scale, dropout, normType )
+            % Defines block
 
-            % define block
-            if hasBatchNorm
-                block = [   fullyConnectedLayer( nNodes, ...
-                                            'Name', ['fc' num2str(i)] )
-                            batchNormalizationLayer( 'Name', ...
-                                            ['lnorm' num2str(i)] )
-                            leakyReluLayer( scale, ...
-                                            'Name', ['relu' num2str(i)] )
-                            dropoutLayer( dropout, ...
-                                                 'Name', ['drop' num2str(i)] )
-                            ];
-            else
-                block = [   fullyConnectedLayer( nNodes, ...
-                                            'Name', ['fc' num2str(i)] )
-                            leakyReluLayer( scale, ...
-                                            'Name', ['relu' num2str(i)] )
-                            dropoutLayer( dropout, ...
-                                                 'Name', ['drop' num2str(i)] )
-                            ];
+            block = fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] );
+
+            % add the specified type of normalization
+            switch normType
+                case 'Batch'
+                    block = [ block;
+                              batchNormalizationLayer( 'Name', ...
+                                            ['bnorm' num2str(i)] ) ];
+                case 'Layer'
+                    block = [ block;
+                              layerNormalizationLayer( 'Name', ...
+                                            ['lnorm' num2str(i)] ) ];
             end
+
+            % add the nonlinearity and dropout
+            block = [ block;
+                      leakyReluLayer( scale, 'Name', ['relu' num2str(i)] )
+                      dropoutLayer( dropout, 'Name', ['drop' num2str(i)] ) ];
         
             % connect layers at the front
             lgraph = addLayers( lgraph, block );

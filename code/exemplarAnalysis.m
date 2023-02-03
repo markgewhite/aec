@@ -15,7 +15,7 @@ path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
- 
+setup.data.args.HasAdaptiveTimeSpan = false;
 
 % -- model setup --
 setup.model.class = @FCModel;
@@ -25,23 +25,24 @@ setup.model.args.FCFactor = 1;
 setup.model.args.ReLuScale = 1;
 setup.model.args.InputDropout = 0;
 setup.model.args.Dropout = 0;
-setup.model.args.HasBatchNormalization = false;
+setup.model.args.NetNormalizationType = 'Layer';
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.RandomSeed = 1234;
 setup.model.args.ShowPlots = true;
 
 % -- loss functions --
-setup.model.args.lossFcns.recon.class = @L1ReconstructionLoss;
+setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
+
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 setup.model.args.lossFcns.zcls.args.NumHidden = 1;
 setup.model.args.lossFcns.zcls.args.NumFC = 100;
 setup.model.args.lossFcns.zcls.args.FCFactor = 1;
-setup.model.args.lossFcns.zcls.args.ReLuScale = 1;
+setup.model.args.lossFcns.zcls.args.ReLuScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
-setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
+setup.model.args.lossFcns.zcls.args.HasBatchNormalization = true;
 
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 500;
@@ -61,10 +62,13 @@ memorySaving = 3;
 % -- grid search --
 dims = [2 3];
 pts = [5, 7, 9, 15 20];
+%parameters = [ "model.args.ZDim", ...
+%               "data.args.NormalizedPts", ...
+%               "model.args.lossFcns.zcls.args.DoCalcLoss"];
+%values = {dims, pts, {false, true}}; 
 parameters = [ "model.args.ZDim", ...
-               "data.args.NormalizedPts", ...
-               "model.args.lossFcns.zcls.args.DoCalcLoss"];
-values = {dims, pts, {false, true}}; 
+               "data.args.NormalizedPts" ];
+values = {dims, pts}; 
 
 N = 400;
 sigma = 0.5;

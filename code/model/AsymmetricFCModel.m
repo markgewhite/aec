@@ -7,7 +7,7 @@ classdef AsymmetricFCModel < FCModel
         FCFactorDecoder       % log2 scaling factor subsequent layers
         ReLuScaleDecoder      % leaky ReLu scale factor
         DropoutDecoder        % hidden layer dropout rate
-        HasBatchNormalizationDecoder % whether to include batch normalization
+        NetNormalizationTypeDecoder % type of normalization
     end
 
     methods
@@ -32,7 +32,9 @@ classdef AsymmetricFCModel < FCModel
                     {mustBeInRange(args.ReLuScaleDecoder, 0, 1)} = 0.2
                 args.DropoutDecoder     double ...
                     {mustBeInRange(args.DropoutDecoder, 0, 1)} = 0.0
-                args.HasBatchNormalizationDecoder logical = true
+                args.NetNormalizationTypeDecoder char ...
+                    {mustBeMember( args.NetNormalizationTypeDecoder, ...
+                    {'None', 'Batch', 'Layer'} )} = 'None'
             end
 
             % set the superclass's properties
@@ -49,7 +51,7 @@ classdef AsymmetricFCModel < FCModel
             self.FCFactorDecoder = args.FCFactorDecoder;
             self.ReLuScaleDecoder = args.ReLuScaleDecoder;
             self.DropoutDecoder = args.DropoutDecoder;
-            self.HasBatchNormalizationDecoder = args.HasBatchNormalizationDecoder;
+            self.NetNormalizationTypeDecoder = args.NetNormalizationTypeDecoder;
            
         end
 
@@ -78,7 +80,7 @@ classdef AsymmetricFCModel < FCModel
                                     lgraphDec, i, lastLayer, nNodes, ...
                                     self.ReLuScaleDecoder, ...
                                     self.DropoutDecoder, ...
-                                    self.HasBatchNormalizationDecoder );
+                                    self.NetNormalizationTypeDecoder );
 
             end
 

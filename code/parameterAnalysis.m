@@ -21,12 +21,12 @@ setup.model.class = @AsymmetricFCModel;
 setup.model.args.FCFactor = 2;
 setup.model.args.InputDropout = 0.2;
 setup.model.args.ReLuScale = 0.2;
-setup.model.args.HasBatchNormalization = true;
+setup.model.args.NetNormalizationType = 'Layer';
 setup.model.args.Dropout = 0;
 
 setup.model.args.FCFactorDecoder = setup.model.args.FCFactor;
 setup.model.args.ReLuScaleDecoder = setup.model.args.ReLuScale;
-setup.model.args.HasBatchNormalizationDecoder = setup.model.args.HasBatchNormalization;
+setup.model.args.NetNormalizationTypeDecoder = setup.model.args.NetNormalizationType;
 setup.model.args.DropoutDecoder = setup.model.args.Dropout;
 
 setup.model.args.AuxModel = 'Logistic';
