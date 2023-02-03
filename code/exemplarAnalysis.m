@@ -44,9 +44,9 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5000;
+setup.model.args.trainer.NumIterations = 2000;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 500;
+setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -59,13 +59,12 @@ names = [ "JumpsVGRF", ...
 memorySaving = 3;
 
 % -- grid search --
-dims = [2 3 4];
-pts = [20, 25, 30, 50];
+dims = [2 3];
+pts = [5, 7, 9, 15 20];
 parameters = [ "model.args.ZDim", ...
                "data.args.NormalizedPts", ...
-               "model.args.ComponentType", ...
-               "model.args.lossFcns.zcls.DoCalcLoss"];
-values = {dims, pts, {'PDP', 'ALE'}, {false, true}}; 
+               "model.args.lossFcns.zcls.args.DoCalcLoss"];
+values = {dims, pts, {false, true}}; 
 
 N = 400;
 sigma = 0.5;
