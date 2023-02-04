@@ -192,6 +192,8 @@ classdef AEModel < RepresentationModel
 
         self = incrementActiveZDim( self )
 
+        self = initLossFcns( self, setup )
+
         self = initLossFcnNetworks( self )
 
         dlZ = maskZ( self, dlZ )
