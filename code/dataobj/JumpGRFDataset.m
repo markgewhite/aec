@@ -69,35 +69,24 @@ classdef JumpGRFDataset < ModelDataset
 
         function [ X, Y, S ] = load( set )
 
-            if ismac
-                rootpath = '/Users/markgewhite/Google Drive/';
-            else
-                [~, dir] = dos('cd');
-                if strcmp( dir(1:14), 'C:\Users\markg' )
-                    rootpath = 'C:\Users\markg\Google Drive\';
-                else
-                    rootpath = 'C:\Users\m.g.e.white\My Drive\';
-                end
-            end
-
-            dataFolder = 'Academia/Postdoc/Datasets/Jumps';
-            datapath = [ rootpath dataFolder ];
+            path = fileparts( which('JumpGRFDataset.m') );
+            path = [path '/../../data/jumps'];
             
             % load the data - training or testing or both
             switch set
 
                 case 'Training'
-                    load( fullfile( datapath, 'jumpGRFData-Training.mat' ), ...
+                    load( fullfile( path, 'jumpGRFData-Training.mat' ), ...
                               'grf', 'bwall', 'sDataID', 'sJumpID', ...
                               'jumpOrder', 'nJumpsPerSubject' );
 
                 case 'Testing'
-                    load( fullfile( datapath, 'jumpGRFData-Testing.mat' ), ...
+                    load( fullfile( path, 'jumpGRFData-Testing.mat' ), ...
                               'grf', 'bwall', 'sDataID', 'sJumpID', ...
                               'jumpOrder', 'nJumpsPerSubject' );
 
                 case 'Combined'
-                    load( fullfile( datapath, 'jumpGRFData-Testing.mat' ), ...
+                    load( fullfile( path, 'jumpGRFData-Testing.mat' ), ...
                               'grf', 'bwall', 'sDataID', 'sJumpID', ...
                               'jumpOrder', 'nJumpsPerSubject' );
                     grfTest = grf;
@@ -107,7 +96,7 @@ classdef JumpGRFDataset < ModelDataset
                     jumpOrderTest = jumpOrder;
                     nJumpsPerSubjectTest = nJumpsPerSubject;
 
-                    load( fullfile( datapath, 'jumpGRFData-Training.mat' ), ...
+                    load( fullfile( path, 'jumpGRFData-Training.mat' ), ...
                               'grf', 'bwall', 'sDataID', 'sJumpID', ...
                               'jumpOrder', 'nJumpsPerSubject' );
 

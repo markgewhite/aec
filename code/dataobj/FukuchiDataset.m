@@ -125,17 +125,11 @@ classdef FukuchiDataset < ModelDataset
 
         function [X, Y, S, side, names, classLabels ] = load( set, args )
 
-            if ismac
-                rootpath = '/Users/markgewhite/Google Drive/';
-            else 
-                rootpath = 'C:\Users\m.g.e.white\My Drive\';
-            end
-
-            dataFolder = 'Academia/Postdoc/Datasets/Fukuchi';
-            datapath = [ rootpath dataFolder ];
+            path = fileparts( which('FukuchiDataset.m') );
+            path = [path '/../../data/fukuchi'];
 
             % load the meta data
-            metaData = readtable( fullfile(datapath, 'WBDSInfo.xlsx') );
+            metaData = readtable( fullfile(path, 'WBDSInfo.xlsx') );
 
             metaData.AgeGroup = categorical( metaData.AgeGroup );
             metaData.Gender = categorical( metaData.Gender );
@@ -178,14 +172,14 @@ classdef FukuchiDataset < ModelDataset
                 % load the trial data from original files
                 switch args.Category
                     case 'Ground'
-                        [ X, Y, S, side, names ] = loadGRFData( datapath, ...
+                        [ X, Y, S, side, names ] = loadGRFData( path, ...
                                                     metaData.FileName, ...
                                                     metaData.Subject, ...
                                                     refY, ...
                                                     args );
 
                     case 'JointAngles'
-                        [ X, Y, S, side, names ] = loadAnglesData( datapath, ...
+                        [ X, Y, S, side, names ] = loadAnglesData( path, ...
                                                     metaData.FileName, ...
                                                     metaData.Subject, ...
                                                     refY, ...
@@ -194,7 +188,7 @@ classdef FukuchiDataset < ModelDataset
                 end
                         
                 % save it for future reference
-                save( fullfile(datapath,filename), ...
+                save( fullfile(path,filename), ...
                       'X', 'Y', 'S', 'side', 'names', '-v7.3' );
             
             end
@@ -245,7 +239,7 @@ function filter = setFilter( metaData, set, args )
 end
 
 
-function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
+function [X, Y, S, side, names] = loadGRFData( path, filenames, ...
                                                subjects, ref, args )
 
     % constants
@@ -283,7 +277,7 @@ function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
     for i = 1:nFiles
 
         try
-            trialData = readtable( fullfile(datapath, filenames(i)) );
+            trialData = readtable( fullfile(path, filenames(i)) );
         catch
             continue
         end
@@ -333,7 +327,7 @@ function [X, Y, S, side, names] = loadGRFData( datapath, filenames, ...
 end
 
 
-function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
+function [X, Y, S, side, names] = loadAnglesData( path, filenames, ...
                                                subjects, ref, args )
 
     % constants
@@ -383,7 +377,7 @@ function [X, Y, S, side, names] = loadAnglesData( datapath, filenames, ...
     for i = 1:nFiles
 
         try
-            trialData = readtable( fullfile(datapath, filenames(i)) );
+            trialData = readtable( fullfile(path, filenames(i)) );
         catch
             continue
         end

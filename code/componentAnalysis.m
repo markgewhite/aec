@@ -6,7 +6,7 @@ runAnalysis = true;
 inParallel = true;
 resume = false;
 catchErrors = true;
-reportIdx = 1:2;
+reportIdx = 2;
 plotDim = [2 5];
 
 % set the destinations for results and figures
