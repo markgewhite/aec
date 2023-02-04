@@ -2,7 +2,7 @@
 
 clear;
 
-optID = 184;
+optID = 185;
 disp(['OptID = ' num2str(optID)]);
 
 dataset = "Synthetic";
@@ -10,7 +10,7 @@ dataset = "Synthetic";
 % -- optimizer setup --
 setup.opt.exploration = 0.5;
 setup.opt.numEvaluations = 30;
-setup.opt.in_parallel = false;
+setup.opt.in_parallel = true;
 setup.opt.acquisitionFcnName = 'expected-improvement-plus';
 
 % set the destinations for results and figures
@@ -70,19 +70,15 @@ setup.model.args.ShowPlots = false;
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
+setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
+setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
+setup.model.args.lossFcns.reconvar.args.UseLoss = false;
+
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
-setup.model.args.lossFcns.adv.class = @AdversarialLoss;
-setup.model.args.lossFcns.adv.name = 'Discriminator';
-setup.model.args.lossFcns.adv.args.DoCalcLoss = false;
-
-setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
-setup.model.args.lossFcns.kl.name = 'KLDivergence';
-setup.model.args.lossFcns.kl.args.DoCalcLoss = false;
-
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2;
+setup.model.args.trainer.NumIterations = 2000;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.Holdout = 0.2;
@@ -728,6 +724,30 @@ switch optID
         setup.model.class = @FCModel;
         setup.opt.objective = 'ReconTemporalVarLoss';
         setup.opt.numEvaluations = 30;
+
+        setup.model.args.NumHidden = 2;
+        setup.model.args.NumFC = 128;
+        setup.model.args.FCFactor = 1;       
+        setup.model.args.ReLuScale = 0.2;
+        setup.model.args.InputDropout = 0;
+        setup.model.args.Dropout = 0;
+        setup.data.args.NormalizedPts = 11;
+
+        varDef(1) = optimizableVariable( 'model_args_NetNormalizationType', ...
+                ["None", "Batch", "Layer"], Type = 'categorical', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_NetActivationType', ...
+                ["None", "Tanh", "Relu"], Type = 'categorical', ... 
+                Optimize = true );
+
+    case 185
+        % find the best normalization and activation
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconTemporalVarLoss';
+        setup.opt.numEvaluations = 20;
+
+        setup.model.args.lossFcns.reconvar.args.UseLoss = true;
 
         setup.model.args.NumHidden = 2;
         setup.model.args.NumFC = 128;
