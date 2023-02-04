@@ -23,7 +23,10 @@ function [grad, state, loss] = gradients( nets, ...
 
     if thisModel.HasCentredDecoder
         % add the target mean to the prediction
-        dlXGen = dlXGen + repmat( thisModel.MeanCurveTarget, 1, size(dlXGen,2) );
+        dlXHat = dlXGen + repmat( thisModel.MeanCurveTarget, 1, size(dlXGen,2) );
+    else
+        % take the generated output as it is
+        dlXHat = dlXGen;
     end
 
     % select the active loss functions
@@ -52,8 +55,10 @@ function [grad, state, loss] = gradients( nets, ...
         % select the input variables
         switch thisLossFcn.Input
             case 'X-XHat'
-                dlV = { dlXOut, dlXGen };
+                dlV = { dlXOut, dlXHat };
             case 'XHat'
+                dlV = { dlXHat };
+            case 'XGen'
                 dlV = { dlXGen };
             case 'Z'
                 dlV = { dlZGen };

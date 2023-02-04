@@ -11,20 +11,16 @@ classdef ReconstructionLoss < LossFunction
             arguments
                 name                 char {mustBeText}
                 superArgs.?LossFunction
-                args.yLim            double = []
+                args.input           char = 'X-XHat'
+                args.yLim            double = [0, 0.25]
             end
 
-            if isempty( args.yLim )
-                yLimits = [0, 0.25];
-            else
-                yLimits = args.yLim;
-            end
             superArgsCell = namedargs2cell( superArgs );
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Reconstruction', ...
-                                 input = 'X-XHat', ...
+                                 input = args.input, ...
                                  lossNets = {'Encoder', 'Decoder','ZClassifier'}, ...
-                                 yLim = yLimits );
+                                 yLim = args.yLim );
 
             self.Scale = 1;
 
