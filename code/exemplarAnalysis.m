@@ -35,6 +35,11 @@ setup.model.args.ShowPlots = true;
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
+setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
+setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
+setup.model.args.lossFcns.reconvar.args.UseLoss = true;
+setup.model.args.lossFcns.reconvar.args.Beta = 0.1;
+
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 setup.model.args.lossFcns.zcls.args.NumHidden = 1;
@@ -61,7 +66,7 @@ memorySaving = 3;
 
 % -- grid search --
 dims = [2 3];
-pts = [5, 7, 9, 15 20];
+pts = [9, 15 20];
 %parameters = [ "model.args.ZDim", ...
 %               "data.args.NormalizedPts", ...
 %               "model.args.lossFcns.zcls.args.DoCalcLoss"];

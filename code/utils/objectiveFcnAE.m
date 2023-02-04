@@ -21,8 +21,7 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
     path = pwd;
     % initialize and run the evaluation
     try
-        thisEvaluation = ModelEvaluation( "Optimization", path, setup, ...
-                                          verbose = false );
+        thisEvaluation = ModelEvaluation( "Optimization", path, setup );
         constraint = -1;
     catch
         constraint = 1;

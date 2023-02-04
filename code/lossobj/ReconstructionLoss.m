@@ -6,19 +6,25 @@ classdef ReconstructionLoss < LossFunction
 
     methods
 
-        function self = ReconstructionLoss( name, superArgs )
+        function self = ReconstructionLoss( name, superArgs, args )
             % Initialize the loss function
             arguments
                 name                 char {mustBeText}
                 superArgs.?LossFunction
+                args.yLim            double = []
             end
 
+            if isempty( args.yLim )
+                yLimits = [0, 0.25];
+            else
+                yLimits = args.yLim;
+            end
             superArgsCell = namedargs2cell( superArgs );
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Reconstruction', ...
                                  input = 'X-XHat', ...
                                  lossNets = {'Encoder', 'Decoder','ZClassifier'}, ...
-                                 yLim = [0, 0.25] );
+                                 yLim = yLimits );
 
             self.Scale = 1;
 
