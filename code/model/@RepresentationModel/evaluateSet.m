@@ -27,6 +27,10 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
     eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
                                        thisModel.Scale );
 
+    % compute reconstruction temporal variance loss
+    eval.ReconTemporalVarLoss = reconTemporalVarLoss( pred.XHatRegular, ...
+                                                      thisModel.Scale );
+    
     % compute the bias and variance
     eval.ReconBias = reconBias( pred.XTarget, pred.XHat, thisModel.Scale );
     eval.ReconVar = eval.ReconLoss - eval.ReconBias^2;

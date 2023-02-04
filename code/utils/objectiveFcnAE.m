@@ -38,6 +38,8 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
             obj = thisEvaluation.CVLoss.Testing.Mean.ReconLossSmoothed;
         case 'ReconLossRegular'
             obj = thisEvaluation.CVLoss.Testing.Mean.ReconLossRegular;
+        case 'ReconTemporalVarLoss'
+            obj = thisEvaluation.CVLoss.Testing.Mean.ReconTemporalVarLoss;  
         case 'ReconVar'
             obj = thisEvaluation.CVLoss.Testing.Mean.ReconVar;
         case 'ReconVarRegular'

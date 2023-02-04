@@ -35,10 +35,10 @@ classdef ReconstructionTemporalVarLoss < ReconstructionLoss
             end
 
             % calculate the loss from temporal variance, point to point
-            lossVar = self.Beta*reconTemporalVar( XGen, self.Scale );
+            lossVar = self.Beta*reconTemporalVarLoss( XGen, self.Scale );
             
             % calculate the loss from oscillating about zero
-            lossOsc = self.Gamma*reconTemporalVar( sign(XGen), 1 );
+            lossOsc = self.Gamma*reconTemporalVarLoss( sign(XGen), 1 );
 
             loss = lossVar + lossOsc;
 

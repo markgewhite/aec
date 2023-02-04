@@ -1,5 +1,5 @@
-function loss = reconTemporalVar( XHat, scale )
-    % Calculate the reconstruction temporal variance
+function loss = reconTemporalVarLoss( XHat, scale )
+    % Calculate the reconstruction temporal variance loss
     arguments
         XHat        {mustBeA( XHat, {'double', 'dlarray'})}
         scale       double = 1
