@@ -23,7 +23,11 @@ function [grad, state, loss] = gradients( nets, ...
 
     if thisModel.HasCentredDecoder
         % add the target mean to the prediction
-        dlXHat = dlXGen + repmat( thisModel.MeanCurveTarget, 1, size(dlXGen,2) );
+        if size( dlXGen, 3 )==1
+            dlXHat = dlXGen + repmat( thisModel.MeanCurveTarget, 1, size(dlXGen,2) );
+        else
+            dlXHat = dlXGen + repmat( thisModel.MeanCurveTarget, 1, 1, size(dlXGen,3) );
+        end
     else
         % take the generated output as it is
         dlXHat = dlXGen;
