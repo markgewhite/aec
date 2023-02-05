@@ -3,9 +3,9 @@
 clear;
 
 runAnalysis = true;
-inParallel = true;
+inParallel = false;
 resume = false;
-catchErrors = true;
+catchErrors = false;
 reportIdx = 1:2;
 plotDim = [2 5];
 
@@ -42,7 +42,7 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
+setup.model.args.trainer.NumIterations = 2;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
@@ -58,6 +58,7 @@ memorySaving = 3;
 
 % -- grid search --
 models = {@PCAModel, @FCModel};
+models = {@FCModel};
 dims = [1 2 3];
 pts = [5 7 9];
 parameters = [ "model.class", ...

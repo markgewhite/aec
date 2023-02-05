@@ -37,7 +37,7 @@ function [grad, state, loss] = gradients( nets, ...
     isActive = thisModel.LossFcnTbl.DoCalcLoss;
     isReconFcn = (thisModel.LossFcnTbl.Types=="Reconstruction");
     isActive( isReconFcn ) = isActive( isReconFcn ) ...
-                            & repelem(~preTraining, length(isActive))';
+                            & repelem(~preTraining, sum(isReconFcn))';
     activeFcns = thisModel.LossFcnTbl( isActive, : );
     
     % compute the active loss functions in turn
