@@ -7,7 +7,7 @@ classdef ClassifierLoss < LossFunction
         NumHidden           % number of hidden layers
         NumFC               % number of fully connected nodes at widest
         FCFactor            % node ratio specifying the power 2 index
-        ReLuScale           % leaky Relu scale
+        ReluScale           % leaky Relu scale
         Dropout             % dropout rate
         HasBatchNormalization % if normalizing batches
         InitLearningRate    % initial learning rate
@@ -34,7 +34,7 @@ classdef ClassifierLoss < LossFunction
                             {mustBeInteger, mustBePositive} = 64
                 args.FCFactor     double ...
                             {mustBeInteger, mustBePositive} = 1
-                args.ReLuScale    double ...
+                args.ReluScale    double ...
                             {mustBeInRange(args.ReLuScale, 0, 1)} = 0.2
                 args.Dropout    double ...
                             {mustBeInRange(args.Dropout, 0, 0.9)} = 0.1
@@ -58,7 +58,7 @@ classdef ClassifierLoss < LossFunction
             self.NumHidden = args.NumHidden;
             self.NumFC = args.NumFC;
             self.FCFactor = args.FCFactor;
-            self.ReLuScale = args.ReLuScale;
+            self.ReluScale = args.ReluScale;
             self.Dropout = args.Dropout;
             self.HasBatchNormalization = args.HasBatchNormalization;
             self.ModelType = args.ModelType;
@@ -115,13 +115,13 @@ classdef ClassifierLoss < LossFunction
                     layers = [ layers; ...
                         fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
                         batchNormalizationLayer( 'Name', ['bnorm' num2str(i)] )
-                        leakyReluLayer( self.ReLuScale, 'Name', ['relu' num2str(i)] )
+                        leakyReluLayer( self.ReluScale, 'Name', ['relu' num2str(i)] )
                         dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
                         ]; %#ok<AGROW> 
                 else
                     layers = [ layers; ...
                         fullyConnectedLayer( nNodes, 'Name', ['fc' num2str(i)] )
-                        leakyReluLayer( self.ReLuScale, 'Name', ['relu' num2str(i)] )
+                        leakyReluLayer( self.ReluScale, 'Name', ['relu' num2str(i)] )
                         dropoutLayer( self.Dropout, 'Name', ['drop' num2str(i)] )
                         ]; %#ok<AGROW>
                 end

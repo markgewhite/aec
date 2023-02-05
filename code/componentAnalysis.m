@@ -3,9 +3,9 @@
 clear;
 
 runAnalysis = true;
-inParallel = true;
+inParallel = false;
 resume = false;
-catchErrors = true;
+catchErrors = false;
 reportIdx = 2;
 plotDim = [2 5];
 
@@ -36,15 +36,15 @@ setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
 setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
+setup.model.args.trainer.NumIterations = 2;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 5000;
+setup.model.args.trainer.UpdateFreq = 1;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
-setup.eval.args.KFoldRepeats = 5;
+setup.eval.args.KFoldRepeats = 1;
 
 names = [ "JumpsVGRF", ...
           "FukuchiJointAngles" ];

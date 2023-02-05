@@ -3,27 +3,25 @@
 clear;
 
 runAnalysis = true;
-inParallel = false;
+inParallel = true;
 resume = false;
 catchErrors = true;
-reportIdx = 1:4;
+reportIdx = 1:2;
 plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/test/'];
+path = [path0 '/../results/exemplars/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
+setup.data.args.HasNormalizedInput = true;
 
 % -- model setup --
-setup.model.class = @FCModel;
 setup.model.args.NumHidden = 1;
-setup.model.args.NumFC = 100;
-setup.model.args.FCFactor = 1;       
-setup.model.args.NetNormalizationType = 'Layer';
-setup.model.args.NetActivationType = 'Tanh';
-setup.model.args.ReLuScale = 0.2;
+setup.model.args.NumFC = 10;
+setup.model.args.NetNormalizationType = 'None';
+setup.model.args.NetActivationType = 'None';
 setup.model.args.InputDropout = 0;
 setup.model.args.Dropout = 0;
 setup.model.args.AuxModel = 'Logistic';
@@ -35,24 +33,18 @@ setup.model.args.ShowPlots = true;
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
-setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
-setup.model.args.lossFcns.reconvar.args.UseLoss = true;
-setup.model.args.lossFcns.reconvar.args.Beta = 0.1;
-
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 setup.model.args.lossFcns.zcls.args.NumHidden = 1;
-setup.model.args.lossFcns.zcls.args.NumFC = 100;
-setup.model.args.lossFcns.zcls.args.FCFactor = 1;
-setup.model.args.lossFcns.zcls.args.ReLuScale = 0;
+setup.model.args.lossFcns.zcls.args.NumFC= 10;
+setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
+setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
-setup.model.args.lossFcns.zcls.args.HasBatchNormalization = true;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 500;
+setup.model.args.trainer.NumIterations = 2000;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 50;
+setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -65,21 +57,20 @@ names = [ "JumpsVGRF", ...
 memorySaving = 3;
 
 % -- grid search --
-dims = [2 3];
-pts = [9, 15 20];
-%parameters = [ "model.args.ZDim", ...
-%               "data.args.NormalizedPts", ...
-%               "model.args.lossFcns.zcls.args.DoCalcLoss"];
-%values = {dims, pts, {false, true}}; 
-parameters = [ "model.args.ZDim", ...
-               "data.args.NormalizedPts" ];
-values = {dims, pts}; 
+models = {@PCAModel, @FCModel};
+dims = [1 2 3];
+pts = [5 7 9];
+parameters = [ "model.class", ...
+               "model.args.ZDim", ...
+               "data.args.NormalizedPts", ...
+               "model.args.lossFcns.zcls.args.DoCalcLoss"];
+values = {models, dims, pts, {false, true}}; 
 
 N = 400;
 sigma = 0.5;
 
 nReports = length( reportIdx );
-nModels = length( values{1} );
+nModels = length( models );
 nDims = length( dims );
 
 if runAnalysis
@@ -97,42 +88,19 @@ if runAnalysis
                 % JumpsVGRF data set
                 setup.data.class = @JumpGRFDataset;
                 setup.data.args.Normalization = 'PAD';
-                setup.data.args.HasNormalizedInput = true;
                 setup.data.args.ResampleRate = 5;
-                setup.data.args.NormalizedPts = 25;
-       
+
             case 2
-                % Data set A: two single-Gaussian classes
+                % Data set A: two double-Gaussian classes
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
-                setup.data.args.NormalizedPts = 11;
-
-                setup.data.args.FeatureType = 'Gaussian';
-                setup.data.args.ClassSizes = [ N/2 N/2 ];
-                setup.data.args.ClassElements = 1;
-                setup.data.args.ClassPeaks = [ 2.0; 1.5 ];
-                setup.data.args.ClassPositions = [ 0; 0 ];
-                setup.data.args.ClassWidths = [ 1.0; 1.5 ];
-        
-                setup.data.args.Covariance{1} = 0.1*[1 0 -sigma; 
-                                                     0 1 0;
-                                                     -sigma 0 1];
-                setup.data.args.Covariance{2} = 0.05*[1 0 -sigma; 
-                                                     0 1 0;
-                                                     -sigma 0 1];
-
-            case 3
-                % Data set B: two double-Gaussian classes
-                setup.data.class = @ExemplarDataset;   
-                setup.data.args.HasNormalizedInput = true;
-                setup.data.args.NormalizedPts = 11;
 
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
                 setup.data.args.ClassElements = 2;
-                setup.data.args.ClassPeaks = [ 2.0 1.0; 1.0 1.5 ];
-                setup.data.args.ClassPositions = [ -1 1; -1 2 ];
-                setup.data.args.ClassWidths = [ 1.0 0.2; 0.8 0.1 ];
+                setup.data.args.ClassPeaks = [ 2.50 0.0; 2.75 1.0 ];
+                setup.data.args.ClassPositions = [ -1 1.5; -1 2 ];
+                setup.data.args.ClassWidths = [ 3.0 0.50; 2.5 1.0 ];
       
                 setup.data.args.Covariance{1} = 0.1*[1 0 -sigma; 
                                                      0 1 0;
@@ -140,31 +108,7 @@ if runAnalysis
 
                 setup.data.args.Covariance{2} = 0.05*[1 0 -sigma; 
                                                      0 1 0;
-                                                     -sigma 0 1];
-
-
-            case 4
-                % Data set C: two single-sigmoid classes of variable length
-                setup.data.class = @ExemplarDataset;   
-                setup.data.args.HasNormalizedInput = true;
-                setup.data.args.NormalizedPts = 11;
-
-                setup.data.args.FeatureType = 'Sigmoid';
-                setup.data.args.HasVariableLength = true;
-                setup.data.args.TerminationValues = [0.05, 0.95];
-                setup.data.args.TerminationTypes = ["Below", "Above"];
-
-                setup.data.args.ClassSizes = [ N/2 N/2 ];
-                setup.data.args.ClassElements = 1;
-                setup.data.args.ClassPeaks = [ 2.0; 2.0 ];
-                setup.data.args.ClassPositions = [ -1; 1 ];
-                setup.data.args.ClassWidths = [ 0.5; 0.5 ];
-        
-                setup.data.args.Covariance{1} = 0.01*[1 0 -sigma; 
-                                                     0 1 0;
-                                                     -sigma 0 1];
-                setup.data.args.Covariance{2} = setup.data.args.Covariance{1};
-              
+                                                     -sigma 0 1];             
    
         end
     
