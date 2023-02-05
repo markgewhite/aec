@@ -14,7 +14,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
 
     % set the mean curve for these training data
     thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
-    thisModel.MeanCurve = thisTrnData.XInputRegularMean;
+    thisModel.MeanCurve = mean( thisTrnData.XInputRegular, 2 );
 
     % create a super datastore combining individual variable datastores
     dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation );

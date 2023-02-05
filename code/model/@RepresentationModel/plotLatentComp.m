@@ -21,18 +21,18 @@ function plotLatentComp( self, args )
     end
     
     if isempty( args.XMean )
-        % use the pre-calculated mean curve
+        % use the pre-calculated mean curve, repeating in Z dimension
+        % because inputs specified in args.XMeans come with multiple
+        % version of the mean curve, one for each Z dimension
         XMean = repmat( self.MeanCurve, 1, self.ZDim );
-        if self.XChannels==1
-            XMean = permute( XMean, [1 3 2] );
-        end
         tSpanMean = self.TSpan.Regular;
     else
-        % use the mean curve specified
+        % use the mean curves specified
+        % there is a very slightly different mean for each dimension
         if isa( args.XMean, 'dlarray' )
-            XMean = double( extractdata( args.XMean ) );
+            XMean = squeeze(double( extractdata( args.XMean ) ));
         else
-            XMean = args.XMean;
+            XMean = squeeze( args.XMean );
         end
         switch size( XMean, 1 )
             case length(self.TSpan.Regular)
@@ -79,7 +79,7 @@ function plotLatentComp( self, args )
     XCPlot = zeros( 101, nSamples, nDim, nChannels ); 
     for c = 1:nChannels
         for d = 1:nDim
-            XMeanPlot(:,d,c) = interp1( tSpanMean, XMean(:,:,d,c), tSpanPlot );
+            XMeanPlot(:,d,c) = interp1( tSpanMean, XMean(:,d,c), tSpanPlot );
             for s = 1:nSamples
                 XCPlot(:,s,d,c) = XMeanPlot(:,d,c)' + ...
                                     interp1( tSpanXC, XC(:,s,d,c), tSpanPlot );
