@@ -6,7 +6,7 @@ runAnalysis = true;
 inParallel = true;
 resume = false;
 catchErrors = true;
-reportIdx = 1:3;
+reportIdx = 3;
 plotDim = [2 5];
 maxCoeff = 3;
 
@@ -17,17 +17,12 @@ pathResults = [path0 '/../paper/results/'];
 
 % -- model setup --
 setup.model.class = @AsymmetricFCModel;
-
-setup.model.args.FCFactor = 2;
-setup.model.args.InputDropout = 0.2;
+setup.model.args.FCFactor = 1;
 setup.model.args.ReLuScale = 0.2;
-setup.model.args.NetNormalizationType = 'Layer';
+setup.model.args.InputDropout = 0.2;
 setup.model.args.Dropout = 0;
-
-setup.model.args.FCFactorDecoder = setup.model.args.FCFactor;
-setup.model.args.ReLuScaleDecoder = setup.model.args.ReLuScale;
-setup.model.args.NetNormalizationTypeDecoder = setup.model.args.NetNormalizationType;
-setup.model.args.DropoutDecoder = setup.model.args.Dropout;
+setup.model.args.NetNormalizationType = 'Layer';
+setup.model.args.NetActivationType = 'Relu';
 
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.ComponentType = 'PDP';
@@ -38,11 +33,15 @@ setup.model.args.ShowPlots = true;
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
+
+setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
+setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
+
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5000;
+setup.model.args.trainer.NumIterations = 2000;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 10000;
 setup.model.args.trainer.Holdout = 0.2;
@@ -50,13 +49,13 @@ setup.model.args.trainer.Holdout = 0.2;
 % --- evaluation setup ---
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
-setup.eval.args.KFoldRepeats = 5;
+setup.eval.args.KFoldRepeats = 2;
 
 % --- investigation setup ---
 parameters = [ "model.args.ZDim", ...
                "data.args.NormalizedPts" ];
-values = {[2 3 4 6 8], ...
-          [10 20 30 50 100]}; 
+values = {[2 5], ...
+          [5 11]}; 
 
 names = [ "JumpsVGRF", ...
           "GaitrecGRF", ...
