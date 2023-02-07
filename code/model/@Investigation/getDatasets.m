@@ -12,13 +12,23 @@ function datasets = getDatasets( self, args )
 
     switch args.which
         case 'First'
-            datasets = self.Evaluations{1}.(fld);
+            thisEvaluation = self.Evaluations{1};
+            if ~isempty(thisEvaluation)
+                datasets = thisEvaluation.(fld);
+            else
+                datasets = [];
+            end
                         
         case 'All'
             datasets = cell( self.SearchDims );
             for i = 1:prod( self.SearchDims )
                 idx = getIndices( i, self.SearchDims );
-                datasets( idx{:} ) = self.Evaluations( idx{:} ).(fld);
+                thisEvaluation = self.Evaluation( idx{:} );
+                if ~isempty(thisEvaluation)
+                    datasets( idx{:} ) = thisEvaluation.(fld);
+                else
+                    datasets( idx{:} ) = [];
+                end
             end
     end
 
