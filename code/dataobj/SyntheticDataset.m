@@ -25,7 +25,7 @@ classdef SyntheticDataset < ModelDataset
             arguments
                 set                 char ...
                     {mustBeMember( set, ...
-                                   {'Training', 'Testing'} )}
+                                   {'Training', 'Testing', 'Combined'} )}
                 args.TemplateSeed    double = 1234
                 args.DatasetSeed     double = 9876
                 args.ClassSizes     double ...
@@ -54,6 +54,9 @@ classdef SyntheticDataset < ModelDataset
             switch set
                 case 'Training'
                     args.RandomSeed = args.TemplateSeed + args.DatasetSeed;
+                case 'Combined'
+                    args.RandomSeed = args.TemplateSeed + args.DatasetSeed;
+                    args.ClassSizes = args.ClassSizes*2;
                 case 'Testing'
                     args.RandomSeed = args.TemplateSeed + args.DatasetSeed + 1;
             end

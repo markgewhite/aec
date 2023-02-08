@@ -61,9 +61,9 @@ setup.model.args.trainer.UpdateFreq = 10000;
 setup.model.args.trainer.Holdout = 0.2;
 
 % --- evaluation setup ---
-setup.eval.args.CVType = 'Holdout';
+setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
-setup.eval.args.KFoldRepeats = 5;
+setup.eval.args.KFoldRepeats = 2;
 
 % --- investigation setup ---
 models = {@PCAModel, @FCModel};
@@ -176,7 +176,7 @@ if runAnalysis
             otherwise
                 % Synthetic data set
                 setup.data.class = @SyntheticDataset;
-                setup.data.args.TemplateSeed = randi;
+                setup.data.args.TemplateSeed = randi(1E6);
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.ClassSizes = [ 250, 250 ];
                 setup.model.args.trainer.BatchSize = 75;
