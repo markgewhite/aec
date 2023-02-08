@@ -91,7 +91,7 @@ classdef AEModel < RepresentationModel
 
             % check if trainer arguments include parallel processing
             flds = fields(args.Trainer);
-            fldIdx = find(strcmpi(flds, 'useparallelprocessing'));
+            fldIdx = find(strcmpi(flds, 'inparallel'));
             if ~isempty(fldIdx)
                 % set a flag to construct the appropriate trainer object
                 useParallelProcessing = args.Trainer.(flds{fldIdx});

@@ -131,17 +131,11 @@ end
 
 function [X, Y, S, channelNames, classNames ] = loadData( set, args )
 
-    if ismac
-        rootpath = '/Users/markgewhite/Google Drive/';
-    else 
-        rootpath = 'C:\Users\m.g.e.white\My Drive\';
-    end
-
-    dataFolder = 'Academia/Postdoc/Datasets/GaitRec';
-    datapath = [ rootpath dataFolder ];
+    path = fileparts( which('GaitrecDataset.m') );
+    path = [path '/../../data/gaitrec'];
 
     % load the meta data
-    metaData = readtable( fullfile(datapath, 'GRF_metadata.csv') );
+    metaData = readtable( fullfile(path, 'GRF_metadata.csv') );
 
     metaData.CLASS_LABEL = categorical( metaData.CLASS_LABEL );
     metaData.CLASS_LABEL_DETAILED = ...
@@ -193,18 +187,18 @@ function [X, Y, S, channelNames, classNames ] = loadData( set, args )
     X = zeros( nSessions*10, 101, channelsPerTrial );
 
     if args.FromMatlabFile ...
-            && isfile( fullfile(datapath,'RecentData.mat') )
+            && isfile( fullfile(path,'RecentData.mat') )
 
         % load data from a previous run - this is faster
-        load( fullfile(datapath,'RecentData.mat'), ...
+        load( fullfile(path,'RecentData.mat'), ...
               'trialData', 'sessions', 'sources' );
 
     else
         % load the trial data from original files
         [ trialData, sessions, sources ] = ...
-                        loadTrialData( datapath, nFiles, args );
+                        loadTrialData( path, nFiles, args );
         % save it for future reference
-        save( fullfile(datapath,'RecentData.mat'), ...
+        save( fullfile(path,'RecentData.mat'), ...
               'trialData', 'sessions', 'sources', '-v7.3' );
     
     end
@@ -395,7 +389,7 @@ end
 
 
 function [trialData, sessions, sources] = ...
-                                loadTrialData( datapath, nFiles, args )
+                                loadTrialData( path, nFiles, args )
 
     
     dim = nFiles*(1 + 2*args.HasDerivative + args.HasDelta);
@@ -413,13 +407,13 @@ function [trialData, sessions, sources] = ...
             k = k + 1;
             sources(k) = "GRF_AP";
             [ trialData( :, :, :, k ), sessions( :, k ) ] = ...
-                               importData( datapath, 'GRF_F', 'AP', ...
+                               importData( path, 'GRF_F', 'AP', ...
                                            args.HasDerivative, ...
                                            args.HasDelta );
             k = k + 1;
             sources(k) = "GRF_ML";
             [ trialData( :, :, :, k ), sessions( :, k ) ] = ...
-                               importData( datapath, 'GRF_F', 'ML', ...
+                               importData( path, 'GRF_F', 'ML', ...
                                            args.HasDerivative, ...
                                            args.HasDelta );
         end
@@ -427,7 +421,7 @@ function [trialData, sessions, sources] = ...
         k = k + 1;
         sources(k) = "GRF_V";
         [ trialData( :, :, :, k ), sessions( :, k ) ] = ...
-                           importData( datapath, 'GRF_F', 'V', ...
+                           importData( path, 'GRF_F', 'V', ...
                                        args.HasDerivative, ...
                                        args.HasDelta );
 
@@ -438,14 +432,14 @@ function [trialData, sessions, sources] = ...
         k = k + 1;
         sources(k) = "COP_AP";
         [ trialData( :, :, :, k ), sessions( :, k ) ] = ...
-                           importData( datapath, 'GRF_COP', 'AP', ...
+                           importData( path, 'GRF_COP', 'AP', ...
                                        args.HasDerivative, ...
                                        args.HasDelta );
 
         k = k + 1;
         sources(k) = "COP_ML";
         [ trialData( :, :, :, k ), sessions( :, k ) ] = ...
-                           importData( datapath, 'GRF_COP', 'ML', ...
+                           importData( path, 'GRF_COP', 'ML', ...
                                        args.HasDerivative, ...
                                        args.HasDelta );
 
@@ -455,7 +449,7 @@ function [trialData, sessions, sources] = ...
 end
 
 
-function [ data, sessions ] = importData( datapath, type, dir, ...
+function [ data, sessions ] = importData( path, type, dir, ...
                                          inclDeriv, inclDelta )
 
     dim = 2 + 2*inclDeriv + inclDelta;
@@ -463,12 +457,12 @@ function [ data, sessions ] = importData( datapath, type, dir, ...
 
     fileprefix = [ type '_' dir '_PRO_' ];
 
-    fileTable = readtable( fullfile(datapath, [fileprefix 'left.csv'] ) );
+    fileTable = readtable( fullfile(path, [fileprefix 'left.csv'] ) );
     fileData = table2array( fileTable );
     data( :, :, 1 ) = fileData( :, 4:104 );
     sessions = fileData( :, 2 ); % assumed to be same for left and right
 
-    fileTable = readtable( fullfile(datapath, [fileprefix 'right.csv'] ) );
+    fileTable = readtable( fullfile(path, [fileprefix 'right.csv'] ) );
     fileData = table2array( fileTable );
     data( :, :, 2 ) = fileData( :, 4:104 );
 
