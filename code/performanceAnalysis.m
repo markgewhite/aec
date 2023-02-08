@@ -3,7 +3,7 @@
 clear;
 
 runAnalysis = true;
-inParallel = false;
+inParallel = true;
 resume = false;
 catchErrors = true;
 
@@ -56,18 +56,18 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5;
+setup.model.args.trainer.NumIterations = 5000;
 setup.model.args.trainer.UpdateFreq = 10000;
 setup.model.args.trainer.Holdout = 0.2;
 
 % --- evaluation setup ---
-setup.eval.args.CVType = 'KFold';
+setup.eval.args.CVType = 'Holdout';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 5;
 
 % --- investigation setup ---
-%models = {@PCAModel, @FCModel};
-models = {@FCModel};
+models = {@PCAModel, @FCModel};
+%models = {@FCModel};
 
 dims = [2 5];
 parameters = [ "model.class", ...
@@ -189,12 +189,12 @@ if runAnalysis
         end
            
         if inParallel
-            results(i,j) = parfeval( pool, @investigationResults, 1, ...
+            results(i) = parfeval( pool, @investigationResults, 1, ...
                                    name, path, ...
                                    parameters, values, setup, ...
                                    resume, catchErrors, memorySaving );
         else
-            results(i,j) = investigationResults( name, path, ...
+            results(i) = investigationResults( name, path, ...
                                                parameters, values, setup, ...
                                                resume, catchErrors, memorySaving );
         end
