@@ -30,13 +30,13 @@ function [ R, C ] = latentComponentCorrelation( XC, arg )
     C = C/nSamples;
 
     if arg.summary
-        % summarise to a single mean value
+        % summarise to the average of the off-diagonal elements
         R0 = zeros( nChannels, 1 );
         C0 = zeros( nChannels, 1 );
         for c = 1:nChannels
-            R0(c) = sum( ( squeeze(R(:,:,c)) - eye(nComp) ).^2, 'all' ) ...
+            R0(c) = sum( abs( squeeze(R(:,:,c)) - eye(nComp) ), 'all' ) ...
                             /(nComp*(nComp-1));
-            C0(c) = sum( ( squeeze(C(:,:,c)) - eye(nComp) ).^2, 'all' ) ...
+            C0(c) = sum( abs( squeeze(C(:,:,c)) - eye(nComp) ), 'all' ) ...
                             /(nComp*(nComp-1));
         end
         R = mean(R0);

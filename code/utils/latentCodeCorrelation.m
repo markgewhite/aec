@@ -18,10 +18,10 @@ function [ R, C ] = latentCodeCorrelation( Z, arg )
     C = cov( Z );
 
     if arg.summary
-        % summarise to a single mean square value
+        % summarise to an average of the off-diagonal elements
         d = size(R,1);
-        R = sum( ( R - eye(d) ).^2, 'all' )/(d*(d-1));
-        C = sum( ( C - eye(d) ).^2, 'all' )/(d*(d-1));
+        R = sum( abs( R - eye(d) ), 'all' )/(d*(d-1));
+        C = sum( abs( C - eye(d) ), 'all' )/(d*(d-1));
     end
 
 end
