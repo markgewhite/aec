@@ -25,24 +25,30 @@ function setup = initSetup
     %setup.data.args.resampleRate = 1;
 
     % model
-    setup.model.class = @FCModel;
+    setup.model.class = @AsymmetricFCModel;
     setup.model.args.ZDim = 2;
-    setup.model.args.InitZDimActive = 1;
+    setup.model.args.NumFCDecoder = 10;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 100;
+    setup.model.args.trainer.NumIterations = 2000;
+    setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 200;
-    setup.model.args.trainer.UpdateFreq = 50;
-    setup.model.args.trainer.Holdout = 0;
+    setup.model.args.trainer.UpdateFreq = 100;
+    setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
     setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
     setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
+    setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
+    setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
+    setup.model.args.lossFcns.reconvar.args.Beta = 1E1;
+    setup.model.args.lossFcns.reconvar.args.Gamma = 0;
+    
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
     %setup.model.args.lossFcns.adv.name = 'Discriminator';
     %setup.model.args.lossFcns.adv.args.distribution = 'Cauchy';
