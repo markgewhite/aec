@@ -30,7 +30,7 @@ classdef Investigation
                 searchValues
                 setup           struct
                 resume          logical = false
-                catchErrors     logical = true
+                catchErrors     logical = false
                 memorySaving    double {mustBeInteger, ...
                                 mustBeInRange( memorySaving, 0, 3 )} = 0
             end

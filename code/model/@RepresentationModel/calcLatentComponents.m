@@ -36,7 +36,7 @@ function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
             XC = XC - mean( XC, length(size(XC)) );
     end
 
-    if args.smooth
+    if args.smooth && false
         % smooth to regularly-spaced time span
         XCSmth = zeros( length(self.TSpan.Regular), ...
                         size(XC,2), size(XC,3), size(XC,4) );

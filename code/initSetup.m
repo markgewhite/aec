@@ -2,16 +2,10 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @UCRDataset;
-    setup.data.args.SetID = 29;
-
-    %setup.data.class = @JumpGRFDataset;
-    %setup.data.args.Normalization = 'PAD';
-    %setup.data.args.HasNormalizedInput = true;
-    %setup.data.args.NormalizedPts = 51;
-    %setup.data.args.HasAdaptiveTimeSpan = true;
-    %setup.data.args.ResampleRate = 10;
-    %setup.data.args.HasMatchingOutput = false;
+    setup.data.class = @JumpGRFDataset;
+    setup.data.args.Normalization = 'PAD';
+    setup.data.args.HasNormalizedInput = true;
+    setup.data.args.ResampleRate = 5;
         
     %setup.data.class = @FukuchiDataset;
     %setup.data.args.FromMatlabFile = true;
@@ -32,9 +26,7 @@ function setup = initSetup
 
     % model
     setup.model.class = @FCModel;
-    %setup.model.args.HasFCDecoder = false;
-    setup.model.args.ZDim = 4;
-    setup.model.args.ZDimAux = 4;
+    setup.model.args.ZDim = 2;
     setup.model.args.InitZDimActive = 1;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
@@ -42,13 +34,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.useParallelProcessing = false;
-    setup.model.args.trainer.doUseGPU = true;
-    setup.model.args.trainer.valFreq = 1;
-    setup.model.args.trainer.updateFreq = 100;
-    setup.model.args.trainer.numIterations = 10;
-    setup.model.args.trainer.batchSize = 2455;
-    setup.model.args.trainer.holdout = 0;
+    setup.model.args.trainer.NumIterations = 100;
+    setup.model.args.trainer.BatchSize = 200;
+    setup.model.args.trainer.UpdateFreq = 50;
+    setup.model.args.trainer.Holdout = 0;
 
     % loss functions
     setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
@@ -62,13 +51,13 @@ function setup = initSetup
     %setup.model.args.lossFcns.kl.name = 'KLDivergence';
     %setup.model.args.lossFcns.kl.args.beta = 0.1;
 
-    setup.model.args.lossFcns.fid.class = @FidelityLoss;
-    setup.model.args.lossFcns.fid.name = 'Fidelity';
-    setup.model.args.lossFcns.fid.args.useLoss = true;
+    %setup.model.args.lossFcns.fid.class = @FidelityLoss;
+    %setup.model.args.lossFcns.fid.name = 'Fidelity';
+    %setup.model.args.lossFcns.fid.args.useLoss = true;
 
-    setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
-    setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
-    setup.model.args.lossFcns.zorth.args.useLoss = true;
+    %setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+    %setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+    %setup.model.args.lossFcns.zorth.args.useLoss = true;
 
     %setup.model.args.lossFcns.xorth.class = @ComponentLoss;
     %setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
@@ -82,7 +71,6 @@ function setup = initSetup
     %setup.model.args.lossFcns.xcls.name = 'XClassifier';
 
     % evaluations
-    setup.eval.args.verbose = true;
     setup.eval.args.CVType = 'Holdout';
     setup.eval.args.KFolds = 4;
     setup.eval.args.KFoldRepeats = 1;

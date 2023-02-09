@@ -10,7 +10,7 @@ function plotLatentComp( self, args )
             {mustBeInteger, mustBePositive} = []
         args.type           char ...
             {mustBeMember(args.type, ...
-                {'Smoothed', 'Predicted', 'Both'} )} = 'Smoothed'
+                {'Smoothed', 'Predicted', 'Both'} )} = 'Both'
         args.shading        logical = true
         args.showLegend     logical = true
         args.showTitle      logical = true
@@ -25,7 +25,6 @@ function plotLatentComp( self, args )
         % because inputs specified in args.XMeans come with multiple
         % version of the mean curve, one for each Z dimension
         XMean = repmat( self.MeanCurve, 1, self.ZDim );
-        tSpanMean = self.TSpan.Regular;
     else
         % use the mean curves specified
         % there is a very slightly different mean for each dimension
@@ -34,21 +33,24 @@ function plotLatentComp( self, args )
         else
             XMean = squeeze( args.XMean );
         end
-        switch size( XMean, 1 )
-            case length(self.TSpan.Regular)
-                tSpanMean = self.TSpan.Regular;
-            case length(self.TSpan.Target)
-                tSpanMean = self.TSpan.Target;
-            otherwise
-                tSpanMean = linspace( self.TSpan.Original(1), ...
-                                      self.TSpan.Original(end), length(XMean) );
-        end
     end
+
+    % set the appropriate time span
+    switch size( XMean, 1 )
+        case length(self.TSpan.Regular)
+            tSpanMean = self.TSpan.Regular;
+        case length(self.TSpan.Target)
+            tSpanMean = self.TSpan.Target;
+        otherwise
+            tSpanMean = linspace( self.TSpan.Original(1), ...
+                                  self.TSpan.Original(end), length(XMean) );
+    end
+
 
     if isempty( args.XC )
         % use the pre-calculated latent components
         XC = self.LatentComponents;
-        tSpanXC = self.TSpan.Regular;
+        tSpanXC = self.TSpan.Target;
 
     else
         % use the latent components specified
@@ -76,7 +78,7 @@ function plotLatentComp( self, args )
                           self.TSpan.Original(end), 101 );
 
     XMeanPlot = zeros( 101, nDim, nChannels );
-    XCPlot = zeros( 101, nSamples, nDim, nChannels ); 
+    XCPlot = zeros( 101, nSamples, nDim, nChannels );
     for c = 1:nChannels
         for d = 1:nDim
             XMeanPlot(:,d,c) = interp1( tSpanMean, XMean(:,d,c), tSpanPlot );
@@ -167,10 +169,11 @@ function plotLatentComp( self, args )
 
                 if any(strcmp( args.type, {'Predicted','Both'} ))
                     % plot predicted values
-                    plot( axis, ...
-                          fda.tSpanAdaptive, XC( :,j,i,c ), ...
-                          Color = gray, ...
-                          LineWidth = 0.5 );
+                    scatter( axis, ...
+                             self.TSpan.Target, XC( :,j,i,c ), ...
+                             10, ...
+                             MarkerEdgeColor = 'black', ...
+                             MarkerFaceColor = 'black'  );
                 end
                 if any(strcmp( args.type, {'Smoothed','Both'} ))
                     % plot smoothed curves
