@@ -32,6 +32,10 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
                                                       thisModel.Scale );
     eval.ReconTemporalVarGrad = eval.ReconTemporalVarLoss ...
                     *(thisDataset.XTargetDim-1)/(thisDataset.XInputDim-1);
+
+    % compute reconstruction roughness
+    eval.ReconRoughness = reconRoughnessLoss( pred.XHatRegular, ...
+                                              thisModel.Scale );
     
     % compute the bias and variance
     eval.ReconBias = reconBias( pred.XTarget, pred.XHat, thisModel.Scale );
