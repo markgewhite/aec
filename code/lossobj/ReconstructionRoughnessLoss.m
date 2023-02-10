@@ -2,6 +2,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
     % Subclass for reconstruction roughness penalty for smoothing
     properties
         Lambda           % roughness penalty weighting
+        Stride           % number of indices between points
     end
 
     methods
@@ -12,6 +13,8 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
                 name                 char {mustBeText}
                 superArgs.?ReconstructionLoss
                 args.Lambda          double = 1E0
+                args.Stride          double {mustBeInteger, ...
+                            mustBeGreaterThanOrEqual(args.Stride, 1)} = 1
             end
 
             superArgsCell = namedargs2cell( superArgs );
@@ -20,6 +23,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
                                             input = 'XGen', ...
                                             yLim = [0 0.20]);
             self.Lambda = args.Lambda;
+            self.Stride = args.Stride;
 
         end
 
@@ -31,8 +35,9 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
                 XGen
             end
 
-            % calculate the loss from temporal variance, point to point
-            loss = self.Lambda*reconRoughnessLoss( XGen, self.Scale );
+            % calculate the loss from temporal roughness, point to point
+            loss = self.Lambda*reconRoughnessLoss( XGen, self.Scale, ...
+                                                   self.Stride );
             
         end
 

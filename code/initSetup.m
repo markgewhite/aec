@@ -53,6 +53,7 @@ function setup = initSetup
     setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
     setup.model.args.lossFcns.reconrough.args.Lambda = 1E0;
+    setup.model.args.lossFcns.reconrough.args.Stride = 2;
     setup.model.args.lossFcns.reconrough.args.useLoss = true;
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
