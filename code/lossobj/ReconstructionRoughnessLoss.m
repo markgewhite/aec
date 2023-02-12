@@ -2,7 +2,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
     % Subclass for reconstruction roughness penalty for smoothing
     properties
         Lambda           % roughness penalty weighting
-        Stride           % number of indices between points
+        DiffFormula      % numerical differentiation formula
     end
 
     methods
@@ -13,17 +13,19 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
                 name                 char {mustBeText}
                 superArgs.?ReconstructionLoss
                 args.Lambda          double = 1E0
-                args.Stride          double {mustBeInteger, ...
-                            mustBeGreaterThanOrEqual(args.Stride, 1)} = 1
+                args.DiffFormula     char ...
+                    {mustBeMember( args.DiffFormula, ...
+                    {'3Point', '5Point'} )} = '3Point'
+
             end
 
             superArgsCell = namedargs2cell( superArgs );
             self = self@ReconstructionLoss( name, ...
                                             superArgsCell{:}, ...
                                             input = 'XGen', ...
-                                            yLim = [0 0.20]);
+                                            yLim = [0 0.10]);
             self.Lambda = args.Lambda;
-            self.Stride = args.Stride;
+            self.DiffFormula = args.DiffFormula;
 
         end
 
@@ -37,7 +39,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
 
             % calculate the loss from temporal roughness, point to point
             loss = self.Lambda*reconRoughnessLoss( XGen, self.Scale, ...
-                                                   self.Stride );
+                                                   self.DiffFormula );
             
         end
 

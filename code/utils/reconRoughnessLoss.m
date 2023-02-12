@@ -1,15 +1,26 @@
-function loss = reconRoughnessLoss( XHat, scale, stride )
+function loss = reconRoughnessLoss( XHat, scale, formula )
     % Calculate the roughness penalty from the reconstruction
     arguments
         XHat        {mustBeA( XHat, {'double', 'dlarray'})}
         scale       double = 1
-        stride      double {mustBeInteger, ...
-                            mustBeGreaterThanOrEqual(stride, 1)} = 1
+        formula     char {mustBeMember( formula, ...
+                    {'3Point', '5Point'} )} = '3Point'
+
     end
 
     % calculate the first and second order differences
-    D1 = XHat(1+stride:end,:,:) - XHat(1:end-stride,:,:);
-    D2 = D1(1+stride:end,:,:) - D1(1:end-stride,:,:);
+    switch formula
+        case '3Point'
+            % using the three-point difference formula
+            D1 = 0.5*(XHat(3:end,:,:) - XHat(1:end-2,:,:));
+            D2 = 0.5*(D1(3:end,:,:) - D1(1:end-2,:,:));
+        case '5Point'
+            % using the five-point difference formula
+            D1 = (XHat(1:end-4,:,:) - 8*XHat(2:end-3,:,:) ...
+                  + 8*XHat(4:end-1,:,:) - XHat(5:end,:,:))/12;
+            D2 = (D1(1:end-4,:,:) - 8*D1(2:end-3,:,:) ...
+                  + 8*D1(4:end-1,:,:) - D1(5:end,:,:))/12;
+    end
 
     if isa( XHat, 'dlarray' )
         % dimensions are Time x Channel x Batch
