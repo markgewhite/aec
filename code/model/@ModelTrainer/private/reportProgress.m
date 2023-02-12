@@ -28,7 +28,11 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch, args )
     fprintf('\n');
 
     % compute the AE components for plotting
-    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( dlZ, smooth = true );
+    %compFcn = @(dlZ) thisModel.reconstruct( dlZ, ...
+    %                                        centre = false, ...
+    %                                        smooth = false );
+
+    [ dlXC, dlXMean ] = thisModel.calcLatentComponents( dlZ ) ;
 
     % plot them on specified axes
     if thisModel.HasCentredDecoder

@@ -7,7 +7,7 @@ function dlZ = encode( self, X, arg )
     end
 
     if isa( X, 'ModelDataset' )
-        dlX = X.getDLArrays( self.XDimLabels );
+        dlX = self.getDLArrays( X );
     else
         dlX = X;
     end

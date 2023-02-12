@@ -26,6 +26,7 @@ function setup = initSetup
 
     % model
     setup.model.class = @AsymmetricFCModel;
+    setup.model.args.UsesFdCoefficients = false;
     setup.model.args.ZDim = 2;
     setup.model.args.NumFCDecoder = 100;
     setup.model.args.AuxModel = 'Logistic';
@@ -34,10 +35,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 1000;
+    setup.model.args.trainer.NumIterations = 100;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 200;
-    setup.model.args.trainer.UpdateFreq = 100;
+    setup.model.args.trainer.UpdateFreq = 10;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions

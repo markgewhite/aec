@@ -13,11 +13,16 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisValData = thisDataset.partition( ~trainObs );
 
     % set the mean curve for these training data
-    thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
     thisModel.MeanCurve = mean( thisTrnData.XInputRegular, 2 );
+    if thisModel.UsesFdCoefficients
+        thisModel.MeanCurveTarget = thisTrnData.XTargetCoeffMean;
+    else
+        thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
+    end
 
     % create a super datastore combining individual variable datastores
-    dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation );
+    dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation, ...
+                                      thisModel.UsesFdCoefficients );
 
     % setup the minibatch preprocessing function
     preprocFcn = @( X, XN, P, Y, I ) preprocMiniBatch( X, XN, P, Y, I, ...
@@ -30,7 +35,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     end
 
     % setup whole training set
-    [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLArrays( thisModel.XDimLabels );
+    [ dlXTrnAll, dlYTrnAll ] = thisModel.getDLArrays( thisTrnData );
    
     % setup monitoring functions
     lossLinesFcn = @(data) updateLossLines( self.LossLines, data );
@@ -64,7 +69,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisModel.Timing.Training.AuxModelTime = toc;
 
     % set the oversmoothing level
-    XHatTrnAll = thisModel.reconstruct( dlZTrnAll, convert = true );
+    XHatTrnAll = thisModel.reconstruct( dlZTrnAll );
 
     [ thisModel.FDA.FdParamsTarget, thisModel.FDA.LambdaTarget ] = ...
         thisTrnData.setFDAParameters( thisTrnData.TSpan.Target, ...
