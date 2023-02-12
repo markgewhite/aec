@@ -27,7 +27,7 @@ function setup = initSetup
     % model
     setup.model.class = @AsymmetricFCModel;
     setup.model.args.ZDim = 2;
-    setup.model.args.NumFCDecoder = 10;
+    setup.model.args.NumFCDecoder = 100;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;
@@ -52,8 +52,8 @@ function setup = initSetup
     
     setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
-    setup.model.args.lossFcns.reconrough.args.Lambda = 1E1;
-    setup.model.args.lossFcns.reconrough.args.DiffFormula = '5Point';
+    setup.model.args.lossFcns.reconrough.args.Lambda = 1E0;
+    setup.model.args.lossFcns.reconrough.args.Dilations = [1 2 4 8];
     setup.model.args.lossFcns.reconrough.args.useLoss = true;
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;

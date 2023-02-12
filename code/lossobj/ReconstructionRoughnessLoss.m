@@ -2,7 +2,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
     % Subclass for reconstruction roughness penalty for smoothing
     properties
         Lambda           % roughness penalty weighting
-        DiffFormula      % numerical differentiation formula
+        Dilations        % numerical differentiation index step, h
     end
 
     methods
@@ -13,9 +13,8 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
                 name                 char {mustBeText}
                 superArgs.?ReconstructionLoss
                 args.Lambda          double = 1E0
-                args.DiffFormula     char ...
-                    {mustBeMember( args.DiffFormula, ...
-                    {'3Point', '5Point'} )} = '3Point'
+                args.Dilations       double {mustBeInteger, ...
+                            mustBeGreaterThanOrEqual(args.Dilations, 1)} = 1
 
             end
 
@@ -25,7 +24,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
                                             input = 'XGen', ...
                                             yLim = [0 0.10]);
             self.Lambda = args.Lambda;
-            self.DiffFormula = args.DiffFormula;
+            self.Dilations = args.Dilations;
 
         end
 
@@ -38,8 +37,18 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
             end
 
             % calculate the loss from temporal roughness, point to point
-            loss = self.Lambda*reconRoughnessLoss( XGen, self.Scale, ...
-                                                   self.DiffFormula );
+            % iterate through dilations options and sum
+            for i = 1:length(self.Dilations)
+                if i==1
+                    loss = self.Lambda*reconRoughnessLoss( XGen, ...
+                                                           self.Scale, ...
+                                                           self.Dilations(i) );
+                else
+                    loss = loss + self.Lambda*reconRoughnessLoss( XGen, ...
+                                                           self.Scale, ...
+                                                           self.Dilations(i) );
+                end
+            end
             
         end
 

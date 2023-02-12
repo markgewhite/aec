@@ -1,26 +1,29 @@
-function loss = reconRoughnessLoss( XHat, scale, formula )
+function loss = reconRoughnessLoss( XHat, scale, h )
     % Calculate the roughness penalty from the reconstruction
     arguments
         XHat        {mustBeA( XHat, {'double', 'dlarray'})}
         scale       double = 1
-        formula     char {mustBeMember( formula, ...
-                    {'3Point', '5Point'} )} = '3Point'
-
+        h           double {mustBeInteger, ...
+                            mustBeGreaterThanOrEqual(h, 1)} = 1
     end
 
-    % calculate the first and second order differences
-    switch formula
-        case '3Point'
-            % using the three-point difference formula
-            D1 = 0.5*(XHat(3:end,:,:) - XHat(1:end-2,:,:));
-            D2 = 0.5*(D1(3:end,:,:) - D1(1:end-2,:,:));
-        case '5Point'
-            % using the five-point difference formula
-            D1 = (XHat(1:end-4,:,:) - 8*XHat(2:end-3,:,:) ...
-                  + 8*XHat(4:end-1,:,:) - XHat(5:end,:,:))/12;
-            D2 = (D1(1:end-4,:,:) - 8*D1(2:end-3,:,:) ...
-                  + 8*D1(4:end-1,:,:) - D1(5:end,:,:))/12;
-    end
+    % calculate the second order derivative
+    % using the centred 3-point formula for points away from the boundary
+    D2Centred = (XHat(1:end-2*h,:,:) ...
+                 - 2*XHat(1+h:end-h,:,:) ...
+                 + XHat(1+2*h:end,:,:))/h^2;
+    % include the forward difference for the left-hand boundary
+    D2Forward = (2*XHat(1,:,:) ...
+                 - 5*XHat(1+h,:,:) ...
+                 + 4*XHat(1+2*h,:,:) ...
+                 - XHat(1+3*h,:,:))/h^3;
+    % include the backward difference for the right-hand boundary
+    D2Backward = (2*XHat(end,:,:) ...
+                 - 5*XHat(end-h,:,:) ...
+                 + 4*XHat(end-2*h,:,:) ...
+                 - XHat(end-3*h,:,:))/h^3;
+    % combine
+    D2 = [D2Forward; D2Centred; D2Backward];
 
     if isa( XHat, 'dlarray' )
         % dimensions are Time x Channel x Batch
