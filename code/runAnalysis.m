@@ -9,7 +9,7 @@ path = [path '/../results/'];
 
 parameters = [ "data.args.NormalizedPts" ];
 %values = {[5, 10, 20, 50, 100]};
-values = {[50]};
+values = {[11]};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 
