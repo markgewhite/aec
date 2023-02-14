@@ -15,7 +15,7 @@ function plotZClusters( self, Z, args )
     end
 
     if isa( Z, 'dlarray' )
-        Z = double( extractdata( Z ) )';
+        Z = double( gather(extractdata( Z )) )';
     end
     % ensure Z is 2D
     Z = reshape( Z, size(Z,1), [] );
