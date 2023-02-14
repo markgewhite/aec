@@ -35,10 +35,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 100;
+    setup.model.args.trainer.NumIterations = 500;
     setup.model.args.trainer.NumIterPreTrn = 0;
-    setup.model.args.trainer.BatchSize = 200;
-    setup.model.args.trainer.UpdateFreq = 10;
+    setup.model.args.trainer.BatchSize = 100;
+    setup.model.args.trainer.UpdateFreq = 100;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
@@ -55,7 +55,7 @@ function setup = initSetup
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
     setup.model.args.lossFcns.reconrough.args.Lambda = 1E0;
     setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
-    setup.model.args.lossFcns.reconrough.args.useLoss = true;
+    setup.model.args.lossFcns.reconrough.args.useLoss = false;
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
     %setup.model.args.lossFcns.adv.name = 'Discriminator';
@@ -85,10 +85,10 @@ function setup = initSetup
     %setup.model.args.lossFcns.xcls.name = 'XClassifier';
 
     % evaluations
-    setup.eval.args.CVType = 'Holdout';
-    setup.eval.args.KFolds = 4;
-    setup.eval.args.KFoldRepeats = 1;
-    setup.eval.args.HasIdenticalPartitions = true;
+    setup.eval.args.CVType = 'KFold';
+    setup.eval.args.KFolds = 2;
+    setup.eval.args.KFoldRepeats = 2;
+    setup.eval.args.HasIdenticalPartitions = false;
 
 
 

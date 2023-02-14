@@ -26,7 +26,8 @@ function [fdParams, lambda] = setFDAParameters( self, tSpan, X )
 
     % create a basis for smoothing with fewer functions
     % (one knot per point is too expensive)
-    nBasis = fix(sqrt(length(tSpan))*5);
+    %nBasis = fix(sqrt(length(tSpan))*5);
+    nBasis = length(tSpan);
     nBasis = min(max( nBasis, 2 ), length(tSpan)) + self.FDA.PenaltyOrder;
 
     basisFd = create_bspline_basis( [tSpan(1) tSpan(end)], ...

@@ -25,8 +25,9 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
         % convert to real points
 
         % create a dummy Fd object
+        dummy = zeros( length(self.TSpan.Target), size(dlXHat,2), size(dlXHat,3) );
         XFd = smooth_basis( self.TSpan.Target, ...
-                            dlXHat(1:length(self.TSpan.Target),:,:), ...
+                            dummy, ...
                             self.FDA.FdParamsTarget );
 
         % impose the coefficient matrix
