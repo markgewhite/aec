@@ -3,9 +3,7 @@ function plotLatentComp( self, args )
     % in conception to the functional principal components
     arguments
         self                RepresentationModel
-        args.XMean          {mustBeA( args.XMean, { 'dlarray', 'double' })} = []
         args.XC             {mustBeA( args.XC, { 'dlarray', 'double' })} = []
-        args.nSample        double = 0
         args.smooth         logical = false
         args.order          double ...
             {mustBeInteger, mustBePositive} = []
@@ -19,21 +17,15 @@ function plotLatentComp( self, args )
         args.axes           = []
     end
     
-    if isempty( args.XMean )
-        % use the pre-calculated mean curve, repeating in Z dimension
-        % because inputs specified in args.XMeans come with multiple
-        % version of the mean curve, one for each Z dimension
-        XMean = repmat( self.MeanCurve, 1, self.ZDim );
-        XMeanTarget = self.MeanCurveTarget;
-    else
-        % use the mean curves specified
-        % there is a very slightly different mean for each dimension
-        if isa( args.XMean, 'dlarray' )
-            XMean = squeeze(double( extractdata( args.XMean ) ));
-        else
-            XMean = squeeze( args.XMean );
-        end
-        XMeanTarget = XMean; % hack for now
+    % use the pre-calculated mean curve, repeating in Z dimension
+    % because inputs specified in args.XMeans come with multiple
+    % version of the mean curve, one for each Z dimension
+    XMean = repmat( self.MeanCurve, 1, self.ZDim );
+    XMeanTarget = permute( self.MeanCurveTarget, [1 3 2] );
+    if args.centredYAxis
+        % zero the means now that we have the correct dimensions
+        XMean = XMean*0;
+        XMeanTarget = XMeanTarget*0;
     end
 
     % set the appropriate time span
@@ -75,21 +67,25 @@ function plotLatentComp( self, args )
     [nPts, nSamples, nDim, nChannels, ] = size( XC );
 
     if args.smooth
-        % smooth to regularly-spaced time span
+        % smooth to a regularly-spaced time span
+        tSpanXC = self.TSpan.Regular;
         XCSmth = zeros( length(self.TSpan.Regular), ...
                         nSamples, nDim, nChannels );
-        XCAdj = XC + permute( XMeanTarget, [1 3 2] );
         for c = 1:nChannels
-            XCSmth(:,:,:,c) = smoothSeries( XCAdj(:,:,:,c), ...
+            XCSmth(:,:,:,c) = smoothSeries( XC(:,:,:,c), ...
                                             self.TSpan.Target, ...
                                             self.TSpan.Regular, ...
                                             self.FDA.FdParamsTarget );
         end
+    else
+        % just use the raw points
+        XCSmth = XC;
     end
 
     % interpolate all curves over the plot's points
     tSpanPlot = linspace( self.TSpan.Original(1), ...
-                          self.TSpan.Original(end), 101 );
+                          self.TSpan.Original(end), ...
+                          args.plotPoints );
 
     XMeanPlot = zeros( args.plotPoints, nDim, nChannels );
     XCPlot = zeros( args.plotPoints, nSamples, nDim, nChannels );
@@ -98,11 +94,14 @@ function plotLatentComp( self, args )
             XMeanPlot(:,d,c) = interp1( tSpanMean, XMean(:,d,c), tSpanPlot );
             for s = 1:nSamples
                 XCPlot(:,s,d,c) = XMeanPlot(:,d,c)' + ...
-                                    interp1( tSpanXC, XC(:,s,d,c), tSpanPlot );
+                                    interp1( tSpanXC, XCSmth(:,s,d,c), tSpanPlot );
             end
                 
         end
     end
+
+    % centre the predicted points about the mean
+    XCPts = XC + XMeanTarget;
 
     % set the colours: red=positive, blue=negative
     compColours = [ 0.0000 0.4470 0.7410; ...
@@ -190,12 +189,12 @@ function plotLatentComp( self, args )
                                       DisplayName = names(s));
                     % plot predicted values on top
                     plot( axis, ...
-                          self.TSpan.Target, XC( :,j,i,c ), ...
+                          self.TSpan.Target, XCPts( :,j,i,c ), ...
                           LineStyle = '--', ...
                           Color = 'black', ...
-                          LineWidth = 0.5, ...
+                          LineWidth = width, ...
                           Marker = 'o', ...
-                          MarkerSize = 4, ...
+                          MarkerSize = 3, ...
                           MarkerEdgeColor = 'black', ...
                           MarkerFaceColor = 'black'  );
                 else

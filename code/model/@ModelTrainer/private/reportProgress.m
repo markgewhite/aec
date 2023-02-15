@@ -27,21 +27,11 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch, args )
     end
     fprintf('\n');
 
-    % compute the AE components for plotting
-    %compFcn = @(dlZ) thisModel.reconstruct( dlZ, ...
-    %                                        centre = false, ...
-    %                                        smooth = false );
-
+    % generate the centred components
     [ dlXC, dlXMean ] = thisModel.calcLatentComponents( dlZ ) ;
-
-    % plot them on specified axes
-    if thisModel.HasCentredDecoder
-        dlXMean(:) = 0;
-    end
-
     plotLatentComp( thisModel, ...
-                    XMean = dlXMean, XC = dlXC, ...
-                    smooth = true, ...
+                    XC = dlXC, ...
+                    smooth = false, ...
                     centredYAxis = thisModel.HasCentredDecoder );
 
     % plot the Z distributions
