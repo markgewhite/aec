@@ -63,11 +63,9 @@ function plotLatentComp( self, args )
     % because inputs specified in args.XMeans come with multiple
     % version of the mean curve, one for each Z dimension
     XMean = repmat( self.MeanCurve, 1, self.ZDim );
-    XMeanTarget = permute( self.MeanCurveTarget, [1 3 4 2] );
     if args.centredYAxis
         % zero the means now that we have the correct dimensions
         XMean = XMean*0;
-        XMeanTarget = XMeanTarget*0;
     end
 
     % set the appropriate time span
@@ -90,19 +88,24 @@ function plotLatentComp( self, args )
 
     XMeanPlot = zeros( args.plotPoints, nDim, nChannels );
     XCPlot = zeros( args.plotPoints, nSamples, nDim, nChannels );
+    XCPts = zeros( size(XC,1), nSamples, nDim, nChannels );
     for c = 1:nChannels
         for d = 1:nDim
+
+            % interpolate the smoothed curves to plot points
             XMeanPlot(:,d,c) = interp1( tSpanMean, XMean(:,d,c), tSpanPlot );
             for s = 1:nSamples
                 XCPlot(:,s,d,c) = XMeanPlot(:,d,c)' + ...
                                     interp1( tSpanXC, XCSmth(:,s,d,c), tSpanPlot );
             end
-                
+
+            % add the interpolated target mean to the XC points
+            % (self.MeanCurveTarget dimensions may not match)
+            XMeanTarget = interp1( tSpanMean, XMean(:,d,c), self.TSpan.Target );
+            XCPts(:,:,d,c) = XMeanTarget' + XC(:,:,d,c);
+
         end
     end
-
-    % centre the predicted points about the mean
-    XCPts = XC + XMeanTarget;
 
     % set the colours: red=positive, blue=negative
     compColours = [ 0.0000 0.4470 0.7410; ...

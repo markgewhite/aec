@@ -28,7 +28,7 @@ function setup = initSetup
 
     % model
     setup.model.class = @AsymmetricFCModel;
-    setup.model.args.UsesFdCoefficients = false;
+    setup.model.args.UsesFdCoefficients = true;
     setup.model.args.ZDim = 2;
     setup.model.args.NumFCDecoder = 100;
     setup.model.args.AuxModel = 'Logistic';
@@ -71,13 +71,13 @@ function setup = initSetup
     %setup.model.args.lossFcns.fid.name = 'Fidelity';
     %setup.model.args.lossFcns.fid.args.useLoss = true;
 
-    %setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
-    %setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
-    %setup.model.args.lossFcns.zorth.args.useLoss = true;
+    setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+    setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+    setup.model.args.lossFcns.zorth.args.useLoss = true;
 
     %setup.model.args.lossFcns.xorth.class = @ComponentLoss;
     %setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
-    %setup.model.args.lossFcns.xorth.args.useLoss = true;
+    %setup.model.args.lossFcns.xorth.args.useLoss = false;
             
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';
@@ -89,7 +89,7 @@ function setup = initSetup
     % evaluations
     setup.eval.args.CVType = 'KFold';
     setup.eval.args.KFolds = 2;
-    setup.eval.args.KFoldRepeats = 2;
+    setup.eval.args.KFoldRepeats = 1;
     setup.eval.args.HasIdenticalPartitions = false;
 
 

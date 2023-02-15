@@ -8,6 +8,7 @@ classdef AEModel < RepresentationModel
         LossFcns       % array of loss functions
         LossFcnNames   % names of the loss functions
         LossFcnTbl     % convenient table summarising loss function details
+        LossFcnScale   % special scale for loss functions (if using Fd coefficients)
         NumLoss        % number of computed losses
         UsesFdCoefficients % if input/target are Fd coefficient rather than points
         FlattenInput   % whether to flatten input
@@ -18,6 +19,7 @@ classdef AEModel < RepresentationModel
         ZDimActive     % number of dimensions currently active
         HasCentredDecoder % if the decoder predicts centred X
         UsesDensityEstimation % if the model is based on density estimation
+        XComponentDim  % dimensions of the component (may differ from XTargetDim)
         MeanCurveTarget   % mean curve for the X target time span
         AuxNetResponse % auxiliary network effect response
     end
@@ -65,11 +67,16 @@ classdef AEModel < RepresentationModel
                                              superArgsCell{:}, ...
                                              superArgs2Cell{:} );
 
+            self.XComponentDim = thisDataset.XTargetDim;
             self.UsesFdCoefficients = args.UsesFdCoefficients;
             if self.UsesFdCoefficients
                 % substitute input and output dimensions for coefficients dim
                 self.XInputDim = thisDataset.XInputCoeffDim;
                 self.XTargetDim = thisDataset.XTargetCoeffDim;
+                % compute special scale for loss functions based on coefficients
+                self.LossFcnScale = scalingFactor( thisDataset.XTargetCoeff );
+            else
+                self.LossFcnScale = self.Scale;
             end
 
             % check dataset is suitable

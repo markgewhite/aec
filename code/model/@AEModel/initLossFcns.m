@@ -20,10 +20,6 @@ function self = initLossFcns( self, setup )
         % initialize the loss function object
         self.LossFcns.(names(i)) = setup.(fldNames{i}).class( names(i), argsCell{:} );
 
-        % add details associated with the loss function networks
-        % but without initializing them
-        self = self.addLossFcnNetworks;
-
     end
 
     % formally record the names
