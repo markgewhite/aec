@@ -54,7 +54,7 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
 
             if d==1 && k==1
                 % allocate arrays knowing the size of YHat
-                if length(size(YHat))==2
+                if size( YHat, 2 )==1
                     FDim(1) = size( YHat, 1 );
                     FDim(2) = 1;
                     F = zeros( self.ZDim, K, FDim(1) );

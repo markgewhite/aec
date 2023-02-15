@@ -16,29 +16,6 @@ function plotLatentComp( self, args )
         args.centredYAxis   logical = false
         args.axes           = []
     end
-    
-    % use the pre-calculated mean curve, repeating in Z dimension
-    % because inputs specified in args.XMeans come with multiple
-    % version of the mean curve, one for each Z dimension
-    XMean = repmat( self.MeanCurve, 1, self.ZDim );
-    XMeanTarget = permute( self.MeanCurveTarget, [1 3 2] );
-    if args.centredYAxis
-        % zero the means now that we have the correct dimensions
-        XMean = XMean*0;
-        XMeanTarget = XMeanTarget*0;
-    end
-
-    % set the appropriate time span
-    switch size( XMean, 1 )
-        case length(self.TSpan.Regular)
-            tSpanMean = self.TSpan.Regular;
-        case length(self.TSpan.Target)
-            tSpanMean = self.TSpan.Target;
-        otherwise
-            tSpanMean = linspace( self.TSpan.Original(1), ...
-                                  self.TSpan.Original(end), length(XMean) );
-    end
-
 
     if isempty( args.XC )
         % use the pre-calculated latent components
@@ -81,6 +58,30 @@ function plotLatentComp( self, args )
         % just use the raw points
         XCSmth = XC;
     end
+    
+    % use the pre-calculated mean curve, repeating in Z dimension
+    % because inputs specified in args.XMeans come with multiple
+    % version of the mean curve, one for each Z dimension
+    XMean = repmat( self.MeanCurve, 1, self.ZDim );
+    XMeanTarget = permute( self.MeanCurveTarget, [1 3 4 2] );
+    if args.centredYAxis
+        % zero the means now that we have the correct dimensions
+        XMean = XMean*0;
+        XMeanTarget = XMeanTarget*0;
+    end
+
+    % set the appropriate time span
+    switch size( XMean, 1 )
+        case length(self.TSpan.Regular)
+            tSpanMean = self.TSpan.Regular;
+        case length(self.TSpan.Target)
+            tSpanMean = self.TSpan.Target;
+        otherwise
+            tSpanMean = linspace( self.TSpan.Original(1), ...
+                                  self.TSpan.Original(end), length(XMean) );
+    end
+
+
 
     % interpolate all curves over the plot's points
     tSpanPlot = linspace( self.TSpan.Original(1), ...
