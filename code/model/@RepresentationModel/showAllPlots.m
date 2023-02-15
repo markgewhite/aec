@@ -14,7 +14,7 @@ function showAllPlots( self, args )
         self.plotZClusters( self.Predictions.(args.set).Z, ...
                             Y = self.Predictions.(args.set).Y );
         % plot the components
-        self.plotLatentComp( type = 'Smoothed', shading = true );
+        self.plotLatentComp( smooth = true );
 
         % plot the ALE distribution
         self.plotAuxResponse( type = 'Model' );

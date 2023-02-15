@@ -35,10 +35,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 500;
+    setup.model.args.trainer.NumIterations = 50;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 100;
+    setup.model.args.trainer.UpdateFreq = 10;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
@@ -55,7 +55,7 @@ function setup = initSetup
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
     setup.model.args.lossFcns.reconrough.args.Lambda = 1E0;
     setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
-    setup.model.args.lossFcns.reconrough.args.useLoss = false;
+    setup.model.args.lossFcns.reconrough.args.useLoss = true;
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
     %setup.model.args.lossFcns.adv.name = 'Discriminator';

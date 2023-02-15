@@ -6,11 +6,10 @@ function plotLatentComp( self, args )
         args.XMean          {mustBeA( args.XMean, { 'dlarray', 'double' })} = []
         args.XC             {mustBeA( args.XC, { 'dlarray', 'double' })} = []
         args.nSample        double = 0
+        args.smooth         logical = false
         args.order          double ...
             {mustBeInteger, mustBePositive} = []
-        args.type           char ...
-            {mustBeMember(args.type, ...
-                {'Smoothed', 'Predicted', 'Both'} )} = 'Both'
+        args.plotPoints     double = 101
         args.shading        logical = true
         args.showLegend     logical = true
         args.showTitle      logical = true
@@ -25,6 +24,7 @@ function plotLatentComp( self, args )
         % because inputs specified in args.XMeans come with multiple
         % version of the mean curve, one for each Z dimension
         XMean = repmat( self.MeanCurve, 1, self.ZDim );
+        XMeanTarget = self.MeanCurveTarget;
     else
         % use the mean curves specified
         % there is a very slightly different mean for each dimension
@@ -33,6 +33,7 @@ function plotLatentComp( self, args )
         else
             XMean = squeeze( args.XMean );
         end
+        XMeanTarget = XMean; % hack for now
     end
 
     % set the appropriate time span
@@ -73,12 +74,25 @@ function plotLatentComp( self, args )
     % get dimensions
     [nPts, nSamples, nDim, nChannels, ] = size( XC );
 
+    if args.smooth
+        % smooth to regularly-spaced time span
+        XCSmth = zeros( length(self.TSpan.Regular), ...
+                        nSamples, nDim, nChannels );
+        XCAdj = XC + permute( XMeanTarget, [1 3 2] );
+        for c = 1:nChannels
+            XCSmth(:,:,:,c) = smoothSeries( XCAdj(:,:,:,c), ...
+                                            self.TSpan.Target, ...
+                                            self.TSpan.Regular, ...
+                                            self.FDA.FdParamsTarget );
+        end
+    end
+
     % interpolate all curves over the plot's points
     tSpanPlot = linspace( self.TSpan.Original(1), ...
                           self.TSpan.Original(end), 101 );
 
-    XMeanPlot = zeros( 101, nDim, nChannels );
-    XCPlot = zeros( 101, nSamples, nDim, nChannels );
+    XMeanPlot = zeros( args.plotPoints, nDim, nChannels );
+    XCPlot = zeros( args.plotPoints, nSamples, nDim, nChannels );
     for c = 1:nChannels
         for d = 1:nDim
             XMeanPlot(:,d,c) = interp1( tSpanMean, XMean(:,d,c), tSpanPlot );
@@ -86,6 +100,7 @@ function plotLatentComp( self, args )
                 XCPlot(:,s,d,c) = XMeanPlot(:,d,c)' + ...
                                     interp1( tSpanXC, XC(:,s,d,c), tSpanPlot );
             end
+                
         end
     end
 
@@ -165,34 +180,30 @@ function plotLatentComp( self, args )
                                     alpha = alpha );
                 end
 
-                % plot gradation curve
-
-                if any(strcmp( args.type, {'Predicted','Both'} ))
-                    % plot predicted values
-                    scatter( axis, ...
-                             self.TSpan.Target, XC( :,j,i,c ), ...
-                             10, ...
-                             MarkerEdgeColor = 'black', ...
-                             MarkerFaceColor = 'black'  );
-                end
-                if any(strcmp( args.type, {'Smoothed','Both'} ))
-                    % plot smoothed curves
-                    if isOuterCurve
-                        % include in legend
-                        l = l+1;
-                        pltObj(l) = plot( axis, ...
-                                          tSpanPlot, XCPlot( :,j,i,c ), ...
-                                          Color = compColours( s,: ), ...
-                                          LineWidth = width, ...
-                                          DisplayName = names(s));
-                    else
-                        % don't record it for the legend
-                        plot( axis, ...
-                                          tSpanPlot, XCPlot( :,j,i,c ), ...
-                                          Color = compColours( s,: ), ...
-                                          LineWidth = width );
-                    end
-
+                if isOuterCurve
+                    % plot smoothed curves with the legend
+                    l = l+1;
+                    pltObj(l) = plot( axis, ...
+                                      tSpanPlot, XCPlot( :,j,i,c ), ...
+                                      Color = compColours( s,: ), ...
+                                      LineWidth = width, ...
+                                      DisplayName = names(s));
+                    % plot predicted values on top
+                    plot( axis, ...
+                          self.TSpan.Target, XC( :,j,i,c ), ...
+                          LineStyle = '--', ...
+                          Color = 'black', ...
+                          LineWidth = 0.5, ...
+                          Marker = 'o', ...
+                          MarkerSize = 4, ...
+                          MarkerEdgeColor = 'black', ...
+                          MarkerFaceColor = 'black'  );
+                else
+                    % lot smoothed curves without the legend
+                    plot( axis, ...
+                          tSpanPlot, XCPlot( :,j,i,c ), ...
+                          Color = compColours( s,: ), ...
+                          LineWidth = width );
                 end
 
             end

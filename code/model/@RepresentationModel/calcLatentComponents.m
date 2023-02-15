@@ -4,7 +4,6 @@ function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
         self                RepresentationModel
         dlZ                 {mustBeA( dlZ, {'dlarray', 'double'} )}
         args.maxObs         double {mustBeInteger} = 500
-        args.smooth         logical = false
         args.responseFcn    function_handle
     end
 
@@ -15,9 +14,9 @@ function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
     end
 
     [XC, offsets] = self.calcResponse( dlZ, ...
-                      sampling = 'Component', ...
-                      modelFcn = thisResponseFcn, ...
-                      maxObs = args.maxObs );
+                                       sampling = 'Component', ...
+                                       modelFcn = thisResponseFcn, ...
+                                       maxObs = args.maxObs );
 
     % put XC into the appropriate structure
     % Points, Samples, Components, Channels
@@ -34,19 +33,6 @@ function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
         case 'X'
             % centre about the mean generated curve
             XC = XC - mean( XC, length(size(XC)) );
-    end
-
-    if args.smooth && false
-        % smooth to regularly-spaced time span
-        XCSmth = zeros( length(self.TSpan.Regular), ...
-                        size(XC,2), size(XC,3), size(XC,4) );
-        for c = 1:size(XC,4)
-            XCSmth(:,:,:,c) = smoothSeries( XC(:,:,:,c), ...
-                                 self.TSpan.Target, ...
-                                 self.TSpan.Regular, ...
-                                 self.FDA.FdParamsTarget );
-        end
-        XC = XCSmth;
     end
 
 end
