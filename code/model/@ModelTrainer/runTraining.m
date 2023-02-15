@@ -68,12 +68,23 @@ function thisModel = runTraining( self, thisModel, thisDataset )
                                 dlYTrnAll );
     thisModel.Timing.Training.AuxModelTime = toc;
 
-    % set the oversmoothing level
+    % set the smoothing level for the reconstructions
     XHatTrnAll = thisModel.reconstruct( dlZTrnAll );
 
     [ thisModel.FDA.FdParamsTarget, thisModel.FDA.LambdaTarget ] = ...
         thisTrnData.setFDAParameters( thisTrnData.TSpan.Target, ...
                                       permute(XHatTrnAll, [1 3 2]) );
+
+    % set the smoothing level for the components (may be different)
+    XCTrnAll = thisModel.calcLatentComponents( dlZTrnAll, ...
+                                               sampling = 'Regular' );
+    XCTrnAll = reshape( XCTrnAll, thisModel.XTargetDim, [], thisModel.XChannels );
+    XCTrnAll = XCTrnAll + thisModel.MeanCurveTarget;
+
+    [ thisModel.FDA.FdParamsComponent, thisModel.FDA.LambdaComponent ] = ...
+        thisTrnData.setFDAParameters( thisTrnData.TSpan.Target, ...
+                                      XCTrnAll );
+
 
 end
     

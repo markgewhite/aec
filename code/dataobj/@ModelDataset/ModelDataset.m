@@ -84,8 +84,8 @@ classdef ModelDataset
                 args.lambda                 double = []
                 args.tSpan                  double = []
                 args.hasAdaptiveTimeSpan    logical = false
-                args.adaptiveLowerBound     double = 0.05
-                args.adaptiveUpperBound     double = 5
+                args.adaptiveLowerBound     double = 0.25
+                args.adaptiveUpperBound     double = 2.5
                 args.resampleRate           double ...
                     {mustBeNumeric} = 1
                 args.perplexity             double ...
@@ -175,11 +175,14 @@ classdef ModelDataset
             % set the FD parameters for regular spacing
             self.FDA.FdParamsRegular = self.setFDAParameters( self.TSpan.Regular);
 
-            % set the FD parameters for adaptive spacing
+            % set the FD parameters for input
             self.FDA.FdParamsInput = self.setFDAParameters( self.TSpan.Input );
 
-            % set the FD parameters for adaptive spacing
+            % set the FD parameters for the target
             self.FDA.FdParamsTarget = self.setFDAParameters( self.TSpan.Target );
+            
+            % set the FD parameters for the components to the same values for now 
+            self.FDA.FdParamsComponent = self.FDA.FdParamsTarget;
 
             % set input and output dimensions
             self.XInputDim = length( self.TSpan.Input );

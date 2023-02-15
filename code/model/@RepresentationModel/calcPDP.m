@@ -7,7 +7,7 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
                             {'Regular', 'Component'} )} = 'Regular'
-        args.nSample        double {mustBeInteger} = 20
+        args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
         args.modelFcn       function_handle
     end
@@ -26,10 +26,9 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
     end
 
     % generate the required Z values from z-scores
-    K = args.nSample;
     switch args.sampling
         case 'Regular'
-            zs = linspace( -2, 2, K+1 );
+            zs = linspace( -2, 2, args.nSample+1 );
         case 'Component'
             zs = linspace( -2, 2, self.NumCompLines );
     end

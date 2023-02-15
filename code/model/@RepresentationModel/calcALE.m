@@ -7,7 +7,7 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
                             {'Regular', 'Component'} )} = 'Regular'
-        args.nSample        double {mustBeInteger} = 20
+        args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
         args.modelFcn       function_handle
     end

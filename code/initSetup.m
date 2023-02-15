@@ -3,12 +3,14 @@ function setup = initSetup
 
     % dataset
     setup.data.class = @JumpGRFDataset;
-    setup.data.args.Normalization = 'PAD';
     setup.data.args.HasNormalizedInput = true;
+    setup.data.args.Normalization = 'PAD';
     setup.data.args.ResampleRate = 5;
+    setup.data.args.HasAdaptiveTimeSpan = true;
         
     %setup.data.class = @FukuchiDataset;
-    %setup.data.args.FromMatlabFile = true;
+    %setup.data.args.HasNormalizedInput = true;
+    %setup.data.args.FromMatlabFile = false;
     %setup.data.args.HasVGRFOnly = false;
     %setup.data.args.Category = 'JointAngles';
     %setup.data.args.HasPelvis = true;
@@ -35,10 +37,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 50;
+    setup.model.args.trainer.NumIterations = 500;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 10;
+    setup.model.args.trainer.UpdateFreq = 100;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
