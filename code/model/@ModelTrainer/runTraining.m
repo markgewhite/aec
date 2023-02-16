@@ -31,7 +31,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
 
     if self.Holdout > 0
         % get the validation data (one-time only)
-        [ dlXVal, dlYVal, dlXNVal ] = thisValData.getDLArrays( thisModel.XDimLabels );
+        [ dlXVal, dlYVal, dlXNVal ] = thisModel.getDLArrays( thisValData );
     end
 
     % setup whole training set
