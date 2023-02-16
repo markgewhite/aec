@@ -2,7 +2,7 @@
 
 clear;
 
-optID = 185;
+optID = 201;
 disp(['OptID = ' num2str(optID)]);
 
 dataset = "Synthetic";
@@ -10,7 +10,7 @@ dataset = "Synthetic";
 % -- optimizer setup --
 setup.opt.exploration = 0.5;
 setup.opt.numEvaluations = 30;
-setup.opt.in_parallel = true;
+setup.opt.in_parallel = false;
 setup.opt.acquisitionFcnName = 'expected-improvement-plus';
 
 % set the destinations for results and figures
@@ -766,29 +766,34 @@ switch optID
                 Optimize = true );
 
     case 201
+        % New regime with FD coefficients
         % Find the best combination of output resolution and the number of
-        % nodes with one hidden layer for a ConvModel and a simplified setup
-        setup.model.class = @ConvolutionalModel;
-        setup.model.args.HasFCDecoder = true;
-        setup.opt.objective = 'AuxModelErrorRate';
+        % nodes for an asymmetric FC model
+        setup.model.class = @AsymmetricFCModel;
+        setup.opt.objective = 'ReconLossRegular';
+        setup.opt.numEvaluations = 30;
 
-        seteup.data.args.ResampleRate = 5;
-        setup.model.args.NumFilters= 16;
-
-        setup.model.args.trainer.NumIterations = 1000;
-
-        setup.model.args.NumHidden = 1;
-        setup.model.args.NumFC = 256;
+        setup.model.args.ZDim = 2;
+        setup.model.args.NumHidden = 3;
+        setup.model.args.NumFC = 1024;
         setup.model.args.FCFactor = 1;
-        setup.model.args.InputDropout = 0.0;
-        setup.model.args.ReLuScale = 0.0;
-        setup.model.args.Dropout = 0.0;
+        setup.model.args.ReLuScale = 0.2;
+        setup.model.args.InputDropout = 0.2;
+        setup.model.args.Dropout = 0;
+        setup.model.args.NetNormalizationType = 'Layer';
+        setup.model.args.NetActivationType = 'Relu';
+        
+        setup.data.args.NormalizedPts = 11;
 
-        varDef(1) = optimizableVariable( 'model_args_FilterSize', ...
-                [5 13], Type = 'integer', ... 
+        setup.model.args.NumHiddenDecoder = 1;
+
+        varDef(1) = optimizableVariable( 'model_args_NumFCDecoder', ...
+                [4 2048], Type = 'integer', Transform = 'log', ... 
                 Optimize = true );
 
-        numEvaluations = 15;
+        varDef(2) = optimizableVariable( 'model_args_UsesFdCoefficients', ...
+                ["false" "true"], Type = 'categorical', ... 
+                Optimize = true );
 
     otherwise
         error('Unrecognised optID.');
