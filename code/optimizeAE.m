@@ -10,7 +10,7 @@ dataset = "Synthetic";
 % -- optimizer setup --
 setup.opt.exploration = 0.5;
 setup.opt.numEvaluations = 30;
-setup.opt.in_parallel = false;
+setup.opt.in_parallel = true;
 setup.opt.acquisitionFcnName = 'expected-improvement-plus';
 
 % set the destinations for results and figures
@@ -78,7 +78,7 @@ setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
+setup.model.args.trainer.NumIterations = 500;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 5000;
 setup.model.args.trainer.Holdout = 0.2;

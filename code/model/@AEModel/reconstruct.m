@@ -4,6 +4,7 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
         self            AEModel
         Z               {mustBeA(Z, {'double', 'dlarray'})}
         args.centre     logical = true
+        args.points     logical = true
         args.smooth     logical = false
     end
 
@@ -21,7 +22,7 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
 
     dlXHat = double(extractdata(gather(dlXHat)));
        
-    if self.UsesFdCoefficients
+    if self.UsesFdCoefficients && args.points
         % convert to real points
 
         % create a dummy Fd object
@@ -37,7 +38,7 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
         dlXHat = eval_fd( XFd, self.TSpan.Target );
     end
 
-    if args.smooth
+    if args.smooth && args.points
 
         if self.UsesFdCoefficients
             XHatSmth = dlXHat;        

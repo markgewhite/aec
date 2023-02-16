@@ -20,15 +20,15 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
     
     path = pwd;
     % initialize and run the evaluation
-    try
+    %try
         thisEvaluation = ModelEvaluation( "Optimization", path, setup );
         constraint = -1;
-    catch
-        constraint = 1;
-        obj = NaN;
-        userdata = [];
-        return
-    end
+    %catch
+    %    constraint = 1;
+    %    obj = NaN;
+    %    userdata = [];
+    %    return
+    %end
     
     % set the objective function's output
     switch setup.opt.objective
