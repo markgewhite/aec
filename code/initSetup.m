@@ -37,7 +37,7 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 500;
+    setup.model.args.trainer.NumIterations = 5;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
     setup.model.args.trainer.UpdateFreq = 100;

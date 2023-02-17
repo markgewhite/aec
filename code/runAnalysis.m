@@ -10,7 +10,7 @@ path = [path '/../results/'];
 parameters = [ "data.args.NormalizedPts", ...
                "model.args.UsesFdCoefficients" ];
 %values = {[5, 10, 20, 50, 100]};
-values = {[11], {true, false}};
+values = {[11], {false, true}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 

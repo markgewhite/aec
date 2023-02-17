@@ -1,4 +1,4 @@
-function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
+function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
     % Reconstruct X from Z using the model
     arguments
         self            AEModel
@@ -20,39 +20,37 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
         dlXHat = dlXHat + self.MeanCurveTarget;
     end
 
-    dlXHat = double(extractdata(gather(dlXHat)));
-       
+    XHat = double(extractdata(gather(dlXHat)));
+    XHat = squeeze(permute( XHat, [1 3 2] ));
+    
     if self.UsesFdCoefficients && args.points
         % convert to real points
 
         % create a dummy Fd object
-        dummy = zeros( length(self.TSpan.Target), size(dlXHat,2), size(dlXHat,3) );
+        dummy = zeros( length(self.TSpan.Target), size(XHat,2), size(XHat,3) );
         XFd = smooth_basis( self.TSpan.Target, ...
                             dummy, ...
                             self.FDA.FdParamsTarget );
 
         % impose the coefficient matrix
-        XFd = putcoef( XFd, dlXHat );
+        XFd = putcoef( XFd, XHat );
 
         % evaluate the function to get points
-        dlXHat = eval_fd( XFd, self.TSpan.Target );
+        XHat = eval_fd( XFd, self.TSpan.Target );
     end
 
     if args.smooth && args.points
 
         if self.UsesFdCoefficients
-            XHatSmth = dlXHat;        
+            XHatSmth = XHat;        
             XHatReg = eval_fd( XFd, self.TSpan.Regular );
 
-        else
-            dlXHat = permute( dlXHat, [1 3 2] );
-            dlXHat = squeeze( dlXHat ); 
-            
-            XHatSmth = smoothSeries( dlXHat, ...
+        else           
+            XHatSmth = smoothSeries( XHat, ...
                                      self.TSpan.Target, ...
                                      self.TSpan.Target, ...
                                      self.FDA.FdParamsTarget );
-            XHatReg = smoothSeries( dlXHat, ...
+            XHatReg = smoothSeries( XHat, ...
                                     self.TSpan.Target, ...
                                     self.TSpan.Regular, ...
                                     self.FDA.FdParamsTarget );
