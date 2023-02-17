@@ -9,7 +9,7 @@ function plotZDist( self, Z, args )
     end
 
     if isa( Z, 'dlarray' )
-        Z = double( extractdata( Z ) )';
+        Z = double( extractdata(gather(Z)) )';
     end
 
     if args.standardize
