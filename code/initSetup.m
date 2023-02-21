@@ -28,10 +28,11 @@ function setup = initSetup
 
     % model
     setup.model.class = @FCModel;
-    setup.model.args.UsesFdCoefficients = true;
+    setup.model.args.UsesFdCoefficients = false;
     setup.model.args.ZDim = 2;
     setup.model.args.NumHidden = 1;
     setup.model.args.NumFC = 100;
+    setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;
@@ -58,7 +59,7 @@ function setup = initSetup
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
     setup.model.args.lossFcns.reconrough.args.Lambda = 1E0;
     setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
-    setup.model.args.lossFcns.reconrough.args.useLoss = true;
+    setup.model.args.lossFcns.reconrough.args.useLoss = false;
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
     %setup.model.args.lossFcns.adv.name = 'Discriminator';
@@ -74,11 +75,11 @@ function setup = initSetup
 
     setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
     setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
-    setup.model.args.lossFcns.zorth.args.useLoss = true;
+    setup.model.args.lossFcns.zorth.args.useLoss = false;
 
     setup.model.args.lossFcns.xorth.class = @ComponentLoss;
     setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
-    setup.model.args.lossFcns.xorth.args.useLoss = true;
+    setup.model.args.lossFcns.xorth.args.useLoss = false;
             
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';

@@ -39,12 +39,11 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
     dlZSD = std( dlZ, [], 2 );
 
     % prepare all inputs for model function to avoid multiple calls
-    dlZC = dlarray( zeros(self.ZDim, self.ZDim*K), 'CB' );
+    % set all elements to the mean initially
+    dlZC = dlarray( repmat(dlZMean, 1, self.ZDim*K), 'CB' );
     i = 1;
     for d = 1:self.ZDim
         for k = 1:K
-            % set all elements to the median
-            dlZC(:,i) = dlZMean;
             % set the dth element to the kth value
             dlZC(d,i) = dlZMean(d) + zs(k)*dlZSD(d);
             i = i + 1;
