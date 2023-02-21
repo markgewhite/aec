@@ -1,4 +1,4 @@
-function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
+function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
     % Partial Dependence Plot
     % For latent component generation and the auxiliary model
     arguments
@@ -38,45 +38,22 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
     dlZMean = mean( dlZ, 2 );
     dlZSD = std( dlZ, [], 2 );
 
-    ZQ = zeros( self.ZDim, K );
+    % prepare all inputs for model function to avoid multiple calls
+    dlZC = dlarray( zeros(self.ZDim, self.ZDim*K), 'CB' );
+    i = 1;
     for d = 1:self.ZDim
-
         for k = 1:K
-   
             % set all elements to the median
-            dlZC = dlZMean;
+            dlZC(:,i) = dlZMean;
             % set the dth element to the kth value
-            dlZC(d) = dlZMean(d) + zs(k)*dlZSD(d);
-
-            % call the model function to generate a response
-            YHat = args.modelFcn( dlZC );
-
-            if d==1 && k==1
-                % allocate arrays knowing the size of YHat
-                if size( YHat, 2 )==1
-                    FDim(1) = size( YHat, 1 );
-                    FDim(2) = 1;
-                    F = zeros( self.ZDim, K, FDim(1) );
-
-                else
-                    FDim(1) = size( YHat, 1 );
-                    FDim(2) = size( YHat, 2 );
-                    F = zeros( self.ZDim, K, FDim(1), FDim(2) );
-                end
-                if isa( YHat, 'dlarray' )
-                    % make it a dlarray without labels
-                    F = dlarray( F );
-                end
-            end
-
-            % assign YHat to response array
-            F( d, k, :, : ) = YHat;
-
-            % store Z
-            ZQ( d, k ) = dlZC(d);
-
+            dlZC(d,i) = dlZMean(d) + zs(k)*dlZSD(d);
+            i = i + 1;
         end
-
     end
+
+    % call the model function to generate a response
+    dlXCHat = args.modelFcn( dlZC );
+
+    dlXCHat = reshape( dlXCHat, [], K, self.ZDim );
 
 end

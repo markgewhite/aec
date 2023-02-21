@@ -21,7 +21,7 @@ function plotAuxResponse( self, args )
     end
 
     if ~isempty(args.pts)
-        A = args.pts;
+        A = squeeze( args.pts );
     end
 
     if isempty(args.quantiles)
@@ -34,11 +34,11 @@ function plotAuxResponse( self, args )
         axis = args.axis;
     end
 
-    nCodes = size( A, 1 );
+    nCodes = size( A, 2 );
     hold( axis, 'off');
     for i = 1:nCodes
 
-        plot( axis, Q, A(i,:), 'LineWidth', 1 );
+        plot( axis, Q, A(:,i), 'LineWidth', 1 );
         hold( axis, 'on' );
 
     end

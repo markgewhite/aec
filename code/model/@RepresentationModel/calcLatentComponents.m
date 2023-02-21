@@ -25,7 +25,7 @@ function [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
 
     % put XC into the appropriate structure
     % Points, Samples, Components, Channels
-    XC = permute( XC, [3 2 1 4] );
+    % XC = permute( XC, [3 2 1 4] );
     nSamples = size(XC, 2);
 
     % extract the mean curve based on Z
