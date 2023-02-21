@@ -57,10 +57,15 @@ function [ F, zs, ZQ ] = calcPDP( self, dlZ, args )
                     FDim(1) = size( YHat, 1 );
                     FDim(2) = 1;
                     F = zeros( self.ZDim, K, FDim(1) );
+
                 else
                     FDim(1) = size( YHat, 1 );
                     FDim(2) = size( YHat, 2 );
                     F = zeros( self.ZDim, K, FDim(1), FDim(2) );
+                end
+                if isa( YHat, 'dlarray' )
+                    % make it a dlarray without labels
+                    F = dlarray( F );
                 end
             end
 

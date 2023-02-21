@@ -22,11 +22,11 @@ classdef ComponentLoss < LossFunction
                                         = 'Orthogonality'
                 args.Sampling        char ...
                     {mustBeMember( args.Sampling, ...
-                        {'Fixed', 'Random'} )} = 'Random'
+                        {'Regular', 'Component'} )} = 'Component'
                 args.NumSamples      double ...
-                    {mustBeInteger, mustBePositive} = 10
+                    {mustBeInteger, mustBePositive} = 50
                 args.MaxObservations double ...
-                    {mustBeInteger, mustBePositive} = 10
+                    {mustBeInteger, mustBePositive} = 500
                 superArgs.?LossFunction
             end
 
@@ -64,25 +64,17 @@ classdef ComponentLoss < LossFunction
                 self
                 dlXC  dlarray  % generated AE components
             end
-        
-            if size( dlXC, 3 ) == 1
-                dlXC = permute( dlXC, [1 3 2] );
-            end
-            [nPts, nChannels, nComp] = size( dlXC );
-            nComp = nComp/self.NumSamples;
-        
-            dlXC = reshape( dlXC, nPts, nChannels, self.NumSamples, nComp );
-
+               
             switch self.Criterion
                 case 'InnerProduct'
                     % compute the inner product as a test
                     % of component orthogonality
-                    loss = innerProduct( dlXC, nChannels, self.NumSamples, nComp );
+                    loss = innerProduct( dlXC, nChannels, nSamples, nComp );
 
                 case 'Orthogonality'
                     % compute the inner product as a test
                     % of component orthogonality
-                    loss = orthogonality( dlXC, nChannels, self.NumSamples );
+                    loss = orthogonality( dlXC );
 
                 case 'Varimax'
                     % compute the component variance across 
@@ -93,7 +85,7 @@ classdef ComponentLoss < LossFunction
                     % compute the component variance across 
                     % its length, penalising high variance
                     loss = explainedVariance( dlXC, nChannels, nComp, ...
-                                         self.NumSamples, self.Scale );
+                                         nSamples, self.Scale );
 
             end
 
@@ -104,44 +96,50 @@ classdef ComponentLoss < LossFunction
 end
 
 
-function loss = innerProduct( dlXC, nChannels, nSamples, nComp )
+function loss = innerProduct( dlXC )
     % Calculate the inner product
 
-    orth = dlarray( zeros(1, nChannels), 'CB' );
+    [nPts, nSamples, nComp, nChannels] = size( dlXC );
 
     for c = 1:nChannels
         for k = 1:nSamples
             for i = 1:nComp
                 for j = i+1:nComp
-                    orth(c) = orth(c) + mean(dlXC(:,c,k,i).*dlXC(:,c,k,j));
+                    if exists('orth', 'var')
+                        orth = orth + dlXC(:,c,k,i).*dlXC(:,c,k,j);
+                    else
+                        orth = dlXC(:,c,k,i).*dlXC(:,c,k,j);
+                    end
                 end
             end
         end
     end
 
-    loss = mean(orth)/nSamples;
+    loss = orth/(nChannels*nSamples*nComp*(nComp-1)*nPts);
 
 end
 
 
 
-function loss = orthogonality( dlXC, nChannels, nSamples )
+function loss = orthogonality( dlXC )
     % Calculate a pseudo orthogonality
 
-    orth = dlarray( zeros(1, nChannels), 'CB' );
+    [~, nSamples, nComp, nChannels] = size( dlXC );
 
     for c = 1:nChannels
         for k = 1:nSamples
-            dlXCsample = squeeze( dlXC(:,c,k,:) );
+            dlXCsample = squeeze( dlXC(:,k,:,c) );
             dlXCsample = permute( dlXCsample, [2 1] );
-            [dlVar, dlCov] = dlVarianceCovariance( dlXCsample );
-            loss = mean( dlCov, 'all' );
-            %loss = loss + var(dlVar);
-            orth(c) = orth(c) + loss;
+            [~, dlCov] = dlVarianceCovariance( dlXCsample );
+            if k==1 && c==1
+                orth = sum( abs(dlCov), 'all' );
+            else
+                orth = orth + sum( abs(dlCov), 'all' );
+            end
         end
     end
 
-    loss = 0.001*mean(orth)/nSamples;
+    loss = orth/(nComp*(nComp-1));
 
 end
 

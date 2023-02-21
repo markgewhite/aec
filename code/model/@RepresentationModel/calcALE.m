@@ -101,6 +101,10 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
                 F = zeros( self.ZDim, K, FDim(1), FDim(2) );
                 FBin = zeros( K, FDim(1), FDim(2) );
             end
+            if isa( YHat, 'dlarray' )
+                % make it a dlarray without labels
+                F = dlarray( F );
+            end
         end
 
         % subtract the average weighted by number of occurrences

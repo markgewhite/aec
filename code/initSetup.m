@@ -27,20 +27,21 @@ function setup = initSetup
     %setup.data.args.resampleRate = 1;
 
     % model
-    setup.model.class = @AsymmetricFCModel;
+    setup.model.class = @FCModel;
     setup.model.args.UsesFdCoefficients = true;
     setup.model.args.ZDim = 2;
-    setup.model.args.NumFCDecoder = 100;
+    setup.model.args.NumHidden = 1;
+    setup.model.args.NumFC = 100;
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 5;
+    setup.model.args.trainer.NumIterations = 1000;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 100;
+    setup.model.args.trainer.UpdateFreq = 10;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
@@ -75,9 +76,9 @@ function setup = initSetup
     setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
     setup.model.args.lossFcns.zorth.args.useLoss = true;
 
-    %setup.model.args.lossFcns.xorth.class = @ComponentLoss;
-    %setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
-    %setup.model.args.lossFcns.xorth.args.useLoss = false;
+    setup.model.args.lossFcns.xorth.class = @ComponentLoss;
+    setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
+    setup.model.args.lossFcns.xorth.args.useLoss = true;
             
     setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     setup.model.args.lossFcns.cls.name = 'ZClassifier';
@@ -89,7 +90,7 @@ function setup = initSetup
     % evaluations
     setup.eval.args.CVType = 'KFold';
     setup.eval.args.KFolds = 2;
-    setup.eval.args.KFoldRepeats = 1;
+    setup.eval.args.KFoldRepeats = 5;
     setup.eval.args.HasIdenticalPartitions = false;
 
 

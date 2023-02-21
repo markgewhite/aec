@@ -20,8 +20,13 @@ function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
         dlXHat = dlXHat + self.MeanCurveTarget;
     end
 
-    XHat = double(extractdata(gather(dlXHat)));
-    XHat = squeeze(permute( XHat, [1 3 2] ));
+    if args.points
+        % convert from dlarray
+        XHat = double(extractdata(gather(dlXHat)));
+        XHat = squeeze(permute( XHat, [1 3 2] ));
+    else
+        XHat = dlXHat;
+    end
     
     if self.UsesFdCoefficients && args.points
         % convert to real points

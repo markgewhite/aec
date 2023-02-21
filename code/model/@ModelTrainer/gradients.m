@@ -40,6 +40,25 @@ function [grad, state, loss] = gradients( nets, ...
                             & repelem(~preTraining, sum(isNonReconFcn))';
     activeFcns = thisModel.LossFcnTbl( isActive, : );
     
+    compLossFcnIdx = find( activeFcns.Types=='Component', 1 );
+    if ~isempty( compLossFcnIdx )
+        % identify the component loss function
+        thisName = activeFcns.Names(compLossFcnIdx);
+        thisLossFcn = thisModel.LossFcns.(thisName);
+        % compute the AE components
+        thisResponseFcn = @(dlZ) thisModel.reconstruct( dlZ, ...
+                                                        points = false, ...
+                                                        centre = true, ...
+                                                        smooth = false );
+        dlXC = thisModel.calcLatentComponents( ...
+                                dlZGen, ...
+                                sampling = thisLossFcn.Sampling, ...
+                                nSample = thisLossFcn.NumSamples, ...
+                                maxObs = thisLossFcn.MaxObservations, ...
+                                responseFcn = thisResponseFcn);
+    end
+
+
     % compute the active loss functions in turn
     % and assign to networks
     
@@ -66,6 +85,8 @@ function [grad, state, loss] = gradients( nets, ...
                 dlV = { dlXHat };
             case 'XGen'
                 dlV = { dlXGen };
+            case 'XC'
+                dlV = { dlXC };
             case 'Z'
                 dlV = { dlZGen };
             case 'P-Z'
