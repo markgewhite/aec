@@ -13,7 +13,7 @@ classdef OrthogonalLoss < LossFunction
             arguments
                 name                char {mustBeText}
                 args.Alpha          double ...
-                    {mustBeGreaterThan(args.Alpha,0)} = 0.001
+                    {mustBeGreaterThan(args.Alpha,0)} = 1
                 superArgs.?LossFunction
             end
 
@@ -36,11 +36,12 @@ classdef OrthogonalLoss < LossFunction
                 dlZ         dlarray
             end
             
-            % get the variance and covariance
-            [ ~, dlCoVar ] = dlVarianceCovariance( dlZ );
+            % get the correlation
+            dlCorr = dlCorrelation( dlZ );
 
             % penalise high covariance
-            loss = self.Alpha*mean( dlCoVar.^2, 'all' );
+            d = size( dlZ, 1 );
+            loss = self.Alpha*sum( dlCorr.^2, 'all' )/(d*(d-1));
 
 
         end

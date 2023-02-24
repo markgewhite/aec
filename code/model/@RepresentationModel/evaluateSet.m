@@ -93,6 +93,8 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
     [ cor.XCCorrelationMatrix, cor.XCCovarianceMatrix ] = ...
         latentComponentCorrelation( thisModel.LatentComponents );
 
+    cor.XCInnerProduct = innerProductLoss( thisModel.LatentComponents );
+
     % compute the auxiliary loss using the model
     ZLong = reshape( pred.ZAux, size( pred.ZAux, 1 ), [] );
     ZLong = (ZLong-thisModel.AuxModelZMean)./thisModel.AuxModelZStd;

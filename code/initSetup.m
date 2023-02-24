@@ -29,7 +29,7 @@ function setup = initSetup
     % model
     setup.model.class = @FCModel;
     setup.model.args.UsesFdCoefficients = false;
-    setup.model.args.ZDim = 2;
+    setup.model.args.ZDim = 3;
     setup.model.args.NumHidden = 1;
     setup.model.args.NumFC = 100;
     setup.model.args.ComponentType = 'PDP';
@@ -39,57 +39,55 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 1000;
+    setup.model.args.trainer.NumIterations = 100;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 10;
+    setup.model.args.trainer.UpdateFreq = 20;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
     setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
     setup.model.args.lossFcns.recon.name = 'Reconstruction';
-
-    setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
-    setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
-    setup.model.args.lossFcns.reconvar.args.Beta = 1E1;
-    setup.model.args.lossFcns.reconvar.args.Gamma = 0;
-    setup.model.args.lossFcns.reconvar.args.useLoss = false;
     
     setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
-    setup.model.args.lossFcns.reconrough.args.Lambda = 1E0;
+    setup.model.args.lossFcns.reconrough.args.Lambda = 1E-1;
     setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
-    setup.model.args.lossFcns.reconrough.args.useLoss = false;
+    setup.model.args.lossFcns.reconrough.args.UseLoss = true;
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
     %setup.model.args.lossFcns.adv.name = 'Discriminator';
-    %setup.model.args.lossFcns.adv.args.distribution = 'Cauchy';
+    %setup.model.args.lossFcns.adv.args.Distribution = 'Cauchy';
 
     %setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
     %setup.model.args.lossFcns.kl.name = 'KLDivergence';
-    %setup.model.args.lossFcns.kl.args.beta = 0.1;
+    %setup.model.args.lossFcns.kl.args.Beta = 0.1;
 
     %setup.model.args.lossFcns.fid.class = @FidelityLoss;
     %setup.model.args.lossFcns.fid.name = 'Fidelity';
-    %setup.model.args.lossFcns.fid.args.useLoss = true;
+    %setup.model.args.lossFcns.fid.args.UseLoss = true;
 
     setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
     setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
-    setup.model.args.lossFcns.zorth.args.useLoss = false;
+    setup.model.args.lossFcns.zorth.args.Alpha= 1E0;
+    setup.model.args.lossFcns.zorth.args.UseLoss = true;
 
     setup.model.args.lossFcns.xorth.class = @ComponentLoss;
     setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
-    setup.model.args.lossFcns.xorth.args.useLoss = false;
+    setup.model.args.lossFcns.xorth.args.Criterion = 'Orthogonality';
+    setup.model.args.lossFcns.xorth.args.Alpha = 1E0;
+    setup.model.args.lossFcns.xorth.args.YLim = [-0.1, 1];
+    setup.model.args.lossFcns.xorth.args.UseLoss = true;
             
-    setup.model.args.lossFcns.cls.class = @ClassifierLoss;
-    setup.model.args.lossFcns.cls.name = 'ZClassifier';
-    setup.model.args.lossFcns.cls.args.useLoss = true;
+    %setup.model.args.lossFcns.cls.class = @ClassifierLoss;
+    %setup.model.args.lossFcns.cls.name = 'ZClassifier';
+    %setup.model.args.lossFcns.cls.args.UseLoss = false;
 
     %setup.model.args.lossFcns.xcls.class = @InputClassifierLoss;
     %setup.model.args.lossFcns.xcls.name = 'XClassifier';
 
     % evaluations
-    setup.eval.args.CVType = 'KFold';
+    setup.eval.args.CVType = 'Holdout';
     setup.eval.args.KFolds = 2;
     setup.eval.args.KFoldRepeats = 5;
     setup.eval.args.HasIdenticalPartitions = false;
