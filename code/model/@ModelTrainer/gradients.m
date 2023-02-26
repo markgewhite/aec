@@ -18,20 +18,8 @@ function [grad, state, loss] = gradients( nets, ...
     end
 
     % autoencoder training
-    [ dlZGen, dlXGen, state ] = ...
+    [ dlZGen, dlXGen, dlXC, state ] = ...
                 forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
-
-    if thisModel.HasCentredDecoder
-        % add the target mean to the prediction
-        if size( dlXGen, 3 )==1
-            dlXHat = dlXGen + repmat( thisModel.MeanCurveTarget, 1, size(dlXGen,2) );
-        else
-            dlXHat = dlXGen + repmat( thisModel.MeanCurveTarget, 1, 1, size(dlXGen,3) );
-        end
-    else
-        % take the generated output as it is
-        dlXHat = dlXGen;
-    end
 
     % select the active loss functions
     isActive = thisModel.LossFcnTbl.DoCalcLoss;
@@ -39,25 +27,6 @@ function [grad, state, loss] = gradients( nets, ...
     isActive( isNonReconFcn ) = isActive( isNonReconFcn ) ...
                             & repelem(~preTraining, sum(isNonReconFcn))';
     activeFcns = thisModel.LossFcnTbl( isActive, : );
-    
-    compLossFcnIdx = find( activeFcns.Types=='Component', 1 );
-    if ~isempty( compLossFcnIdx )
-        % identify the component loss function
-        thisName = activeFcns.Names(compLossFcnIdx);
-        thisLossFcn = thisModel.LossFcns.(thisName);
-        % compute the AE components
-        thisResponseFcn = @(dlZ) thisModel.reconstruct( dlZ, ...
-                                                        points = false, ...
-                                                        centre = true, ...
-                                                        smooth = false );
-        dlXC = thisModel.calcLatentComponents( ...
-                                dlZGen, ...
-                                sampling = thisLossFcn.Sampling, ...
-                                nSample = thisLossFcn.NumSamples, ...
-                                maxObs = thisLossFcn.MaxObservations, ...
-                                responseFcn = thisResponseFcn);
-    end
-
 
     % compute the active loss functions in turn
     % and assign to networks
@@ -80,9 +49,9 @@ function [grad, state, loss] = gradients( nets, ...
         % select the input variables
         switch thisLossFcn.Input
             case 'X-XHat'
-                dlV = { dlXOut, dlXHat };
+                dlV = { dlXOut, dlXGen };
             case 'XHat'
-                dlV = { dlXHat };
+                dlV = { dlXGen };
             case 'XGen'
                 dlV = { dlXGen };
             case 'XC'
