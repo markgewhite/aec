@@ -39,10 +39,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 100;
+    setup.model.args.trainer.NumIterations = 1000;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 20;
+    setup.model.args.trainer.UpdateFreq = 25;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
@@ -75,9 +75,16 @@ function setup = initSetup
     setup.model.args.lossFcns.xorth.class = @ComponentLoss;
     setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
     setup.model.args.lossFcns.xorth.args.Criterion = 'Orthogonality';
-    setup.model.args.lossFcns.xorth.args.Alpha = 1E0;
-    setup.model.args.lossFcns.xorth.args.YLim = [-0.1, 1];
+    setup.model.args.lossFcns.xorth.args.Alpha = 1E1;
+    setup.model.args.lossFcns.xorth.args.YLim = [-0.1, 0.5];
     setup.model.args.lossFcns.xorth.args.UseLoss = true;
+
+    setup.model.args.lossFcns.xvar.class = @ComponentLoss;
+    setup.model.args.lossFcns.xvar.name = 'XVariance';
+    setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
+    setup.model.args.lossFcns.xvar.args.Alpha = 1E1;
+    setup.model.args.lossFcns.xvar.args.YLim = [-0.5, 0];
+    setup.model.args.lossFcns.xvar.args.UseLoss = true;
             
     %setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     %setup.model.args.lossFcns.cls.name = 'ZClassifier';
