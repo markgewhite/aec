@@ -39,10 +39,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 100;
+    setup.model.args.trainer.NumIterations = 1000;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 25;
+    setup.model.args.trainer.UpdateFreq = 100;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
@@ -82,9 +82,9 @@ function setup = initSetup
     setup.model.args.lossFcns.xvar.class = @ComponentLoss;
     setup.model.args.lossFcns.xvar.name = 'XVariance';
     setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
-    setup.model.args.lossFcns.xvar.args.Alpha = 1E1;
+    setup.model.args.lossFcns.xvar.args.Alpha = 1E0;
     setup.model.args.lossFcns.xvar.args.YLim = [-0.5, 0];
-    setup.model.args.lossFcns.xvar.args.UseLoss = true;
+    setup.model.args.lossFcns.xvar.args.UseLoss = false;
             
     %setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     %setup.model.args.lossFcns.cls.name = 'ZClassifier';

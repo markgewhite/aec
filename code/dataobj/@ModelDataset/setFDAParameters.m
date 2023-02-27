@@ -17,7 +17,7 @@ function [fdParams, lambda] = setFDAParameters( self, tSpan, X )
     
         % find the loglambda where GCV is minimized
         warning( 'off', 'Wid2:reduce' );
-        logLambda = fminbnd( gcvFcn, -8, 6 );
+        logLambda = fminsearch( gcvFcn, 0 );
         warning( 'on', 'Wid2:reduce' );
         lambda = 10^round( logLambda, 1 );
     else
