@@ -3,12 +3,13 @@ classdef ModelDataset
 
     properties
         XInputRaw       % original, raw time series data
-        XFd             % functional representation of the data
         XLen            % array recording the length of each series
 
         XInputDim       % number of X input dimensions
         XTargetDim      % normalized X output size (time series length)
         XChannels       % number of X input channels
+
+        XFd             % functional data representation of raw data
 
         Y               % outcome variable
         CDim            % number of categories
@@ -41,9 +42,15 @@ classdef ModelDataset
 
     properties (Dependent = true)
         XInput          % processed input data (variable length)
+        XInputRegular   % processed input with regularly spaced time span
+        XInputCoeff     % input Fd coefficients as cell array
+        XInputCoeffRegular  % input Fd coefficients as array
+        XInputCoeffDim  % Fd input dimensions
         XTarget         % target output
         XTargetMean     % target output mean
-        XInputRegular   % processed input with regularly spaced time span
+        XTargetCoeff    % target Fd coefficients
+        XTargetCoeffDim % Fd target dimensions
+        XTargetCoeffMean % target output mean
     end
 
 
@@ -77,8 +84,8 @@ classdef ModelDataset
                 args.lambda                 double = []
                 args.tSpan                  double = []
                 args.hasAdaptiveTimeSpan    logical = false
-                args.adaptiveLowerBound     double = 0.05
-                args.adaptiveUpperBound     double = 5
+                args.adaptiveLowerBound     double = 0.25
+                args.adaptiveUpperBound     double = 2.5
                 args.resampleRate           double ...
                     {mustBeNumeric} = 1
                 args.perplexity             double ...
@@ -165,26 +172,97 @@ classdef ModelDataset
                             tSpan0, self.TSpan.Input, tSpan1 );
             end
 
-            self.XInputDim = length( self.TSpan.Input );
-            if self.HasMatchingOutput
-                self.XTargetDim = self.XInputDim;
-            else
-                self.XTargetDim = self.NormalizedPts;
-            end
-
             % set the FD parameters for regular spacing
             self.FDA.FdParamsRegular = self.setFDAParameters( self.TSpan.Regular);
 
-            % set the FD parameters for adaptive spacing
+            % set the FD parameters for input
             self.FDA.FdParamsInput = self.setFDAParameters( self.TSpan.Input );
 
-            % set the FD parameters for adaptive spacing
+            % set the FD parameters for the target
             self.FDA.FdParamsTarget = self.setFDAParameters( self.TSpan.Target );
+            
+            % set the FD parameters for the components to the same values for now 
+            self.FDA.FdParamsComponent = self.FDA.FdParamsTarget;
 
+            % set input and output dimensions
+            self.XInputDim = length( self.TSpan.Input );
+            if self.HasMatchingOutput
+                self.XTargetDim = self.XInputDim;
+            else 
+                self.XTargetDim = self.NormalizedPts;
+            end
+            
             % assign category labels
             self.YLabels = categorical( unique(self.Y) );
             self.CDim = length( self.YLabels );
             self.NumObsByClass = groupcounts( self.Y );
+
+        end
+
+
+        function X = get.XInputCoeff( self )
+            % Get the Fd coefficients for the input
+            arguments
+                self    ModelDataset
+            end
+
+            X = eval_fd( self.TSpan.Input, self.XFd ); 
+            XInputFd = smooth_basis( self.TSpan.Input, ...
+                                X, ...
+                                self.FDA.FdParamsInput );
+            XCoeff = getcoef( XInputFd );
+
+            if size( XCoeff, 3 ) > 1
+                X = num2cell( permute( XCoeff, [2 1 3]), [2 3] );
+                X = cellfun( @squeeze, X , 'UniformOutput', false);
+            else
+                X = num2cell( permute( XCoeff, [2 1]), 2 );
+                X = cellfun( @transpose, X , 'UniformOutput', false);
+            end
+
+        end
+
+
+        function XCoeff = get.XInputCoeffRegular( self )
+            % Get the Fd coefficients for the input
+            arguments
+                self    ModelDataset
+            end
+
+            X = eval_fd( self.TSpan.Input, self.XFd ); 
+            XInputFd = smooth_basis( self.TSpan.Input, ...
+                                X, ...
+                                self.FDA.FdParamsRegular );
+            XCoeff = getcoef( XInputFd );
+
+        end
+
+
+        function d = get.XInputCoeffDim( self )
+            % Get dimension of target coefficients
+            arguments
+                self    ModelDataset
+            end
+
+            d = length(getcoef( self.FDA.FdParamsInput ));
+
+        end
+
+
+        function X = get.XInput( self )
+            % Generate the adaptively-spaced input from XFd
+            arguments
+                self    ModelDataset
+            end
+
+            X = processX(  self.XFd, ...
+                           self.XLen, ...
+                           self.TSpan.Original, ...
+                           self.TSpan.Input, ...
+                           self.Padding, ...
+                           self.HasNormalizedInput, ...
+                           length(self.TSpan.Input), ...
+                           self.Normalization );
 
         end
 
@@ -207,25 +285,33 @@ classdef ModelDataset
             X = reshape( cell2mat( XCell ), [], self.NumObs, self.XChannels );
 
         end
-
-
-        function X = get.XInput( self )
-            % Generate the adaptively-spaced input from XFd
+        
+        
+        function XCoeff = get.XTargetCoeff( self )
+            % Get the Fd coefficients for the target
             arguments
                 self    ModelDataset
             end
 
-            X = processX(  self.XFd, ...
-                           self.XLen, ...
-                           self.TSpan.Original, ...
-                           self.TSpan.Input, ...
-                           self.Padding, ...
-                           self.HasNormalizedInput, ...
-                           length(self.TSpan.Input), ...
-                           self.Normalization );
+            X = eval_fd( self.TSpan.Target, self.XFd ); 
+            XTargetFd = smooth_basis( self.TSpan.Target, ...
+                                X, ...
+                                self.FDA.FdParamsTarget );
+            XCoeff = getcoef( XTargetFd );
 
         end
-        
+
+
+        function d = get.XTargetCoeffDim( self )
+            % Get dimension of target coefficients
+            arguments
+                self    ModelDataset
+            end
+
+            d = length(getcoef( self.FDA.FdParamsTarget ));
+
+        end
+
 
         function X = get.XTarget( self )
             % Generate the adaptively-spaced input from XFd
@@ -254,6 +340,22 @@ classdef ModelDataset
         end
      
 
+        function XMean = get.XTargetCoeffMean( self )
+            % Calculate the mean target Fd coefficients
+            arguments
+                self            ModelDataset            
+            end
+
+            if self.XChannels == 1
+                XMean = mean( self.XTargetCoeff, 2 );
+            else
+                XMean = mean( self.XTargetCoeff, 2 );
+                XMean = permute( XMean, [1 3 2] );
+            end
+
+        end
+
+
         function XMean = get.XTargetMean( self )
             % Calculate the mean target curve
             arguments
@@ -275,8 +377,6 @@ classdef ModelDataset
         dsFull = getDatastore( self )
 
         selection = getCVPartition( self, args )
-
-        [ dlX, dlY, dlXN ] = getDLArrays( self, labels, arg )
 
         mbq = getMiniBatchQueue( self, batchSize, XLabels, XNLabels, args )
 

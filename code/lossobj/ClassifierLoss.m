@@ -44,7 +44,7 @@ classdef ClassifierLoss < LossFunction
             end
 
             superArgsCell = namedargs2cell( superArgs );
-            netAssignments = {'Encoder', 'Decoder', name};
+            netAssignments = {'Encoder', name};
 
             isNet = strcmp( args.ModelType, 'Network' );
 

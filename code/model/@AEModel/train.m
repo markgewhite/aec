@@ -8,7 +8,9 @@ function self = train( self, thisData )
     % initialize the encoder and decoder networks
     self.Nets.Encoder = self.initEncoder;
     self.Nets.Decoder = self.initDecoder;
-    self.LatentResponseFcn = @(dlZ) predict( self.Nets.Decoder, dlZ );
+    self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, ...
+                                                      centre = false, ...
+                                                      smooth = false );
 
     % initialize the loss function networks, if required
     self = self.initLossFcnNetworks;

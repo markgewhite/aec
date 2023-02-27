@@ -1,9 +1,11 @@
-function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
+function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
     % Reconstruct X from Z using the model
     arguments
         self            AEModel
         Z               {mustBeA(Z, {'double', 'dlarray'})}
-        args.convert    logical = true
+        args.centre     logical = true
+        args.points     logical = true
+        args.smooth     logical = false
     end
 
     if isa( Z, 'dlarray' )
@@ -14,29 +16,54 @@ function [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
 
     dlXHat = predict( self.Nets.Decoder, dlZ );
 
-    if self.HasCentredDecoder
+    if args.centre && self.HasCentredDecoder
         dlXHat = dlXHat + self.MeanCurveTarget;
     end
 
-    XHatSmth = [];
-    XHatReg = [];
+    if args.points
+        % convert from dlarray
+        XHat = double(extractdata(gather(dlXHat)));
+        XHat = squeeze(permute( XHat, [1 3 2] ));
+    else
+        XHat = dlXHat;
+    end
+    
+    if self.UsesFdCoefficients && args.points
+        % convert to real points
 
-    if args.convert
+        % create a dummy Fd object
+        dummy = zeros( length(self.TSpan.Target), size(XHat,2), size(XHat,3) );
+        XFd = smooth_basis( self.TSpan.Target, ...
+                            dummy, ...
+                            self.FDA.FdParamsTarget );
 
-        if isa( dlXHat, 'dlarray' )
-            dlXHat = double(extractdata(gather(dlXHat)));
+        % impose the coefficient matrix
+        XFd = putcoef( XFd, XHat );
+
+        % evaluate the function to get points
+        XHat = eval_fd( XFd, self.TSpan.Target );
+    end
+
+    if args.smooth && args.points
+
+        if self.UsesFdCoefficients
+            XHatSmth = XHat;        
+            XHatReg = eval_fd( XFd, self.TSpan.Regular );
+
+        else           
+            XHatSmth = smoothSeries( XHat, ...
+                                     self.TSpan.Target, ...
+                                     self.TSpan.Target, ...
+                                     self.FDA.FdParamsTarget );
+            XHatReg = smoothSeries( XHat, ...
+                                    self.TSpan.Target, ...
+                                    self.TSpan.Regular, ...
+                                    self.FDA.FdParamsTarget );
         end
-        dlXHat = permute( dlXHat, [1 3 2] );
-        dlXHat = squeeze( dlXHat ); 
 
-        XHatSmth = smoothSeries(  dlXHat, ...
-                                  self.TSpan.Target, ...
-                                  self.TSpan.Target, ...
-                                  self.FDA.FdParamsTarget );
-        XHatReg = smoothSeries(   dlXHat, ...
-                                  self.TSpan.Target, ...
-                                  self.TSpan.Regular, ...
-                                  self.FDA.FdParamsTarget );
+    else
+        XHatSmth = [];
+        XHatReg = [];
 
     end
 

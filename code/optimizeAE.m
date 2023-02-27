@@ -2,13 +2,12 @@
 
 clear;
 
-optID = 185;
-disp(['OptID = ' num2str(optID)]);
+optID = input('OptID = ');
 
 dataset = "Synthetic";
 
 % -- optimizer setup --
-setup.opt.exploration = 0.5;
+setup.opt.exploration = 10;
 setup.opt.numEvaluations = 30;
 setup.opt.in_parallel = true;
 setup.opt.acquisitionFcnName = 'expected-improvement-plus';
@@ -70,18 +69,24 @@ setup.model.args.ShowPlots = false;
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
-setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
-setup.model.args.lossFcns.reconvar.args.UseLoss = false;
+setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
+setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
+setup.model.args.lossFcns.reconrough.args.Lambda = 1E0;
+setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
+setup.model.args.lossFcns.reconrough.args.useLoss = false;
+
+setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+setup.model.args.lossFcns.zorth.args.useLoss = false;
 
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.BatchSize = 5000;
-setup.model.args.trainer.Holdout = 0.2;
+setup.model.args.trainer.Holdout = 0;
 
 
 switch optID
@@ -766,29 +771,64 @@ switch optID
                 Optimize = true );
 
     case 201
+        % New regime with FD coefficients
         % Find the best combination of output resolution and the number of
-        % nodes with one hidden layer for a ConvModel and a simplified setup
-        setup.model.class = @ConvolutionalModel;
-        setup.model.args.HasFCDecoder = true;
-        setup.opt.objective = 'AuxModelErrorRate';
+        % nodes for an asymmetric FC model
+        setup.model.class = @AsymmetricFCModel;
+        setup.opt.objective = 'ReconLossRegular';
+        setup.opt.numEvaluations = 30;
 
-        seteup.data.args.ResampleRate = 5;
-        setup.model.args.NumFilters= 16;
-
-        setup.model.args.trainer.NumIterations = 1000;
-
-        setup.model.args.NumHidden = 1;
-        setup.model.args.NumFC = 256;
+        setup.model.args.ZDim = 2;
+        setup.model.args.NumHidden = 3;
+        setup.model.args.NumFC = 1024;
         setup.model.args.FCFactor = 1;
-        setup.model.args.InputDropout = 0.0;
-        setup.model.args.ReLuScale = 0.0;
-        setup.model.args.Dropout = 0.0;
+        setup.model.args.ReLuScale = 0.2;
+        setup.model.args.InputDropout = 0.2;
+        setup.model.args.Dropout = 0;
+        setup.model.args.NetNormalizationType = 'Layer';
+        setup.model.args.NetActivationType = 'Relu';
+        
+        setup.data.args.NormalizedPts = 11;
 
-        varDef(1) = optimizableVariable( 'model_args_FilterSize', ...
-                [5 13], Type = 'integer', ... 
+        setup.model.args.NumHiddenDecoder = 1;
+
+        varDef(1) = optimizableVariable( 'model_args_NumFCDecoder', ...
+                [4 2048], Type = 'integer', Transform = 'log', ... 
                 Optimize = true );
 
-        numEvaluations = 15;
+        varDef(2) = optimizableVariable( 'model_args_UsesFdCoefficients', ...
+                ["false" "true"], Type = 'categorical', ... 
+                Optimize = true );
+
+    case 202
+        % New regime with FD coefficients
+        % Find the best combination of output resolution and the number of
+        % nodes for an asymmetric FC model
+        setup.model.class = @FCModel;
+        setup.opt.objective = 'ReconLossRegular';
+
+        setup.model.args.ZDim = 2;
+        setup.model.args.NumHidden = 1;
+        setup.model.args.NumFC = 100;
+        setup.model.args.FCFactor = 1;
+        setup.model.args.ReLuScale = 0.2;
+        setup.model.args.InputDropout = 0.2;
+        setup.model.args.Dropout = 0;
+        setup.model.args.NetNormalizationType = 'Layer';
+        setup.model.args.NetActivationType = 'Relu';
+
+        setup.model.args.UsesFdCoefficients = false;
+        
+        setup.data.args.NormalizedPts = 11;
+
+        varDef(1) = optimizableVariable( 'model_args_lossFcns_reconrough_args_useLoss', ...
+                ["false" "true"], Type = 'categorical', ... 
+                Optimize = true );
+
+        varDef(2) = optimizableVariable( 'model_args_lossFcns_zorth_args_useLoss', ...
+                ["false" "true"], Type = 'categorical', ... 
+                Optimize = true );
+
 
     otherwise
         error('Unrecognised optID.');

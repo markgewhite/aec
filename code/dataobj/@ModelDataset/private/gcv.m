@@ -14,6 +14,6 @@ function err = gcv( logLambda, X, tSpan, basis, penaltyOrder  )
     % perform smoothing
     [~, ~, err] = smooth_basis( tSpan, X, XFdParam );
 
-    err = mean(err, 'all')*(1 - 0.0001*logLambda);
+    err = mean(err, 'all');
 
 end

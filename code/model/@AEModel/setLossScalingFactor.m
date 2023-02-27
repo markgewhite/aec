@@ -6,9 +6,9 @@ function self = setLossScalingFactor( self )
     
     for i = 1:size( self.LossFcnTbl, 1 )
         
-        if ismember( self.LossFcnTbl.Inputs(i), {'X-XHat', 'XC', 'XHat'} )
+        if ismember( self.LossFcnTbl.Inputs(i), {'X-XHat', 'XC', 'XGen'} )
             name = self.LossFcnTbl.Names(i);
-            self.LossFcns.(name).Scale = self.Scale;
+            self.LossFcns.(name).Scale = self.LossFcnScale;
         end
 
     end

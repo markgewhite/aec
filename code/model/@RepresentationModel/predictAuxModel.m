@@ -6,7 +6,7 @@ function [ YHat, YHatScore] = predictAuxModel( self, Z )
     end
 
     if isa( Z, 'dlarray' )
-        Z = double(gather(extractdata(Z)));
+        Z = double(extractdata(gather(Z)));
     end
 
     doTranspose = (size(Z,2) ~= self.ZDim);

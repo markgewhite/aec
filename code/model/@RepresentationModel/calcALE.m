@@ -7,7 +7,7 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
                             {'Regular', 'Component'} )} = 'Regular'
-        args.nSample        double {mustBeInteger} = 20
+        args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
         args.modelFcn       function_handle
     end
@@ -75,62 +75,53 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
         end
     end
 
+    % prepare all inputs for model function to avoid multiple calls
+    % set all elements to the mean initially
+    dlZC1 = dlarray( repmat(dlZMean, 1, self.ZDim*K*nObs), 'CB' );
+    dlZC2 = dlZC1;
+    i = 1;
+    for d = 1:self.ZDim
+        for k = 1:K
+            rng = i:i+nObs-1;
+            % set the dth element to the kth value
+            dlZC1(d,rng) = ZQ(d, A(d,:));
+            dlZC2(d,rng) = ZQ(d, A(d,:)+1);
+            i = i + nObs;
+        end
+    end
+
+    % call the model function to generate responses
+    dlXCHat1 = args.modelFcn( dlZC1 );
+    dlXCHat2 = args.modelFcn( dlZC2 );
+    delta = dlXCHat2 - dlXCHat1;
+
+    % allocate arrays knowing the size of XCHat
+    nPts = size( delta, 1 );
+    nChannels = size( delta, 3 );
+    F = zeros( nPts, K, self.ZDim, nChannels );
+    FBin = zeros( nPts, K, nChannels );
+    if isa( dlXCHat1, 'dlarray' )
+        % make it a dlarray without labels
+        F = dlarray( F );
+    end
+
     for d = 1:self.ZDim
 
-        % generate predictions for bin and bin+1
-        dlZC1 = dlZ;
-        dlZC2 = dlZ;
-        dlZC1(d,:) = ZQ(d, A(d,:));
-        dlZC2(d,:) = ZQ(d, A(d,:)+1);
-
-        % call the model function to generate responses
-        YHat1 = args.modelFcn( dlZC1 );
-        YHat2 = args.modelFcn( dlZC2 );
-        delta = YHat2 - YHat1;
-
-        if d==1
-            % allocate arrays knowing the size of YHat
-            if length(size(delta))==2
-                FDim(1) = size(delta,1);
-                FDim(2) = 1;
-                F = zeros( self.ZDim, K, FDim(1) );
-                FBin = zeros( K, FDim(1) );
-            else
-                FDim(1) = size(delta,1);
-                FDim(2) = size(delta,2);
-                F = zeros( self.ZDim, K, FDim(1), FDim(2) );
-                FBin = zeros( K, FDim(1), FDim(2) );
-            end
-        end
-
         % subtract the average weighted by number of occurrences
-        w = histcounts(Z(d,:), unique(ZQ(d,:)))';
+        w = histcounts(Z(d,:), unique(ZQ(d,:)));
 
         % calculate means of delta grouped by bin
         % and cumulatively sum
-        if FDim(2)==1
-            for i = 1:K
-                binIdx = (A(d,:)==i);
-                if any(binIdx)
-                    FBin(i,:) = mean( delta(:,binIdx), 2 );
-                end
+        for k = 1:K
+            binIdx = (A(d,:)==k);
+            if any(binIdx)
+                FBin(:,k,:) = mean( delta(:,binIdx,:), 2 );
             end
-            FMeanCS = [ zeros(1,FDim(1)); cumsum(FBin) ];
-            FMeanMid = (FMeanCS(1:K,:) + FMeanCS(2:K+1,:))/2;
-            F( d,:,: ) = FMeanMid - sum(w.*FMeanMid)/sum(w);
-
-        else
-            for i = 1:K
-                binIdx = (A(d,:)==i);
-                if any(binIdx)
-                    FBin(i,:,:) = mean( delta(:,:,binIdx), 3 );
-                end
-            end
-            FMeanCS = [ zeros(1,FDim(1),FDim(2)); cumsum(FBin) ];
-            FMeanMid = (FMeanCS(1:K,:,:) + FMeanCS(2:K+1,:,:))/2;
-            F( d,:,:,: ) = FMeanMid - sum(w.*FMeanMid)/sum(w);
-
         end
+        FMeanCS = [ zeros( nPts, 1, nChannels ) ...
+                    cumsum( FBin, 2 ) ];
+        FMeanMid = (FMeanCS(:,1:K,:) + FMeanCS(:,2:K+1,:))/2;
+        F( :,:,d,: ) = FMeanMid - sum(w.*FMeanMid)/sum(w);
 
     end
 

@@ -6,6 +6,7 @@ classdef ComponentLoss < LossFunction
         Sampling      % sampling method for Z offsets
         NumSamples    % number of samples to draw to generate components
         MaxObservations % limit to batch size when training
+        Alpha         % hyperparameter regulating magnitude
         Scale         % scaling factor between channels
     end
 
@@ -17,16 +18,17 @@ classdef ComponentLoss < LossFunction
                 name                 char {mustBeText}
                 args.Criterion       char ...
                     {mustBeMember( args.Criterion, ...
-                        {'InnerProduct', 'Orthogonality', ...
-                         'Varimax', 'ExplainedVariance'} )} ...
+                        {'Orthogonality', 'Varimax'} )} ...
                                         = 'Orthogonality'
                 args.Sampling        char ...
                     {mustBeMember( args.Sampling, ...
-                        {'Fixed', 'Random'} )} = 'Random'
+                        {'Regular', 'Component'} )} = 'Component'
                 args.NumSamples      double ...
-                    {mustBeInteger, mustBePositive} = 10
+                    {mustBeInteger, mustBePositive} = 5
                 args.MaxObservations double ...
-                    {mustBeInteger, mustBePositive} = 10
+                    {mustBeInteger, mustBePositive} = 500
+                args.Alpha           double = 1E2
+                args.YLim            double = [-0.10, 0.02]
                 superArgs.?LossFunction
             end
 
@@ -34,12 +36,14 @@ classdef ComponentLoss < LossFunction
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Component', ...
                                  input = 'XC', ...
-                                 lossNets = {'Encoder', 'Decoder'} );
+                                 lossNets = {'Encoder', 'Decoder'}, ...
+                                 ylim = args.YLim );
 
             self.Criterion = args.Criterion;
             self.Sampling = args.Sampling;
             self.NumSamples = args.NumSamples;
             self.MaxObservations = args.MaxObservations;
+            self.Alpha = args.Alpha;
             self.Scale = 1;
 
         end
@@ -64,36 +68,17 @@ classdef ComponentLoss < LossFunction
                 self
                 dlXC  dlarray  % generated AE components
             end
-        
-            if size( dlXC, 3 ) == 1
-                dlXC = permute( dlXC, [1 3 2] );
-            end
-            [nPts, nChannels, nComp] = size( dlXC );
-            nComp = nComp/self.NumSamples;
-        
-            dlXC = reshape( dlXC, nPts, nChannels, self.NumSamples, nComp );
-
+               
             switch self.Criterion
-                case 'InnerProduct'
-                    % compute the inner product as a test
-                    % of component orthogonality
-                    loss = innerProduct( dlXC, nChannels, self.NumSamples, nComp );
-
                 case 'Orthogonality'
                     % compute the inner product as a test
                     % of component orthogonality
-                    loss = orthogonality( dlXC, nChannels, self.NumSamples );
+                    loss = self.Alpha*orthogonality( dlXC );
 
                 case 'Varimax'
                     % compute the component variance across 
                     % its length, penalising low variance
-                    loss = varimax( dlXC );
-
-                case 'ExplainedVariance'
-                    % compute the component variance across 
-                    % its length, penalising high variance
-                    loss = explainedVariance( dlXC, nChannels, nComp, ...
-                                         self.NumSamples, self.Scale );
+                    loss = self.Alpha*varimax( dlXC );
 
             end
 
@@ -104,83 +89,50 @@ classdef ComponentLoss < LossFunction
 end
 
 
-function loss = innerProduct( dlXC, nChannels, nSamples, nComp )
-    % Calculate the inner product
-
-    orth = dlarray( zeros(1, nChannels), 'CB' );
-
-    for c = 1:nChannels
-        for k = 1:nSamples
-            for i = 1:nComp
-                for j = i+1:nComp
-                    orth(c) = orth(c) + mean(dlXC(:,c,k,i).*dlXC(:,c,k,j));
-                end
-            end
-        end
-    end
-
-    loss = mean(orth)/nSamples;
-
-end
-
-
-
-function loss = orthogonality( dlXC, nChannels, nSamples )
+function loss = orthogonality( dlXC )
     % Calculate a pseudo orthogonality
 
-    orth = dlarray( zeros(1, nChannels), 'CB' );
+    [nPts, nSamples, nComp, nChannels] = size( dlXC );
 
     for c = 1:nChannels
         for k = 1:nSamples
-            dlXCsample = squeeze( dlXC(:,c,k,:) );
+            dlXCsample = squeeze( dlXC(:,k,:,c) );
             dlXCsample = permute( dlXCsample, [2 1] );
-            [dlVar, dlCov] = dlVarianceCovariance( dlXCsample );
-            loss = mean( dlCov, 'all' );
-            %loss = loss + var(dlVar);
-            orth(c) = orth(c) + loss;
+            dlCorr = dlCorrelation( dlXCsample );
+            if k==1 && c==1
+                orth = mean( dlCorr.^2, 'all' );
+            else
+                orth = orth + mean( dlCorr.^2, 'all' );
+            end
         end
     end
 
-    loss = 0.001*mean(orth)/nSamples;
+    loss = orth/(nChannels*nSamples*nComp*(nComp-1));
 
 end
 
 
-function loss = varimax( XC )
+function loss = varimax( dlXC )
     % Calculate the varimax loss which is the
     % negative mean of component variances
 
-    nObs = size( XC, 2 );
-    nChannels = size( XC, 3 );
-    var = zeros( nChannels, 1 );
-    for i = 1:nObs
-        var = var + std( XC(:,i), [], 1 ).^2;
-    end
-
-    var = var./scale;
-
-    loss = -0.01*mean(var)/nObs;   
-
-end
-
-
-function loss = explainedVariance( XC, nChannels, nComps, nSamples, scale )
-    % Calculate the explained variance loss 
-
-    var = zeros( 1, nChannels );
+    [nPts, nSamples, nComp, nChannels] = size( dlXC );
 
     for c = 1:nChannels
         for k = 1:nSamples
-            for i = 1:nComps
-                var(c) = var(c) + mean( XC(:,c,k,i).^2 );
+            dlXCsample = squeeze( dlXC(:,k,:,c) );
+            dlXCsample = permute( dlXCsample, [2 1] );
+            dlVar = dlVarianceCovariance( dlXCsample );
+            if k==1 && c==1
+                v = -mean( dlVar );
+            else
+                v = v - mean( dlVar );
             end
         end
     end
 
-    var = var./scale;
-
-    loss = 1 - mean(var)/(nChannels*nComps*nSamples);
-
+    loss = v/(nChannels*nSamples*nComp);
 
 end
+
 

@@ -62,6 +62,11 @@ function [ obj, constraint, userdata ] = objectiveFcnAE( hyperparams, setup )
         case 'ReconLoss&AuxModelErrorRateEqual'
             obj = thisEvaluation.CVLoss.Testing.Mean.ReconLoss + ...
                         thisEvaluation.CVLoss.Testing.Mean.AuxModelErrorRate;
+        case 'ZCorrelation'
+            obj = thisEvaluation.CVLoss.Training.Mean.ZCorrelation;
+        case 'XCCorrelation'
+            obj = thisEvaluation.CVLoss.Training.Mean.XCCorrelation;
+
         otherwise
             error('Unrecognised objective.');
     end

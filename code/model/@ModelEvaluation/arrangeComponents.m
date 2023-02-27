@@ -24,7 +24,8 @@ function self = arrangeComponents( self )
                                         'gaplotbestindiv' } );
 
     % pre-compile latent components across the sub-models for speed
-    latentComp = zeros( aModel.XInputDim, aModel.NumCompLines, ...
+    XDim = size( aModel.LatentComponents, 1 );
+    latentComp = zeros( XDim, aModel.NumCompLines, ...
                         aModel.ZDim, aModel.XChannels, self.NumModels );
     for k = 1:self.NumModels
         latentComp(:,:,:,:,k) = self.Models{k}.LatentComponents;

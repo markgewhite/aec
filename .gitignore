@@ -2,6 +2,7 @@
 *.mat
 *.txt
 *.prj
+*.mlx
 results/*
 resources/*
 paper

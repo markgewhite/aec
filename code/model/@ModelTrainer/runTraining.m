@@ -13,11 +13,16 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisValData = thisDataset.partition( ~trainObs );
 
     % set the mean curve for these training data
-    thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
     thisModel.MeanCurve = mean( thisTrnData.XInputRegular, 2 );
+    if thisModel.UsesFdCoefficients
+        thisModel.MeanCurveTarget = thisTrnData.XTargetCoeffMean;
+    else
+        thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
+    end
 
     % create a super datastore combining individual variable datastores
-    dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation );
+    dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation, ...
+                                      thisModel.UsesFdCoefficients );
 
     % setup the minibatch preprocessing function
     preprocFcn = @( X, XN, P, Y, I ) preprocMiniBatch( X, XN, P, Y, I, ...
@@ -26,11 +31,11 @@ function thisModel = runTraining( self, thisModel, thisDataset )
 
     if self.Holdout > 0
         % get the validation data (one-time only)
-        [ dlXVal, dlYVal, dlXNVal ] = thisValData.getDLArrays( thisModel.XDimLabels );
+        [ dlXVal, dlYVal, dlXNVal ] = thisModel.getDLArrays( thisValData );
     end
 
     % setup whole training set
-    [ dlXTrnAll, dlYTrnAll ] = thisTrnData.getDLArrays( thisModel.XDimLabels );
+    [ dlXTrnAll, dlYTrnAll ] = thisModel.getDLArrays( thisTrnData );
    
     % setup monitoring functions
     lossLinesFcn = @(data) updateLossLines( self.LossLines, data );
@@ -63,12 +68,25 @@ function thisModel = runTraining( self, thisModel, thisDataset )
                                 dlYTrnAll );
     thisModel.Timing.Training.AuxModelTime = toc;
 
-    % set the oversmoothing level
-    XHatTrnAll = thisModel.reconstruct( dlZTrnAll, convert = true );
+    % set the smoothing level for the reconstructions
+    XHatTrnAll = thisModel.reconstruct( dlZTrnAll );
 
     [ thisModel.FDA.FdParamsTarget, thisModel.FDA.LambdaTarget ] = ...
         thisTrnData.setFDAParameters( thisTrnData.TSpan.Target, ...
-                                      permute(XHatTrnAll, [1 3 2]) );
+                                        XHatTrnAll );
+
+    % set the smoothing level for the components (may be different)
+    XCTrnAll = thisModel.calcLatentComponents( dlZTrnAll, ...
+                                               sampling = 'Regular' );
+    XCTrnAll = reshape( XCTrnAll, ...
+                        thisModel.XComponentDim, [], thisModel.XChannels );
+    XCTrnAll = XCTrnAll + reshape( thisTrnData.XTargetMean, ...
+                                   thisModel.XComponentDim, 1, thisModel.XChannels );
+
+    [ thisModel.FDA.FdParamsComponent, thisModel.FDA.LambdaComponent ] = ...
+        thisTrnData.setFDAParameters( thisTrnData.TSpan.Target, ...
+                                      XCTrnAll );
+
 
 end
     

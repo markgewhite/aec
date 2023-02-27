@@ -36,7 +36,8 @@ function [ R, C ] = latentComponentCorrelation( XC, arg )
         for c = 1:nChannels
             R0(c) = sum( abs( squeeze(R(:,:,c)) - eye(nComp) ), 'all' ) ...
                             /(nComp*(nComp-1));
-            C0(c) = sum( abs( squeeze(C(:,:,c)) - eye(nComp) ), 'all' ) ...
+            Cs = squeeze(C(:,:,c));
+            C0(c) = sum( abs( Cs- Cs(1:nComp+1:end).*eye(nComp) ), 'all' ) ...
                             /(nComp*(nComp-1));
         end
         R = mean(R0);

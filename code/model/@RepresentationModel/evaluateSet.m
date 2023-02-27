@@ -16,7 +16,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     % reconstruct the curves
     [ pred.XHat, pred.XHatSmoothed, pred.XHatRegular ] = ...
-            thisModel.reconstruct( pred.Z, convert = true );
+            thisModel.reconstruct( pred.Z, smooth = true );
        
     % compute reconstruction loss
     eval.ReconLoss = reconLoss( pred.XTarget, pred.XHat, thisModel.Scale );
@@ -92,6 +92,8 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     [ cor.XCCorrelationMatrix, cor.XCCovarianceMatrix ] = ...
         latentComponentCorrelation( thisModel.LatentComponents );
+
+    cor.XCInnerProduct = innerProductLoss( thisModel.LatentComponents );
 
     % compute the auxiliary loss using the model
     ZLong = reshape( pred.ZAux, size( pred.ZAux, 1 ), [] );

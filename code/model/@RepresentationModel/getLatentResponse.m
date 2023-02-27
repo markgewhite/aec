@@ -6,6 +6,6 @@ function XC = getLatentResponse( self, thisDataset )
     end
 
     Z = self.encode( thisDataset, convert = false );
-    XC = self.calcLatentComponents( Z, smooth = true ); 
+    XC = self.calcLatentComponents( Z ); 
 
 end

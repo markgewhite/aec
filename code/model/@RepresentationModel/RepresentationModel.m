@@ -155,7 +155,7 @@ classdef RepresentationModel
 
         self = getAuxResponse( self, thisDataset, args )
 
-        [ XA, Q, XC ] = getLatentResponse( self, thisDataset )
+        XC = getLatentResponse( self, thisDataset )
 
         plotAuxResponse( self, args )
 

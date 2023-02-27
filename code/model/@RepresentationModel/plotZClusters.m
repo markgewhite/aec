@@ -15,7 +15,7 @@ function plotZClusters( self, Z, args )
     end
 
     if isa( Z, 'dlarray' )
-        Z = double( gather(extractdata( Z )) )';
+        Z = double( extractdata(gather(Z)) )';
     end
     % ensure Z is 2D
     Z = reshape( Z, size(Z,1), [] );
@@ -29,7 +29,7 @@ function plotZClusters( self, Z, args )
     if ~isempty( args.Y )
         Y = args.Y;
         if isa( args.Y, 'dlarray' )
-            Y = double( extractdata( Y ) );
+            Y = double( extractdata(gather(Y)) );
         end
         classes = unique( Y );
     else
