@@ -11,7 +11,7 @@ plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/componentAnalysis.m') );
-path = [path0 '/../results/components2/'];
+path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -32,10 +32,8 @@ setup.model.args.ShowPlots = true;
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
-setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
-setup.model.args.lossFcns.reconrough.args.Lambda = 1E-1;
-setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
+setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
+setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
 
 setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
 setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
@@ -72,7 +70,7 @@ actTypes = {'None', 'Tanh', 'Relu'};
 parameters = [ "data.args.NormalizedPts", ...
                "data.args.HasAdaptiveTimeSpan", ...
                "model.args.UsesFdCoefficients", ...
-               "model.args.lossFcns.reconvar.args.DoCalcLoss", ...
+               "model.args.lossFcns.reconrough.args.DoCalcLoss", ...
                "model.args.lossFcns.zorth.args.DoCalcLoss", ...
                "model.args.lossFcns.xorth.args.DoCalcLoss", ...
                "model.args.lossFcns.xvar.args.DoCalcLoss" ];

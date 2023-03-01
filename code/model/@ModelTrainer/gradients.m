@@ -18,7 +18,7 @@ function [grad, state, loss] = gradients( nets, ...
     end
 
     % autoencoder training
-    [ dlZGen, dlXGen, dlXC, state ] = ...
+    [ dlZGen, dlXGen, dlXHat, dlXC, state ] = ...
                 forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
 
     % select the active loss functions
@@ -49,9 +49,9 @@ function [grad, state, loss] = gradients( nets, ...
         % select the input variables
         switch thisLossFcn.Input
             case 'X-XHat'
-                dlV = { dlXOut, dlXGen };
+                dlV = { dlXOut, dlXHat };
             case 'XHat'
-                dlV = { dlXGen };
+                dlV = { dlXHat };
             case 'XGen'
                 dlV = { dlXGen };
             case 'XC'

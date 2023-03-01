@@ -1,4 +1,4 @@
-function [ dlZ, dlXHat, dlXC, state ] = forward( self, encoder, decoder, dlX )
+function [ dlZ, dlXGen, dlXHat, dlXC, state ] = forward( self, encoder, decoder, dlX )
     % Forward-run the encoder and decoder networks
     arguments
         self        AEModel

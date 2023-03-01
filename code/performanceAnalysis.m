@@ -49,8 +49,8 @@ setup.model.args.ShowPlots = true;
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
-setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
+setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
+setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
 
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';

@@ -198,7 +198,7 @@ classdef AEModel < RepresentationModel
 
         dlZ = encode( self, X, arg )
 
-        [ dlZ, dlXHat, dlXC, state ] = forward( self, encoder, decoder, dlX )
+        [ dlZ, dlXGen, dlXHat, dlXC, state ] = forward( self, encoder, decoder, dlX )
         
         [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ )
 
