@@ -32,6 +32,8 @@ function setup = initSetup
     setup.model.args.ZDim = 3;
     setup.model.args.NumHidden = 1;
     setup.model.args.NumFC = 100;
+    setup.model.args.InputDropout = 0;
+    setup.model.args.Dropout = 0;
     setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
@@ -41,8 +43,8 @@ function setup = initSetup
     % training
     setup.model.args.trainer.NumIterations = 1000;
     setup.model.args.trainer.NumIterPreTrn = 0;
-    setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 100;
+    setup.model.args.trainer.BatchSize = 1000;
+    setup.model.args.trainer.UpdateFreq = 50;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
@@ -53,7 +55,7 @@ function setup = initSetup
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
     setup.model.args.lossFcns.reconrough.args.Lambda = 1E-1;
     setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
-    setup.model.args.lossFcns.reconrough.args.UseLoss = true;
+    setup.model.args.lossFcns.reconrough.args.UseLoss = false;
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
     %setup.model.args.lossFcns.adv.name = 'Discriminator';
@@ -70,7 +72,7 @@ function setup = initSetup
     setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
     setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
     setup.model.args.lossFcns.zorth.args.Alpha= 1E0;
-    setup.model.args.lossFcns.zorth.args.UseLoss = true;
+    setup.model.args.lossFcns.zorth.args.UseLoss = false;
 
     setup.model.args.lossFcns.xorth.class = @ComponentLoss;
     setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
@@ -84,7 +86,7 @@ function setup = initSetup
     setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
     setup.model.args.lossFcns.xvar.args.Alpha = 1E0;
     setup.model.args.lossFcns.xvar.args.YLim = [-0.5, 0];
-    setup.model.args.lossFcns.xvar.args.UseLoss = false;
+    setup.model.args.lossFcns.xvar.args.UseLoss = true;
             
     %setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     %setup.model.args.lossFcns.cls.name = 'ZClassifier';

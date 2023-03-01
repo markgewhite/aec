@@ -6,12 +6,12 @@ runAnalysis = true;
 inParallel = false;
 resume = false;
 catchErrors = false;
-reportIdx = 2;
+reportIdx = 1;
 plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/componentAnalysis.m') );
-path = [path0 '/../results/components/'];
+path = [path0 '/../results/components2/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -21,7 +21,7 @@ setup.data.args.HasNormalizedInput = true;
 setup.model.class = @FCModel;
 setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 1;
-setup.model.args.NumFC = 100;
+setup.model.args.NumFC = 10;
 setup.model.args.ReLuScale = 0.2;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.HasCentredDecoder = true;
@@ -34,15 +34,30 @@ setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
 setup.model.args.lossFcns.reconvar.class = @ReconstructionTemporalVarLoss;
 setup.model.args.lossFcns.reconvar.name = 'ReconstructionTemporalVariance';
+setup.model.args.lossFcns.reconrough.args.Lambda = 1E-1;
+setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
+
+setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+
+setup.model.args.lossFcns.xorth.class = @ComponentLoss;
+setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
+setup.model.args.lossFcns.xorth.args.Criterion = 'Orthogonality';
+setup.model.args.lossFcns.xorth.args.Alpha = 1E1;
+
+setup.model.args.lossFcns.xvar.class = @ComponentLoss;
+setup.model.args.lossFcns.xvar.name = 'XVariance';
+setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
+setup.model.args.lossFcns.xvar.args.Alpha = 1E-1;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 1;
+setup.model.args.trainer.UpdateFreq = 500;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
-setup.eval.args.CVType = 'KFold';
+setup.eval.args.CVType = 'Holdout';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 1;
 
@@ -51,14 +66,23 @@ names = [ "JumpsVGRF", ...
 memorySaving = 3;
 
 % -- grid search --
-normPts = [5 9 15 25];
+normPts = [11 21];
 normTypes = {'None', 'Batch', 'Layer'};
 actTypes = {'None', 'Tanh', 'Relu'};
 parameters = [ "data.args.NormalizedPts", ...
+               "data.args.HasAdaptiveTimeSpan", ...
+               "model.args.UsesFdCoefficients", ...
                "model.args.lossFcns.reconvar.args.DoCalcLoss", ...
-               "model.args.NetNormalizationType", ...
-               "model.args.NetActivationType" ];
-values = {normPts, {false, true}, normTypes, actTypes}; 
+               "model.args.lossFcns.zorth.args.DoCalcLoss", ...
+               "model.args.lossFcns.xorth.args.DoCalcLoss", ...
+               "model.args.lossFcns.xvar.args.DoCalcLoss" ];
+values = {normPts, ...
+          {false, true}, ...
+          {false, true}, ...
+          {false, true}, ...
+          {false, true}, ...
+          {false, true}, ...
+          {false, true} }; 
 
 nReports = length( reportIdx );
 
