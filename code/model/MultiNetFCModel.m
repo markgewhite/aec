@@ -67,22 +67,34 @@ classdef MultiNetFCModel < FCModel
                 self        MultiNetFCModel
             end
 
+            mask = false( self.ZDim, 1 );
             inLayer = featureInputLayer( self.ZDim, 'Name', 'in' );
-            addLayer = additionLayer( self.ZDim, 'Name', 'add' );
             lgraphDec = layerGraph( inLayer );
-            lgraphDec = addLayers( lgraphDec, addLayer );
+            lgraphDec = addLayers( lgraphDec, ...
+                                   additionLayer( self.ZDim, 'Name', 'add' ) );
 
             for d = 1:self.ZDim
 
-                lastLayer = 'in';
+                maskD = mask;
+                maskD(d) = true;
+                lgraphDec = addLayers( lgraphDec, ...
+                                maskLayer( maskD, 'Name', ['mask' num2str(100*d)] ));
+                lgraphDec = connectLayers( lgraphDec, ...
+                                           'in', ['mask' num2str(100*d)] );
+
+                lastLayer = ['mask' num2str(100*d)];
                 
                 for i = 1:self.NumHiddenDecoder
-    
-                    nNodes = fix( self.NumFCDecoder*2^(self.FCFactorDecoder*(-self.NumHiddenDecoder+i)) );
-                    if nNodes < self.ZDim
-                        eid = 'FCModel:Design';
-                        msg = 'Decoder hidden layer smaller than latent space.';
-                        throwAsCaller( MException(eid,msg) );
+                    
+                    if i==1
+                        nNodes = sum( maskD );
+                    else
+                        nNodes = fix( self.NumFCDecoder*2^(self.FCFactorDecoder*(-self.NumHiddenDecoder+i)) );
+                        if nNodes < self.ZDim
+                            eid = 'FCModel:Design';
+                            msg = 'Decoder hidden layer smaller than latent space.';
+                            throwAsCaller( MException(eid,msg) );
+                        end
                     end
                     
                     [lgraphDec, lastLayer] = FCModel.addBlock( ...
