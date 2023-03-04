@@ -27,7 +27,7 @@ function setup = initSetup
     %setup.data.args.resampleRate = 1;
 
     % model
-    setup.model.class = @FCModel;
+    setup.model.class = @MultiNetFCModel;
     setup.model.args.UsesFdCoefficients = false;
     setup.model.args.ZDim = 3;
     setup.model.args.NumHidden = 1;
@@ -43,8 +43,8 @@ function setup = initSetup
     % training
     setup.model.args.trainer.NumIterations = 1000;
     setup.model.args.trainer.NumIterPreTrn = 0;
-    setup.model.args.trainer.BatchSize = 1000;
-    setup.model.args.trainer.UpdateFreq = 50;
+    setup.model.args.trainer.BatchSize = 100;
+    setup.model.args.trainer.UpdateFreq = 100;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions

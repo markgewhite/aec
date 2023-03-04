@@ -16,7 +16,7 @@ path = [path '/../results/'];
 %          {false, true}};
 
 parameters = [ "model.class"];
-values = {{@FCModel}};
+values = {{@MultiNetFCModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 
