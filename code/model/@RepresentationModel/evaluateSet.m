@@ -75,10 +75,10 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     % compute the latent code correlation matrix
     [ cor.ZCorrelation, cor.ZCovariance ] = ...
-        latentCodeCorrelation( pred.Z, summary = true );
+        latentCodeCorrelation( pred.ZAux, summary = true );
     
     [ cor.ZCorrelationMatrix, cor.ZCovarianceMatrix ] = ...
-        latentCodeCorrelation( pred.Z );
+        latentCodeCorrelation( pred.ZAux );
 
     % compute the latent component correlation matrix
     [ cor.XCCorrelation, cor.XCCovariance ] = ...

@@ -67,7 +67,8 @@ classdef MultiNetFCModel < FCModel
                 self        MultiNetFCModel
             end
 
-            mask = false( self.ZDim, 1 );
+            mask = [false( self.ZDimAux, 1 );
+                    true( self.ZDim - self.ZDimAux, 1 )];
             inLayer = featureInputLayer( self.ZDim, 'Name', 'in' );
             lgraphDec = layerGraph( inLayer );
             lgraphDec = addLayers( lgraphDec, ...

@@ -46,9 +46,9 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
     
         % prepare all inputs for model function to avoid multiple calls
         % set all elements to the mean initially
-        dlZC = dlarray( repmat(dlZMean, 1, self.ZDim*K), 'CB' );
+        dlZC = dlarray( repmat(dlZMean, 1, self.ZDimAux*K), 'CB' );
         i = 1;
-        for d = 1:self.ZDim
+        for d = 1:self.ZDimAux
             for k = 1:K
                 % set the dth element to the kth value
                 dlZC(d,i) = dlZMean(d) + zs(k)*dlZSD(d);
@@ -75,7 +75,7 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
     
     if any(strcmp( args.mode,{'Full', 'OutputOnly'} ))
         % reshape the output
-        dlXCHat = reshape( dlXCHat, [], K, self.ZDim );
+        dlXCHat = reshape( dlXCHat, [], K, self.ZDimAux );
     end
 
 end

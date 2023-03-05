@@ -49,9 +49,9 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
     dlZSD = std( dlZ, [], 2 );
 
     % generate ZQ and ZQMid values from z-scores
-    ZQ = zeros( self.ZDim, K+1 );
-    ZQMid = zeros( self.ZDim, K );
-    for d = 1:self.ZDim
+    ZQ = zeros( self.ZDimAux, K+1 );
+    ZQMid = zeros( self.ZDimAux, K );
+    for d = 1:self.ZDimAux
         for k = 1:K+1
             ZQ( d, k ) = dlZMean(d) + zsEdge(k)*dlZSD(d);
         end
@@ -61,8 +61,8 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
     end
 
     % identify bin assignments across dimensions
-    A = zeros( self.ZDim, nObs );
-    for d = 1:self.ZDim
+    A = zeros( self.ZDimAux, nObs );
+    for d = 1:self.ZDimAux
         [~, orderIdx] = sort( Z(d,:) );
         j = 1;
         for i = orderIdx
@@ -77,10 +77,10 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
 
     % prepare all inputs for model function to avoid multiple calls
     % set all elements to the mean initially
-    dlZC1 = dlarray( repmat(dlZMean, 1, self.ZDim*K*nObs), 'CB' );
+    dlZC1 = dlarray( repmat(dlZMean, 1, self.ZDimAux*K*nObs), 'CB' );
     dlZC2 = dlZC1;
     i = 1;
-    for d = 1:self.ZDim
+    for d = 1:self.ZDimAux
         for k = 1:K
             rng = i:i+nObs-1;
             % set the dth element to the kth value
@@ -98,14 +98,14 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
     % allocate arrays knowing the size of XCHat
     nPts = size( delta, 1 );
     nChannels = size( delta, 3 );
-    F = zeros( nPts, K, self.ZDim, nChannels );
+    F = zeros( nPts, K, self.ZDimAux, nChannels );
     FBin = zeros( nPts, K, nChannels );
     if isa( dlXCHat1, 'dlarray' )
         % make it a dlarray without labels
         F = dlarray( F );
     end
 
-    for d = 1:self.ZDim
+    for d = 1:self.ZDimAux
 
         % subtract the average weighted by number of occurrences
         w = histcounts(Z(d,:), unique(ZQ(d,:)));

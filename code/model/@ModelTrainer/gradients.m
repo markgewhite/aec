@@ -58,6 +58,8 @@ function [grad, state, loss] = gradients( nets, ...
                 dlV = { dlXC };
             case 'Z'
                 dlV = { dlZGen };
+            case 'ZAux'
+                dlV = { dlZGen( 1:thisModel.ZDimAux, : ) };
             case 'P-Z'
                 dlV = { dlP, dlZGen };
             case 'YHat'
