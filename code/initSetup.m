@@ -29,12 +29,13 @@ function setup = initSetup
     % model
     setup.model.class = @MultiNetFCModel;
     setup.model.args.UsesFdCoefficients = false;
-    setup.model.args.ZDim = 10;
+    setup.model.args.ZDim = 3;
     setup.model.args.ZDimAux = 3;
     setup.model.args.NumHidden = 1;
     setup.model.args.NumFC = 100;
     setup.model.args.InputDropout = 0;
     setup.model.args.Dropout = 0;
+    setup.model.args.NetNormalizationType = 'None';
     setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
@@ -42,10 +43,10 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 5000;
+    setup.model.args.trainer.NumIterations = 500;
     setup.model.args.trainer.NumIterPreTrn = 0;
-    setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 500;
+    setup.model.args.trainer.BatchSize = 1000;
+    setup.model.args.trainer.UpdateFreq = 100;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions

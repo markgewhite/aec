@@ -41,7 +41,7 @@ classdef ModelDataset
     end
 
     properties (Dependent = true)
-        XInput          % processed input data (variable length)
+        XInputCell      % processed input data (variable length) as cell array
         XInputRegular   % processed input with regularly spaced time span
         XInputCoeff     % input Fd coefficients as cell array
         XInputCoeffRegular  % input Fd coefficients as array
@@ -249,8 +249,8 @@ classdef ModelDataset
         end
 
 
-        function X = get.XInput( self )
-            % Generate the adaptively-spaced input from XFd
+        function X = get.XInputCell( self )
+            % Generate cell array input from XFd
             arguments
                 self    ModelDataset
             end
@@ -258,7 +258,7 @@ classdef ModelDataset
             X = processX(  self.XFd, ...
                            self.XLen, ...
                            self.TSpan.Original, ...
-                           self.TSpan.Input, ...
+                           self.TSpan.Regular, ...
                            self.Padding, ...
                            self.HasNormalizedInput, ...
                            length(self.TSpan.Input), ...

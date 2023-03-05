@@ -10,7 +10,7 @@ function dsFull = getDatastore( self, includeP, getCoeff )
         X = self.XInputCoeff;
         XN = self.XTargetCoeff;
     else
-        X = self.XInput;
+        X = self.XInputCell;
         XN = self.XTarget;
     end
     
