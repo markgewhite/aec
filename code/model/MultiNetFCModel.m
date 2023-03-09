@@ -2,6 +2,7 @@ classdef MultiNetFCModel < FCModel
     % Subclass of a fully connected model allowing 
     % a multi-network decoder
     properties
+        HasBranchedEncoder    % whether to have branching in the encoder
         NumHiddenDecoder      % number of hidden layers
         NumFCDecoder          % number of nodes for widest layer
         FCFactorDecoder       % log2 scaling factor subsequent layers
@@ -23,6 +24,7 @@ classdef MultiNetFCModel < FCModel
                 superArgs.?FCModel
                 superArgs2.name         string
                 superArgs2.path         string
+                args.HasBranchedEncoder logical = false
                 args.NumHiddenDecoder   double ...
                     {mustBeInteger, mustBePositive} = 1
                 args.NumFCDecoder       double ...
@@ -58,6 +60,81 @@ classdef MultiNetFCModel < FCModel
             self.NetNormalizationTypeDecoder = args.NetNormalizationTypeDecoder;
             self.NetActivationTypeDecoder = args.NetActivationTypeDecoder;
            
+        end
+
+
+        function net = initEncoder( self )
+            % Override the FC encoder network initialization
+            arguments
+                self        MultiNetFCModel
+            end
+
+            if self.HasBranchedEncoder
+
+                if self.HasInputNormalization
+                    layersEnc = featureInputLayer( self.XInputDim*self.XChannels, ...
+                                           'Name', 'in', ...
+                                           'Normalization', 'zscore', ...
+                                           'Mean', 0, 'StandardDeviation', 1 );
+                else
+                    layersEnc = featureInputLayer( self.XInputDim*self.XChannels, ...
+                                           'Name', 'in' );
+                end
+    
+                if self.InputDropout > 0
+                    layersEnc = [ layersEnc; ...
+                                  dropoutLayer( self.InputDropout, 'Name', 'drop0' ) ];
+                    lastLayer0 = 'drop0';
+                else
+                    lastLayer0 = 'in';
+                end
+    
+                lgraphEnc = layerGraph( layersEnc );
+                lgraphEnc = addLayers( lgraphEnc, ...
+                                       additionLayer( self.ZDimAux, 'Name', 'add' ) );
+                
+                for d = 1:self.ZDimAux
+    
+                    lastLayer = lastLayer0;
+    
+                    for i = 1:self.NumHidden
+        
+                        nNodes = fix( self.NumFC*2^(self.FCFactor*(1-i)) );
+                        if nNodes < self.ZDim
+                            eid = 'FCModel:Design';
+                            msg = 'Encoder hidden layer smaller than latent space.';
+                            throwAsCaller( MException(eid,msg) );
+                        end
+        
+                        [lgraphEnc, lastLayer] = self.addBlock( ...
+                                            lgraphEnc, 100*d+i, lastLayer, nNodes, ...
+                                            self.ReluScale, ...
+                                            self.Dropout, ...
+                                            self.NetNormalizationType, ...
+                                            self.NetActivationType );
+        
+                    end
+                    
+                    outLayers = fullyConnectedLayer( self.ZDim, 'Name', ...
+                                                    ['fcout' num2str(100*d)] );
+                    
+                    lgraphEnc = addLayers( lgraphEnc, outLayers );
+                    lgraphEnc = connectLayers( lgraphEnc, ...
+                                               lastLayer, ['fcout' num2str(100*d)] );
+    
+                    lgraphEnc = connectLayers( lgraphEnc, ...
+                               ['fcout' num2str(100*d)], ...
+                               ['add/in' num2str(d)] );
+    
+                end
+    
+                net = dlnetwork( lgraphEnc );
+
+            else
+                net = initEncoder@FCModel( self );
+
+            end
+
         end
 
 

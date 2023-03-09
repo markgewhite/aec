@@ -29,13 +29,13 @@ function setup = initSetup
     % model
     setup.model.class = @MultiNetFCModel;
     setup.model.args.UsesFdCoefficients = false;
-    setup.model.args.ZDim = 3;
+    setup.model.args.ZDim = 10;
     setup.model.args.ZDimAux = 3;
     setup.model.args.NumHidden = 1;
     setup.model.args.NumFC = 100;
     setup.model.args.InputDropout = 0;
     setup.model.args.Dropout = 0;
-    setup.model.args.NetNormalizationType = 'None';
+    setup.model.args.NetNormalizationType = 'Layer';
     setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
@@ -43,9 +43,9 @@ function setup = initSetup
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 500;
+    setup.model.args.trainer.NumIterations = 2000;
     setup.model.args.trainer.NumIterPreTrn = 0;
-    setup.model.args.trainer.BatchSize = 1000;
+    setup.model.args.trainer.BatchSize = 100;
     setup.model.args.trainer.UpdateFreq = 100;
     setup.model.args.trainer.Holdout = 0;    
 
@@ -61,7 +61,6 @@ function setup = initSetup
     
     %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
     %setup.model.args.lossFcns.adv.name = 'Discriminator';
-    %setup.model.args.lossFcns.adv.args.Distribution = 'Cauchy';
 
     %setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
     %setup.model.args.lossFcns.kl.name = 'KLDivergence';
@@ -79,16 +78,16 @@ function setup = initSetup
     setup.model.args.lossFcns.xorth.class = @ComponentLoss;
     setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
     setup.model.args.lossFcns.xorth.args.Criterion = 'Orthogonality';
-    setup.model.args.lossFcns.xorth.args.Alpha = 1E1;
-    setup.model.args.lossFcns.xorth.args.YLim = [-0.1, 0.5];
-    setup.model.args.lossFcns.xorth.args.UseLoss = true;
+    setup.model.args.lossFcns.xorth.args.Alpha = 1E0;
+    setup.model.args.lossFcns.xorth.args.YLim = [0, 0.2];
+    setup.model.args.lossFcns.xorth.args.UseLoss = false;
 
     setup.model.args.lossFcns.xvar.class = @ComponentLoss;
     setup.model.args.lossFcns.xvar.name = 'XVariance';
     setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
     setup.model.args.lossFcns.xvar.args.Alpha = 1E-1;
-    setup.model.args.lossFcns.xvar.args.YLim = [-0.5, 0];
-    setup.model.args.lossFcns.xvar.args.UseLoss = true;
+    setup.model.args.lossFcns.xvar.args.YLim = [-0.2, 0];
+    setup.model.args.lossFcns.xvar.args.UseLoss = false;
             
     %setup.model.args.lossFcns.cls.class = @ClassifierLoss;
     %setup.model.args.lossFcns.cls.name = 'ZClassifier';
