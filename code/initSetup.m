@@ -29,7 +29,7 @@ function setup = initSetup
     % model
     setup.model.class = @MultiNetFCModel;
     setup.model.args.UsesFdCoefficients = false;
-    setup.model.args.ZDim = 10;
+    setup.model.args.ZDim = 5;
     setup.model.args.ZDimAux = 3;
     setup.model.args.NumHidden = 1;
     setup.model.args.NumFC = 100;
@@ -39,7 +39,8 @@ function setup = initSetup
     setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
-    setup.model.args.HasCentredDecoder = true;
+    setup.model.args.HasBranchedEncoder = true;
+    setup.model.args.HasCentredDecoder = false;
     setup.model.args.ShowPlots = true;
     
     % training
@@ -65,7 +66,8 @@ function setup = initSetup
     %setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
     %setup.model.args.lossFcns.kl.name = 'KLDivergence';
     %setup.model.args.lossFcns.kl.args.Beta = 0.1;
-
+    %setup.model.args.lossFcns.kl.args.UseLoss = false;
+    
     %setup.model.args.lossFcns.fid.class = @FidelityLoss;
     %setup.model.args.lossFcns.fid.name = 'Fidelity';
     %setup.model.args.lossFcns.fid.args.UseLoss = true;

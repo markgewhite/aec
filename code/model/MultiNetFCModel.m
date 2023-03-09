@@ -52,6 +52,7 @@ classdef MultiNetFCModel < FCModel
                           superArgs2Cell{:} );
 
             % store this class's properties
+            self.HasBranchedEncoder = args.HasBranchedEncoder;
             self.NumHiddenDecoder = args.NumHiddenDecoder;
             self.NumFCDecoder = args.NumFCDecoder;
             self.FCFactorDecoder = args.FCFactorDecoder;
@@ -92,6 +93,9 @@ classdef MultiNetFCModel < FCModel
                 lgraphEnc = layerGraph( layersEnc );
                 lgraphEnc = addLayers( lgraphEnc, ...
                                        additionLayer( self.ZDimAux, 'Name', 'add' ) );
+
+                mask = [false( self.ZDimAux, 1 );
+                        true( self.ZDim - self.ZDimAux, 1 )];
                 
                 for d = 1:self.ZDimAux
     
@@ -115,15 +119,20 @@ classdef MultiNetFCModel < FCModel
         
                     end
                     
-                    outLayers = fullyConnectedLayer( self.ZDim, 'Name', ...
+                    maskD = mask;
+                    maskD(d) = true;
+                    outLayers = [fullyConnectedLayer( self.ZDim, 'Name', ...
                                                     ['fcout' num2str(100*d)] );
+                                 maskLayer( maskD, ...
+                                            'ReduceDim', false, ...
+                                            'Name', ['mask' num2str(100*d)] )];
                     
                     lgraphEnc = addLayers( lgraphEnc, outLayers );
                     lgraphEnc = connectLayers( lgraphEnc, ...
                                                lastLayer, ['fcout' num2str(100*d)] );
     
                     lgraphEnc = connectLayers( lgraphEnc, ...
-                               ['fcout' num2str(100*d)], ...
+                               ['mask' num2str(100*d)], ...
                                ['add/in' num2str(d)] );
     
                 end
@@ -156,7 +165,9 @@ classdef MultiNetFCModel < FCModel
                 maskD = mask;
                 maskD(d) = true;
                 lgraphDec = addLayers( lgraphDec, ...
-                                maskLayer( maskD, 'Name', ['mask' num2str(100*d)] ));
+                                maskLayer( maskD, ...
+                                           'ReduceDim', true, ...
+                                           'Name', ['mask' num2str(100*d)] ));
                 lgraphDec = connectLayers( lgraphDec, ...
                                            'in', ['mask' num2str(100*d)] );
 

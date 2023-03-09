@@ -3,6 +3,7 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
 
     properties
         Mask
+        ReduceDim
     end
 
     methods
@@ -19,6 +20,7 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
             arguments
                 inputMask               logical = [True]
                 NameValueArgs.Name      string = ""
+                NameValueArgs.ReduceDim logical = false
             end
             name = NameValueArgs.Name;
 
@@ -26,6 +28,7 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
             layer.Name = name;
             layer.Type = "Mask";
             layer.Mask = inputMask;
+            layer.ReduceDim = NameValueArgs.ReduceDim;
 
             maskDescr = char(length(inputMask));
             for i = 1:length(inputMask)
@@ -35,7 +38,11 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
                     maskDescr(i) = '0';
                 end
             end
-            layer.Description = ['Mask Layer with mask ' maskDescr];
+            if layer.ReduceDim
+                layer.Description = ['Reducing Mask Layer with mask ' maskDescr];
+            else
+                layer.Description = ['Mask Layer with mask ' maskDescr];
+            end
 
         end
 
@@ -54,8 +61,10 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
             % apply the mask (with still the same dimensions)
             Z = X.*layer.Mask;
 
-            % remove the zero rows
-            Z = Z(sum( Z, 2 )~=0, :);
+            if layer.ReduceDim
+                % remove the zero rows
+                Z = Z(sum( Z, 2 )~=0, :);
+            end
 
         end
 
@@ -72,8 +81,10 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
             % apply the mask (with still the same dimensions)
             Z = X.*layer.Mask;
 
-            % remove the zero rows
-            Z = Z(sum( Z, 2 )~=0, :);
+            if layer.ReduceDim
+                % remove the zero rows
+                Z = Z(sum( Z, 2 )~=0, :);
+            end
 
         end
     end
