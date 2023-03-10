@@ -3,6 +3,7 @@ classdef MultiNetFCModel < FCModel
     % a multi-network decoder
     properties
         HasBranchedEncoder    % whether to have branching in the encoder
+        HasEncoderMasking     % whether to mask Z outputs
         NumHiddenDecoder      % number of hidden layers
         NumFCDecoder          % number of nodes for widest layer
         FCFactorDecoder       % log2 scaling factor subsequent layers
@@ -25,6 +26,7 @@ classdef MultiNetFCModel < FCModel
                 superArgs2.name         string
                 superArgs2.path         string
                 args.HasBranchedEncoder logical = false
+                args.HasEncoderMasking  logical = false
                 args.NumHiddenDecoder   double ...
                     {mustBeInteger, mustBePositive} = 1
                 args.NumFCDecoder       double ...
@@ -53,6 +55,7 @@ classdef MultiNetFCModel < FCModel
 
             % store this class's properties
             self.HasBranchedEncoder = args.HasBranchedEncoder;
+            self.HasEncoderMasking = args.HasEncoderMasking;
             self.NumHiddenDecoder = args.NumHiddenDecoder;
             self.NumFCDecoder = args.NumFCDecoder;
             self.FCFactorDecoder = args.FCFactorDecoder;
@@ -119,20 +122,27 @@ classdef MultiNetFCModel < FCModel
         
                     end
                     
-                    maskD = mask;
-                    maskD(d) = true;
-                    outLayers = [fullyConnectedLayer( self.ZDim, 'Name', ...
-                                                    ['fcout' num2str(100*d)] );
-                                 maskLayer( maskD, ...
-                                            'ReduceDim', false, ...
-                                            'Name', ['mask' num2str(100*d)] )];
-                    
+                    if self.HasEncoderMasking
+                        maskD = mask;
+                        maskD(d) = true;
+                        finalLayer = ['mask' num2str(100*d)];
+                        outLayers = [fullyConnectedLayer( self.ZDim, 'Name', ...
+                                                        ['fcout' num2str(100*d)] );
+                                     maskLayer( maskD, ...
+                                                'ReduceDim', false, ...
+                                                'Name', finalLayer )];
+                    else
+                        finalLayer = ['fcout' num2str(100*d)];
+                        outLayers = fullyConnectedLayer( self.ZDim, 'Name', ...
+                                                         finalLayer);
+                    end
+
                     lgraphEnc = addLayers( lgraphEnc, outLayers );
                     lgraphEnc = connectLayers( lgraphEnc, ...
                                                lastLayer, ['fcout' num2str(100*d)] );
     
                     lgraphEnc = connectLayers( lgraphEnc, ...
-                               ['mask' num2str(100*d)], ...
+                               finalLayer, ...
                                ['add/in' num2str(d)] );
     
                 end

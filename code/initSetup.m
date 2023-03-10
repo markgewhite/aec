@@ -40,11 +40,12 @@ function setup = initSetup
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasBranchedEncoder = true;
+    setup.model.args.HasEncoderMasking = false;
     setup.model.args.HasCentredDecoder = false;
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 2000;
+    setup.model.args.trainer.NumIterations = 500;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
     setup.model.args.trainer.UpdateFreq = 100;

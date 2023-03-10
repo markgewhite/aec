@@ -8,15 +8,13 @@ name = 'test';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-%parameters = [ "model.args.UsesFdCoefficients", ...
-%               "model.args.lossFcns.reconrough.args.UseLoss", ...
-%               "model.args.lossFcns.zorth.args.UseLoss"];
-%values = {{false, true}, ...
-%          {false, true}, ...
-%          {false, true}};
+parameters = [ "model.args.HasBranchedEncoder", ...
+               "model.args.HasEncoderMasking"];
+values = {{false, true}, ...
+          {false, true}};
 
-parameters = [ "model.class"];
-values = {{@MultiNetFCModel}};
+%parameters = [ "model.class"];
+%values = {{@MultiNetFCModel}};
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
 
