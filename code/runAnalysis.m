@@ -4,12 +4,12 @@ setup = initSetup;
 setup.data.args.NormalizedPts = 11;
 
 % first investigation
-name = 'test';
+name = 'decoderBranching';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-parameters = [ "model.args.HasBranchedEncoder", ...
-               "model.args.HasEncoderMasking"];
+parameters = [ "model.args.HasBranchedDecoder", ...
+               "model.args.HasDecoderMasking"];
 values = {{false, true}, ...
           {false, true}};
 

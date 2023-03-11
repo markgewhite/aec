@@ -39,16 +39,18 @@ function setup = initSetup
     setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
-    setup.model.args.HasBranchedEncoder = true;
+    setup.model.args.HasBranchedEncoder = false;
     setup.model.args.HasEncoderMasking = false;
-    setup.model.args.HasCentredDecoder = false;
+    setup.model.args.HasBranchedDecoder = true;
+    setup.model.args.HasDecoderMasking = false;
+    setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
     
     % training
-    setup.model.args.trainer.NumIterations = 500;
+    setup.model.args.trainer.NumIterations = 1000;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 100;
-    setup.model.args.trainer.UpdateFreq = 100;
+    setup.model.args.trainer.UpdateFreq = 250;
     setup.model.args.trainer.Holdout = 0;    
 
     % loss functions
@@ -92,17 +94,17 @@ function setup = initSetup
     setup.model.args.lossFcns.xvar.args.YLim = [-0.2, 0];
     setup.model.args.lossFcns.xvar.args.UseLoss = false;
             
-    %setup.model.args.lossFcns.cls.class = @ClassifierLoss;
-    %setup.model.args.lossFcns.cls.name = 'ZClassifier';
-    %setup.model.args.lossFcns.cls.args.UseLoss = false;
+    setup.model.args.lossFcns.cls.class = @ClassifierLoss;
+    setup.model.args.lossFcns.cls.name = 'ZClassifier';
+    setup.model.args.lossFcns.cls.args.UseLoss = true;
 
     %setup.model.args.lossFcns.xcls.class = @InputClassifierLoss;
     %setup.model.args.lossFcns.xcls.name = 'XClassifier';
 
     % evaluations
-    setup.eval.args.CVType = 'Holdout';
+    setup.eval.args.CVType = 'KFold';
     setup.eval.args.KFolds = 2;
-    setup.eval.args.KFoldRepeats = 5;
+    setup.eval.args.KFoldRepeats = 2;
     setup.eval.args.HasIdenticalPartitions = false;
 
 
