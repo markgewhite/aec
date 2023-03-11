@@ -28,12 +28,15 @@ function [ dlZ, dlXGen, dlXHat, dlXC, state ] = forward( self, encoder, decoder,
                                 maxObs = thisLossFcn.MaxObservations);
 
         % append to the Z list
-        dlZ = [dlZ dlZC];
+        dlZ2 = [dlZ dlZC];
+
+    else
+        dlZ2 = dlZ;
 
     end
 
     % reconstruct curves from latent codes
-    [ dlXGen, state.Decoder ] = self.forwardDecoder( decoder, dlZ );
+    [ dlXGen, state.Decoder ] = self.forwardDecoder( decoder, dlZ2 );
 
     if ~isempty( idx )
         % extract the XC portion
