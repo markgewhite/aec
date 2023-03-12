@@ -29,21 +29,21 @@ function setup = initSetup
     % model
     setup.model.class = @MultiNetFCModel;
     setup.model.args.UsesFdCoefficients = false;
-    setup.model.args.ZDim = 5;
+    setup.model.args.ZDim = 3;
     setup.model.args.ZDimAux = 3;
-    setup.model.args.NumHidden = 1;
     setup.model.args.NumFC = 100;
-    setup.model.args.FCFactorDecoder = 0;
+    setup.model.args.NumHiddenDecoder = 2;
+    setup.model.args.NumFCDecoder = 16;
     setup.model.args.InputDropout = 0;
     setup.model.args.Dropout = 0;
-    setup.model.args.NetNormalizationType = 'Layer';
+    setup.model.args.NetNormalizationType = 'Batch';
     setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
-    setup.model.args.HasBranchedEncoder = false;
-    setup.model.args.HasEncoderMasking = false;
-    setup.model.args.HasBranchedDecoder = false;
-    setup.model.args.HasDecoderMasking = false;
+    %setup.model.args.HasBranchedEncoder = false;
+    %setup.model.args.HasEncoderMasking = false;
+    setup.model.args.HasBranchedDecoder = true;
+    setup.model.args.HasDecoderMasking = true;
     setup.model.args.HasCentredDecoder = true;
     setup.model.args.ShowPlots = true;
     
@@ -60,21 +60,7 @@ function setup = initSetup
     
     setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
     setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
-    setup.model.args.lossFcns.reconrough.args.Lambda = 1E-1;
-    setup.model.args.lossFcns.reconrough.args.Dilations = [1 2];
-    setup.model.args.lossFcns.reconrough.args.UseLoss = false;
-    
-    %setup.model.args.lossFcns.adv.class = @AdversarialLoss;
-    %setup.model.args.lossFcns.adv.name = 'Discriminator';
-
-    %setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
-    %setup.model.args.lossFcns.kl.name = 'KLDivergence';
-    %setup.model.args.lossFcns.kl.args.Beta = 0.1;
-    %setup.model.args.lossFcns.kl.args.UseLoss = false;
-    
-    %setup.model.args.lossFcns.fid.class = @FidelityLoss;
-    %setup.model.args.lossFcns.fid.name = 'Fidelity';
-    %setup.model.args.lossFcns.fid.args.UseLoss = true;
+    setup.model.args.lossFcns.reconrough.args.UseLoss = true;
 
     setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
     setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
@@ -90,14 +76,14 @@ function setup = initSetup
 
     setup.model.args.lossFcns.xvar.class = @ComponentLoss;
     setup.model.args.lossFcns.xvar.name = 'XVariance';
-    setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
-    setup.model.args.lossFcns.xvar.args.Alpha = 1E-1;
-    setup.model.args.lossFcns.xvar.args.YLim = [-0.2, 0];
-    setup.model.args.lossFcns.xvar.args.UseLoss = false;
+    setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax2';
+    setup.model.args.lossFcns.xvar.args.Alpha = 1E1;
+    setup.model.args.lossFcns.xvar.args.YLim = [0, 0.25];
+    setup.model.args.lossFcns.xvar.args.UseLoss = true;
             
-    setup.model.args.lossFcns.cls.class = @ClassifierLoss;
-    setup.model.args.lossFcns.cls.name = 'ZClassifier';
-    setup.model.args.lossFcns.cls.args.UseLoss = true;
+    %setup.model.args.lossFcns.cls.class = @ClassifierLoss;
+    %setup.model.args.lossFcns.cls.name = 'ZClassifier';
+    %setup.model.args.lossFcns.cls.args.UseLoss = true;
 
     %setup.model.args.lossFcns.xcls.class = @InputClassifierLoss;
     %setup.model.args.lossFcns.xcls.name = 'XClassifier';

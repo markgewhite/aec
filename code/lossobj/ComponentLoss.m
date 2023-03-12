@@ -18,7 +18,7 @@ classdef ComponentLoss < LossFunction
                 name                 char {mustBeText}
                 args.Criterion       char ...
                     {mustBeMember( args.Criterion, ...
-                        {'Orthogonality', 'Varimax'} )} ...
+                        {'Orthogonality', 'Varimax', 'Varimax2'} )} ...
                                         = 'Orthogonality'
                 args.Sampling        char ...
                     {mustBeMember( args.Sampling, ...
@@ -80,6 +80,11 @@ classdef ComponentLoss < LossFunction
                     % its length, penalising low variance
                     loss = self.Alpha*varimax( dlXC );
 
+                case 'Varimax2'
+                    % compute the component variance across 
+                    % its length, penalising low variance
+                    loss = self.Alpha*varimax2( dlXC );
+
             end
 
         end
@@ -124,14 +129,23 @@ function loss = varimax( dlXC )
             dlXCsample = permute( dlXCsample, [2 1] );
             dlVar = dlVarianceCovariance( dlXCsample );
             if k==1 && c==1
-                v = -mean( dlVar );
+                v = mean( dlVar );
             else
-                v = v - mean( dlVar );
+                v = v + mean( dlVar );
             end
         end
     end
 
     loss = v/(nChannels*nSamples*nComp);
+
+end
+
+
+function loss = varimax2( dlXC )
+    % Calculate the varimax loss which is the 
+    % mean square of the component variances
+
+    loss = mean( dlXC.^2, 'all' );
 
 end
 

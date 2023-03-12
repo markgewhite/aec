@@ -14,7 +14,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
                 superArgs.?ReconstructionLoss
                 args.Lambda          double = 1E0
                 args.Dilations       double {mustBeInteger, ...
-                            mustBeGreaterThanOrEqual(args.Dilations, 1)} = [1 2]
+                            mustBeGreaterThanOrEqual(args.Dilations, 1)} = [1 2 4]
 
             end
 

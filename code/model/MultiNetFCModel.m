@@ -200,15 +200,11 @@ classdef MultiNetFCModel < FCModel
                     
                     for i = 1:self.NumHiddenDecoder
                         
-                        if i==1 && self.HasDecoderMasking
-                            nNodes = sum( maskD );
-                        else
-                            nNodes = fix( self.NumFCDecoder*2^(self.FCFactorDecoder*(-self.NumHiddenDecoder+i)) );
-                            if nNodes < self.ZDim
-                                eid = 'FCModel:Design';
-                                msg = 'Decoder hidden layer smaller than latent space.';
-                                throwAsCaller( MException(eid,msg) );
-                            end
+                        nNodes = fix( self.NumFCDecoder*2^(self.FCFactorDecoder*(-self.NumHiddenDecoder+i)) );
+                        if nNodes < self.ZDim
+                            eid = 'FCModel:Design';
+                            msg = 'Decoder hidden layer smaller than latent space.';
+                            throwAsCaller( MException(eid,msg) );
                         end
                         
                         [lgraphDec, lastLayer] = FCModel.addBlock( ...
