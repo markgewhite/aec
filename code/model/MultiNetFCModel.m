@@ -36,7 +36,7 @@ classdef MultiNetFCModel < FCModel
                 args.NumFCDecoder       double ...
                     {mustBeInteger, mustBePositive} = 128
                 args.FCFactorDecoder    double ...
-                    {mustBeInteger, mustBePositive} = 1
+                    {mustBeInteger} = 1
                 args.ReluScaleDecoder   double ...
                     {mustBeInRange(args.ReluScaleDecoder, 0, 1)} = 0.2
                 args.DropoutDecoder     double ...
@@ -242,8 +242,19 @@ classdef MultiNetFCModel < FCModel
                 net = dlnetwork( lgraphDec );
 
             else
-
-                net = initDecoder@FCModel( self );
+                
+                % call the base class instead, requiring a temporary self
+                % so the standard properties match the decoder specifics
+                % (the base class must be called rather than another class)
+                tempSelf = self;
+                tempSelf.NumHidden = self.NumHiddenDecoder;
+                tempSelf.NumFC = self.NumFCDecoder;
+                tempSelf.FCFactor = self.FCFactorDecoder;
+                tempSelf.ReluScale = self.ReluScaleDecoder;
+                tempSelf.Dropout = self.DropoutDecoder;
+                tempSelf.NetNormalizationType = self.NetNormalizationTypeDecoder;
+                tempSelf.NetActivationType = self.NetActivationTypeDecoder;
+                net = initDecoder@FCModel( tempSelf );
 
             end
 
