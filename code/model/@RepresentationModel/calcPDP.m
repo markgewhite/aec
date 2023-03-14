@@ -75,7 +75,7 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
     
     if any(strcmp( args.mode,{'Full', 'OutputOnly'} ))
         % reshape the output
-        dlXCHat = reshape( dlXCHat, [], K, self.ZDimAux );
+        dlXCHat = reshape( dlXCHat, size(dlXCHat,1), K, self.ZDimAux, [] );
     end
 
 end

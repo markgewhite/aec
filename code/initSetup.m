@@ -2,21 +2,22 @@ function setup = initSetup
     % Specify the configuration where setting differ from default values
 
     % dataset
-    setup.data.class = @JumpGRFDataset;
-    setup.data.args.HasNormalizedInput = true;
-    setup.data.args.Normalization = 'PAD';
-    setup.data.args.ResampleRate = 5;
-    setup.data.args.HasAdaptiveTimeSpan = true;
+    %setup.data.class = @JumpGRFDataset;
+    %setup.data.args.HasNormalizedInput = true;
+    %setup.data.args.Normalization = 'PAD';
+    %setup.data.args.ResampleRate = 5;
+    %setup.data.args.HasAdaptiveTimeSpan = true;
+    
     setup.data.args.normalizedPts = 21;
         
-    %setup.data.class = @FukuchiDataset;
-    %setup.data.args.HasNormalizedInput = true;
-    %setup.data.args.FromMatlabFile = false;
-    %setup.data.args.HasVGRFOnly = false;
-    %setup.data.args.Category = 'JointAngles';
-    %setup.data.args.HasPelvis = true;
-    %setup.data.args.HasHip = true;
-    %setup.data.args.HasKnee = true;
+    setup.data.class = @FukuchiDataset;
+    setup.data.args.HasNormalizedInput = true;
+    setup.data.args.FromMatlabFile = false;
+    setup.data.args.HasVGRFOnly = false;
+    setup.data.args.Category = 'JointAngles';
+    setup.data.args.HasPelvis = true;
+    setup.data.args.HasHip = true;
+    setup.data.args.HasKnee = true;
 
     %setup.data.args.HasVariableLength = true;
     %setup.data.args.TerminationValue = 0.1;
@@ -46,7 +47,7 @@ function setup = initSetup
     % training
     setup.model.args.trainer.NumIterations = 1000;
     setup.model.args.trainer.NumIterPreTrn = 0;
-    setup.model.args.trainer.BatchSize = 100;
+    setup.model.args.trainer.BatchSize = 164;
     setup.model.args.trainer.UpdateFreq = 250;
     setup.model.args.trainer.Holdout = 0;    
 
@@ -87,7 +88,7 @@ function setup = initSetup
     % evaluations
     setup.eval.args.CVType = 'KFold';
     setup.eval.args.KFolds = 2;
-    setup.eval.args.KFoldRepeats = 5;
+    setup.eval.args.KFoldRepeats = 2;
     setup.eval.args.HasIdenticalPartitions = false;
 
 

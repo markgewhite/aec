@@ -3,7 +3,7 @@
 setup = initSetup;
 
 % first investigation
-name = 'test3';
+name = 'test_Fukuchi';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 

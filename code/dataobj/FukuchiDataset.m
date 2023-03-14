@@ -225,7 +225,7 @@ function filter = setFilter( metaData, set, args )
     % filter for only txt files
     % and for the particular data category
     switch args.Category
-        case 'GRF'
+        case 'Ground'
             identifier = 'grf';
         case 'JointAngles'
             identifier = 'ang';
@@ -305,7 +305,7 @@ function [X, Y, S, side, names] = loadGRFData( path, filenames, ...
     end
 
     % trim back the arrays
-    if isempty( args.ObsMax )
+    if ~isfield( args, 'ObsMax' )
         selection = 1:kEnd;
     else
         if args.Stratified
