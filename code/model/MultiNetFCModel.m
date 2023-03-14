@@ -220,9 +220,12 @@ classdef MultiNetFCModel < FCModel
                                                        'Name', ['fcout' num2str(100*d)] );
         
                     if self.XChannels > 1
+                        finalLayer = ['reshape' num2str(100*d)];
                         outLayers = [ outLayers; 
-                                        reshapeLayer( [self.XTargetDim self.XChannels], ...
-                                                      'Name', 'reshape' ) ];
+                                      reshapeLayer( [ self.XTargetDim self.XChannels], ...
+                                                      'Name', finalLayer ) ];
+                    else
+                        finalLayer = ['fcout' num2str(100*d)];
                     end
                 
                     lgraphDec = addLayers( lgraphDec, outLayers );
@@ -230,7 +233,7 @@ classdef MultiNetFCModel < FCModel
                     lgraphDec = connectLayers( lgraphDec, ...
                                                lastLayer, ['fcout' num2str(100*d)] );
                     lgraphDec = connectLayers( lgraphDec, ...
-                                               ['fcout' num2str(100*d)], ...
+                                               finalLayer, ...
                                                ['add/in' num2str(d)] );
                 
                 end

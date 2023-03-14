@@ -7,6 +7,7 @@ function setup = initSetup
     setup.data.args.Normalization = 'PAD';
     setup.data.args.ResampleRate = 5;
     setup.data.args.HasAdaptiveTimeSpan = true;
+    setup.data.args.normalizedPts = 21;
         
     %setup.data.class = @FukuchiDataset;
     %setup.data.args.HasNormalizedInput = true;
@@ -20,20 +21,15 @@ function setup = initSetup
     %setup.data.args.HasVariableLength = true;
     %setup.data.args.TerminationValue = 0.1;
 
-    %setup.data.args.normalization = 'PAD';
-
-    %setup.data.args.normalizedPts = 101;
-    %setup.data.args.adaptiveTimeSpan = true;
-    %setup.data.args.resampleRate = 1;
-
     % model
     setup.model.class = @MultiNetFCModel;
     setup.model.args.UsesFdCoefficients = false;
     setup.model.args.ZDim = 3;
     setup.model.args.ZDimAux = 3;
     setup.model.args.NumFC = 100;
-    setup.model.args.NumHiddenDecoder = 2;
-    setup.model.args.NumFCDecoder = 16;
+    setup.model.args.NumHiddenDecoder = 1;
+    setup.model.args.NumFCDecoder = 10;
+    setup.model.args.FCFactorDecoder = 0;
     setup.model.args.InputDropout = 0;
     setup.model.args.Dropout = 0;
     setup.model.args.NetNormalizationType = 'Batch';
@@ -91,7 +87,7 @@ function setup = initSetup
     % evaluations
     setup.eval.args.CVType = 'KFold';
     setup.eval.args.KFolds = 2;
-    setup.eval.args.KFoldRepeats = 2;
+    setup.eval.args.KFoldRepeats = 5;
     setup.eval.args.HasIdenticalPartitions = false;
 
 

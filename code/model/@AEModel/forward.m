@@ -40,7 +40,11 @@ function [ dlZ, dlXGen, dlXHat, dlXC, state ] = forward( self, encoder, decoder,
 
     if ~isempty( idx )
         % extract the XC portion
-        dlXCHat = dlXGen( :, nObs+1:end, : );
+        if self.XChannels==1
+            dlXCHat = dlXGen( :, nObs+1:end );
+        else
+            dlXCHat = dlXGen( :, :, nObs+1:end );
+        end
         % finish constructing the components
         dlXC = self.calcResponse( ...
                                 [], ...
@@ -51,10 +55,15 @@ function [ dlZ, dlXGen, dlXHat, dlXC, state ] = forward( self, encoder, decoder,
         dlXC = [];
     end
 
-    dlXHat = dlXGen( :, 1:nObs, : );
+    if self.XChannels==1
+        dlXHat = dlXGen( :, 1:nObs );
+    else
+        dlXHat = dlXGen( :, :, 1:nObs );
+    end
+    
     if self.HasCentredDecoder
         % add the target mean to the prediction
-        if size( dlXGen, 3 )==1
+        if self.XChannels==1
             dlXHat = dlXHat + repmat( self.MeanCurveTarget, 1, size(dlXHat,2) );
         else
             dlXHat = dlXHat + repmat( self.MeanCurveTarget, 1, 1, size(dlXHat,3) );
