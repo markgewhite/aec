@@ -42,10 +42,10 @@ function setup = initSetup
     setup.model.args.HasBranchedDecoder = true;
     setup.model.args.HasDecoderMasking = true;
     setup.model.args.HasCentredDecoder = true;
-    setup.model.args.ShowPlots = true;
+    setup.model.args.ShowPlots = false;
     
     % training
-    setup.model.args.trainer.NumIterations = 1000;
+    setup.model.args.trainer.NumIterations = 500;
     setup.model.args.trainer.NumIterPreTrn = 0;
     setup.model.args.trainer.BatchSize = 164;
     setup.model.args.trainer.UpdateFreq = 250;
@@ -90,6 +90,7 @@ function setup = initSetup
     setup.eval.args.KFolds = 2;
     setup.eval.args.KFoldRepeats = 2;
     setup.eval.args.HasIdenticalPartitions = false;
+    setup.eval.args.InParallel = false;
 
 
 

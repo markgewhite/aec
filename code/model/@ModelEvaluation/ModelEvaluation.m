@@ -24,6 +24,7 @@ classdef ModelEvaluation
         ComponentDiffRMSE   % overall difference between sub-models
         RandomSeed          % for reproducibility
         RandomSeedResets    % whether to reset the seed for each model
+        InParallel          % whether to run the evaluation in parallel                                             
     end
 
 
@@ -47,6 +48,7 @@ classdef ModelEvaluation
                 args.RandomSeed         double ...
                         {mustBeInteger, mustBePositive} = 1234
                 args.RandomSeedResets   logical = false;
+                args.InParallel         logical = false;
             end
 
             % store the name for this evaluation and its bespoke setup
@@ -61,6 +63,7 @@ classdef ModelEvaluation
             self.HasIdenticalPartitions = args.HasIdenticalPartitions;
             self.RandomSeed = args.RandomSeed;
             self.RandomSeedResets = args.RandomSeedResets;
+            self.InParallel = args.InParallel;
 
             if ~isempty( self.RandomSeed )
                 % set random seed for reproducibility
@@ -84,11 +87,20 @@ classdef ModelEvaluation
             self = initDatasets( self, setup );
             
             % train the model
-            self = self.trainModels( setup.model );
+            startTime = tic;
+            if self.InParallel
+                self = self.trainModelsInParallel( setup.model );
+            else
+                self = self.trainModels( setup.model );
+            end
 
             % evaluate the trained model
             self = self.evaluateModels( 'Training' );
             self = self.evaluateModels( 'Testing' );           
+
+            self.CVTiming.Training.Mean.TotalEvaluationTime = toc(startTime);
+            disp(['Total Evaluation Time = ' ...
+                num2str(self.CVTiming.Training.Mean.TotalEvaluationTime)]);
 
             disp('Training evaluation:');
             reportResult( self.CVLoss.Training.Mean, ...

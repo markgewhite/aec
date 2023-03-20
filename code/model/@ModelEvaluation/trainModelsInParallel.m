@@ -1,0 +1,87 @@
+function self = trainModelsInParallel( self, modelSetup )
+    % Run the cross-validation training loop
+    arguments
+        self                ModelEvaluation
+        modelSetup          struct
+    end
+
+    % turn of plots for parallel run
+    modelSetup.args.ShowPlots = false;
+
+    % prepare the bespoke arguments
+    try
+        argsModel = namedargs2cell( modelSetup.args );
+    catch
+        argsModel = {};
+    end
+    
+    % take copies of variables for first-level slicing
+    numModels = self.NumModels;
+    models = self.Models;
+    randomSeedResets = self.RandomSeedResets;
+    randomSeed = self.RandomSeed;
+
+    thisTrnSet = cell( numModels, 1 );
+    thisValSet = cell( numModels, 1 );
+    % setup the data sets in series and initialize the models
+    disp('Initializing data partitions and models ...');
+    for k = 1:numModels
+        switch self.CVType
+            case 'Holdout'
+                % set the training and holdout data sets
+                thisTrnSet{k} = self.TrainingDataset;
+                thisValSet{k} = self.TestingDataset;
+            case 'KFold'
+                % set the kth partitions
+                thisTrnSet{k} = self.TrainingDataset.partition( self.Partitions(:,k) );
+                thisValSet{k} = self.TrainingDataset.partition( ~self.Partitions(:,k) );
+        end
+        % initialize the model
+        models{k} = modelSetup.class( thisTrnSet{k}, argsModel{:} );
+    end
+
+    % run the cross validation loop in parallel
+    parfor k = 1:numModels
+    
+        if randomSeedResets && ~isempty( randomSeed )
+            % reset the random seed for the model
+            rng( randomSeed );
+        end
+
+        % train the model and time it
+        disp(['Fold ' num2str(k) '/' num2str(numModels) ...
+                ': Training the model in parallel ...']);
+        tStart = tic;
+        models{k} = models{k}.train( thisTrnSet{k} );
+        models{k}.Timing.Training.TotalTime = toc(tStart);
+
+        % evaluate the model
+        disp(['Fold ' num2str(k) '/' num2str(numModels) ...
+                ': Evaluating the model in parallel ...']);
+        tStart = tic;
+        models{k} = models{k}.evaluate( thisTrnSet{k}, thisValSet{k} );
+        models{k}.Timing.Testing.TotalTime = toc(tStart);
+
+        % save the model
+        models{k}.save;
+
+    end
+
+    % store the result
+    self.Models = models;
+
+    % find the optimal arrangement of model components
+    if self.NumModels > 1
+        disp('Aligning components...');
+        self = self.arrangeComponents;
+    end
+
+    % average the latent components across the models
+    self.CVComponents = self.calcCVComponents;
+
+    % average the auxiliary model coefficients
+    self.CVAuxMetrics.AuxModelBeta = calcCVNestedParameter( ...
+                                        self.Models, {'AuxModel', 'Beta'} );
+
+
+end
