@@ -15,7 +15,9 @@ function self = trainModels( self, modelSetup )
     % run the cross validation loop
     for k = 1:self.NumModels
     
-        disp(['Fold ' num2str(k) '/' num2str(self.NumModels)]);
+        if self.Verbose
+            disp(['Fold ' num2str(k) '/' num2str(self.NumModels)]);
+        end
         
         switch self.CVType
             case 'Holdout'
@@ -37,13 +39,17 @@ function self = trainModels( self, modelSetup )
         end
 
         % train the model and time it
-        disp('Training the model...');
+        if self.Verbose
+            disp('Training the model...');
+        end
         tStart = tic;
         self.Models{k} = self.Models{k}.train( thisTrnSet );
         self.Models{k}.Timing.Training.TotalTime = toc(tStart);
 
         % evaluate the model
-        disp('Evaluating the model');
+        if self.Verbose
+            disp('Evaluating the model');
+        end
         tStart = tic;
         self.Models{k} = self.Models{k}.evaluate( thisTrnSet, thisValSet );
         self.Models{k}.Timing.Testing.TotalTime = toc(tStart);
@@ -60,7 +66,9 @@ function self = trainModels( self, modelSetup )
 
     % find the optimal arrangement of model components
     if self.NumModels > 1
-        disp('Aligning components...');
+        if self.Verbose
+            disp('Aligning components...');
+        end
         self = self.arrangeComponents;
     end
 

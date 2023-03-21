@@ -20,11 +20,14 @@ function self = trainModelsInParallel( self, modelSetup )
     models = self.Models;
     randomSeedResets = self.RandomSeedResets;
     randomSeed = self.RandomSeed;
+    verbose = self.Verbose;
 
+    % setup the data sets in series and initialize the models
+    if self.Verbose
+        disp('Initializing data partitions and models ...');
+    end
     thisTrnSet = cell( numModels, 1 );
     thisValSet = cell( numModels, 1 );
-    % setup the data sets in series and initialize the models
-    disp('Initializing data partitions and models ...');
     for k = 1:numModels
         switch self.CVType
             case 'Holdout'
@@ -49,15 +52,19 @@ function self = trainModelsInParallel( self, modelSetup )
         end
 
         % train the model and time it
-        disp(['Fold ' num2str(k) '/' num2str(numModels) ...
-                ': Training the model in parallel ...']);
+        if verbose
+            disp(['Fold ' num2str(k) '/' num2str(numModels) ...
+                    ': Training the model in parallel ...']);
+        end
         tStart = tic;
         models{k} = models{k}.train( thisTrnSet{k} );
         models{k}.Timing.Training.TotalTime = toc(tStart);
 
         % evaluate the model
-        disp(['Fold ' num2str(k) '/' num2str(numModels) ...
-                ': Evaluating the model in parallel ...']);
+        if verbose
+            disp(['Fold ' num2str(k) '/' num2str(numModels) ...
+                    ': Evaluating the model in parallel ...']);
+        end
         tStart = tic;
         models{k} = models{k}.evaluate( thisTrnSet{k}, thisValSet{k} );
         models{k}.Timing.Testing.TotalTime = toc(tStart);
@@ -72,7 +79,9 @@ function self = trainModelsInParallel( self, modelSetup )
 
     % find the optimal arrangement of model components
     if self.NumModels > 1
-        disp('Aligning components...');
+        if self.Verbose
+            disp('Aligning components...');
+        end
         self = self.arrangeComponents;
     end
 

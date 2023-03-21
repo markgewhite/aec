@@ -3,15 +3,17 @@
 setup = initSetup;
 
 % first investigation
-name = 'test_Fukuchi';
+name = 'test';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-parameters = [ "model.args.ZDim", ...
-               "model.args.NumHiddenDecoder" ];
-values = {[3 5 10], ...
-          [1 2 5]};
+parameters = [ "model.args.ZDim" ];
+values = {[3 5]};
 
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
+
+myInvestigation.run;
+
+
 

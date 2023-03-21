@@ -11,7 +11,10 @@ function self = initDatasets( self, setup )
         argsCell = {};
     end
 
-    disp('Loading the data');
+    if self.Verbose
+        disp('Loading the data');
+    end
+    
     switch self.CVType
         case 'Holdout'
             self.TrainingDataset = setup.data.class( 'Training', ...

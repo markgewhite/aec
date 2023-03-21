@@ -24,7 +24,8 @@ classdef ModelEvaluation
         ComponentDiffRMSE   % overall difference between sub-models
         RandomSeed          % for reproducibility
         RandomSeedResets    % whether to reset the seed for each model
-        InParallel          % whether to run the evaluation in parallel                                             
+        InParallel          % whether to run the evaluation in parallel
+        Verbose             % whether to report updates in the console
     end
 
 
@@ -49,6 +50,7 @@ classdef ModelEvaluation
                         {mustBeInteger, mustBePositive} = 1234
                 args.RandomSeedResets   logical = false;
                 args.InParallel         logical = false;
+                args.Verbose            logical = true;
             end
 
             % store the name for this evaluation and its bespoke setup
@@ -64,6 +66,7 @@ classdef ModelEvaluation
             self.RandomSeed = args.RandomSeed;
             self.RandomSeedResets = args.RandomSeedResets;
             self.InParallel = args.InParallel;
+            self.Verbose = args.Verbose;
 
             if ~isempty( self.RandomSeed )
                 % set random seed for reproducibility
@@ -71,17 +74,24 @@ classdef ModelEvaluation
             end
 
             if isequal( setup.model.class, @PCAModel )
-                disp('********* PCA Model Evaluation *********');
+                if self.Verbose
+                    disp('********* PCA Model Evaluation *********');
+                end
                 setup.model.args = trimPCAArgs( setup.model.args );
             else
-                disp('***** Autoencoder Model Evaluation *****');
+                if self.Verbose
+                    disp('***** Autoencoder Model Evaluation *****');
+                end
             end
-            disp('Data setup:')
-            disp( setup.data.class );
-            disp( setup.data.args );
-            disp('Model setup:')
-            disp( setup.model.class );
-            disp( setup.model.args );
+
+            if self.Verbose
+                disp('Data setup:')
+                disp( setup.data.class );
+                disp( setup.data.args );
+                disp('Model setup:')
+                disp( setup.model.class );
+                disp( setup.model.args );
+            end
 
             % prepare the data
             self = initDatasets( self, setup );
@@ -99,15 +109,18 @@ classdef ModelEvaluation
             self = self.evaluateModels( 'Testing' );           
 
             self.CVTiming.Training.Mean.TotalEvaluationTime = toc(startTime);
-            disp(['Total Evaluation Time = ' ...
-                num2str(self.CVTiming.Training.Mean.TotalEvaluationTime)]);
-
-            disp('Training evaluation:');
-            reportResult( self.CVLoss.Training.Mean, ...
-                          self.CVCorrelations.Training.Mean );
-            disp('Testing evaluation:');
-            reportResult( self.CVLoss.Testing.Mean, ...
-                          self.CVCorrelations.Testing.Mean );
+            
+            if self.Verbose
+                disp(['Total Evaluation Time = ' ...
+                    num2str(self.CVTiming.Training.Mean.TotalEvaluationTime)]);
+    
+                disp('Training evaluation:');
+                reportResult( self.CVLoss.Training.Mean, ...
+                              self.CVCorrelations.Training.Mean );
+                disp('Testing evaluation:');
+                reportResult( self.CVLoss.Testing.Mean, ...
+                              self.CVCorrelations.Testing.Mean );
+            end
 
         end
 
