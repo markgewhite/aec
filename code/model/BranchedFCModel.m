@@ -1,6 +1,6 @@
-classdef MultiNetFCModel < FCModel
+classdef BranchedFCModel < FCModel
     % Subclass of a fully connected model allowing 
-    % a multi-network decoder
+    % a branched-network decoder
     properties
         HasBranchedEncoder    % whether to have branching in the encoder
         HasEncoderMasking     % whether to mask Z outputs from the encoder
@@ -17,7 +17,7 @@ classdef MultiNetFCModel < FCModel
 
     methods
 
-        function self = MultiNetFCModel( thisDataset, ...
+        function self = BranchedFCModel( thisDataset, ...
                                            superArgs, ...
                                            superArgs2, ...
                                            args )
@@ -32,18 +32,18 @@ classdef MultiNetFCModel < FCModel
                 args.HasEncoderMasking  logical = false
                 args.HasDecoderMasking  logical = true
                 args.NumHiddenDecoder   double ...
-                    {mustBeInteger, mustBePositive} = 1
+                    {mustBeInteger, mustBePositive} = 2
                 args.NumFCDecoder       double ...
-                    {mustBeInteger, mustBePositive} = 128
+                    {mustBeInteger, mustBePositive} = 10
                 args.FCFactorDecoder    double ...
-                    {mustBeInteger} = 1
+                    {mustBeInteger} = 0
                 args.ReluScaleDecoder   double ...
                     {mustBeInRange(args.ReluScaleDecoder, 0, 1)} = 0.2
                 args.DropoutDecoder     double ...
                     {mustBeInRange(args.DropoutDecoder, 0, 1)} = 0.0
                 args.NetNormalizationTypeDecoder char ...
                     {mustBeMember( args.NetNormalizationTypeDecoder, ...
-                    {'None', 'Batch', 'Layer'} )} = 'None'
+                    {'None', 'Batch', 'Layer'} )} = 'Layer'
                 args.NetActivationTypeDecoder char ...
                     {mustBeMember( args.NetActivationTypeDecoder, ...
                     {'None', 'Tanh', 'Relu'} )} = 'Tanh'
@@ -76,7 +76,7 @@ classdef MultiNetFCModel < FCModel
         function net = initEncoder( self )
             % Override the FC encoder network initialization
             arguments
-                self        MultiNetFCModel
+                self        BranchedFCModel
             end
 
             if self.HasBranchedEncoder
@@ -167,7 +167,7 @@ classdef MultiNetFCModel < FCModel
         function net = initDecoder( self )
             % Override the FC decoder network initialization
             arguments
-                self        MultiNetFCModel
+                self        BranchedFCModel
             end
 
             if self.HasBranchedDecoder

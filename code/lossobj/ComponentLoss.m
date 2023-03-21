@@ -18,7 +18,7 @@ classdef ComponentLoss < LossFunction
                 name                 char {mustBeText}
                 args.Criterion       char ...
                     {mustBeMember( args.Criterion, ...
-                        {'Orthogonality', 'Varimax', 'Varimax2'} )} ...
+                        {'Orthogonality', 'Varimax'} )} ...
                                         = 'Orthogonality'
                 args.Sampling        char ...
                     {mustBeMember( args.Sampling, ...
@@ -27,8 +27,8 @@ classdef ComponentLoss < LossFunction
                     {mustBeInteger, mustBePositive} = 5
                 args.MaxObservations double ...
                     {mustBeInteger, mustBePositive} = 500
-                args.Alpha           double = 1E2
-                args.YLim            double = [-0.10, 0.02]
+                args.Alpha           double = 1E0
+                args.YLim            double = [0, 0.2]
                 superArgs.?LossFunction
             end
 
@@ -80,11 +80,6 @@ classdef ComponentLoss < LossFunction
                     % its length, penalising low variance
                     loss = self.Alpha*varimax( dlXC );
 
-                case 'Varimax2'
-                    % compute the component variance across 
-                    % its length, penalising low variance
-                    loss = self.Alpha*varimax2( dlXC );
-
             end
 
         end
@@ -118,30 +113,6 @@ end
 
 
 function loss = varimax( dlXC )
-    % Calculate the varimax loss which is the
-    % negative mean of component variances
-
-    [nPts, nSamples, nComp, nChannels] = size( dlXC );
-
-    for c = 1:nChannels
-        for k = 1:nSamples
-            dlXCsample = squeeze( dlXC(:,k,:,c) );
-            dlXCsample = permute( dlXCsample, [2 1] );
-            dlVar = dlVarianceCovariance( dlXCsample );
-            if k==1 && c==1
-                v = mean( dlVar );
-            else
-                v = v + mean( dlVar );
-            end
-        end
-    end
-
-    loss = v/(nChannels*nSamples*nComp);
-
-end
-
-
-function loss = varimax2( dlXC )
     % Calculate the varimax loss which is the 
     % mean square of the component variances
 

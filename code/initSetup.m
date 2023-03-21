@@ -23,7 +23,7 @@ function setup = initSetup
     %setup.data.args.TerminationValue = 0.1;
 
     % model
-    setup.model.class = @MultiNetFCModel;
+    setup.model.class = @BranchedFCModel;
     setup.model.args.UsesFdCoefficients = false;
     setup.model.args.ZDim = 3;
     setup.model.args.ZDimAux = 3;
@@ -42,7 +42,7 @@ function setup = initSetup
     setup.model.args.HasBranchedDecoder = true;
     setup.model.args.HasDecoderMasking = true;
     setup.model.args.HasCentredDecoder = true;
-    setup.model.args.ShowPlots = false;
+    setup.model.args.ShowPlots = true;
     
     % training
     setup.model.args.trainer.NumIterations = 500;

@@ -16,22 +16,42 @@ pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
 setup.data.args.HasNormalizedInput = true;
+setup.data.args.normalizedPts = 21;
 
 % -- model setup --
 setup.model.args.NumHidden = 1;
-setup.model.args.NumFC = 10;
-setup.model.args.NetNormalizationType = 'None';
-setup.model.args.NetActivationType = 'None';
+setup.model.args.NumFC = 20;
 setup.model.args.InputDropout = 0;
 setup.model.args.Dropout = 0;
+setup.model.args.NetNormalizationType = 'None';
+setup.model.args.NetActivationType = 'None';
+
+setup.model.args.NumHiddenDecoder = 2;
+setup.model.args.NumFCDecoder = 10;
+setup.model.args.FCFactorDecoder = 0;
+setup.model.args.NetNormalizationTypeDecoder = 'None';
+setup.model.args.NetActivationTypeDecoder = 'None';
+
+setup.model.args.ComponentType = 'PDP';
 setup.model.args.AuxModel = 'Logistic';
+setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
-setup.model.args.RandomSeed = 1234;
 setup.model.args.ShowPlots = true;
+
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
+
+setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
+setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
+
+setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+
+setup.model.args.lossFcns.xvar.class = @ComponentLoss;
+setup.model.args.lossFcns.xvar.name = 'XVarimax';
+setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
 
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
@@ -42,7 +62,7 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
@@ -51,20 +71,16 @@ setup.model.args.trainer.Holdout = 0;
 setup.eval.args.CVType = 'Holdout';
 
 names = [ "JumpsVGRF", ...
-          "Dataset A", ...
-          "Dataset B", ...
-          "Dataset C" ];
+          "Dataset A" ];
 memorySaving = 3;
 
 % -- grid search --
-models = {@PCAModel, @FCModel};
+models = {@PCAModel, @BranchedFCModel};
 dims = [1 2 3];
-pts = [5 7 9];
 parameters = [ "model.class", ...
                "model.args.ZDim", ...
-               "data.args.NormalizedPts", ...
                "model.args.lossFcns.zcls.args.DoCalcLoss"];
-values = {models, dims, pts, {false, true}}; 
+values = {models, dims, {false, true}}; 
 
 N = 400;
 sigma = 0.5;
