@@ -79,7 +79,7 @@ classdef BranchedFCModel < FCModel
                 self        BranchedFCModel
             end
 
-            if self.HasBranchedEncoder
+            if self.HasBranchedEncoder && self.ZDimAux>1
 
                 if self.HasInputNormalization
                     layersEnc = featureInputLayer( self.XInputDim*self.XChannels, ...
@@ -170,7 +170,7 @@ classdef BranchedFCModel < FCModel
                 self        BranchedFCModel
             end
 
-            if self.HasBranchedDecoder
+            if self.HasBranchedDecoder && self.ZDimAux>1
 
                 mask = [false( self.ZDimAux, 1 );
                         true( self.ZDim - self.ZDimAux, 1 )];

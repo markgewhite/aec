@@ -36,13 +36,21 @@ classdef OrthogonalLoss < LossFunction
                 dlZ         dlarray
             end
             
-            % get the correlation
-            dlCorr = dlCorrelation( dlZ );
+            if size( dlZ, 1 ) > 1
 
-            % penalise high covariance
-            d = size( dlZ, 1 );
-            loss = self.Alpha*sum( dlCorr.^2, 'all' )/(d*(d-1));
+                % get the correlation
+                dlCorr = dlCorrelation( dlZ );
+    
+                % penalise high covariance
+                d = size( dlZ, 1 );
+                loss = self.Alpha*sum( dlCorr.^2, 'all' )/(d*(d-1));
 
+            else
+                % only one dimension so set the loss to zero
+                % with traceability
+                loss = 0*sum( dlZ );
+            
+            end
 
         end
 
