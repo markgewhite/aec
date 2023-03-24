@@ -4,8 +4,7 @@ clear;
 
 runAnalysis = true;
 inParallel = true;
-resume = false;
-catchErrors = true;
+catchErrors = false;
 reportIdx = 1:2;
 plotDim = [2 5];
 
@@ -62,7 +61,7 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 10;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
@@ -80,8 +79,9 @@ dims = [1 2 3];
 parameters = [ "model.class", ...
                "model.args.ZDim", ...
                "model.args.lossFcns.zcls.args.DoCalcLoss"];
-values = {models, dims, {false, true}}; 
-
+values = {models, ...
+          dims, ...
+          {false, true}}; 
 N = 400;
 sigma = 0.5;
 
@@ -89,12 +89,9 @@ nReports = length( reportIdx );
 nModels = length( models );
 nDims = length( dims );
 
-if runAnalysis
+results = cell( nModels, 1 );
 
-    if inParallel
-        delete( gcp('nocreate') );
-        pool = parpool;
-    end
+if runAnalysis
 
     for i = reportIdx
     
@@ -127,18 +124,12 @@ if runAnalysis
                                                      -sigma 0 1];             
    
         end
-    
-        if inParallel
-            results(i) = parfeval( pool, @investigationResults, 1, ...
-                                   names(i), path, ...
-                                   parameters, values, setup, ...
-                                   resume, catchErrors, memorySaving );
-        else
-            results(i) = investigationResults( names(i), path, ...
-                                               parameters, values, setup, ...
-                                               resume, catchErrors, memorySaving );
-        end
-    
+
+        results{i} = investigationResults( names{i}, path, ...
+                                           parameters, values, setup, ...
+                                           catchErrors, memorySaving, ...
+                                           inParallel );
+   
     end
 
 else

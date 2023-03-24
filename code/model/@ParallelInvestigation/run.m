@@ -50,6 +50,8 @@ function self = run( self )
 
         end
 
+        disp(['Saving evaluation = ' char(names(i)) ' ...']);
+
         % save the evaluations
         thisEvaluation{i} = thisEvaluation{i}.conserveMemory( memorySaving );
         thisEvaluation{i}.save;

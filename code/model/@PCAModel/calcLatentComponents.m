@@ -5,7 +5,6 @@ function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
         self                PCAModel
         Z                   double
         args.maxObs         double {mustBeInteger} = 500
-        args.smooth         logical = false
         args.responseFcn    function_handle
     end
 
@@ -13,7 +12,7 @@ function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
         % generate a PDP or ALE type component
         argsCell = namedargs2cell( args );
         [XC, XMean, zs] = ...
-            calcLatentComponents@RepresentationModel( self, Z, argsCell{:} );
+            calcLatentComponents@RepresentationModel( self, Z', argsCell{:} );
         return
     end
 

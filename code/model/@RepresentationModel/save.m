@@ -6,7 +6,6 @@ function save( self )
 
     plotObjects = self.Axes;
     plotObjects.Components = self.Figs.Components;
-
     savePlots( plotObjects, self.Info.Path, self.Info.Name );
 
 end

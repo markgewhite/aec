@@ -48,10 +48,7 @@ function self = train( self, thisData )
     self = self.getAuxResponse( thisData );
 
     % compute the functional components
-    self.LatentResponseFcn = @(Z) constructResponse( ...
-                                        self.TSpan.Target, ...
-                                        self.MeanFd, self.CompFd, ...
-                                        Z );
+    self.LatentResponseFcn = @(Z) self.reconstruct( Z' );
     self.LatentComponents = self.getLatentResponse( thisData );
 
     % set the oversmoothing level

@@ -3,7 +3,7 @@ function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
     arguments
         self                PCAModel
         Z                   double  % latent codes
-        args.convert        logical % redundant
+        args.smooth         logical % redundant
     end
            
     XHat = constructCurves( self.TSpan.Target, ...

@@ -57,10 +57,8 @@ function self = trainModels( self, modelSetup )
         % generate the model plots
         if self.Models{k}.ShowPlots
             self.Models{k}.showAllPlots;
+            self.Models{k}.save;
         end
-
-        % save the model
-        self.Models{k}.save;
 
     end
 

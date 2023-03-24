@@ -10,6 +10,11 @@ function loss = innerProductLoss( XC )
 
     [nPts, nSamples, nComp, nChannels] = size( XC );
 
+    if nComp==1
+        loss = 0;
+        return
+    end
+    
     for c = nChannels:-1:1
         for k = nSamples:-1:1
             for i = nComp:-1:1

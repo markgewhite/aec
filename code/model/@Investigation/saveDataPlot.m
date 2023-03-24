@@ -12,7 +12,7 @@ function fig = saveDataPlot( self, args )
     thisDataset = self.getDatasets( argsCell{:} );
     
     if isempty(thisDataset)
-        disp(['No ' args.set ' data set available.']);
+        disp(['No ' char(args.set )' data set available.']);
         return
     end
     
