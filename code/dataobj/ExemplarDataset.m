@@ -25,7 +25,7 @@ classdef ExemplarDataset < ModelDataset
             arguments
                 set                     char ...
                         {mustBeMember( set, ...
-                                   {'Training', 'Testing'} )}
+                           {'Training', 'Testing', 'Combined'} )}
                 args.randomSeeds        (1,2) double = [ 1234 5678 ]
                 args.FeatureType        char ...
                         {mustBeMember( args.FeatureType, ...
@@ -66,6 +66,9 @@ classdef ExemplarDataset < ModelDataset
             args.tSpan = linspace( -4, 4, nPts )';
 
             % initialize the data arrays
+            if strcmp( set, 'Combined' )
+                args.ClassSizes = args.ClassSizes*2;
+            end
             nClasses = length(args.ClassSizes);
             nObs = sum(args.ClassSizes);
             X = cell( nObs, 1 );
@@ -73,7 +76,7 @@ classdef ExemplarDataset < ModelDataset
 
             % set the random seed
             switch set
-                case 'Training'
+                case {'Training', 'Combined'}
                     rng( args.randomSeeds(1) );
                 case 'Testing'
                     rng( args.randomSeeds(2) );
