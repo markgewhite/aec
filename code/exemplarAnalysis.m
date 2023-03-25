@@ -10,7 +10,7 @@ plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/exemplars/'];
+path = [path0 '/../results/exemplarsKFold/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -61,13 +61,15 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 10;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
-setup.eval.args.CVType = 'Holdout';
+setup.eval.args.CVType = 'KFold';
+setup.eval.args.KFolds = 2;
+setup.eval.args.KFoldRepeats = 5;
 
 names = [ "JumpsVGRF", ...
           "Dataset A" ];
@@ -75,7 +77,7 @@ memorySaving = 3;
 
 % -- grid search --
 models = {@PCAModel, @BranchedFCModel};
-dims = [1 2 3];
+dims = [1 2 3 5 7 10];
 parameters = [ "model.class", ...
                "model.args.ZDim", ...
                "model.args.lossFcns.zcls.args.DoCalcLoss"];

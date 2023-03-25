@@ -43,7 +43,7 @@ function self = trainModelsInParallel( self, modelSetup )
 
         % initialize the model
         if self.NumModels > 1
-            foldName = [self.Name '-Fold' num2str( k, '%02d' )];
+            foldName = [char(self.Name) '-Fold' num2str( k, '%02d' )];
         else
             foldName = self.Name;
         end
