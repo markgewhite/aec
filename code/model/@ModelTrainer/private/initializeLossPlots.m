@@ -1,5 +1,9 @@
-function [fig, lossLines] = initializeLossPlots( lossFcnTbl )
+function [fig, lossLines] = initializeLossPlots( lossFcnTbl, show )
     % Setup plots for tracking progress
+    arguments
+        lossFcnTbl      table
+        show            logical = true
+    end
    
     lossFcnTbl = lossFcnTbl( lossFcnTbl.DoCalcLoss, : );
     nAxes = size( lossFcnTbl, 1 );
@@ -7,6 +11,11 @@ function [fig, lossLines] = initializeLossPlots( lossFcnTbl )
     
     % setup figure for plotting loss functions
     fig = figure(3);
+    if show
+        fig.Visible = 'on';
+    else
+        fig.Visible = 'off';
+    end
     clf;
     nLines = sum( lossFcnTbl.NumLosses );
     lossLines = gobjects( nLines, 1 );

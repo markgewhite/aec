@@ -29,6 +29,7 @@ function self = trainModelsInParallel( self, modelSetup )
     thisTrnSet = cell( numModels, 1 );
     thisValSet = cell( numModels, 1 );
     for k = 1:numModels
+
         switch self.CVType
             case 'Holdout'
                 % set the training and holdout data sets
@@ -39,8 +40,17 @@ function self = trainModelsInParallel( self, modelSetup )
                 thisTrnSet{k} = self.TrainingDataset.partition( self.Partitions(:,k) );
                 thisValSet{k} = self.TrainingDataset.partition( ~self.Partitions(:,k) );
         end
+
         % initialize the model
-        models{k} = modelSetup.class( thisTrnSet{k}, argsModel{:} );
+        if self.NumModels > 1
+            foldName = [self.Name '-Fold' num2str( k, '%02d' )];
+        else
+            foldName = self.Name;
+        end
+        self.Models{k} = modelSetup.class( thisTrnSet, ...
+                                           argsModel{:}, ...
+                                           Name = foldName );
+        
     end
 
     % run the cross validation loop in parallel
@@ -69,13 +79,16 @@ function self = trainModelsInParallel( self, modelSetup )
         models{k} = models{k}.evaluate( thisTrnSet{k}, thisValSet{k} );
         models{k}.Timing.Testing.TotalTime = toc(tStart);
 
-        % save the model
-        models{k}.save;
-
     end
 
-    % store the result
+    % store all models
     self.Models = models;
+
+    % generate all model plots and save them
+    for k = 1:numModels
+        self.Models{k}.showAllPlots;
+        self.Models{k}.save;
+    end
 
     % find the optimal arrangement of model components
     if self.NumModels > 1

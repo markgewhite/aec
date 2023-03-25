@@ -33,7 +33,7 @@ function self = run( self )
                                                      setups{i}, ...
                                                      argsCell{:} );
             catch ME
-                warning('*****!!!!! Evaluation failed !!!!!*****')
+                warning(['***** Evaluation failed in ' char(names(i)) ' *****'])
                 disp(['Error Message: ' ME.message]);
                 for k = 1:length(ME.stack)
                     disp([ME.stack(k).name ', (line ' ...
@@ -49,8 +49,6 @@ function self = run( self )
                                                  argsCell{:} );
 
         end
-
-        disp(['Saving evaluation = ' char(names(i)) ' ...']);
 
         % save the evaluations
         thisEvaluation{i} = thisEvaluation{i}.conserveMemory( memorySaving );

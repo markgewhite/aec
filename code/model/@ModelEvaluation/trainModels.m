@@ -31,7 +31,14 @@ function self = trainModels( self, modelSetup )
         end
         
         % initialize the model
-        self.Models{k} = modelSetup.class( thisTrnSet, argsModel{:} );
+        if self.NumModels > 1
+            foldName = [self.Name '-Fold' num2str( k, '%02d' )];
+        else
+            foldName = self.Name;
+        end
+        self.Models{k} = modelSetup.class( thisTrnSet, ...
+                                           argsModel{:}, ...
+                                           Name = foldName );
 
         if self.RandomSeedResets && ~isempty( self.RandomSeed )
             % reset the random seed for the model
@@ -54,11 +61,9 @@ function self = trainModels( self, modelSetup )
         self.Models{k} = self.Models{k}.evaluate( thisTrnSet, thisValSet );
         self.Models{k}.Timing.Testing.TotalTime = toc(tStart);
 
-        % generate the model plots
-        if self.Models{k}.ShowPlots
-            self.Models{k}.showAllPlots;
-            self.Models{k}.save;
-        end
+        % generate the model plots and save them
+        self.Models{k}.showAllPlots;
+        %self.Models{k}.save;
 
     end
 

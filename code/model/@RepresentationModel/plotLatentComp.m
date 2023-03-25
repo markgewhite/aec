@@ -1,4 +1,4 @@
-function plotLatentComp( self, args )
+function axes = plotLatentComp( self, args )
     % Plot characteristic curves of the latent codings which are similar
     % in conception to the functional principal components
     arguments
@@ -117,7 +117,13 @@ function plotLatentComp( self, args )
 
     % set the plot axes
     if isempty( args.axes )
-        axes = self.Axes.Comp;
+        if isfield( self.Axes, 'Comp' )
+            axes = self.Axes.Comp;
+        else
+           [~, axes] = initializeCompPlot( self.XChannels, self.ZDim, ...
+                                           asNew = true );
+        end
+
     else
         axesDim = size( args.axes );
         if axesDim(1) == self.XChannels ...

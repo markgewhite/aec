@@ -89,16 +89,13 @@ classdef ModelTrainer < handle
             self.HasMiniBatchShuffle = args.HasMiniBatchShuffle;
             self.HasShuffleRandomStream = args.HasShuffleRandomStream;
 
-            self.NumLossFcns = size( lossFcnTbl,1 );
+            self.NumLossFcns = size( lossFcnTbl, 1 );
             self.LossTrn = [];
             self.LossVal = [];
 
             self.ShowPlots = args.ShowPlots;
 
-            if self.ShowPlots
-                [self.LossFig, self.LossLines] = ...
-                                initializeLossPlots( lossFcnTbl );
-            end
+            [self.LossFig, self.LossLines] = initializeLossPlots( lossFcnTbl );
 
         end
 

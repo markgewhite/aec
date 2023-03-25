@@ -129,11 +129,9 @@ classdef RepresentationModel
 
             self.ShowPlots = args.ShowPlots;
 
-            if args.ShowPlots
-                [self.Figs, self.Axes] = ...
-                        initializePlots( self.XChannels, self.ZDimAux );
-            end
-
+            [self.Figs, self.Axes] = initializePlots( self.XChannels, ... 
+                                                      self.ZDimAux, ...
+                                                      self.ShowPlots );
 
         end
 
