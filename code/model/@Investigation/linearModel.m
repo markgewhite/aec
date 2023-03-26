@@ -1,10 +1,13 @@
-function model = statModel( self, outcome, args )
-    % Make a statistical model from the results
+function model = linearModel( self, outcome, args )
+    % Make a generalized linear model from the summary results
     arguments
         self            Investigation
         outcome         string
         args.Set        string {mustBeMember( ...
                         args.Set, {'Training', 'Testing'} )} = 'Training'
+        args.Distribution   string {mustBeMember( ...
+            args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
+                        'Gamma', 'InverseGaussian'} )} = 'Normal'
     end
 
     switch args.Set
@@ -40,7 +43,8 @@ function model = statModel( self, outcome, args )
     end
 
     % fit the model
-    model = fitglm( data, 'interactions', Distribution = 'gamma' );
+    model = fitglm( data, 'interactions', ...
+                    Distribution = args.Distribution );
 
 
 end

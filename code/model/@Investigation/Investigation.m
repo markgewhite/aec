@@ -109,6 +109,10 @@ classdef Investigation
         
         report = getResults( self )
 
+        model = linearModel( self, outcome, args )
+
+        model = mixedModel( self, group, outcome, args )
+
         self = run( self )
 
         save( self )
@@ -116,8 +120,6 @@ classdef Investigation
         fig = saveDataPlot( self, args )
 
         report = saveReport( self )
-
-        model = statModel( self, outcome, args )
 
     end
 
