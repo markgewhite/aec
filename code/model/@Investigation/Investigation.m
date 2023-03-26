@@ -117,6 +117,8 @@ classdef Investigation
 
         report = saveReport( self )
 
+        model = statModel( self, outcome, args )
+
     end
 
 end
