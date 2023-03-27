@@ -131,7 +131,7 @@ classdef ModelEvaluation < handle
 
         XC = calcCVComponents( self )
 
-        conserveMemory( self, level )
+        conserveMemory( self, level, closeFigs )
 
         initPCAModel( self, setup )
 

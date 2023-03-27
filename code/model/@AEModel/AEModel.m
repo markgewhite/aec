@@ -194,6 +194,8 @@ classdef AEModel < RepresentationModel
 
         % class methods
 
+        closeFigures( self )
+
         self = compress( self, level )
 
         dlZ = encode( self, X, arg )

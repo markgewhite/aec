@@ -147,6 +147,8 @@ classdef RepresentationModel
 
         [F, Q, Z] = calcResponse( self, dlZ, args )
 
+        closeFigures( self )
+
         self = compress( self, level )
 
         self = evaluate( self, thisTrnSet, thisValSet )
