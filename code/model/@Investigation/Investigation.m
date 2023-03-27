@@ -111,6 +111,8 @@ classdef Investigation < handle
 
         model = linearModel( self, outcome, args )
 
+        reload( self )
+
         model = mixedModel( self, group, outcome, args )
 
         run( self )
