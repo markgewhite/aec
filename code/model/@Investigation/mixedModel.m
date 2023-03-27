@@ -9,6 +9,7 @@ function model = mixedModel( self, group, outcome, args )
         args.Distribution   string {mustBeMember( ...
             args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
                         'Gamma', 'InverseGaussian'} )} = 'Normal'
+        args.FixedFormula   string = []
     end
 
     % compile the statistical model's training data
@@ -44,9 +45,13 @@ function model = mixedModel( self, group, outcome, args )
     data = cell2table( data, VariableNames = [ predictors "Fold" outcome ] );
 
     % create the formulae
-    fixedEffects = join( predictors, '*');
     randomEffects = '(1 | Fold)';
-    formula = sprintf('%s ~  %s + %s', outcome, fixedEffects, randomEffects);
+    if isempty( args.FixedFormula )
+        fixedEffects = join( predictors, '*');
+        formula = sprintf('%s ~  %s + %s', outcome, fixedEffects, randomEffects);
+    else
+        formula = sprintf('%s + %s', args.FixedFormula, randomEffects);
+    end
 
     % fit the model
     model = fitglme( data, formula, ...

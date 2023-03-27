@@ -8,6 +8,10 @@ function model = linearModel( self, outcome, args )
         args.Distribution   string {mustBeMember( ...
             args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
                         'Gamma', 'InverseGaussian'} )} = 'Normal'
+        args.Stepwise   logical = true
+        args.Criterion   string {mustBeMember( ...
+            args.Criterion, {'Deviance', 'SSE', 'AIC', 'BIC', ...
+                             'RSquared', 'AdjRSquared'} )} = 'BIC'
     end
 
     switch args.Set
@@ -22,7 +26,7 @@ function model = linearModel( self, outcome, args )
     for j = 1:self.NumParameters
         value = extract( self.GridSearch{j}(1), 1 );
         data = [ data table( repmat( value, self.NumEvaluations, 1 ), ...
-                             VariableNames = self.Parameters(j) ) ]; %#ok<AGROW> 
+                     VariableNames = strrep(self.Parameters(j), '.', '_' ) ) ]; %#ok<AGROW> 
     end
     data = [ data table( zeros( self.NumEvaluations, 1 ), ...
                          VariableNames = outcome ) ];
@@ -43,9 +47,15 @@ function model = linearModel( self, outcome, args )
     end
 
     % fit the model
-    model = fitglm( data, 'interactions', ...
-                    Distribution = args.Distribution );
-
+    if args.Stepwise
+        model = stepwiseglm( data, 'interactions', ...
+                             Distribution = args.Distribution, ...
+                             Criterion = args.Criterion, ...
+                             Verbose = 2);
+    else
+        model = fitglm( data, 'interactions', ...
+                        Distribution = args.Distribution );
+    end
 
 end
 
