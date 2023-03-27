@@ -1,4 +1,4 @@
-function self = initDatasets( self, setup )
+function initDatasets( self, setup )
     % Initialize the datasets
     arguments
         self        ModelEvaluation

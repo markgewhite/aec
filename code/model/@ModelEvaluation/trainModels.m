@@ -1,4 +1,4 @@
-function self = trainModels( self, modelSetup )
+function trainModels( self, modelSetup )
     % Run the cross-validation training loop
     arguments
         self                ModelEvaluation

@@ -1,4 +1,4 @@
-function self = conserveMemory( self, level )
+function conserveMemory( self, level )
     % Conserve memory usage
     arguments
         self            ModelEvaluation

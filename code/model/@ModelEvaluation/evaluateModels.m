@@ -1,4 +1,4 @@
-function self = evaluateModels( self, set )
+function evaluateModels( self, set )
     % Evaluate the trained models
     arguments
         self            ModelEvaluation

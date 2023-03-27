@@ -41,12 +41,12 @@ function self = run( self )
         end
 
         % save the evaluations
-        thisEvaluation = thisEvaluation.conserveMemory( self.MemorySaving );
+        thisEvaluation.conserveMemory( self.MemorySaving );
         thisEvaluation.save;
 
         % record results
         self.Evaluations{ idxC{:} } = thisEvaluation;
-        self = self.logResults( idxC, size(self.Evaluations) );
+        self.logResults( idxC, size(self.Evaluations) );
 
         % save the current state of the investigation
         self.save( memorySaving = 1 );

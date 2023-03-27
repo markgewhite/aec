@@ -1,4 +1,4 @@
-classdef ModelEvaluation
+classdef ModelEvaluation < handle
     % Class defining a model evaluation
 
     properties
@@ -94,19 +94,19 @@ classdef ModelEvaluation
             end
 
             % prepare the data
-            self = initDatasets( self, setup );
+            self.initDatasets( setup );
             
             % train the model
             startTime = tic;
             if self.InParallel
-                self = self.trainModelsInParallel( setup.model );
+                self.trainModelsInParallel( setup.model );
             else
-                self = self.trainModels( setup.model );
+                self.trainModels( setup.model );
             end
 
             % evaluate the trained model
-            self = self.evaluateModels( 'Training' );
-            self = self.evaluateModels( 'Testing' );           
+            self.evaluateModels( 'Training' );
+            self.evaluateModels( 'Testing' );           
 
             self.CVTiming.Training.Mean.TotalEvaluationTime = toc(startTime);
             
@@ -131,11 +131,11 @@ classdef ModelEvaluation
 
         XC = calcCVComponents( self )
 
-        self = conserveMemory( self, level )
+        conserveMemory( self, level )
 
-        self = initPCAModel( self, setup )
+        initPCAModel( self, setup )
 
-        self = initAEModel( self, setup )
+        initAEModel( self, setup )
 
         save( self )
 

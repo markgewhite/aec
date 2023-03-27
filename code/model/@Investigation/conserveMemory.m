@@ -27,8 +27,7 @@ function thisInvestigation = conserveMemory( self, level )
                 thisInvestigation.Evaluations{ idxC{:} } = [];
             else
                 % scaled memory conservation
-                thisInvestigation.Evaluations{ idxC{:} } = ...
-                    thisInvestigation.Evaluations{ idxC{:} }.conserveMemory( level );
+                thisInvestigation.Evaluations{ idxC{:} }.conserveMemory( level );
             end
         end
 

@@ -6,13 +6,12 @@ function save( self, args )
                             mustBeInRange( args.memorySaving, 0, 3 )} = 0
     end
 
+    thisInvestigation = self;
     if args.memorySaving>0
-        thisInvestigation = self.conserveMemory( args.memorySaving );
-    else
-        thisInvestigation = self;
+        thisInvestigation.conserveMemory( args.memorySaving );
     end
 
     name = strcat( self.Name, "-Investigation" );
-    save( fullfile( self.Path, name ), 'thisInvestigation' );
+    save( fullfile( self.Path, name ), 'thisInvestigation', '-v7.3' );
 
 end

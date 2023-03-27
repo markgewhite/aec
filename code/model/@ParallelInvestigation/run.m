@@ -63,7 +63,7 @@ function self = run( self )
         idxC = num2cell( idx );
 
         self.Evaluations{ idxC{:} } = thisEvaluation{i};
-        self = self.logResults( idxC, size(self.Setups) );
+        self.logResults( idxC, size(self.Setups) );
 
     end
 

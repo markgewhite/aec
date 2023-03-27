@@ -1,4 +1,4 @@
-classdef Investigation
+classdef Investigation < handle
     % Class defining a model investigation, a grid search
 
     properties
@@ -34,7 +34,7 @@ classdef Investigation
                 setup           struct
                 catchErrors     logical = false
                 memorySaving    double {mustBeInteger, ...
-                                mustBeInRange( memorySaving, 0, 3 )} = 0
+                                mustBeInRange( memorySaving, 0, 3 )} = 1
             end
 
             % initialize properties
@@ -103,7 +103,7 @@ classdef Investigation
 
         % class methods
 
-        self = conserveMemory( self, level )
+        conserveMemory( self, level )
 
         datasets = getDatasets( self, args )
         
@@ -113,7 +113,7 @@ classdef Investigation
 
         model = mixedModel( self, group, outcome, args )
 
-        self = run( self )
+        run( self )
 
         save( self )
 

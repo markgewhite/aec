@@ -1,4 +1,4 @@
-function self = trainModelsInParallel( self, modelSetup )
+function trainModelsInParallel( self, modelSetup )
     % Run the cross-validation training loop
     arguments
         self                ModelEvaluation
