@@ -9,6 +9,7 @@ function model = mixedModel( self, outcome, args )
             args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
                         'Gamma', 'InverseGaussian'} )} = 'Normal'
         args.FixedFormula   string = []
+        args.AllCategorical logical = true
     end
 
     switch args.Set
@@ -47,6 +48,13 @@ function model = mixedModel( self, outcome, args )
     % convert to a table for the model
     predictors = strrep( self.Parameters, '.', '_' );
     data = cell2table( data, VariableNames = [ predictors "Fold" outcome ] );
+
+    if args.AllCategorical
+        varNames = data.Properties.VariableNames;
+        pred = varfun(@categorical, data(:,1:end-2), 'OutputFormat', 'table');
+        data = [pred data(:,end-1:end)];
+        data.Properties.VariableNames = varNames;
+    end
 
     % create the formulae
     randomEffects = '(1 | Fold)';

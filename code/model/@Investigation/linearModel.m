@@ -7,11 +7,12 @@ function model = linearModel( self, outcome, args )
                         args.Set, {'Training', 'Testing'} )} = 'Training'
         args.Distribution   string {mustBeMember( ...
             args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
-                        'Gamma', 'InverseGaussian'} )} = 'Normal'
+                        'Gamma', 'Inverse Gaussian'} )} = 'Normal'
         args.Stepwise   logical = true
         args.Criterion   string {mustBeMember( ...
             args.Criterion, {'Deviance', 'SSE', 'AIC', 'BIC', ...
                              'RSquared', 'AdjRSquared'} )} = 'BIC'
+        args.AllCategorical logical = true
     end
 
     switch args.Set
@@ -44,6 +45,13 @@ function model = linearModel( self, outcome, args )
         % set the outcome variable
         data{ i, end } = self.(results).Mean.(outcome)(idxC{:});
 
+    end
+
+    if args.AllCategorical
+        varNames = data.Properties.VariableNames;
+        pred = varfun(@categorical, data(:,1:end-1), 'OutputFormat', 'table');
+        data = [pred data(:,end)];
+        data.Properties.VariableNames = varNames;
     end
 
     % fit the model
