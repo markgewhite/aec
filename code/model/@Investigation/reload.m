@@ -1,9 +1,10 @@
-function reload( self, memorySaving )
+function reload( self, args )
     % Reload all evaluations and compile results
     arguments
-        self            Investigation
-        memorySaving    double {mustBeInteger, ...
-                                mustBeInRange( memorySaving, 0, 3 )} = 1
+        self                Investigation
+        args.MemorySaving   double {mustBeInteger, ...
+                        mustBeInRange( args.MemorySaving, 0, 3 )} = 1
+        args.Overwrite      logical = true
     end
 
     % save the current default figure visibility setting
@@ -17,15 +18,17 @@ function reload( self, memorySaving )
         idx = getIndices( i, self.SearchDims );
         idxC = num2cell( idx );
 
-        % load the evaluation
-        filename = strcat( self.EvaluationNames( idxC{:} ), "-Evaluation" );
-        disp(['Loading ' char(filename)]);
-        load( fullfile( self.Path, filename ), 'thisEvaluation' );
+        if args.Overwrite || isempty(self.Evaluations{ idxC{:} })
+            % load the evaluation
+            filename = strcat( self.EvaluationNames( idxC{:} ), "-Evaluation" );
+            disp(['Loading ' char(filename)]);
+            load( fullfile( self.Path, filename ), 'thisEvaluation' );
+    
+            thisEvaluation.conserveMemory( args.MemorySaving );
+    
+            self.Evaluations{ idxC{:} } = thisEvaluation;
+        end
 
-        thisEvaluation.conserveMemory( memorySaving );
-
-        % record results
-        self.Evaluations{ idxC{:} } = thisEvaluation;
         self.logResults( idxC, size(self.Evaluations) );
 
     end

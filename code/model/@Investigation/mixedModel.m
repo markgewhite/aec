@@ -1,8 +1,7 @@
-function model = mixedModel( self, group, outcome, args )
+function model = mixedModel( self, outcome, args )
     % Make a mixed generalized model from the individual model results
     arguments
         self                Investigation
-        group               string
         outcome             string
         args.Set            string {mustBeMember( ...
                         args.Set, {'Training', 'Testing'} )} = 'Training'
@@ -10,6 +9,13 @@ function model = mixedModel( self, group, outcome, args )
             args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
                         'Gamma', 'InverseGaussian'} )} = 'Normal'
         args.FixedFormula   string = []
+    end
+
+    switch args.Set
+        case 'Training'
+            results = 'TrainingResults';
+        case 'Testing'
+            results = 'TestingResults';
     end
 
     % compile the statistical model's training data
@@ -32,10 +38,8 @@ function model = mixedModel( self, group, outcome, args )
         end
         
         % set the outcome variable
-        thisEvaluation = self.Evaluations{ idxC{:} };
         for k = 1:numModels
-            data{ rows(1)+k-1, end } = ...
-                thisEvaluation.Models{k}.(group).(args.Set).(outcome);
+            data{ rows(1)+k-1, end } = self.(results).Models{k}.(outcome)(idxC{:});
         end
 
     end

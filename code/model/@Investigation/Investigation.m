@@ -54,8 +54,10 @@ classdef Investigation < handle
             self.GridSearch = searchValues;
             self.TrainingResults.Mean = [];
             self.TrainingResults.SD = [];
+            self.TrainingResults.Models = [];
             self.TestingResults.Mean = [];
             self.TestingResults.SD = [];
+            self.TrainingResults.Models = [];
 
             % setup the grid search
             self.NumParameters = length( parameters );
