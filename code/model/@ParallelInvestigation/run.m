@@ -51,7 +51,7 @@ function self = run( self )
         end
 
         % save the evaluations
-        thisEvaluation{i} = thisEvaluation{i}.conserveMemory( memorySaving );
+        thisEvaluation{i}.conserveMemory( memorySaving );
         thisEvaluation{i}.save;
 
     end

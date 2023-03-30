@@ -3,12 +3,14 @@
 setup = initSetup;
 
 % first investigation
-name = 'test';
+name = 'test2';
 path = fileparts( which('code/runAnalysis.m') );
 path = [path '/../results/'];
 
-parameters = [ "model.args.ZDim" ];
-values = {[3 5]};
+parameters = [ "model.args.ZDim", ...
+               ];
+values = {[2 5], ...
+          };
 
 
 myInvestigation = Investigation( name, path, parameters, values, setup );
