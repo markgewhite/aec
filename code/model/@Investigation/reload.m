@@ -22,7 +22,12 @@ function reload( self, args )
             % load the evaluation
             filename = strcat( self.EvaluationNames( idxC{:} ), "-Evaluation" );
             disp(['Loading ' char(filename)]);
-            load( fullfile( self.Path, filename ), 'thisEvaluation' );
+            try
+                load( fullfile( self.Path, filename ), 'thisEvaluation' );
+            catch
+                disp('File does not exist');
+                continue
+            end
     
             thisEvaluation.conserveMemory( args.MemorySaving );
     

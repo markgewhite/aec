@@ -4,8 +4,12 @@ function self = run( self )
         self            Investigation
     end
 
+    % check if any evaluations have already been done
+    isToBeDone = cellfun(@(x) ~isa(x, 'ModelEvaluation'), self.Evaluations );
+    toDoIdx = find( isToBeDone );
+
     % run the evaluation loop
-    for i = 1:self.NumEvaluations
+    for i = toDoIdx
 
         idx = getIndices( i, self.SearchDims );
         idxC = num2cell( idx );

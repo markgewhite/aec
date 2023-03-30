@@ -4,16 +4,19 @@ function self = run( self )
         self            ParallelInvestigation
     end
 
-    nEval = self.NumEvaluations;
-    
+    % check if any evaluations have already been done
+    isToBeDone = cellfun(@(x) ~isa(x, 'ModelEvaluation'), self.Evaluations );
+    toDoIdx = find( isToBeDone );
+
     % use temporary flattened arrays for parallel procesing
     % so the indexing is unambiguous
     path = self.Path;
-    setups = self.Setups(:);
-    names = self.EvaluationNames(:);
+    setups = self.Setups(isToBeDone);
+    names = self.EvaluationNames(isToBeDone);
     catchErrors = self.CatchErrors;
     memorySaving = self.MemorySaving;
 
+    nEval = sum( isToBeDone, 'all' );
     thisEvaluation = cell( nEval, 1 );
 
     % run the evaluation loop
@@ -57,7 +60,7 @@ function self = run( self )
     end
 
     % store the results
-    for i = 1:nEval
+    for i = toDoIdx
 
         idx = getIndices( i, self.SearchDims );
         idxC = num2cell( idx );
