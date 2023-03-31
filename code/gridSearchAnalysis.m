@@ -1,6 +1,10 @@
 % run a grid search
 
-name = "DatasetA";
+clear;
+
+name = "Fukuchi-GRF-3D";
+catchErrors = false;
+memorySaving = 2;
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/gridSearchAnalysis.m') );
@@ -117,15 +121,13 @@ switch name
         setup.data.class = @FukuchiDataset;
         setup.data.args.YReference = 'AgeGroup';
         setup.data.args.Category = 'Ground';
-        setup.data.args.NormalizedPts = 5;
-        setup.model.args.trainer.BatchSize = 1000;
-        setup.model.args.trainer.InParallel = true;
-        setup.model.args.trainer.DoUseGPU = true;
+        setup.data.args.MaxObs = 500;
 
 
 end
 
-myInvestigation = ParallelInvestigation( name, path, parameters, values, setup );
+myInvestigation = ParallelInvestigation( name, path, parameters, values, ...
+                                 setup, catchErrors, memorySaving );
 
 myInvestigation.run;
 

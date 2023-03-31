@@ -9,9 +9,10 @@ function self = run( self )
     toDoIdx = find( isToBeDone );
 
     % run the evaluation loop
-    for i = toDoIdx
+    nEval = sum( isToBeDone, 'all' );
+    for i = 1:nEval
 
-        idx = getIndices( i, self.SearchDims );
+        idx = getIndices( toDoIdx(i), self.SearchDims );
         idxC = num2cell( idx );
 
         try
@@ -51,9 +52,6 @@ function self = run( self )
         % record results
         self.Evaluations{ idxC{:} } = thisEvaluation;
         self.logResults( idxC, size(self.Evaluations) );
-
-        % save the current state of the investigation
-        self.save( memorySaving = 1 );
 
     end
     

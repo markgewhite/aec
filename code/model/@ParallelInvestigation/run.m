@@ -60,9 +60,9 @@ function self = run( self )
     end
 
     % store the results
-    for i = toDoIdx
+    for i = 1:nEval
 
-        idx = getIndices( i, self.SearchDims );
+        idx = getIndices( toDoIdx(i), self.SearchDims );
         idxC = num2cell( idx );
 
         self.Evaluations{ idxC{:} } = thisEvaluation{i};

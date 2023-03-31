@@ -47,6 +47,7 @@ classdef FukuchiDataset < ModelDataset
                 args.HasAnkleAngles     logical = false
                 args.HasFootAngles      logical = false
                 args.FromMatlabFile     logical = false
+                args.WriteMatlabFile    logical = false
                 args.PaddingLength      double = 0
                 args.Lambda             double = []
                 superArgs.?ModelDataset
@@ -187,9 +188,11 @@ classdef FukuchiDataset < ModelDataset
 
                 end
                         
-                % save it for future reference
-                save( fullfile(path,filename), ...
-                      'X', 'Y', 'S', 'side', 'names', '-v7.3' );
+                if args.WriteMatlabFile
+                    % save it for future reference
+                    save( fullfile(path,filename), ...
+                          'X', 'Y', 'S', 'side', 'names', '-v7.3' );
+                end
             
             end
             
@@ -305,7 +308,7 @@ function [X, Y, S, side, names] = loadGRFData( path, filenames, ...
     end
 
     % trim back the arrays
-    if ~isfield( args, 'ObsMax' )
+    if ~isfield( args, 'MaxObs' )
         selection = 1:kEnd;
     else
         if args.Stratified
@@ -317,7 +320,7 @@ function [X, Y, S, side, names] = loadGRFData( path, filenames, ...
         else
             w = ones( kEnd, 1 )/kEnd;
         end
-        selection = randsample( kEnd, args.ObsMax, true, w );
+        selection = randsample( kEnd, args.MaxObs, true, w );
     end
     X = X( selection );
     Y = Y( selection );

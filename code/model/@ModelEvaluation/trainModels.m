@@ -61,9 +61,8 @@ function trainModels( self, modelSetup )
         self.Models{k} = self.Models{k}.evaluate( thisTrnSet, thisValSet );
         self.Models{k}.Timing.Testing.TotalTime = toc(tStart);
 
-        % generate the model plots and save them
+        % generate the model plots
         self.Models{k}.showAllPlots;
-        self.Models{k}.save;
 
     end
 

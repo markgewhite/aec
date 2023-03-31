@@ -21,6 +21,7 @@ function trainModelsInParallel( self, modelSetup )
     randomSeedResets = self.RandomSeedResets;
     randomSeed = self.RandomSeed;
     verbose = self.Verbose;
+    memorySaving = self.MemorySaving;
 
     % setup the data sets in series and initialize the models
     if self.Verbose
@@ -83,12 +84,6 @@ function trainModelsInParallel( self, modelSetup )
 
     % store all models
     self.Models = models;
-
-    % generate all model plots and save them
-    for k = 1:numModels
-        self.Models{k}.showAllPlots;
-        self.Models{k}.save;
-    end
 
     % find the optimal arrangement of model components
     if self.NumModels > 1
