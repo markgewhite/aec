@@ -47,6 +47,9 @@ function model = linearModel( self, outcome, args )
 
     end
 
+    % retain only those evaluations that were completed
+    data = data( self.IsComplete, : );
+
     if args.AllCategorical
         varNames = data.Properties.VariableNames;
         pred = varfun(@categorical, data(:,1:end-1), 'OutputFormat', 'table');

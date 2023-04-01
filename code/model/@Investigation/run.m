@@ -51,7 +51,11 @@ function self = run( self )
 
         % record results
         self.Evaluations{ idxC{:} } = thisEvaluation;
-        self.logResults( idxC, size(self.Evaluations) );
+        try
+            self.logResults( idxC, size(self.Evaluations) );
+        catch
+            disp(['Unable to log results for ' char(self.EvaluationNames(idxC{:}))]);
+        end   
 
     end
     

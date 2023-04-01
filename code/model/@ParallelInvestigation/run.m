@@ -66,7 +66,11 @@ function self = run( self )
         idxC = num2cell( idx );
 
         self.Evaluations{ idxC{:} } = thisEvaluation{i};
-        self.logResults( idxC, size(self.Setups) );
+        try
+            self.logResults( idxC, size(self.Setups) );
+        catch
+            disp(['Unable to log results for ' char(names(i))]);
+        end
 
     end
 

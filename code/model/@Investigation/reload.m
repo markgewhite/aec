@@ -12,7 +12,9 @@ function reload( self, args )
 
     % set the default figure visibility to 'off'
     set(0, 'DefaultFigureVisible', 'off');
-    
+
+    % reset completions list
+    self.IsComplete = false( self.NumEvaluations, 1 );
     for i = 1:self.NumEvaluations
 
         idx = getIndices( i, self.SearchDims );
@@ -32,6 +34,7 @@ function reload( self, args )
             thisEvaluation.conserveMemory( args.MemorySaving );
     
             self.Evaluations{ idxC{:} } = thisEvaluation;
+            self.IsComplete( i ) = true;
         end
 
         self.logResults( idxC, size(self.Evaluations) );
