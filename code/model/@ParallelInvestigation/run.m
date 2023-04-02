@@ -18,6 +18,7 @@ function self = run( self )
 
     nEval = sum( isToBeDone, 'all' );
     thisEvaluation = cell( nEval, 1 );
+    isComplete = false( nEval, 1 );
 
     % run the evaluation loop
     parfor i = 1:nEval
@@ -56,6 +57,7 @@ function self = run( self )
         % save the evaluations
         thisEvaluation{i}.conserveMemory( memorySaving );
         thisEvaluation{i}.save;
+        isComplete(i) = true;
 
     end
 
@@ -73,6 +75,7 @@ function self = run( self )
         end
 
     end
+    self.IsComplete = isComplete;
 
     % save the current state of the investigation
     self.save( memorySaving = 1 );
