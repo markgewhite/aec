@@ -49,6 +49,13 @@ function model = mixedModel( self, outcome, args )
     predictors = strrep( self.Parameters, '.', '_' );
     data = cell2table( data, VariableNames = [ predictors "Fold" outcome ] );
 
+    % retain only those evaluations that were completed
+    data = data( self.IsComplete, : );
+
+    % remove any rows the response variable is zero
+    isZero = table2array(data( :, end )) ~= 0 ;
+    data = data( isZero, : );
+
     if args.AllCategorical
         varNames = data.Properties.VariableNames;
         pred = varfun(@categorical, data(:,1:end-2), 'OutputFormat', 'table');
