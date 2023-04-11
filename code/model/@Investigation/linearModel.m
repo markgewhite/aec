@@ -1,4 +1,4 @@
-function model = linearModel( self, outcome, args )
+function [model, data] = linearModel( self, outcome, args )
     % Make a generalized linear model from the summary results
     arguments
         self            Investigation

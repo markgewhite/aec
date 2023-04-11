@@ -1,4 +1,4 @@
-function model = mixedModel( self, outcome, args )
+function [model, data] = mixedModel( self, outcome, args )
     % Make a mixed generalized model from the individual model results
     arguments
         self                Investigation
@@ -20,7 +20,7 @@ function model = mixedModel( self, outcome, args )
     end
 
     % compile the statistical model's training data
-    numModels = self.Evaluations{1}.NumModels;
+    numModels = length( self.(results).Models );
     data = cell( self.NumEvaluations*numModels, self.NumParameters+2 );
     for i = 1:self.NumEvaluations
 
@@ -34,7 +34,7 @@ function model = mixedModel( self, outcome, args )
             hyperparam = extract( self.GridSearch{j}, idx(j) );
             for k = 1:numModels
                 data{ rows(k), j } = hyperparam;
-                data{ rows(k), end-1 } = i;
+                data{ rows(k), end-1 } = k;
             end
         end
         
@@ -50,7 +50,9 @@ function model = mixedModel( self, outcome, args )
     data = cell2table( data, VariableNames = [ predictors "Fold" outcome ] );
 
     % retain only those evaluations that were completed
-    data = data( self.IsComplete, : );
+    isComplete = repmat( self.IsComplete, 1, numModels );
+    isComplete = reshape( isComplete, numModels*self.NumEvaluations, 1 );
+    data = data( isComplete, : );
 
     % remove any rows the response variable is zero
     isZero = table2array(data( :, end )) ~= 0 ;
@@ -66,7 +68,7 @@ function model = mixedModel( self, outcome, args )
     % create the formulae
     randomEffects = '(1 | Fold)';
     if isempty( args.FixedFormula )
-        fixedEffects = join( predictors, '*');
+        fixedEffects = join( predictors, ' + ');
         formula = sprintf('%s ~  %s + %s', outcome, fixedEffects, randomEffects);
     else
         formula = sprintf('%s + %s', args.FixedFormula, randomEffects);
@@ -75,7 +77,6 @@ function model = mixedModel( self, outcome, args )
     % fit the model
     model = fitglme( data, formula, ...
                      Distribution = args.Distribution );
-
 
 end
 

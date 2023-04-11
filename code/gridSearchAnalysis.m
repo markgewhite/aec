@@ -2,7 +2,7 @@
 
 clear;
 
-name = "Fukuchi-GRF-1D";
+name = "JumpsVGRF";
 catchErrors = true;
 memorySaving = 2;
 
