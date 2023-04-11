@@ -113,11 +113,11 @@ classdef Investigation < handle
         
         report = getResults( self )
 
-        model = linearModel( self, outcome, args )
+        [model, data] = linearModel( self, outcome, args )
 
         reload( self )
 
-        model = mixedModel( self, group, outcome, args )
+        [model, data] = mixedModel( self, outcome, args )
 
         run( self )
 
