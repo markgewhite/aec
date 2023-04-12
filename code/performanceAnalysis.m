@@ -3,19 +3,9 @@
 clear;
 
 runAnalysis = true;
-inParallel = true;
-resume = false;
 catchErrors = true;
 
-group = input('Group (1 or 2) = ');
-switch group
-    case 1
-        reportIdx = 1:3;
-    case 2
-        reportIdx = 4:25;
-    otherwise
-        error('Invalid group number.');
-end
+reportIdx = [1, 2, 5];
 
 plotDim = [2 5];
 maxCoeff = 3;
@@ -27,60 +17,69 @@ path0 = fileparts( which('code/performanceAnalysis.m') );
 path = [path0 '/../results/perf/'];
 pathResults = [path0 '/../paper/results/'];
 
+% -- data setup --
+setup.data.args.normalizedPts = 21;
+
 % -- model setup --
-setup.model.class = @FCModel;
-setup.model.args.ZDim = 2;
-setup.model.args.NumHidden = 3;
-setup.model.args.NumFC = 1024;
-setup.model.args.FCFactor = 1;
-setup.model.args.ReLuScale = 0.2;
-setup.model.args.InputDropout = 0.2;
-setup.model.args.Dropout = 0;
-setup.model.args.NetNormalizationType = 'Layer';
+setup.model.args.NumHidden = 1;
+setup.model.args.NumFC = 50;
+setup.model.args.InputDropout = 0;
+setup.model.args.Dropout = 0.1;
+setup.model.args.NetNormalizationType = 'Batch';
 setup.model.args.NetActivationType = 'Relu';
 
-setup.model.args.AuxModel = 'Logistic';
+setup.model.args.NumHiddenDecoder = 2;
+setup.model.args.NumFCDecoder = 50;
+setup.model.args.FCFactorDecoder = 0;
+setup.model.args.NetNormalizationTypeDecoder = 'None';
+setup.model.args.NetActivationTypeDecoder = 'None';
+
 setup.model.args.ComponentType = 'PDP';
+setup.model.args.AuxModel = 'Logistic';
+setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
-setup.model.args.RandomSeed = 1234;
 setup.model.args.ShowPlots = true;
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
-setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
+setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+
+setup.model.args.lossFcns.xvar.class = @ComponentLoss;
+setup.model.args.lossFcns.xvar.name = 'XVarimax';
+setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
 
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
+setup.model.args.lossFcns.zcls.args.NumHidden = 1;
+setup.model.args.lossFcns.zcls.args.NumFC= 10;
+setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
+setup.model.args.lossFcns.zcls.args.ReluScale = 0;
+setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 5000;
-setup.model.args.trainer.UpdateFreq = 10000;
-setup.model.args.trainer.Holdout = 0.2;
+setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.UpdateFreq = 5000;
+setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
-setup.eval.args.KFoldRepeats = 2;
+setup.eval.args.KFoldRepeats = 5;
 
 % --- investigation setup ---
-models = {@PCAModel, @FCModel};
-%models = {@FCModel};
+models = {@PCAModel, @BranchedFCModel};
 
-dims = [2 5];
+dims = [2 3 4 5];
 parameters = [ "model.class", ...
                "model.args.ZDim"];
 values = {models, dims}; 
 memorySaving = 3;
+myInvestigations = cell( length(reportIdx), 1 );
 
 if runAnalysis
-
-    if inParallel
-        delete( gcp('nocreate') );
-        pool = parpool;
-    end
 
     for i = reportIdx
 
@@ -106,9 +105,6 @@ if runAnalysis
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 3000;
-                setup.model.args.trainer.InParallel = true;
-                setup.model.args.trainer.DoUseGPU = true;
-                inParallel = false;
 
             case 2
                 % Gaitrec ground reaction force in three dimensions
@@ -124,9 +120,6 @@ if runAnalysis
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 3000;
-                setup.model.args.trainer.InParallel = true;
-                setup.model.args.trainer.DoUseGPU = true;
-                inParallel = false;
 
             case 3
                 % Fukuchi ground reaction force in three dimensions
@@ -137,9 +130,6 @@ if runAnalysis
                 setup.data.args.Category = 'Ground';
                 setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 1000;
-                setup.model.args.trainer.InParallel = true;
-                setup.model.args.trainer.DoUseGPU = true;
-                inParallel = false;
 
             case 4
                 % Fukuchi hip, knee and ankle joint angles
@@ -156,9 +146,6 @@ if runAnalysis
                 setup.data.args.SagittalPlaneOnly = true;
                 setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 75;
-                setup.model.args.trainer.InParallel = false;
-                setup.model.args.trainer.DoUseGPU = false;
-                inParallel = true;
 
             case 5
                 % Jumps vertical ground reaction force
@@ -169,9 +156,6 @@ if runAnalysis
                 setup.data.args.ResampleRate = 5;
                 setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 75;
-                setup.model.args.trainer.InParallel = false;
-                setup.model.args.trainer.DoUseGPU = false;
-                inParallel = true;
 
             otherwise
                 % Synthetic data set
@@ -180,24 +164,20 @@ if runAnalysis
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.ClassSizes = [ 250, 250 ];
                 setup.model.args.trainer.BatchSize = 75;
-                setup.model.args.trainer.InParallel = false;
-                setup.model.args.trainer.DoUseGPU = false;
-                inParallel = true;
 
                 name = ['Synthetic-' num2str(setup.data.args.TemplateSeed)];
 
         end
            
-        if inParallel
-            results(i) = parfeval( pool, @investigationResults, 1, ...
-                                   name, path, ...
-                                   parameters, values, setup, ...
-                                   resume, catchErrors, memorySaving );
-        else
-            results(i) = investigationResults( name, path, ...
-                                               parameters, values, setup, ...
-                                               resume, catchErrors, memorySaving );
-        end
+        myInvestigations{i} = ParallelInvestigation( name, path, parameters, values, ...
+                                         setup, catchErrors, memorySaving );
+        
+        myInvestigations{i}.run;
+        
+        myInvestigations{i}.saveReport;
+        
+        myInvestigations{i}.save;
+
     end
 
 else
