@@ -8,13 +8,8 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
             args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
                         'Gamma', 'InverseGaussian'} )} = 'Normal'
         args.AllCategorical logical = true
-        args.Standardize    logical = false
-    end
-
-    % standardize the response variable
-    if args.Standardize
-        y = arrayfun(@(x) x.(responseVar)/std(x.(responseVar)), ...
-                     dataTables, 'UniformOutput', false);
+        args.Standardize    logical = true
+        args.ExcludeOutliers logical = true
     end
 
     % Concatenate data tables and add an identifier for each table
@@ -26,10 +21,13 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
     data.Fold = categorical(data.Fold);
 
     % Get the predictor variables from the data table
-    predictors = data.Properties.VariableNames;
+    predictors = string(data.Properties.VariableNames);
     predictors(strcmp(predictors, 'Fold')) = [];
     predictors(strcmp(predictors, 'TableID')) = [];
     predictors(strcmp(predictors, responseVar)) = [];
+    
+    % include the intercept
+    predictors(end+1) = '1';
 
     % make them categorical, if required 
     if args.AllCategorical
@@ -38,42 +36,81 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         data = [pred data(:,end-2:end)];
         data.Properties.VariableNames = varNames;
     end
+
+    % exclude outliers, if required, so as not to bias results
+    if args.ExcludeOutliers
+        y = cellfun(@(x) (x.(responseVar)-mean(x.(responseVar)))/std(x.(responseVar)), ...
+                     dataTables, 'UniformOutput', false);
+        isOutlier = cellfun(@(x) abs(x)>4, y, 'UniformOutput', false);
+        data.IsOutlier = vertcat(isOutlier{:});
+        disp(['Removed ' num2str(sum(data.IsOutlier)) ' outliers']);
+        data = data( ~data.IsOutlier, : );
+    end
+
+    % standardize the response variable
+    if args.Standardize
+        if args.ExcludeOutliers
+            y = cellfun(@(x,i) x.(responseVar)(~i)/std(x.(responseVar)(~i)), ...
+                         dataTables, isOutlier, 'UniformOutput', false);
+        else
+            y = cellfun(@(x) x.(responseVar)/std(x.(responseVar)), ...
+                         dataTables, 'UniformOutput', false);
+        end
+        responseVar = strcat( responseVar, 'Stdze' );
+        data.(responseVar) = vertcat(y{:});
+    end
     
     % Define the initial model with only the random intercepts
     randomEffects = '(1 | TableID:Fold)';
-    fixedEffects = '1';
-    modelFormula = getFormula(responseVar, fixedEffects, randomEffects);
-
-    % Fit the initial model
-    bestModel = fitglme(data, modelFormula, ...
-                    'Distribution', args.Distribution );
-    bestBIC = bestModel.ModelCriterion.BIC;
-    
-    disp(['Intercept: BIC = ' num2str(bestModel.ModelCriterion.BIC)]);
-
+    fixedEffects = '';
+   
+    numPredictors = length(predictors);
+    inModel = false( numPredictors, 1 );
+    bestBIC = Inf;
     hasChanged = true;
     while hasChanged
         hasChanged = false;
-        for v = predictors
-            % Try adding predictor to the model
-            newFixedEffects = sprintf('%s + %s', fixedEffects, v{1} );
-            modelFormula = getFormula( responseVar, ...
-                                       newFixedEffects, ...
-                                       randomEffects );
+        
+        % reset for new search
+        numModels = numPredictors - sum(inModel);
+        bic = zeros( numModels, 1 );
+        newFixedEffects = strings( numModels, 1 );
+        models = cell( numModels, 1 );
+        trialPredictors = predictors( ~inModel );
 
-            newModel = fitglme(data, modelFormula, ...
-                                'Distribution', 'gamma', ...
-                                'Link', 'log');
+        % find which of the trial predictors are best
+        for i = 1:numModels
 
-            % Check if the new model has a lower BIC
-            if newModel.ModelCriterion.BIC < bestBIC
-                bestModel = newModel;
-                bestBIC = newModel.ModelCriterion.BIC;
-                fixedEffects = newFixedEffects;
-                hasChanged = true;
-                disp(['Added ' v{1} '; BIC = ' num2str(bestBIC)]);
+            if ~isempty(fixedEffects)
+                newFixedEffects(i) = sprintf('%s + %s', fixedEffects, ...
+                                          trialPredictors(i) );
+            else
+                newFixedEffects(i) = trialPredictors(i);
             end
+
+            newFormula = getFormula( responseVar, ...
+                                     newFixedEffects(i), ...
+                                     randomEffects );
+
+            models{i} = fitglme(data, newFormula, ...
+                                'Distribution', args.Distribution);
+
+            bic(i) = models{i}.ModelCriterion.BIC;
+        
         end
+
+        [newBIC, bestIdx] = min( bic );
+
+        % Check if the new model has a lower BIC
+        if newBIC < bestBIC
+            bestModel = models{bestIdx};
+            bestBIC = newBIC;
+            fixedEffects = newFixedEffects(bestIdx);
+            inModel(bestIdx) = true;
+            hasChanged = true;
+            disp(['Added ' char(trialPredictors(bestIdx)) '; BIC = ' num2str(bestBIC)]);
+        end
+
     end
 
 end
