@@ -10,6 +10,7 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         args.AllCategorical logical = true
         args.Standardize    logical = true
         args.ExcludeOutliers logical = true
+        args.Interactions   logical = true
     end
 
     % Concatenate data tables and add an identifier for each table
@@ -26,6 +27,18 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
     predictors(strcmp(predictors, 'TableID')) = [];
     predictors(strcmp(predictors, responseVar)) = [];
     
+    % add first-order interactions to the predictors list, if required
+    if args.Interactions
+        numPredictors = numel(predictors);
+        for i = 1:numPredictors
+            for j = i+1:numPredictors
+                predictors(end+1) = sprintf('%s:%s', ...
+                                            predictors(i), ...
+                                            predictors(j)); %#ok<AGROW> 
+            end
+        end
+    end
+
     % include the intercept
     predictors(end+1) = '1';
 
@@ -70,6 +83,8 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
     hasChanged = true;
     while hasChanged
         hasChanged = false;
+
+        % --- add a predictor ---
         
         % reset for new search
         numModels = numPredictors - sum(inModel);
@@ -110,6 +125,55 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
             hasChanged = true;
             disp(['Added ' char(trialPredictors(bestIdx)) '; BIC = ' num2str(bestBIC)]);
         end
+
+        % --- remove a predictor ---
+        
+        % reset for new search
+        numModels = sum(inModel) - 1;
+
+        if numModels == 0
+            % skip removal
+            continue
+        end
+
+        bic = zeros( numModels, 1 );
+        newFixedEffects = strings( numModels, 1 );
+        models = cell( numModels, 1 );
+        inModelExceptLast = inModel;
+        inModelExceptLast(bestIdx) = false;
+        trialPredictors = predictors( inModelExceptLast );
+
+        % find which of the trial predictors are best removed
+        for i = 1:numModels
+
+            newFixedEffects(i) = strrep( fixedEffects, ...
+                             sprintf(' %s ', trialPredictors(i)), '' );
+            newFixedEffects(i) = strrep( newFixedEffects(i), "++", "+" );
+
+            newFormula = getFormula( responseVar, ...
+                                     newFixedEffects(i), ...
+                                     randomEffects );
+
+            models{i} = fitglme(data, newFormula, ...
+                                'Distribution', args.Distribution);
+
+            bic(i) = models{i}.ModelCriterion.BIC;
+        
+        end
+
+        [newBIC, bestIdx] = min( bic );
+
+        % Check if the new model has a lower BIC
+        if newBIC < bestBIC
+            bestModel = models{bestIdx};
+            bestBIC = newBIC;
+            fixedEffects = newFixedEffects(bestIdx);
+            inModel(bestIdx) = false;
+            hasChanged = true;
+            disp(['Removed ' char(trialPredictors(bestIdx)) '; BIC = ' num2str(bestBIC)]);
+        end
+
+
 
     end
 
