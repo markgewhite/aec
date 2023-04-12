@@ -13,7 +13,7 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         args.Standardize    logical = true
         args.ExcludeOutliers logical = true
         args.Interactions   logical = true
-        args.BICThreshold   double = 6
+        args.BICThreshold   double = 10
     end
 
     % Concatenate data tables and add an identifier for each table
@@ -140,7 +140,7 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         % reset for new search
         numModels = sum(inModel) - 1;
 
-        if numModels == 0
+        if numModels <= 1
             % skip removal
             continue
         end
@@ -199,13 +199,13 @@ function F = getFormula( YVarStr, XVarStr, isSelected, RVarStr )
 
     idx = find(isSelected);
     if isempty(idx)
-        FEStr = "";
+        F = sprintf('%s ~ %s', YVarStr, RVarStr );
     else
         FEStr = XVarStr(idx(1));
         for i = 2:length(idx)
             FEStr = sprintf('%s + %s', FEStr, XVarStr(idx(i)));
         end
+        F = sprintf('%s ~ %s + %s', YVarStr, FEStr, RVarStr );
     end
-    F = sprintf('%s ~ %s + %s', YVarStr, FEStr, RVarStr );
 
 end

@@ -26,8 +26,10 @@ function [model, data] = linearModel( self, outcome, args )
     data = [];
     for j = 1:self.NumParameters
         value = extract( self.GridSearch{j}(1), 1 );
+        predictor = strrep(self.Parameters(j), '.', '_' );
+        predictor = strrep( predictor, 'model_args_', '' );
         data = [ data table( repmat( value, self.NumEvaluations, 1 ), ...
-                     VariableNames = strrep(self.Parameters(j), '.', '_' ) ) ]; %#ok<AGROW> 
+                     VariableNames = predictor) ]; %#ok<AGROW> 
     end
     data = [ data table( zeros( self.NumEvaluations, 1 ), ...
                          VariableNames = outcome ) ];

@@ -47,6 +47,7 @@ function [model, data] = mixedModel( self, outcome, args )
 
     % convert to a table for the model
     predictors = strrep( self.Parameters, '.', '_' );
+    predictors = strrep( predictors, 'model_args_', '' );
     data = cell2table( data, VariableNames = [ predictors "Fold" outcome ] );
 
     % retain only those evaluations that were completed
