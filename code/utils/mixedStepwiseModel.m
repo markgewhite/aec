@@ -11,6 +11,12 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         args.Standardize    logical = false
     end
 
+    % standardize the response variable
+    if args.Standardize
+        y = arrayfun(@(x) x.(responseVar)/std(x.(responseVar)), ...
+                     dataTables, 'UniformOutput', false);
+    end
+
     % Concatenate data tables and add an identifier for each table
     data = vertcat(dataTables{:});
     numTables = numel(dataTables);
@@ -33,12 +39,6 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         data.Properties.VariableNames = varNames;
     end
     
-    % standardize the response variable
-    if args.Standardize
-        y = data.(responseVar);
-        data.(responseVar) = (y - mean(y))/std(y);
-    end
-
     % Define the initial model with only the random intercepts
     randomEffects = '(1 | TableID:Fold)';
     fixedEffects = '1';
