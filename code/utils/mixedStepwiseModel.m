@@ -7,10 +7,13 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         args.Distribution   string {mustBeMember( ...
             args.Distribution, {'Normal', 'Binomial', 'Poisson', ...
                         'Gamma', 'InverseGaussian'} )} = 'Normal'
+        args.Link           string {mustBeMember( ...
+            args.Link, {'Identity', 'Log'} )} = []
         args.AllCategorical logical = true
         args.Standardize    logical = true
         args.ExcludeOutliers logical = true
         args.Interactions   logical = true
+        args.BICThreshold   double = 6
     end
 
     % Concatenate data tables and add an identifier for each table
@@ -75,11 +78,11 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
     
     % Define the initial model with only the random intercepts
     randomEffects = '(1 | TableID:Fold)';
-    fixedEffects = '';
    
     numPredictors = length(predictors);
     inModel = false( numPredictors, 1 );
     bestBIC = Inf;
+    bestModel = [];
     hasChanged = true;
     while hasChanged
         hasChanged = false;
@@ -89,26 +92,27 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         % reset for new search
         numModels = numPredictors - sum(inModel);
         bic = zeros( numModels, 1 );
-        newFixedEffects = strings( numModels, 1 );
         models = cell( numModels, 1 );
-        trialPredictors = predictors( ~inModel );
-
+        lookup = find( ~inModel );
         % find which of the trial predictors are best
         for i = 1:numModels
 
-            if ~isempty(fixedEffects)
-                newFixedEffects(i) = sprintf('%s + %s', fixedEffects, ...
-                                          trialPredictors(i) );
-            else
-                newFixedEffects(i) = trialPredictors(i);
-            end
+            inNewModel = inModel;
+            inNewModel(lookup(i)) = true;
 
             newFormula = getFormula( responseVar, ...
-                                     newFixedEffects(i), ...
+                                     predictors, ...
+                                     inNewModel, ...
                                      randomEffects );
 
-            models{i} = fitglme(data, newFormula, ...
-                                'Distribution', args.Distribution);
+            if isempty( args.Link )
+                models{i} = fitglme(data, newFormula, ...
+                                    Distribution = args.Distribution );
+            else
+                models{i} = fitglme(data, newFormula, ...
+                                    Distribution = args.Distribution, ...
+                                    Link = args.Link );
+            end
 
             bic(i) = models{i}.ModelCriterion.BIC;
         
@@ -117,14 +121,19 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         [newBIC, bestIdx] = min( bic );
 
         % Check if the new model has a lower BIC
-        if newBIC < bestBIC
+        if newBIC < (bestBIC - args.BICThreshold)
             bestModel = models{bestIdx};
             bestBIC = newBIC;
-            fixedEffects = newFixedEffects(bestIdx);
-            inModel(bestIdx) = true;
+            inModel(lookup(bestIdx)) = true;
             hasChanged = true;
-            disp(['Added ' char(trialPredictors(bestIdx)) '; BIC = ' num2str(bestBIC)]);
+            disp(['Added ' char(predictors(lookup(bestIdx))) ...
+                    '; BIC = ' num2str(bestBIC)]);
+        else
+            % don't try to remove another predictor 
+            % if a new one hasn't been added
+            continue
         end
+
 
         % --- remove a predictor ---
         
@@ -136,26 +145,32 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
             continue
         end
 
-        bic = zeros( numModels, 1 );
-        newFixedEffects = strings( numModels, 1 );
-        models = cell( numModels, 1 );
+        % don't try to remove what has just been added
         inModelExceptLast = inModel;
-        inModelExceptLast(bestIdx) = false;
-        trialPredictors = predictors( inModelExceptLast );
+        inModelExceptLast(lookup(bestIdx)) = false;
 
+        bic = zeros( numModels, 1 );
+        models = cell( numModels, 1 );
+        lookup = find( inModel );
         % find which of the trial predictors are best removed
         for i = 1:numModels
 
-            newFixedEffects(i) = strrep( fixedEffects, ...
-                             sprintf(' %s ', trialPredictors(i)), '' );
-            newFixedEffects(i) = strrep( newFixedEffects(i), "++", "+" );
+            inNewModel = inModelExceptLast;
+            inNewModel(lookup(i)) = false;
 
             newFormula = getFormula( responseVar, ...
-                                     newFixedEffects(i), ...
+                                     predictors, ...
+                                     inNewModel, ...
                                      randomEffects );
 
-            models{i} = fitglme(data, newFormula, ...
-                                'Distribution', args.Distribution);
+            if isempty( args.Link )
+                models{i} = fitglme(data, newFormula, ...
+                                    Distribution = args.Distribution );
+            else
+                models{i} = fitglme(data, newFormula, ...
+                                    Distribution = args.Distribution, ...
+                                    Link = args.Link );
+            end
 
             bic(i) = models{i}.ModelCriterion.BIC;
         
@@ -164,13 +179,13 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
         [newBIC, bestIdx] = min( bic );
 
         % Check if the new model has a lower BIC
-        if newBIC < bestBIC
+        if newBIC < (bestBIC - args.BICThreshold)
             bestModel = models{bestIdx};
             bestBIC = newBIC;
-            fixedEffects = newFixedEffects(bestIdx);
-            inModel(bestIdx) = false;
+            inModel(lookup(bestIdx)) = false;
             hasChanged = true;
-            disp(['Removed ' char(trialPredictors(bestIdx)) '; BIC = ' num2str(bestBIC)]);
+            disp(['Removed ' char(predictors(lookup(bestIdx))) ...
+                    '; BIC = ' num2str(bestBIC)]);
         end
 
 
@@ -180,8 +195,17 @@ function [bestModel, data]= mixedStepwiseModel(dataTables, responseVar, args)
 end
 
 
-function F = getFormula( Resp, FE, RE )
+function F = getFormula( YVarStr, XVarStr, isSelected, RVarStr )
 
-    F = sprintf('%s ~ %s + %s', Resp, FE, RE );
+    idx = find(isSelected);
+    if isempty(idx)
+        FEStr = "";
+    else
+        FEStr = XVarStr(idx(1));
+        for i = 2:length(idx)
+            FEStr = sprintf('%s + %s', FEStr, XVarStr(idx(i)));
+        end
+    end
+    F = sprintf('%s ~ %s + %s', YVarStr, FEStr, RVarStr );
 
 end
