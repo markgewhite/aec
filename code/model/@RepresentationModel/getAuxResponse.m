@@ -7,7 +7,7 @@ function self = getAuxResponse( self, thisDataset, args )
     end
 
     % generate the latent encodings
-    Z = self.encode( thisDataset );
+    Z = self.encode( thisDataset, auxiliary = true );
 
     % define the query points by z-scores
     thisResponseFcn = @(Z) predictAuxModel( self, Z );

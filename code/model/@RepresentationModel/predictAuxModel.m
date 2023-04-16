@@ -14,8 +14,6 @@ function [ YHat, YHatScore] = predictAuxModel( self, Z )
         Z = Z';
     end
 
-    Z = Z( :, 1:self.ZDimAux );
-
     [YHat, YHatScore] = predict( self.AuxModel, Z );
 
     if doTranspose

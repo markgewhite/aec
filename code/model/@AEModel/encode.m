@@ -1,9 +1,10 @@
-function dlZ = encode( self, X, arg )
+function dlZ = encode( self, X, args )
     % Encode features Z from X using the model
     arguments
         self            AEModel
         X               {mustBeA(X, {'ModelDataset', 'dlarray'})}
-        arg.convert     logical = true
+        args.convert     logical = true
+        args.auxiliary  logical = false
     end
 
     if isa( X, 'ModelDataset' )
@@ -17,8 +18,12 @@ function dlZ = encode( self, X, arg )
     end
 
     dlZ = predict( self.Nets.Encoder, dlX );
+
+    if args.auxiliary
+        dlZ = dlZ( 1:self.ZDimAux, : );
+    end
     
-    if arg.convert
+    if args.convert
         dlZ = double(extractdata(gather(dlZ)))';
     end
 

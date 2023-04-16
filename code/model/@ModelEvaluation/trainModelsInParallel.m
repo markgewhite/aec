@@ -14,22 +14,15 @@ function trainModelsInParallel( self, modelSetup )
     catch
         argsModel = {};
     end
-    
-    % take copies of variables for first-level slicing
-    numModels = self.NumModels;
-    models = self.Models;
-    randomSeedResets = self.RandomSeedResets;
-    randomSeed = self.RandomSeed;
-    verbose = self.Verbose;
-    memorySaving = self.MemorySaving;
 
     % setup the data sets in series and initialize the models
     if self.Verbose
         disp('Initializing data partitions and models ...');
     end
-    thisTrnSet = cell( numModels, 1 );
-    thisValSet = cell( numModels, 1 );
-    for k = 1:numModels
+    
+    thisTrnSet = cell( self.NumModels, 1 );
+    thisValSet = cell( self.NumModels, 1 );
+    for k = 1:self.NumModels
 
         switch self.CVType
             case 'Holdout'
@@ -48,11 +41,18 @@ function trainModelsInParallel( self, modelSetup )
         else
             foldName = self.Name;
         end
-        self.Models{k} = modelSetup.class( thisTrnSet, ...
+        self.Models{k} = modelSetup.class( thisTrnSet{k}, ...
                                            argsModel{:}, ...
                                            Name = foldName );
         
     end
+    
+    % take copies of variables for first-level slicing
+    numModels = self.NumModels;
+    models = self.Models;
+    randomSeedResets = self.RandomSeedResets;
+    randomSeed = self.RandomSeed;
+    verbose = self.Verbose;
 
     % run the cross validation loop in parallel
     parfor k = 1:numModels

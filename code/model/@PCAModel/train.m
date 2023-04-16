@@ -21,14 +21,15 @@ function self = train( self, thisData )
     end
     self.ZStd = squeeze( std(pcaStruct.harmscr) );
 
-    % generate the latent components
+    % separate out the portion of Z for the auxiliary model
     Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
+    ZAux = reshape( pcaStruct.harmscr( :, 1:self.ZDimAux, :), ...
+                    size(pcaStruct.harmscr, 1), [] );
 
     % standardize
-    ZAux = Z( :, 1:self.ZDimAux );
     self.AuxModelZMean = mean( ZAux );
     self.AuxModelZStd = std( ZAux );
-    Z = (Z-self.AuxModelZMean)./self.AuxModelZStd;
+    ZAux = (ZAux-self.AuxModelZMean)./self.AuxModelZStd;
 
     % train the auxiliary model
     switch self.AuxModelType
