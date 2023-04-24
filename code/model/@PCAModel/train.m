@@ -15,10 +15,6 @@ function self = train( self, thisData )
     self.MeanFd = pcaStruct.meanfd;
     self.CompFd = pcaStruct.harmfd;
     self.VarProp = pcaStruct.varprop;
-
-    if size( pcaStruct.harmscr, 3 ) == 1
-        pcaStruct.harmscr = permute( pcaStruct.harmscr, [1 3 2] );
-    end
     self.ZStd = squeeze( std(pcaStruct.harmscr) );
 
     % separate out the portion of Z for the auxiliary model

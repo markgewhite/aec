@@ -12,7 +12,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     % generate latent encoding using the trained model
     pred.Z = thisModel.encode( thisDataset );
-    pred.ZAux = pred.Z( :, 1:thisModel.ZDimAux );
+    pred.ZAux = thisModel.encode( thisDataset, auxiliary = true );
 
     % reconstruct the curves
     [ pred.XHat, pred.XHatSmoothed, pred.XHatRegular ] = ...

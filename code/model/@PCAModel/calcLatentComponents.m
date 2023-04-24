@@ -31,7 +31,7 @@ function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
         FPC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
         for c = 1:self.XChannels
             for j = 1:nSample
-                XC(:,j,i,c) = zs(j)*ZSD(1,i,c)*FPC(:,c);
+                XC(:,j,i,c) = zs(j)*ZSD(1,(c-1)*self.ZDim+i)*FPC(:,c);
             end
         end
     end

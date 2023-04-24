@@ -22,7 +22,7 @@ function XHat = constructCurves( tSpan, meanFd, compFd, Z )
     for k = 1:nChannels
         for j = 1:nDim        
             for i = 1:nRows
-                XHat(:,i,k) = XHat(:,i,k) + Z(i,j,k)*XC(:,j,k);
+                XHat(:,i,k) = XHat(:,i,k) + Z(i,(k-1)*nDim+j)*XC(:,j,k);
             end
         end
     end

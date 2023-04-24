@@ -19,9 +19,9 @@ function [F, Q, Z] = calcResponse( self, dlZ, args )
     % calculate the response of the specified type
     argsCell = namedargs2cell( args );
     switch self.ComponentType
-        case {'ALE', 'FPC'}
+        case 'ALE'
             [F, Q, Z] = calcALE( self, dlZ, argsCell{:} );
-        case 'PDP'
+        case {'PDP', 'FPC'}
             [F, Q, Z] = calcPDP( self, dlZ, argsCell{:} );
         otherwise
             F = [];
