@@ -2,8 +2,6 @@ classdef PCAModel < RepresentationModel
     % Class defining an individual PCA model
 
     properties
-        PCAFdParams           % functional data parameters
-        PCATSpan              % time span
         MeanFd                % mean functional curve
         CompFd                % component functional curves
         VarProp               % explained variance
@@ -21,15 +19,12 @@ classdef PCAModel < RepresentationModel
                 args.path           string
             end
 
-            superArgs.ComponentType = 'PDP';
+            superArgs.ComponentType = 'FPC';
             superArgsCell = namedargs2cell(superArgs);
             argsCell = namedargs2cell(args);
             self@RepresentationModel( thisDataset, ...
                                       superArgsCell{:}, ...
                                       argsCell{:} );
-
-            self.PCATSpan = thisDataset.TSpan.Regular;
-            self.PCAFdParams = thisDataset.FDA.FdParamsRegular;
 
             self.MeanFd = [];
             self.CompFd = [];
@@ -40,7 +35,7 @@ classdef PCAModel < RepresentationModel
 
         % class methods
 
-        [ XC, XMean, offsets ] = calcLatentComponents( self, Z, args )
+        [ XC, XMean, zs ] = calcLatentComponents( self, Z )
 
         Z = encode( self, data, args )
 

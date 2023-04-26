@@ -3,9 +3,9 @@
 clear;
 
 runAnalysis = true;
-catchErrors = true;
+catchErrors = false;
 
-reportIdx = [1, 2, 5];
+reportIdx = [4];
 
 plotDim = [2 5];
 maxCoeff = 3;
@@ -34,7 +34,6 @@ setup.model.args.FCFactorDecoder = 0;
 setup.model.args.NetNormalizationTypeDecoder = 'None';
 setup.model.args.NetActivationTypeDecoder = 'None';
 
-setup.model.args.ComponentType = 'PDP';
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
@@ -68,6 +67,7 @@ setup.model.args.trainer.Holdout = 0;
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 5;
+setup.eval.args.InParallel = false;
 
 % --- investigation setup ---
 models = {@PCAModel, @BranchedFCModel};
@@ -169,7 +169,7 @@ if runAnalysis
 
         end
            
-        myInvestigations{i} = ParallelInvestigation( name, path, parameters, values, ...
+        myInvestigations{i} = Investigation( name, path, parameters, values, ...
                                          setup, catchErrors, memorySaving );
         
         myInvestigations{i}.run;

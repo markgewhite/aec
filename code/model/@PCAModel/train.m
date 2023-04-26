@@ -18,7 +18,7 @@ function self = train( self, thisData )
     self.ZStd = squeeze( std(pcaStruct.harmscr) );
 
     % separate out the portion of Z for the auxiliary model
-    Z = reshape( pcaStruct.harmscr, size(pcaStruct.harmscr, 1), [] );
+    Z = pcaStruct.harmscr;
     ZAux = reshape( pcaStruct.harmscr( :, 1:self.ZDimAux, :), ...
                     size(pcaStruct.harmscr, 1), [] );
 
@@ -42,17 +42,17 @@ function self = train( self, thisData )
     self.MeanCurve = eval_fd( self.TSpan.Regular, self.MeanFd );
 
     % get the auxiliary model's response to each Z element
-    self = self.getAuxResponse( thisData );
+    %self = self.getAuxResponse( thisData );
 
     % compute the functional components
-    self.LatentResponseFcn = @(Z) self.reconstruct( Z' );
+    self.LatentResponseFcn = @(Z) self.reconstruct( Z );
     self.LatentComponents = self.getLatentResponse( thisData );
 
     % set the oversmoothing level
     XHat = self.reconstruct( Z );
 
     [ self.FDA.FdParamsTarget, self.FDA.LambdaTarget ] = ...
-        thisData.setFDAParameters( thisData.TSpan.Target, ...
+        thisData.setFDAParameters( self.TSpan.Target, ...
                                    permute(XHat, [1 3 2]) );
 
 end

@@ -1,19 +1,9 @@
-function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
+function [ XC, XMean, zs ] = calcLatentComponents( self, Z )
     % Calculate the functional principal components
     % Or use the response function
     arguments
         self                PCAModel
         Z                   double
-        args.maxObs         double {mustBeInteger} = 500
-        args.responseFcn    function_handle
-    end
-
-    if ~strcmp( self.ComponentType, 'FPC' )
-        % generate a PDP or ALE type component
-        argsCell = namedargs2cell( args );
-        [XC, XMean, zs] = ...
-            calcLatentComponents@RepresentationModel( self, Z', argsCell{:} );
-        return
     end
 
     % compute the components
@@ -25,10 +15,10 @@ function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
     ZSD = std( Z );
     
     % XC structure: Points, Samples, Components, Channels
-    XC = zeros( length(self.PCATSpan), nSample, self.ZDim, self.XChannels );
+    XC = zeros( length(self.TSpan.Target), nSample, self.ZDim, self.XChannels );
 
     for i =1:self.ZDim
-        FPC = squeeze(eval_fd( self.PCATSpan, self.CompFd(i) ));
+        FPC = squeeze(eval_fd( self.TSpan.Target, self.CompFd(i) ));
         for c = 1:self.XChannels
             for j = 1:nSample
                 XC(:,j,i,c) = zs(j)*ZSD(1,(c-1)*self.ZDim+i)*FPC(:,c);
@@ -36,7 +26,7 @@ function [ XC, XMean, zs ] = calcLatentComponents( self, Z, args )
         end
     end
 
-    XMean = squeeze(eval_fd( self.PCATSpan, self.MeanFd ));
+    XMean = squeeze(eval_fd( self.TSpan.Target, self.MeanFd ));
 
 end
 

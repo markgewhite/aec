@@ -45,7 +45,5 @@ function Z = encode( self, data, args )
     if args.auxiliary
         Z = Z( :, 1:self.ZDimAux, : );
     end
-
-    Z = reshape( Z, size(Z, 1), [] );
     
 end
