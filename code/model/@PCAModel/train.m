@@ -42,7 +42,7 @@ function self = train( self, thisData )
     self.MeanCurve = eval_fd( self.TSpan.Regular, self.MeanFd );
 
     % get the auxiliary model's response to each Z element
-    %self = self.getAuxResponse( thisData );
+    self = self.getAuxResponse( thisData );
 
     % compute the functional components
     self.LatentResponseFcn = @(Z) self.reconstruct( Z );

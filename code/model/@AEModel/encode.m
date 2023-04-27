@@ -3,7 +3,7 @@ function dlZ = encode( self, X, args )
     arguments
         self            AEModel
         X               {mustBeA(X, {'ModelDataset', 'dlarray'})}
-        args.convert     logical = true
+        args.convert    logical = true
         args.auxiliary  logical = false
     end
 

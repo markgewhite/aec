@@ -5,6 +5,7 @@ function Z = encode( self, data, args )
         data
         args.convert    logical = false % redundant
         args.auxiliary  logical = false
+        args.flatten    logical = false
     end
 
     if isa( data, 'fd' )
@@ -42,8 +43,13 @@ function Z = encode( self, data, args )
     if size( Z, 3 ) == 1
         permute( Z, [1 3 2] );
     end
+
     if args.auxiliary
         Z = Z( :, 1:self.ZDimAux, : );
+    end
+
+    if args.flatten
+        Z = reshape( Z, size(Z,1), [] );
     end
     
 end
