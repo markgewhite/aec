@@ -2,7 +2,6 @@ classdef ModelDataset
     % Class defining a dataset
 
     properties
-        XInputRaw       % original, raw time series data
         XLen            % array recording the length of each series
 
         XInputDim       % number of X input dimensions
@@ -12,10 +11,6 @@ classdef ModelDataset
         XFd             % functional data representation of raw data
 
         Y               % outcome variable
-        CDim            % number of categories
-        YLabels         % Y labels
-        NumObs          % number of observations
-        NumObsByClass   % number of observation by class
 
         Normalization       % structure for time-normalization 
         NormalizedPts       % standardized number of points for normalization
@@ -51,6 +46,11 @@ classdef ModelDataset
         XTargetCoeff    % target Fd coefficients
         XTargetCoeffDim % Fd target dimensions
         XTargetCoeffMean % target output mean
+        
+        CDim            % number of categories
+        YLabels         % Y labels
+        NumObs          % number of observations
+        NumObsByClass   % number of observation by class
     end
 
 
@@ -65,14 +65,13 @@ classdef ModelDataset
                 Y
                 tSpan                       double
                 args.XTargetRaw             cell = []
-                args.purpose                char ...
-                    {mustBeMember( args.purpose, ...
-                    {'Creation', 'ForSubset'} )} = 'Creation'
                 args.normalization          char ...
                     {mustBeMember( args.normalization, ...
                     {'PAD', 'LTN'} )} = 'LTN'
                 args.normalizedPts          double ...
                     {mustBeNumeric, mustBePositive, mustBeInteger} = 101
+                args.ptsPerKnot             double ...
+                    {mustBeGreaterThan( args.ptsPerKnot, 1 )} = 10
                 args.hasNormalizedInput     logical = false
                 args.hasMatchingOutput      logical = false
                 args.padding                struct ...
@@ -97,13 +96,7 @@ classdef ModelDataset
                 args.channelLimits          double
             end
 
-            self.XInputRaw = XInputRaw;
             self.Y = Y;
-            
-            if strcmp( args.purpose, 'ForSubset' )
-                % don't do the setup
-                return
-            end
 
             % set properties
             self.Normalization = args.normalization;
@@ -115,6 +108,7 @@ classdef ModelDataset
             self.FDA.BasisOrder = args.basisOrder;
             self.FDA.PenaltyOrder = args.penaltyOrder;
             self.FDA.Lambda = args.lambda;
+            self.FDA.PtsPerKnot = args.ptsPerKnot;
 
             self.TSpan.Original = tSpan;
             self.HasAdaptiveTimeSpan = args.hasAdaptiveTimeSpan;
@@ -129,8 +123,6 @@ classdef ModelDataset
             self.Info.ClassLabels = args.classLabels;
             self.Info.ChannelLimits = args.channelLimits;
 
-            % get immediately available dimensions
-            self.NumObs = length( XInputRaw );
             self.XChannels = size( XInputRaw{1}, 2 );
 
             % create smooth functions for the data
@@ -191,11 +183,6 @@ classdef ModelDataset
             else 
                 self.XTargetDim = self.NormalizedPts;
             end
-            
-            % assign category labels
-            self.YLabels = categorical( unique(self.Y) );
-            self.CDim = length( self.YLabels );
-            self.NumObsByClass = groupcounts( self.Y );
 
         end
 
@@ -372,6 +359,50 @@ classdef ModelDataset
         end
 
 
+        function YLabels = get.YLabels( self )
+            % Generate the categories from Y
+            arguments
+                self            ModelDataset            
+            end
+               
+            YLabels = categorical( unique(self.Y) );
+
+        end
+
+
+        function CDim = get.CDim( self )
+            % Get the number of classes
+            arguments
+                self            ModelDataset            
+            end
+               
+            CDim = length( self.YLabels );
+
+        end
+
+
+        function NumObs = get.NumObs( self )
+            % Get the number of classes
+            arguments
+                self            ModelDataset            
+            end
+               
+            NumObs = length( self.Y );
+
+        end
+
+
+        function NumObsByClass = get.NumObsByClass( self )
+            % Get the number of observations by class
+            arguments
+                self            ModelDataset            
+            end
+               
+            NumObsByClass = groupcounts( self.Y );
+
+        end
+        
+        
         % class methods
 
         dsFull = getDatastore( self )
