@@ -3,7 +3,7 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
     arguments
         self            AEModel
         thisDataset     ModelDataset
-        maxObs          double = 1000
+        maxObs          double = 0
     end
     
     if self.UsesFdCoefficients
@@ -23,7 +23,7 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
 
     dlY = dlarray( thisDataset.Y, 'CB' );
 
-    % apply the cap
+    % apply the cap, if specified
     if maxObs > 0
         idx = randsample( length(dlY), maxObs );
         dlX = dlX( :, idx );

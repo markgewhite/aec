@@ -32,7 +32,7 @@ function Z = encode( self, data, args )
 
         end
         % convert input to a functional data object
-        XFd = smooth_basis( self.TSpan.Regular, X, ...
+        XFd = smooth_basis( self.TSpan.Regular, double(X), ...
                             self.FDA.FdParamsRegular );
 
     end
