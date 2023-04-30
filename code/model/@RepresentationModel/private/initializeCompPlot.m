@@ -1,16 +1,16 @@
-function [ fig, axes ] = initializeCompPlot( XChannels, ZDim, show, asNew )
+function [ fig, axes ] = initializeCompPlot( XChannels, ZDim, show )
     % Setup the plot for latent components
     arguments
         XChannels       double
         ZDim            double
         show            logical = true
-        asNew           logical = false
     end
    
-    if asNew
-        fig = figure;
-    else
+    allFigs = findall( groot, Type = 'Figure');
+    if length(allFigs)==2
         fig = figure(2);
+    else
+        fig = allFigs(2);
     end
 
     if show

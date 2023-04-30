@@ -10,7 +10,13 @@ function [fig, lossLines] = initializeLossPlots( lossFcnTbl, show )
     [ rows, cols ] = sqdim( nAxes );
     
     % setup figure for plotting loss functions
-    fig = figure(3);
+    allFigs = findall( groot, Type = 'Figure');
+    if length(allFigs)==3
+        fig = figure(3);
+    else
+        fig = allFigs(3);
+    end
+    
     if show
         fig.Visible = 'on';
     else

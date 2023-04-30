@@ -5,6 +5,10 @@ function self = arrangeComponents( self )
           self        ModelEvaluation
     end
 
+    if strcmp(version, '9.13.0.2116060 (R2022b) Platform Beta')
+        return
+    end
+
     aModel = self.Models{1};
     if aModel.ZDimAux > 10
         % astronmical number of permutations

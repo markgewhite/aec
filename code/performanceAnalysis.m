@@ -5,7 +5,7 @@ clear;
 runAnalysis = true;
 catchErrors = false;
 
-reportIdx = [4];
+reportIdx = [5];
 
 plotDim = [2 5];
 maxCoeff = 3;
@@ -37,7 +37,7 @@ setup.model.args.NetActivationTypeDecoder = 'None';
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
-setup.model.args.ShowPlots = true;
+setup.model.args.ShowPlots = false;
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
@@ -62,12 +62,13 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
+setup.model.args.trainer.ShowPlots = false;
 
 % --- evaluation setup ---
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 5;
-setup.eval.args.InParallel = false;
+setup.eval.args.InParallel = true;
 
 % --- investigation setup ---
 models = {@PCAModel, @BranchedFCModel};
@@ -103,7 +104,6 @@ if runAnalysis
                 setup.data.args.SessionType = 'All';
                 setup.data.args.Side = 'Affected';
                 setup.data.args.HasNormalizedInput = true;
-                setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 3000;
 
             case 2
@@ -118,7 +118,6 @@ if runAnalysis
                 setup.data.args.SessionType = 'All';
                 setup.data.args.Side = 'Affected';
                 setup.data.args.HasNormalizedInput = true;
-                setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 3000;
 
             case 3
@@ -128,7 +127,6 @@ if runAnalysis
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.YReference = 'AgeGroup';
                 setup.data.args.Category = 'Ground';
-                setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 1000;
 
             case 4
@@ -144,7 +142,6 @@ if runAnalysis
                 setup.data.args.HasKneeAngles = true;
                 setup.data.args.HasAnkleAngles = true;
                 setup.data.args.SagittalPlaneOnly = true;
-                setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 75;
 
             case 5
@@ -154,7 +151,6 @@ if runAnalysis
                 setup.data.args.Normalization = 'PAD';
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.ResampleRate = 5;
-                setup.data.args.NormalizedPts = 5;
                 setup.model.args.trainer.BatchSize = 75;
 
             otherwise

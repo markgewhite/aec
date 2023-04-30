@@ -7,13 +7,21 @@ function [figs, axes]= initializePlots( XChannels, ZDim, show )
     end
    
     % setup figure for Z distribution and clustering
-    figs.LatentSpace = figure(1);
+    allFigs = findall( groot, Type = 'Figure');
+    if isempty(allFigs)
+        figs.LatentSpace = figure(1);
+        clf;
+    else
+        figs.LatentSpace = allFigs(1);
+        clf( allFigs(1) );
+    end
+    
     if show
         figs.LatentSpace.Visible = 'on';
     else
         figs.LatentSpace.Visible = 'off';
     end
-    clf;
+
     tiledlayout( figs.LatentSpace, 2, 2, TileSpacing = 'Compact' );
     axes.ZDistribution = nexttile;
     axes.ZClustering = nexttile;

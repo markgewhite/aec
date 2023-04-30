@@ -95,7 +95,8 @@ classdef ModelTrainer < handle
 
             self.ShowPlots = args.ShowPlots;
 
-            [self.LossFig, self.LossLines] = initializeLossPlots( lossFcnTbl );
+            [self.LossFig, self.LossLines] = initializeLossPlots( lossFcnTbl, ...
+                                                                  self.ShowPlots );
 
         end
 
