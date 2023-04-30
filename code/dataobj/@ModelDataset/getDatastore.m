@@ -17,7 +17,7 @@ function dsFull = getDatastore( self, includeP, getCoeff )
     if includeP
         P = calcXDistribution( self.XTarget, self.Perplexity );
     else
-        P = zeros( self.NumObs, self.NumObs );
+        P = single(zeros( self.NumObs, 1 ));
     end
     Y = self.Y;
 

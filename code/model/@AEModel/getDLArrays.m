@@ -1,8 +1,9 @@
-function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset )
+function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
     % Convert X, Y and XN into dl arrays
     arguments
         self            AEModel
         thisDataset     ModelDataset
+        maxObs          double = 1000
     end
     
     if self.UsesFdCoefficients
@@ -21,5 +22,13 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset )
     dlXN = dlarray( XN, self.XDimLabels );
 
     dlY = dlarray( thisDataset.Y, 'CB' );
+
+    % apply the cap
+    if maxObs > 0
+        idx = randsample( length(dlY), maxObs );
+        dlX = dlX( :, idx );
+        dlXN = dlXN( :, idx );
+        dlY = dlY( idx );
+    end
 
 end

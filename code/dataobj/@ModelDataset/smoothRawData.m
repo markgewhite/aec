@@ -25,6 +25,6 @@ function [XFd, XLen, lambda] = smoothRawData( self, XCell )
     end
 
     % create the smooth functions
-    XFd = smooth_basis( self.TSpan.Original, X, fdParams );
+    XFd = smooth_basis( self.TSpan.Original, double(X), fdParams );
 
 end

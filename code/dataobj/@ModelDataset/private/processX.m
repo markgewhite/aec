@@ -3,7 +3,8 @@ function [ X, XDim ] = processX( ...
                                 normalize, normalizedPts, normalization )
 
     % evaluate the input function at these points
-    XEval = eval_fd( tSpanNew, XFd );
+    % using single not double to save on memory
+    XEval = single(eval_fd( tSpanNew, XFd ));
    
     % adjust lengths for non-linear re-sampling
     XLenNew = adjustXLengths( XLen, tSpan, tSpanNew, pad.Location );

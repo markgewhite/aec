@@ -18,7 +18,7 @@ function P = calcXDistribution( X, perplexity )
     D = D / max(D(:));
 
     % compute joint probabilities
-    P = dist2prob(D, perplexity, 1E-3);
+    P = single(dist2prob(D, perplexity, 1E-3));
 
     % set diagonal to zero
     P(1:size(P,1) + 1:end) = 0;                                 

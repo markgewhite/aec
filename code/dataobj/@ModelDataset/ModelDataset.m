@@ -197,7 +197,7 @@ classdef ModelDataset
             XInputFd = smooth_basis( self.TSpan.Input, ...
                                 X, ...
                                 self.FDA.FdParamsInput );
-            XCoeff = getcoef( XInputFd );
+            XCoeff = single(getcoef( XInputFd ));
 
             if size( XCoeff, 3 ) > 1
                 X = num2cell( permute( XCoeff, [2 1 3]), [2 3] );
@@ -220,7 +220,7 @@ classdef ModelDataset
             XInputFd = smooth_basis( self.TSpan.Input, ...
                                 X, ...
                                 self.FDA.FdParamsRegular );
-            XCoeff = getcoef( XInputFd );
+            XCoeff = single(getcoef( XInputFd ));
 
         end
 
@@ -284,7 +284,7 @@ classdef ModelDataset
             XTargetFd = smooth_basis( self.TSpan.Target, ...
                                 X, ...
                                 self.FDA.FdParamsTarget );
-            XCoeff = getcoef( XTargetFd );
+            XCoeff = single(getcoef( XTargetFd ));
 
         end
 

@@ -25,6 +25,7 @@ classdef ModelTrainer < handle
         LossVal          % record of validation losses
 
         Metrics          % record of training metrics
+        MetricsMaxObs    % max observations (cap) for metrics
 
         ShowPlots        % flag whether to show plots
         LossFig          % figure for the loss lines
@@ -66,6 +67,7 @@ classdef ModelTrainer < handle
                     {mustBeMember(args.ValType, ...
                         {'Reconstruction', 'AuxNetwork', 'Both'} )} ...
                             = 'Both'
+                args.MetricsMaxObs  double = 1000
                 args.ShowPlots      logical = false
 
             end
@@ -85,6 +87,7 @@ classdef ModelTrainer < handle
 
             self.ValPatience = args.ValPatience;
             self.ValType = args.ValType;
+            self.MetricsMaxObs = args.MetricsMaxObs;
 
             self.HasMiniBatchShuffle = args.HasMiniBatchShuffle;
             self.HasShuffleRandomStream = args.HasShuffleRandomStream;

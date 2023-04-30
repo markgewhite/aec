@@ -21,7 +21,7 @@ function XP = padData( X, padLen, padValue, args )
     nObs = length( X );
     nDim = size( X{1}, 2 );
     
-    XP = zeros( padLen, nObs, nDim );
+    XP = single(zeros( padLen, nObs, nDim ));
     
     for i = 1:nObs
     

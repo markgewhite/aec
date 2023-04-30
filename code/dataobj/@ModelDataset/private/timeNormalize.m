@@ -21,7 +21,7 @@ else
     [ ~, nObs, nDim ] = size( X );
 end
 
-XN = zeros( fixedLength, nObs, nDim );
+XN = single(zeros( fixedLength, nObs, nDim ));
 
 % define standard time series
 tSpan1 = linspace( 0, 1, fixedLength ); 

@@ -35,7 +35,8 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     end
 
     % setup whole training set
-    [ dlXTrnAll, dlYTrnAll ] = thisModel.getDLArrays( thisTrnData );
+    [ dlXTrnAll, dlYTrnAll ] = thisModel.getDLArrays( thisTrnData, ...
+                                                      self.MetricsMaxObs );
    
     % setup monitoring functions
     lossLinesFcn = @(data) updateLossLines( self.LossLines, data );

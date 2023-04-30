@@ -71,7 +71,7 @@ setup.eval.args.KFoldRepeats = 5;
 setup.eval.args.InParallel = true;
 
 % --- investigation setup ---
-models = {@PCAModel, @BranchedFCModel};
+models = {@BranchedFCModel, @PCAModel};
 
 dims = [2 3 4 5];
 parameters = [ "model.class", ...
