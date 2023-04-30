@@ -25,6 +25,7 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
 
     % apply the cap, if specified
     if maxObs > 0
+        maxObs = min( maxObs, thisDataset.NumObs );
         idx = randsample( length(dlY), maxObs );
         dlX = dlX( :, idx );
         dlXN = dlXN( :, idx );
