@@ -5,7 +5,7 @@ clear;
 runAnalysis = true;
 catchErrors = false;
 
-reportIdx = [5];
+reportIdx = 1:5;
 
 plotDim = [2 5];
 maxCoeff = 3;

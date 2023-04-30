@@ -7,7 +7,7 @@ function [ fig, axes ] = initializeCompPlot( XChannels, ZDim, show )
     end
    
     allFigs = findall( groot, Type = 'Figure');
-    if length(allFigs)==2
+    if length(allFigs)<2
         fig = figure(2);
     else
         fig = allFigs(2);

@@ -11,7 +11,7 @@ function [fig, lossLines] = initializeLossPlots( lossFcnTbl, show )
     
     % setup figure for plotting loss functions
     allFigs = findall( groot, Type = 'Figure');
-    if length(allFigs)==3
+    if length(allFigs)<3
         fig = figure(3);
     else
         fig = allFigs(3);
