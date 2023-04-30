@@ -2,7 +2,7 @@ function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
     % Reconstruct X from Z using the model
     arguments
         self            AEModel
-        Z               {mustBeA(Z, {'double', 'dlarray'})}
+        Z               {mustBeA(Z, {'double', 'single', 'dlarray'})}
         args.centre     logical = true
         args.points     logical = true
         args.smooth     logical = false

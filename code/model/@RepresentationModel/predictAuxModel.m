@@ -2,7 +2,7 @@ function [ YHat, YHatScore] = predictAuxModel( self, Z )
     % Make prediction from Z using an auxiliary model
     arguments
         self            RepresentationModel
-        Z               {mustBeA(Z, {'double', 'dlarray'})}
+        Z               {mustBeA(Z, {'double', 'single', 'dlarray'})}
     end
 
     if isa( Z, 'dlarray' )

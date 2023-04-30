@@ -1,7 +1,7 @@
 function XOut = smoothSeries( XIn, tSpanIn, tSpanOut, fdParams )
     % Smooth a time series
     arguments
-        XIn         {mustBeA(XIn, {'double', 'dlarray'})}
+        XIn         {mustBeA(XIn, {'double', 'single', 'dlarray'})}
         tSpanIn     double
         tSpanOut    double
         fdParams    

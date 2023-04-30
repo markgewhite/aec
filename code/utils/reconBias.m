@@ -1,8 +1,8 @@
 function loss = reconBias( X, XHat, scale )
     % Calculate the reconstruction bias
     arguments
-        X           {mustBeA( X, {'double', 'dlarray'})}
-        XHat        {mustBeA( XHat, {'double', 'dlarray'})}
+        X           {mustBeA( X, {'double', 'single', 'dlarray'})}
+        XHat        {mustBeA( XHat, {'double', 'single', 'dlarray'})}
         scale       double = 1
     end
 

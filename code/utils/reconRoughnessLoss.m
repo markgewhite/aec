@@ -1,7 +1,7 @@
 function loss = reconRoughnessLoss( XHat, scale, h )
     % Calculate the roughness penalty from the reconstruction
     arguments
-        XHat        {mustBeA( XHat, {'double', 'dlarray'})}
+        XHat        {mustBeA( XHat, {'double', 'single', 'dlarray'})}
         scale       double = 1
         h           double {mustBeInteger, ...
                             mustBeGreaterThanOrEqual(h, 1)} = 1

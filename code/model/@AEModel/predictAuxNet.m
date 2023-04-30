@@ -2,7 +2,7 @@ function [ dlYHat, dlYHatScore ] = predictAuxNet( self, Z, args )
     % Make prediction from Z using an auxiliary network
     arguments
         self            AEModel
-        Z               {mustBeA(Z, {'double', 'dlarray'})}
+        Z               {mustBeA(Z, {'double', 'single', 'dlarray'})}
         args.convert    logical = true
         args.hotdecode  logical = true
     end

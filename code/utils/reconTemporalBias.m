@@ -1,8 +1,8 @@
 function loss = reconTemporalBias( X, XHat, scale )
     % Calculate the reconstruction loss over the time domain
     arguments
-        X           {mustBeA( X, {'double', 'dlarray'})}
-        XHat        {mustBeA( XHat, {'double', 'dlarray'})}
+        X           {mustBeA( X, {'double', 'single', 'dlarray'})}
+        XHat        {mustBeA( XHat, {'double', 'single', 'dlarray'})}
         scale       double = 1
     end
 

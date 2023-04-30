@@ -5,7 +5,7 @@ function loss = innerProductLoss( XC )
     % with the correct dlarray labels and tracing
     % To that aim, the loops go backwards over the components
     arguments
-        XC      {mustBeA(XC, {'double', 'dlarray'})}
+        XC      {mustBeA(XC, {'double', 'single', 'dlarray'})}
     end
 
     [nPts, nSamples, nComp, nChannels] = size( XC );
