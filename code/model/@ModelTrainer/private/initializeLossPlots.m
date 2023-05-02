@@ -22,15 +22,17 @@ function [fig, lossLines] = initializeLossPlots( lossFcnTbl, show )
     else
         fig.Visible = 'off';
     end
-    clf;
+    clf( fig );
     nLines = sum( lossFcnTbl.NumLosses );
+
+    layout = tiledlayout( fig, rows, cols, TileSpacing = 'Compact' );
     lossLines = gobjects( nLines, 1 );
     colours = lines( nLines );
     c = 0;
     for i = 1:nAxes
 
         thisName = lossFcnTbl.Names(i);
-        axis = subplot( rows, cols, i );
+        axis = nexttile( layout );
         
         for k = 1:lossFcnTbl.NumLosses(i)
             c = c+1;

@@ -11,6 +11,7 @@ function [ fig, axes ] = initializeCompPlot( XChannels, ZDim, show )
         fig = figure(2);
     else
         fig = allFigs(2);
+        clf( fig );
     end
 
     if show
@@ -22,13 +23,12 @@ function [ fig, axes ] = initializeCompPlot( XChannels, ZDim, show )
     fig.Position(3) = 100 + ZDim*250;
     fig.Position(4) = 50 + XChannels*200;
     
-    clf;
-    tiledlayout( fig, XChannels, ZDim, TileSpacing = 'Compact' );
+    layout = tiledlayout( fig, XChannels, ZDim, TileSpacing = 'Compact' );
     axes = gobjects( XChannels, ZDim );
 
     for i = 1:XChannels
         for j = 1:ZDim
-            axes(i,j) = nexttile;
+            axes(i,j) = nexttile( layout );
         end
     end
 

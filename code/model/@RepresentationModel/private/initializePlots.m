@@ -10,10 +10,9 @@ function [figs, axes]= initializePlots( XChannels, ZDim, show )
     allFigs = findall( groot, Type = 'Figure');
     if isempty(allFigs)
         figs.LatentSpace = figure(1);
-        clf;
     else
         figs.LatentSpace = allFigs(1);
-        clf( allFigs(1) );
+        clf( figs.LatentSpace );
     end
     
     if show
