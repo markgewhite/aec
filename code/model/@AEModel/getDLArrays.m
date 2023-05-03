@@ -20,6 +20,7 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
 
     % apply the cap, if specified
     if maxObs > 0
+        maxObs = min( length(dlY), maxObs );
         idx = randsample( length(dlY), maxObs );
         if find(dims(dlX)=='B') == 2
             dlX = dlX( :, idx, : );
