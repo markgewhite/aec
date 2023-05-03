@@ -15,20 +15,27 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
     end
 
     dlX = dlarray( X, self.XDimLabels );
-
-    if length(size( XN, 3) )==3
-        XN = permute( XN, [1 3 2] );
-    end
     dlXN = dlarray( XN, self.XDimLabels );
-
-    dlY = dlarray( thisDataset.Y, 'CB' );
+    dlY = dlarray( thisDataset.Y, 'BC' );
 
     % apply the cap, if specified
     if maxObs > 0
         idx = randsample( length(dlY), maxObs );
-        dlX = dlX( :, idx );
-        dlXN = dlXN( :, idx );
-        dlY = dlY( idx );
+        if find(dims(dlX)=='B') == 2
+            dlX = dlX( :, idx, : );
+        else
+            dlX = dlX( :, :, idx );
+        end
+        if find(dims(dlXN)=='B') == 2
+            dlXN = dlXN( :, idx, : );
+        else
+            dlXN = dlXN( :, :, idx );            
+        end
+        if find(dims(dlY)=='B') == 1
+            dlY = dlY( idx, : );
+        else
+            dlY = dlY( :, idx );
+        end
     end
 
 end

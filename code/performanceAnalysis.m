@@ -1,12 +1,12 @@
 % Run the models to evaluate their performance across multiple data sets
 
 clear;
-%close all;
+close all;
 
 runAnalysis = true;
 catchErrors = false;
 
-reportIdx = 1:5;
+reportIdx = 3;
 
 plotDim = 4;
 maxCoeff = 3;
@@ -15,7 +15,7 @@ rng('default');
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/performanceAnalysis.m') );
-path = [path0 '/../results/test/'];
+path = [path0 '/../results/perf 3/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- data setup --
@@ -60,19 +60,19 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
 setup.model.args.trainer.ShowPlots = false;
 
 % --- evaluation setup ---
-setup.eval.args.CVType = 'Holdout';
+setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 5;
-setup.eval.args.InParallel = false;
+setup.eval.args.InParallel = true;
 
 % --- investigation setup ---
-models = {@BranchedFCModel, @PCAModel};
+models = {@PCAModel, @BranchedFCModel};
 
 dims = [2 3 4 5];
 parameters = [ "model.class", ...

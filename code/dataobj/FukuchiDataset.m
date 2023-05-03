@@ -307,10 +307,11 @@ function [X, Y, S, side, names] = loadGRFData( path, filenames, ...
 
     end
 
-    % trim back the arrays
-    if ~isfield( args, 'MaxObs' )
+    % trim back the arrays to kEnd
+    if isfield( args, 'MaxObs' )
         selection = 1:kEnd;
-    else
+    elseif ~isempty( args.MaxObs )
+        % further restrict to MaxObs
         if args.Stratified
             w = ones( kEnd, 1 );
             for i = 1:length(unique( Y(1:kEnd) ))
@@ -321,7 +322,10 @@ function [X, Y, S, side, names] = loadGRFData( path, filenames, ...
             w = ones( kEnd, 1 )/kEnd;
         end
         selection = randsample( kEnd, args.MaxObs, true, w );
+    else
+        selection = 1:kEnd;
     end
+
     X = X( selection );
     Y = Y( selection );
     S = S( selection );
