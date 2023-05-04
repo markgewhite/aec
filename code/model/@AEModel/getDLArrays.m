@@ -20,8 +20,8 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
 
     % apply the cap, if specified
     if maxObs > 0
-        maxObs = min( length(dlY), maxObs );
-        idx = randsample( length(dlY), maxObs );
+        maxObs = min( maxObs, thisDataset.NumObs );
+        idx = randsample( thisDataset.NumObs, maxObs );
         if find(dims(dlX)=='B') == 2
             dlX = dlX( :, idx, : );
         else
