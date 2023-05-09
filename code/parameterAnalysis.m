@@ -1,74 +1,89 @@
 % Run the analysis of the response to key parameter values
 
 clear;
+close all;
 
 runAnalysis = true;
-inParallel = false;
-resume = false;
-catchErrors = false;
-reportIdx = 2;
-plotDim = [2 5];
-maxCoeff = 3;
+catchErrors = true;
+
+reportIdx = 1:3;
+
+rng('default');
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/parameterAnalysis.m') );
-path = [path0 '/../results/test/'];
+path = [path0 '/../results/paramDropout/'];
 pathResults = [path0 '/../paper/results/'];
 
+% -- data setup --
+setup.data.args.normalizedPts = 21;
+
 % -- model setup --
-setup.model.class = @AsymmetricFCModel;
-setup.model.args.FCFactor = 1;
-setup.model.args.ReLuScale = 0.2;
-setup.model.args.InputDropout = 0.2;
-setup.model.args.Dropout = 0;
-setup.model.args.NetNormalizationType = 'Layer';
+setup.model.class = @BranchedFCModel;
+setup.model.args.NumHidden = 1;
+setup.model.args.NumFC = 50;
+setup.model.args.InputDropout = 0;
+setup.model.args.Dropout = 0.1;
+setup.model.args.NetNormalizationType = 'Batch';
 setup.model.args.NetActivationType = 'Relu';
 
+setup.model.args.NumHiddenDecoder = 2;
+setup.model.args.NumFCDecoder = 50;
+setup.model.args.FCFactorDecoder = 0;
+setup.model.args.NetNormalizationTypeDecoder = 'None';
+setup.model.args.NetActivationTypeDecoder = 'None';
+
 setup.model.args.AuxModel = 'Logistic';
-setup.model.args.ComponentType = 'PDP';
+setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
-setup.model.args.RandomSeed = 1234;
-setup.model.args.ShowPlots = true;
+setup.model.args.ShowPlots = false;
 
 % -- loss functions --
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
-setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
+setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
+setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+
+setup.model.args.lossFcns.xvar.class = @ComponentLoss;
+setup.model.args.lossFcns.xvar.name = 'XVarimax';
+setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
 
 setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 setup.model.args.lossFcns.zcls.name = 'ZClassifier';
+setup.model.args.lossFcns.zcls.args.NumHidden = 1;
+setup.model.args.lossFcns.zcls.args.NumFC= 10;
+setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
+setup.model.args.lossFcns.zcls.args.ReluScale = 0;
+setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 2000;
-setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 10000;
-setup.model.args.trainer.Holdout = 0.2;
+setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.BatchSize = 75;
+setup.model.args.trainer.UpdateFreq = 5000;
+setup.model.args.trainer.Holdout = 0;
+setup.model.args.trainer.ShowPlots = false;
 
 % --- evaluation setup ---
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 2;
+setup.eval.args.InParallel = true;
 
 % --- investigation setup ---
-parameters = [ "model.args.ZDim", ...
-               "data.args.NormalizedPts" ];
-values = {[2 5], ...
-          [5 11]}; 
+parameters = [ "model.args.InputDropout", ...
+               "model.args.Dropout" ];
+values = {[0.0 0.1 0.2 0.3 0.4 0.5], ...
+          [0.0 0.1 0.2 0.3 0.4 0.5]}; 
 
-names = [ "JumpsVGRF", ...
-          "GaitrecGRF", ...
-          "FukuchiJointAngles" ];
-nReports = length( names );
-thisData = cell( nReports, 1 );
 memorySaving = 3;
+myInvestigations = cell( length(reportIdx), 1 );
 
 if runAnalysis
 
-    if inParallel
-        delete( gcp('nocreate') );
-        pool = parpool;
+    if isfield(setup, 'data')
+        % reset the data settings
+        setup = rmfield( setup, 'data' );
     end
 
     for i = reportIdx
@@ -83,74 +98,50 @@ if runAnalysis
 
             case 1
                 % Jumps vertical ground reaction force
+                name = 'JumpGRF';
                 setup.data.class = @JumpGRFDataset;
                 setup.data.args.Normalization = 'PAD';
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.ResampleRate = 5;
+                setup.model.args.trainer.BatchSize = 75;
 
             case 2
-                % Gaitrec ground reaction force
-                setup.data.class = @GaitrecDataset;
+                % Fukuchi ground reaction force in one dimension
+                name = 'Fukuchi-GRF-1D';
+                setup.data.class = @FukuchiDataset;
                 setup.data.args.HasNormalizedInput = true;
-                setup.data.args.MaxObs = 1000;
-                setup.data.args.Grouping = 'ControlsVsDisorders';
-                setup.data.args.ShodCondition = 'Barefoot/Socks';
-                setup.data.args.Speed = 'SelfSelected';
-                setup.data.args.SessionType = 'All';
-                setup.data.args.Side = 'Affected';
+                setup.data.args.HasGRF = true;
+                setup.data.args.HasVGRFOnly = true;
+                setup.data.args.YReference = 'AgeGroup';
+                setup.data.args.Category = 'Ground';
+                setup.model.args.trainer.BatchSize = 1000;
 
             case 3
                 % Fukuchi hip, knee and ankle joint angles
+                name = 'Fukuchi-JointAngles-1D';
                 setup.data.class = @FukuchiDataset;
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.YReference = 'AgeGroup';
                 setup.data.args.Category = 'JointAngles';
-                setup.data.args.HasHipAngles = true;
+                setup.data.args.HasHipAngles = false;
                 setup.data.args.HasKneeAngles = true;
-                setup.data.args.HasAnkleAngles = true;
+                setup.data.args.HasAnkleAngles = false;
                 setup.data.args.SagittalPlaneOnly = true;
-            
+                setup.model.args.trainer.BatchSize = 75;
+           
             otherwise
                 error('Unrecognised dataset ID.');
 
         end
-    
-        for j = 1:4
-            % Set the autoencoder design
-            if j<=2
-                % Low-complexity encoder
-                setup.model.args.NumHidden = 2;
-                setup.model.args.NumFC = 64;
-                thisName = strcat( names(i), "-LowEnc" );
-            else
-                % High-complexity encoder
-                setup.model.args.NumHidden = 3;
-                setup.model.args.NumFC = 1024;
-                thisName = strcat( names(i), "-HighEnc" );
-            end
-            if mod(j,2)==1
-                % Low-complexity decoder
-                setup.model.args.NumHiddenDecoder = 2;
-                setup.model.args.NumFCDecoder = 64;
-                thisName = strcat( thisName, "-LowDec" );
-            else
-                % High-complexity decoder
-                setup.model.args.NumHiddenDecoder = 3;
-                setup.model.args.NumFCDecoder = 1024;
-                thisName = strcat( thisName, "-HighDec" );
-            end
+
+        myInvestigations{i} = Investigation( name, path, parameters, values, ...
+                                         setup, catchErrors, memorySaving );
         
-            if inParallel
-                results(i,j) = parfeval( pool, @investigationResults, 1, ...
-                                       thisName, path, ...
-                                       parameters, values, setup, ...
-                                       resume, catchErrors, memorySaving );
-            else
-                results(i,j) = investigationResults( thisName, path, ...
-                                                   parameters, values, setup, ...
-                                                   resume, catchErrors, memorySaving );
-            end
-        end
+        myInvestigations{i}.run;
+        
+        myInvestigations{i}.saveReport;
+        
+        myInvestigations{i}.save;
 
     end
 
