@@ -104,6 +104,18 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
             eval.AuxModel.Coeff = thisModel.AuxModel.DeltaPredictior;
     end
 
+    % extract the two largest coefficients
+    sortedCoeff = sort( abs(eval.AuxModel.Coeff), 'descend' );
+    eval.AuxModel.Coeff1st = sortedCoeff(1);
+    if length(sortedCoeff)>1
+        eval.AuxModel.Coeff2nd = sortedCoeff(2);
+        eval.AuxModel.CoeffRatio = sortedCoeff(1)/sortedCoeff(2);
+    else
+        eval.AuxModel.Coeff2nd = NaN;
+        eval.AuxModel.CoeffRatio = NaN;
+    end
+    
+    % flatten the structure for summarising later
     eval = flattenStruct( eval );
 
 end

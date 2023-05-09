@@ -4,9 +4,9 @@ clear;
 close all;
 
 runAnalysis = true;
-catchErrors = false;
+catchErrors = true;
 
-reportIdx = 2;
+reportIdx = 6:7;
 
 plotDim = 4;
 maxCoeff = 3;
@@ -152,6 +152,30 @@ if runAnalysis
                 setup.data.args.Normalization = 'PAD';
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.ResampleRate = 5;
+                setup.model.args.trainer.BatchSize = 75;
+
+            case 6
+                % Fukuchi ground reaction force in one dimension
+                name = 'Fukuchi-GRF-1D';
+                setup.data.class = @FukuchiDataset;
+                setup.data.args.HasNormalizedInput = true;
+                setup.data.args.HasGRF = true;
+                setup.data.args.HasVGRFOnly = true;
+                setup.data.args.YReference = 'AgeGroup';
+                setup.data.args.Category = 'Ground';
+                setup.model.args.trainer.BatchSize = 1000;
+
+            case 7
+                % Fukuchi hip, knee and ankle joint angles
+                name = 'Fukuchi-JointAngles-1D';
+                setup.data.class = @FukuchiDataset;
+                setup.data.args.HasNormalizedInput = true;
+                setup.data.args.YReference = 'AgeGroup';
+                setup.data.args.Category = 'JointAngles';
+                setup.data.args.HasHipAngles = false;
+                setup.data.args.HasKneeAngles = true;
+                setup.data.args.HasAnkleAngles = false;
+                setup.data.args.SagittalPlaneOnly = true;
                 setup.model.args.trainer.BatchSize = 75;
 
             otherwise
