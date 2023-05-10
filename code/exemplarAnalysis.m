@@ -4,8 +4,8 @@ clear;
 
 runAnalysis = true;
 inParallel = true;
-catchErrors = false;
-reportIdx = 2;
+catchErrors = true;
+reportIdx = 1:3;
 plotDim = [2 5];
 
 % set the destinations for results and figures
@@ -18,6 +18,7 @@ setup.data.args.HasNormalizedInput = true;
 setup.data.args.normalizedPts = 21;
 
 % -- model setup --
+setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 1;
 setup.model.args.NumFC = 20;
 setup.model.args.InputDropout = 0;
@@ -70,42 +71,90 @@ setup.model.args.trainer.Holdout = 0;
 setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 5;
+setup.eval.args.InParallel = true;
 
-names = [ "JumpsVGRF", ...
-          "Dataset A" ];
 memorySaving = 3;
 
 % -- grid search --
-models = {@PCAModel, @BranchedFCModel};
-dims = [1 2 3 5 7 10];
 parameters = [ "model.class", ...
-               "model.args.ZDim", ...
                "model.args.lossFcns.zcls.args.DoCalcLoss"];
-values = {models, ...
-          dims, ...
+values = {{@PCAModel, @BranchedFCModel}, ...
           {false, true}}; 
-N = 400;
+N = 1000;
 sigma = 0.5;
 
-nReports = length( reportIdx );
-nModels = length( models );
-nDims = length( dims );
-
-results = cell( nModels, 1 );
+myInvestigations = cell( length(reportIdx), 1 );
 
 if runAnalysis
 
     for i = reportIdx
     
+        if isfield(setup, 'data')
+            % reset the data settings
+            setup = rmfield( setup, 'data' );
+        end
+
         switch i
 
             case 1
-                % JumpsVGRF data set
-                setup.data.class = @JumpGRFDataset;
-                setup.data.args.Normalization = 'PAD';
-                setup.data.args.ResampleRate = 5;
+                % Data set A: single Gaussian classes
+                name = 'Dataset A';
+                setup.data.class = @ExemplarDataset;   
+                setup.data.args.HasNormalizedInput = true;
+
+                setup.data.args.FeatureType = 'Gaussian';
+                setup.data.args.ClassSizes = [ N/2 N/2 ];
+                setup.data.args.ClassElements = 1;
+                setup.data.args.ClassPeaks = [ 2.50; 2.75 ];
+                setup.data.args.ClassPositions = [ 0; 0];
+                setup.data.args.ClassWidths = [ 2.5; 2.5 ];
+                setup.data.args.Covariance{1} = 1E-1*[1 0 0; 
+                                                      0 0 0;
+                                                      0 0 0];                                                 
+                setup.data.args.Covariance{2} = 1E-1*[1 0 0; 
+                                                      0 0 0;
+                                                      0 0 0];                                                 
+
 
             case 2
+                % Data set B: single Gaussian classes
+                name = 'Dataset B';
+                setup.data.class = @ExemplarDataset;   
+                setup.data.args.HasNormalizedInput = true;
+
+                setup.data.args.FeatureType = 'Gaussian';
+                setup.data.args.ClassSizes = [ N/2 N/2 ];
+                setup.data.args.ClassElements = 1;
+                setup.data.args.ClassPeaks = [ 2.50; 2.50 ];
+                setup.data.args.ClassPositions = [ -0.25; 0.25 ];
+                setup.data.args.ClassWidths = [ 2.5; 2.5 ];
+                setup.data.args.Covariance{1} = 1E-1*[0 0 0; 
+                                                      0 1 0;
+                                                      0 0 0];                                                 
+                setup.data.args.Covariance{2} = 1E-1*[0 0 0; 
+                                                      0 1 0;
+                                                      0 0 0];    
+
+            case 3
+                % Data set C: single Gaussian classes
+                name = 'Dataset C';
+                setup.data.class = @ExemplarDataset;   
+                setup.data.args.HasNormalizedInput = true;
+
+                setup.data.args.FeatureType = 'Gaussian';
+                setup.data.args.ClassSizes = [ N/2 N/2 ];
+                setup.data.args.ClassElements = 1;
+                setup.data.args.ClassPeaks = [ 2.50; 2.50 ];
+                setup.data.args.ClassPositions = [ 0; 0 ];
+                setup.data.args.ClassWidths = [ 3.0; 2.5 ];
+                setup.data.args.Covariance{1} = 1E-1*[0 0 0; 
+                                                      0 0 0;
+                                                      0 0 1];                                                 
+                setup.data.args.Covariance{2} = 1E-1*[0 0 0; 
+                                                      0 0 0;
+                                                      0 0 1];  
+
+            case 4
                 % Data set A: two double-Gaussian classes
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
@@ -127,10 +176,15 @@ if runAnalysis
    
         end
 
-        results{i} = investigationResults( names{i}, path, ...
-                                           parameters, values, setup, ...
-                                           catchErrors, memorySaving, ...
-                                           inParallel );
+        myInvestigations{i} = Investigation( name, path, parameters, values, ...
+                                         setup, catchErrors, memorySaving );
+        
+        myInvestigations{i}.run;
+        
+        myInvestigations{i}.saveReport;
+        
+        myInvestigations{i}.save;
+
    
     end
 

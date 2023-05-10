@@ -11,6 +11,8 @@ function thisSubset = partition( self, idx )
     thisSubset.XFd = splitFd( self.XFd, idx );
     thisSubset.XLen = self.XLen( idx );
     thisSubset.Y = self.Y( idx );
-    thisSubset.SubjectID = self.SubjectID( idx );
+    if isfield( self, 'SubjectID' ) 
+        thisSubset.SubjectID = self.SubjectID( idx );
+    end
 
 end
