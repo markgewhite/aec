@@ -20,6 +20,8 @@ classdef PCAModel < RepresentationModel
             end
 
             superArgs.ComponentType = 'FPC';
+            superArgs.ShowComponentPts = false;
+            
             superArgsCell = namedargs2cell(superArgs);
             argsCell = namedargs2cell(args);
             self@RepresentationModel( thisDataset, ...

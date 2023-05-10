@@ -21,7 +21,6 @@ classdef ParallelInvestigation < Investigation
                                 mustBeInRange( memorySaving, 0, 3 )} = 0
             end
 
-            setup.model.args.ShowPlots = false;
             setup.eval.args.Verbose = false;
 
             self@Investigation( name, path, parameters, ...

@@ -29,6 +29,7 @@ classdef RepresentationModel
         ComponentCentering % how to centre the generated components
         LatentComponents % computed components across partitions
         LatentResponseFcn % method to generate output using Z
+        ShowComponentPts % show the predicted points in plots
 
         Predictions     % training and validation predictions
         Loss            % training and validation losses
@@ -72,6 +73,7 @@ classdef RepresentationModel
                     {mustBeMember( args.ComponentCentering, ...
                                     {'Z', 'X', 'None'} )} = 'Z'
                 args.ShowPlots          logical = true
+                args.ShowComponentPts   logical = true
                 args.IdenticalPartitions logical = false
                 args.Name               string = "[ModelName]"
                 args.Path               string = ""
@@ -128,6 +130,7 @@ classdef RepresentationModel
             self.CompressionLevel = args.CompressionLevel;
 
             self.ShowPlots = args.ShowPlots;
+            self.ShowComponentPts = args.ShowComponentPts;
 
             [self.Figs, self.Axes] = initializePlots( self.XChannels, ... 
                                                       self.ZDimAux, ...

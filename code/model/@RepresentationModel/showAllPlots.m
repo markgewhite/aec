@@ -1,10 +1,10 @@
 function showAllPlots( self, args )
     % Display the full model plots
     arguments
-        self        RepresentationModel
-        args.set    string ...
-                {mustBeMember( args.set, ...
-                {'Training', 'Testing'} )} = 'Training'
+        self                RepresentationModel
+        args.set            string ...
+                            {mustBeMember( args.set, ...
+                            {'Training', 'Testing'} )} = 'Training'
     end
 
     if ~isempty( self.Figs ) && ~isempty( self.Axes )

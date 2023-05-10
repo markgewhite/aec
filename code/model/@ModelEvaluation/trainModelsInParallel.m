@@ -85,6 +85,16 @@ function trainModelsInParallel( self, modelSetup )
     % store all models
     self.Models = models;
 
+    % generate and save plots if required
+    for k = 1:numModels
+        if self.Models{k}.ShowPlots
+            % generate the model plots
+            self.Models{k}.showAllPlots;
+            % save the plots
+            self.Models{k}.save;
+        end
+    end
+
     % find the optimal arrangement of model components
     if self.NumModels > 1
         if self.Verbose

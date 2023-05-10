@@ -5,12 +5,8 @@ function self = train( self, thisData )
         thisData     ModelDataset
     end
 
-    % create a functional data object with fewer bases
-    XFd = smooth_basis( self.TSpan.Regular, ...
-                        double(thisData.XInputRegular), ...
-                        self.FDA.FdParamsRegular );
-
-    pcaStruct = pca_fd( XFd, self.ZDim );
+    % perform principal components analysis
+    pcaStruct = pca_fd( thisData.XFd, self.ZDim );
 
     self.MeanFd = pcaStruct.meanfd;
     self.CompFd = pcaStruct.harmfd;

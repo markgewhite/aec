@@ -61,9 +61,13 @@ function trainModels( self, modelSetup )
         self.Models{k} = self.Models{k}.evaluate( thisTrnSet, thisValSet );
         self.Models{k}.Timing.Testing.TotalTime = toc(tStart);
 
-        % generate the model plots
-        self.Models{k}.showAllPlots;
-
+        if self.Models{k}.ShowPlots
+            % generate the model plots
+            self.Models{k}.showAllPlots;
+            % save the plots
+            self.Models{k}.save;
+        end
+        
     end
 
     % find the optimal arrangement of model components
