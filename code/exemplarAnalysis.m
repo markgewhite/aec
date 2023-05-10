@@ -13,10 +13,6 @@ path0 = fileparts( which('code/exemplarAnalysis.m') );
 path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
-% -- data setup --
-setup.data.args.HasNormalizedInput = true;
-setup.data.args.normalizedPts = 21;
-
 % -- model setup --
 setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 1;
@@ -62,7 +58,7 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 1;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
@@ -78,7 +74,7 @@ memorySaving = 3;
 % -- grid search --
 parameters = [ "model.class", ...
                "model.args.lossFcns.zcls.args.DoCalcLoss"];
-values = {{@PCAModel, @BranchedFCModel}, ...
+values = {{@BranchedFCModel, @PCAModel}, ...
           {false, true}}; 
 N = 1000;
 sigma = 0.5;
@@ -101,6 +97,7 @@ if runAnalysis
                 name = 'Dataset A';
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.normalizedPts = 21;
 
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
@@ -121,6 +118,7 @@ if runAnalysis
                 name = 'Dataset B';
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.normalizedPts = 21;
 
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
@@ -140,6 +138,7 @@ if runAnalysis
                 name = 'Dataset C';
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.normalizedPts = 21;
 
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];

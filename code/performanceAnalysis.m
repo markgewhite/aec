@@ -18,9 +18,6 @@ path0 = fileparts( which('code/performanceAnalysis.m') );
 path = [path0 '/../results/perf 3/'];
 pathResults = [path0 '/../paper/results/'];
 
-% -- data setup --
-setup.data.args.normalizedPts = 21;
-
 % -- model setup --
 setup.model.args.NumHidden = 1;
 setup.model.args.NumFC = 50;
@@ -105,6 +102,7 @@ if runAnalysis
                 setup.data.args.SessionType = 'All';
                 setup.data.args.Side = 'Affected';
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.model.args.trainer.BatchSize = 3000;
 
             case 2
@@ -119,6 +117,7 @@ if runAnalysis
                 setup.data.args.SessionType = 'All';
                 setup.data.args.Side = 'Affected';
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.model.args.trainer.BatchSize = 3000;
 
             case 3
@@ -128,6 +127,7 @@ if runAnalysis
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.YReference = 'AgeGroup';
                 setup.data.args.Category = 'Ground';
+                setup.data.args.NormalizedPts = 21;
                 setup.model.args.trainer.BatchSize = 1000;
 
             case 4
@@ -137,6 +137,7 @@ if runAnalysis
                 setup.data.args.HasGRF = true;
                 setup.data.args.HasVGRFOnly = false;
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.YReference = 'AgeGroup';
                 setup.data.args.Category = 'JointAngles';
                 setup.data.args.HasHipAngles = true;
@@ -151,6 +152,7 @@ if runAnalysis
                 setup.data.class = @JumpGRFDataset;
                 setup.data.args.Normalization = 'PAD';
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.ResampleRate = 5;
                 setup.model.args.trainer.BatchSize = 75;
 
@@ -159,6 +161,7 @@ if runAnalysis
                 name = 'Fukuchi-GRF-1D';
                 setup.data.class = @FukuchiDataset;
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.HasGRF = true;
                 setup.data.args.HasVGRFOnly = true;
                 setup.data.args.YReference = 'AgeGroup';
@@ -170,6 +173,7 @@ if runAnalysis
                 name = 'Fukuchi-JointAngles-1D';
                 setup.data.class = @FukuchiDataset;
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.YReference = 'AgeGroup';
                 setup.data.args.Category = 'JointAngles';
                 setup.data.args.HasHipAngles = false;
@@ -183,6 +187,7 @@ if runAnalysis
                 setup.data.class = @SyntheticDataset;
                 setup.data.args.TemplateSeed = randi(1E6);
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.ClassSizes = [ 250, 250 ];
                 setup.model.args.trainer.BatchSize = 75;
 

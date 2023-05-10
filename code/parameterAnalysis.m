@@ -102,6 +102,7 @@ if runAnalysis
                 setup.data.class = @JumpGRFDataset;
                 setup.data.args.Normalization = 'PAD';
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.ResampleRate = 5;
                 setup.model.args.trainer.BatchSize = 75;
 
@@ -110,6 +111,7 @@ if runAnalysis
                 name = 'Fukuchi-GRF-1D';
                 setup.data.class = @FukuchiDataset;
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.HasGRF = true;
                 setup.data.args.HasVGRFOnly = true;
                 setup.data.args.YReference = 'AgeGroup';
@@ -121,6 +123,7 @@ if runAnalysis
                 name = 'Fukuchi-JointAngles-1D';
                 setup.data.class = @FukuchiDataset;
                 setup.data.args.HasNormalizedInput = true;
+                setup.data.args.NormalizedPts = 21;
                 setup.data.args.YReference = 'AgeGroup';
                 setup.data.args.Category = 'JointAngles';
                 setup.data.args.HasHipAngles = false;
