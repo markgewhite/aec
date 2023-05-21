@@ -5,8 +5,12 @@ classdef ConvolutionalModel < FCModel
         NumFilters    % number of filters aka kernels
         FilterSize    % length of the filters
         Stride        % filter step size
+        Padding       % encoder padding
         Pooling       % pooling operator
-        HasFCDecoder  % whether the decoder inherits the fully-connected design
+        NumHiddenDecoder   % number of decoder layers
+        FilterSizeDecoder  % length of the decoder filters
+        StrideDecoder      % decoder stride
+        PaddingDecoder  % decoder padding better known as cropping
     end
 
     methods
@@ -27,10 +31,21 @@ classdef ConvolutionalModel < FCModel
                     {mustBeInteger, mustBePositive} = 5
                 args.Stride         double ...
                     {mustBeInteger, mustBePositive} = 3
+                args.Padding        char ...
+                    {mustBeMember(args.Padding, ...
+                      {'Same', 'None'} )} = 'None'
                 args.Pooling        char ...
                     {mustBeMember(args.Pooling, ...
                       {'GlobalMax', 'GlobalAvg', 'None'} )} = 'None'
-                args.HasFCDecoder   logical = false
+                args.NumHiddenDecoder   double ...
+                    {mustBeInteger, mustBePositive} = 2
+                args.FilterSizeDecoder  double ...
+                    {mustBeInteger, mustBePositive} = 5
+                args.StrideDecoder  double ...
+                    {mustBeInteger, mustBePositive} = 3
+                args.PaddingDecoder char ...
+                    {mustBeMember(args.PaddingDecoder, ...
+                      {'Same', 'None'} )} = 'None'
             end
 
             % set the superclass's properties
@@ -47,8 +62,12 @@ classdef ConvolutionalModel < FCModel
             self.NumFilters = args.NumFilters*2.^(0:self.NumHidden-1);
             self.FilterSize = args.FilterSize;
             self.Stride = args.Stride;
+            self.Padding = args.Padding;
             self.Pooling = args.Pooling;
-            self.HasFCDecoder = args.HasFCDecoder;
+            self.NumHiddenDecoder = args.NumHiddenDecoder;
+            self.FilterSizeDecoder = args.FilterSizeDecoder;
+            self.StrideDecoder = args.StrideDecoder;
+            self.PaddingDecoder = args.PaddingDecoder;
 
         end
 
@@ -74,7 +93,7 @@ classdef ConvolutionalModel < FCModel
             for i = 1:self.NumHidden
                 [lgraphEnc, lastLayer] = addBlock( lgraphEnc, i, lastLayer, ...
                     self.NumFilters(i), self.FilterSize, self.Stride, ...
-                    self.ReLuScale, self.Dropout, false );
+                    self.Padding, self.ReluScale, self.Dropout, false );
             end
             
             % add the output layers
@@ -108,41 +127,22 @@ classdef ConvolutionalModel < FCModel
                 self        ConvolutionalModel
             end
 
-            if self.HasFCDecoder
-                net = initDecoder@FCModel( self );
-                return
-            end
-
             % define input layers
-            layersDec = [ featureInputLayer( self.ZDim, 'Name', 'in' )
-                          projectAndReshapeLayer( [self.XInputDim 1 self.XChannels ], ...
-                                        self.ZDim, 'Name', 'proj' ) ];
+            layersDec = [ featureInputLayer( self.ZDim, 'Name', 'in' );
+                          reshapeLayer( [1 self.ZDim], 'Name', 'reshape' ) ];
             
             lgraphDec = layerGraph( layersDec );
-            lastLayer = 'proj';
+            lastLayer = 'reshape';
             
-            for i = 1:self.NumHidden
-                f = self.NumFilters( self.NumHidden-i+1 );
+            for i = 1:self.NumHiddenDecoder
                 [lgraphDec, lastLayer] = addBlock( lgraphDec, i, lastLayer, ...
-                    f, self.FilterSize, self.Stride, ...
-                    self.ReLuScale, self.Dropout, true );
+                    self.ZDim, self.FilterSizeDecoder, ...
+                    self.StrideDecoder, self.PaddingDecoder, ...
+                    self.ReluScale, self.Dropout, true );
             end
             
             % add the output layers
-            switch self.Pooling
-                case 'GlobalMax'
-                    outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
-                    poolingLayer = 'maxPool';
-                case 'GlobalAvg'
-                    outLayers = globalAveragePooling1dLayer( 'Name', 'avgPool' );
-                    poolingLayer = 'avgPool';
-                case 'None'
-                    outLayers = [];
-                    poolingLayer = 'fcout';
-            end
-            
-            outLayers = [ outLayers; 
-                          fullyConnectedLayer( self.XTargetDim*self.XChannels, 'Name', 'fcout' ) ];
+            outLayers = convolution1dLayer( 1, 1, 'Name', 'add' );
             
             if self.XChannels > 1
                 outLayers = [ outLayers; 
@@ -151,7 +151,7 @@ classdef ConvolutionalModel < FCModel
             
             lgraphDec = addLayers( lgraphDec, outLayers );
             lgraphDec = connectLayers( lgraphDec, ...
-                                       lastLayer, poolingLayer );
+                                       lastLayer, 'add' );
             
             net = dlnetwork( lgraphDec );
 
@@ -176,25 +176,33 @@ end
 
 
 function [ lgraph, lastLayer ] = addBlock( lgraph, i, lastLayer, ...
-                    nFilters, filterSize, stride, scale, dropout, transpose )
+                    nFilters, filterSize, stride, padding, scale, dropout, transpose )
 
-    % define block
+    switch lower(padding)
+        case 'none'
+            pad = 0;
+        case 'same'
+            pad = 'same';
+    end
+           
+
+    % define block            
     if transpose
         block = transposedConv1dLayer( filterSize, ...
                                        nFilters, ...
                                        'Stride', stride, ...
-                                       'Cropping', 'same', ...
+                                       'Cropping', pad, ...
                                        'Name', ['conv' num2str(i)] );
     else
         block = convolution1dLayer( filterSize, ...
                                     nFilters, ...
                                     'Stride', stride, ...
-                                    'Padding', 'same', ...
+                                    'Padding', pad, ...
                                     'Name', ['conv' num2str(i)] );
     end
         
     block = [   block;
-                layerNormalizationLayer( 'Name', ['lnorm' num2str(i)] )
+                batchNormalizationLayer( 'Name', ['norm' num2str(i)] )
                 leakyReluLayer( scale, ...
                                 'Name', ['relu' num2str(i)] )
                 spatialDropoutLayer( dropout, ...
