@@ -6,7 +6,7 @@ close all;
 runAnalysis = true;
 catchErrors = true;
 
-reportIdx = 6:7;
+reportIdx = 4:7;
 
 plotDim = 4;
 maxCoeff = 3;

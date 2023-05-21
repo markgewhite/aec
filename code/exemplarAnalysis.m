@@ -10,10 +10,11 @@ plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/test/'];
+path = [path0 '/../results/test-Norm&Act7/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- model setup --
+setup.model.class = @BranchedFCModel;
 setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 1;
 setup.model.args.NumFC = 20;
@@ -39,8 +40,8 @@ setup.model.args.ShowPlots = true;
 setup.model.args.lossFcns.recon.class = @ReconstructionLoss;
 setup.model.args.lossFcns.recon.name = 'Reconstruction';
 
-setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
-setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
+%setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
+%setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
 
 setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
 setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
@@ -58,7 +59,7 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
@@ -72,10 +73,26 @@ setup.eval.args.InParallel = false;
 memorySaving = 3;
 
 % -- grid search --
-parameters = [ "model.class", ...
-               "model.args.lossFcns.zcls.args.DoCalcLoss"];
-values = {{@BranchedFCModel, @PCAModel}, ...
-          {false, true}}; 
+%parameters = [ "model.class", ...
+%               "model.args.lossFcns.zcls.args.DoCalcLoss"];
+%values = {{@PCAModel, @BranchedFCModel}, ...
+%          {false, true}}; 
+
+%parameters = [ "model.args.NetNormalizationType", ...
+%               "model.args.NetActivationType", ...
+%               "model.args.NetNormalizationTypeDecoder", ...
+%               "model.args.NetActivationTypeDecoder" ];
+%values = {{'None', 'Batch'}, ...
+%          {'None', 'Tanh', 'Relu'}, ...
+%          {'None', 'Batch', 'Layer'}, ...
+%          {'None', 'Tanh', 'Relu'}}; 
+
+parameters = [ "model.args.NetNormalizationTypeDecoder", ...
+               "model.args.NetActivationTypeDecoder" ];
+values = {{'None', 'Batch', 'Layer'}, ...
+          {'None', 'Tanh', 'Relu'}}; 
+
+
 N = 1000;
 sigma = 0.5;
 
@@ -97,7 +114,7 @@ if runAnalysis
                 name = 'Dataset A';
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
-                setup.data.args.normalizedPts = 21;
+                setup.data.args.normalizedPts = 7;
 
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
@@ -118,7 +135,7 @@ if runAnalysis
                 name = 'Dataset B';
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
-                setup.data.args.normalizedPts = 21;
+                setup.data.args.normalizedPts = 7;
 
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
@@ -138,7 +155,7 @@ if runAnalysis
                 name = 'Dataset C';
                 setup.data.class = @ExemplarDataset;   
                 setup.data.args.HasNormalizedInput = true;
-                setup.data.args.normalizedPts = 21;
+                setup.data.args.normalizedPts = 7;
 
                 setup.data.args.FeatureType = 'Gaussian';
                 setup.data.args.ClassSizes = [ N/2 N/2 ];
