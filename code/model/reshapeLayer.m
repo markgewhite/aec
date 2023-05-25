@@ -4,6 +4,7 @@ classdef reshapeLayer < nnet.layer.Layer & ...
     properties
         % (Optional) Layer properties.
         OutputSize
+        OutputDims
     end
 
     properties (Learnable)
@@ -27,21 +28,19 @@ classdef reshapeLayer < nnet.layer.Layer & ...
             arguments
                 outputSize
                 NameValueArgs.Name = '';
+                NameValueArgs.Dims = 'SCB';
             end
             
-            name = NameValueArgs.Name;
-            
-            % Set layer name.
-            layer.Name = name;
+            % Set layer properties
+            layer.Name = NameValueArgs.Name;
+            layer.OutputDims = NameValueArgs.Dims;
+            layer.OutputSize = outputSize;
 
             % Set layer description.
             layer.Description = "Reshape layer with output size " + join(string(outputSize));
             
             % Set layer type.
             layer.Type = "Reshape";
-            
-            % Set output size.
-            layer.OutputSize = outputSize;
             
         end
         
@@ -59,8 +58,12 @@ classdef reshapeLayer < nnet.layer.Layer & ...
            
             % Reshape.
             outputSize = layer.OutputSize;
-            Z = reshape(X, outputSize(1), outputSize(2), []);
-            Z = dlarray(Z,'SCB');
+            if length(outputSize)==1
+                Z = reshape(X, outputSize(1), []);
+            else
+                Z = reshape(X, outputSize(1), outputSize(2), []);
+            end
+            Z = dlarray(Z, layer.OutputDims);
         end
     end
 end

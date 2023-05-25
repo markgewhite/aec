@@ -63,7 +63,7 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
 
             if layer.ReduceDim
                 % remove the zero rows
-                Z = Z(sum( Z, 2 )~=0, :);
+                Z = Z(sum( Z, [2 3] )~=0, :, :);
             end
 
         end
@@ -83,7 +83,7 @@ classdef maskLayer < nnet.layer.Layer & nnet.layer.Formattable
 
             if layer.ReduceDim
                 % remove the zero rows
-                Z = Z(sum( Z, 2 )~=0, :);
+                Z = Z(sum( Z, [2 3])~=0, :, :);
             end
 
         end
