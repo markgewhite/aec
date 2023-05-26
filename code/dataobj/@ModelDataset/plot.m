@@ -4,6 +4,9 @@ function fig = plot( self, args )
     arguments
         self                ModelDataset
         args.nSample        double = 500
+        args.tSpan          double = []
+        args.X              double = []
+        args.Y              double = []
         args.showLegend     logical = true
         args.showTitle      logical = true
         args.showXAxis      logical = true
@@ -33,12 +36,26 @@ function fig = plot( self, args )
     colours = lines( 9 );
     colours = colours( 3:9, : );
 
-    % plot the curves
-    t = self.TSpan.Regular;
-    X = self.XInputRegular;
-    Y = self.Y;
+    % get the data, either from self or as specified
+    if isempty( args.tSpan )
+        t = self.TSpan.Regular;
+    else
+        t = args.tSpan;
+    end
+    if isempty( args.X )
+        X = self.XInputRegular;
+    else
+        X = args.X;
+    end
+    if isempty( args.Y )
+        Y = self.Y;
+    else
+        Y = args.Y;
+    end
+    
     classInLegend = false( self.CDim, 1 );
 
+    % plot the curves
     for i = curves
 
         % prepare the colour based on class with random saturation

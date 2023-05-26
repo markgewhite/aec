@@ -88,6 +88,10 @@ function thisModel = runTraining( self, thisModel, thisDataset )
         thisTrnData.setFDAParameters( thisTrnData.TSpan.Target, ...
                                       XCTrnAll );
 
+    % plot the reconstructions
+    thisTrnData.plot( tSpan = thisTrnData.TSpan.Target, ...
+                      X = XHatTrnAll, ...
+                      Y = double(extractdata(dlYTrnAll)) );
 
 end
     
