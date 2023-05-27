@@ -107,9 +107,10 @@ classdef FCBranchedModel < BranchedModel
 
             end
 
+            % add the final layer with double the dimensions for VAE
             finalLayerName = ['fcout' num2str(100*offset)];
             lgraph = addLayers( lgraph, ...
-                                fullyConnectedLayer( self.ZDim, 'Name', ...
+                                fullyConnectedLayer( self.ZDim*2, 'Name', ...
                                                      finalLayerName ) );
             lgraph = connectLayers( lgraph, lastLayerName, finalLayerName );
             
