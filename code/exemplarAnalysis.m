@@ -16,6 +16,7 @@ pathResults = [path0 '/../paper/results/'];
 % -- model setup --
 setup.model.class = @ConvolutionalModel;
 setup.model.args.UseEncodingMean = false;
+setup.model.args.NumEncodingDraws = 10;
 setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 2;
 %setup.model.args.FilterSize = 5;

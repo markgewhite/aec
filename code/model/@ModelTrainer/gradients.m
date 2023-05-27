@@ -21,6 +21,14 @@ function [grad, state, loss] = gradients( nets, ...
     [ dlZGen, dlXGen, dlXHat, dlXC, state ] = ...
                 forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
 
+    % determine the number of draws made if VAE
+    nDraws = size( dlXHat, 2 )/size( dlXOut, 2 );
+    if nDraws > 1
+        % duplicate X & Y to match VAE's multiple draws
+        dlXOut = repmat( dlXOut, 1, nDraws );
+        dlY = repmat( dlY, 1, nDraws );
+    end
+
     % select the active loss functions
     isActive = thisModel.LossFcnTbl.DoCalcLoss;
     isNonReconFcn = (thisModel.LossFcnTbl.Types~="Reconstruction");
