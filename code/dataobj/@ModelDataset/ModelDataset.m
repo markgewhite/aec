@@ -23,12 +23,9 @@ classdef ModelDataset
         TSpan           % time span structure of vectors holding
                         %   .Original = matching the raw data
                         %   .Regular = regularly-spaced times
-                        %   .Input = input to the model (may be adaptive)
+                        %   .Input = input to the model
                         %   .Target = for autoencoder reconstructions
 
-        HasAdaptiveTimeSpan % flag whether to adjust timespan to complexity
-        AdaptiveLowerBound  % lower limit on point density
-        AdaptiveUpperBound  % upper limit on point density
         ResampleRate        % downsampling rate
         Perplexity          % for density estimation in X
 
@@ -82,9 +79,6 @@ classdef ModelDataset
                     {mustBePositive, mustBeInteger} = 2
                 args.lambda                 double = []
                 args.tSpan                  double = []
-                args.hasAdaptiveTimeSpan    logical = false
-                args.adaptiveLowerBound     double = 0.25
-                args.adaptiveUpperBound     double = 2.5
                 args.resampleRate           double ...
                     {mustBeNumeric} = 1
                 args.perplexity             double ...
@@ -111,9 +105,6 @@ classdef ModelDataset
             self.FDA.PtsPerKnot = args.ptsPerKnot;
 
             self.TSpan.Original = tSpan;
-            self.HasAdaptiveTimeSpan = args.hasAdaptiveTimeSpan;
-            self.AdaptiveLowerBound = args.adaptiveLowerBound;
-            self.AdaptiveUpperBound = args.adaptiveUpperBound;
             self.ResampleRate = args.resampleRate;
             self.Perplexity = args.perplexity;
 
@@ -134,16 +125,7 @@ classdef ModelDataset
                     self.TSpan.Original(end), ...
                     fix( self.Padding.Length/self.ResampleRate ) );  
 
-            % adaptive resampling, as required
-            if self.HasAdaptiveTimeSpan && isempty( args.tSpan )
-
-                self.TSpan.Input = calcAdaptiveTimeSpan( ...
-                    self.XFd, ...
-                    self.TSpan.Regular, ...
-                    self.AdaptiveLowerBound, ...
-                    self.AdaptiveUpperBound );
-
-            elseif isempty( args.tSpan )
+            if isempty( args.tSpan )
                 self.TSpan.Input = self.TSpan.Regular;
             else
                 self.TSpan.Input = args.tSpan;
@@ -301,7 +283,7 @@ classdef ModelDataset
 
 
         function X = get.XTarget( self )
-            % Generate the adaptively-spaced input from XFd
+            % Generate the output from XFd
             % producing an array of fixed length
             arguments
                 self    ModelDataset
