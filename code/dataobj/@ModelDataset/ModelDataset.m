@@ -35,14 +35,8 @@ classdef ModelDataset
     properties (Dependent = true)
         XInputCell      % processed input data (variable length) as cell array
         XInputRegular   % processed input with regularly spaced time span
-        XInputCoeff     % input Fd coefficients as cell array
-        XInputCoeffRegular  % input Fd coefficients as array
-        XInputCoeffDim  % Fd input dimensions
         XTarget         % target output
         XTargetMean     % target output mean
-        XTargetCoeff    % target Fd coefficients
-        XTargetCoeffDim % Fd target dimensions
-        XTargetCoeffMean % target output mean
         
         CDim            % number of categories
         YLabels         % Y labels
@@ -169,55 +163,6 @@ classdef ModelDataset
         end
 
 
-        function X = get.XInputCoeff( self )
-            % Get the Fd coefficients for the input
-            arguments
-                self    ModelDataset
-            end
-
-            X = eval_fd( self.TSpan.Input, self.XFd ); 
-            XInputFd = smooth_basis( self.TSpan.Input, ...
-                                X, ...
-                                self.FDA.FdParamsInput );
-            XCoeff = single(getcoef( XInputFd ));
-
-            if size( XCoeff, 3 ) > 1
-                X = num2cell( permute( XCoeff, [2 1 3]), [2 3] );
-                X = cellfun( @squeeze, X , 'UniformOutput', false);
-            else
-                X = num2cell( permute( XCoeff, [2 1]), 2 );
-                X = cellfun( @transpose, X , 'UniformOutput', false);
-            end
-
-        end
-
-
-        function XCoeff = get.XInputCoeffRegular( self )
-            % Get the Fd coefficients for the input
-            arguments
-                self    ModelDataset
-            end
-
-            X = eval_fd( self.TSpan.Input, self.XFd ); 
-            XInputFd = smooth_basis( self.TSpan.Input, ...
-                                X, ...
-                                self.FDA.FdParamsRegular );
-            XCoeff = single(getcoef( XInputFd ));
-
-        end
-
-
-        function d = get.XInputCoeffDim( self )
-            % Get dimension of target coefficients
-            arguments
-                self    ModelDataset
-            end
-
-            d = length(getcoef( self.FDA.FdParamsInput ));
-
-        end
-
-
         function X = get.XInputCell( self )
             % Generate cell array input from XFd
             arguments
@@ -254,32 +199,6 @@ classdef ModelDataset
             X = reshape( cell2mat( XCell ), [], self.NumObs, self.XChannels );
 
         end
-        
-        
-        function XCoeff = get.XTargetCoeff( self )
-            % Get the Fd coefficients for the target
-            arguments
-                self    ModelDataset
-            end
-
-            X = eval_fd( self.TSpan.Target, self.XFd ); 
-            XTargetFd = smooth_basis( self.TSpan.Target, ...
-                                X, ...
-                                self.FDA.FdParamsTarget );
-            XCoeff = single(getcoef( XTargetFd ));
-
-        end
-
-
-        function d = get.XTargetCoeffDim( self )
-            % Get dimension of target coefficients
-            arguments
-                self    ModelDataset
-            end
-
-            d = length(getcoef( self.FDA.FdParamsTarget ));
-
-        end
 
 
         function X = get.XTarget( self )
@@ -305,22 +224,6 @@ classdef ModelDataset
                                self.Normalization );
 
             X = timeNormalize( XCell, numPts );
-
-        end
-     
-
-        function XMean = get.XTargetCoeffMean( self )
-            % Calculate the mean target Fd coefficients
-            arguments
-                self            ModelDataset            
-            end
-
-            if self.XChannels == 1
-                XMean = mean( self.XTargetCoeff, 2 );
-            else
-                XMean = mean( self.XTargetCoeff, 2 );
-                XMean = permute( XMean, [1 3 2] );
-            end
 
         end
 

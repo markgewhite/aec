@@ -8,9 +8,7 @@ classdef AEModel < RepresentationModel
         LossFcns       % array of loss functions
         LossFcnNames   % names of the loss functions
         LossFcnTbl     % convenient table summarising loss function details
-        LossFcnScale   % special scale for loss functions (if using Fd coefficients)
         NumLoss        % number of computed losses
-        UsesFdCoefficients % if input/target are Fd coefficient rather than points
         FlattenInput   % whether to flatten input
         HasSeqInput    % supports variable-length input
         Trainer        % trainer object holding training parameters
@@ -41,7 +39,6 @@ classdef AEModel < RepresentationModel
                 superArgs.?RepresentationModel
                 superArgs2.name         string
                 superArgs2.path         string
-                args.UsesFdCoefficients logical = false
                 args.FlattenInput       logical = false
                 args.HasSeqInput        logical = false
                 args.InitZDimActive     double ...
@@ -68,17 +65,7 @@ classdef AEModel < RepresentationModel
                                              superArgs2Cell{:} );
 
             self.XComponentDim = thisDataset.XTargetDim;
-            self.UsesFdCoefficients = args.UsesFdCoefficients;
-            if self.UsesFdCoefficients
-                % substitute input and output dimensions for coefficients dim
-                self.XInputDim = thisDataset.XInputCoeffDim;
-                self.XTargetDim = thisDataset.XTargetCoeffDim;
-                % compute special scale for loss functions based on coefficients
-                self.LossFcnScale = scalingFactor( thisDataset.XTargetCoeff );
-            else
-                self.LossFcnScale = self.Scale;
-            end
-
+ 
             % check dataset is suitable
             if thisDataset.isFixedLength == args.HasSeqInput
                 eid = 'AEModel:DatasetNotSuitable';

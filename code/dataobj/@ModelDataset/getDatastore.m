@@ -1,18 +1,12 @@
-function dsFull = getDatastore( self, includeP, getCoeff )
+function dsFull = getDatastore( self, includeP )
     % Create a super datastore of individual datastores for each variable
     arguments
         self            ModelDataset
         includeP        logical = false
-        getCoeff        logical = false
     end  
 
-    if getCoeff
-        X = self.XInputCoeff;
-        XN = self.XTargetCoeff;
-    else
-        X = self.XInputCell;
-        XN = self.XTarget;
-    end
+    X = self.XInputCell;
+    XN = self.XTarget;
     
     if includeP
         P = calcXDistribution( self.XTarget, self.Perplexity );

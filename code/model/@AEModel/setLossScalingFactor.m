@@ -8,7 +8,7 @@ function self = setLossScalingFactor( self )
         
         if any(ismember( self.LossFcnTbl.Inputs{i}, {'dlXIn', 'dlXOut', 'dlXHat', 'dlXC', 'dlXGen'} ))
             name = self.LossFcnTbl.Names(i);
-            self.LossFcns.(name).Scale = self.LossFcnScale;
+            self.LossFcns.(name).Scale = self.Scale;
         end
 
     end

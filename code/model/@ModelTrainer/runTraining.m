@@ -14,15 +14,10 @@ function thisModel = runTraining( self, thisModel, thisDataset )
 
     % set the mean curve for these training data
     thisModel.MeanCurve = mean( thisTrnData.XInputRegular, 2 );
-    if thisModel.UsesFdCoefficients
-        thisModel.MeanCurveTarget = thisTrnData.XTargetCoeffMean;
-    else
-        thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
-    end
+    thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
 
     % create a super datastore combining individual variable datastores
-    dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation, ...
-                                      thisModel.UsesFdCoefficients );
+    dsTrn = thisTrnData.getDatastore( thisModel.UsesDensityEstimation );
 
     % setup the minibatch preprocessing function
     preprocFcn = @( X, XN, P, Y, I ) preprocMiniBatch( X, XN, P, Y, I, ...

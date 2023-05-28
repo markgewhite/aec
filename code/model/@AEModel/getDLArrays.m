@@ -6,13 +6,8 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
         maxObs          double = 0
     end
     
-    if self.UsesFdCoefficients
-        X = thisDataset.XInputCoeffRegular;
-        XN = thisDataset.XTargetCoeff;
-    else
-        X = thisDataset.XInputRegular;
-        XN = thisDataset.XTarget;
-    end
+    X = thisDataset.XInputRegular;
+    XN = thisDataset.XTarget;
 
     dlX = dlarray( X, self.XDimLabels );
     dlXN = dlarray( XN, self.XDimLabels );

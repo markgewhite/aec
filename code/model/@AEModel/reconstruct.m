@@ -27,39 +27,17 @@ function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
     else
         XHat = dlXHat;
     end
-    
-    if self.UsesFdCoefficients && args.points
-        % convert to real points
-
-        % create a dummy Fd object
-        dummy = zeros( length(self.TSpan.Target), size(XHat,2), size(XHat,3) );
-        XFd = smooth_basis( self.TSpan.Target, ...
-                            dummy, ...
-                            self.FDA.FdParamsTarget );
-
-        % impose the coefficient matrix
-        XFd = putcoef( XFd, XHat );
-
-        % evaluate the function to get points
-        XHat = eval_fd( XFd, self.TSpan.Target );
-    end
 
     if args.smooth && args.points
 
-        if self.UsesFdCoefficients
-            XHatSmth = XHat;        
-            XHatReg = eval_fd( XFd, self.TSpan.Regular );
-
-        else           
-            XHatSmth = smoothSeries( XHat, ...
-                                     self.TSpan.Target, ...
-                                     self.TSpan.Target, ...
-                                     self.FDA.FdParamsTarget );
-            XHatReg = smoothSeries( XHat, ...
-                                    self.TSpan.Target, ...
-                                    self.TSpan.Regular, ...
-                                    self.FDA.FdParamsTarget );
-        end
+        XHatSmth = smoothSeries( XHat, ...
+                                 self.TSpan.Target, ...
+                                 self.TSpan.Target, ...
+                                 self.FDA.FdParamsTarget );
+        XHatReg = smoothSeries( XHat, ...
+                                self.TSpan.Target, ...
+                                self.TSpan.Regular, ...
+                                self.FDA.FdParamsTarget );
 
     else
         XHatSmth = [];
