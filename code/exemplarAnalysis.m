@@ -49,9 +49,16 @@ setup.model.args.lossFcns.recon.name = 'Reconstruction';
 setup.model.args.lossFcns.reconrough.class = @ReconstructionRoughnessLoss;
 setup.model.args.lossFcns.reconrough.name = 'ReconstructionRoughness';
 setup.model.args.lossFcns.reconrough.args.Dilations = 1;
+setup.model.args.lossFcns.reconrough.args.UseLoss = false;
+
+setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
+setup.model.args.lossFcns.kl.name = 'KLDivergence';
+setup.model.args.lossFcns.kl.args.Beta = 1E-2;
+setup.model.args.lossFcns.kl.args.UseLoss = true;
 
 setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
 setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
+setup.model.args.lossFcns.zorth.args.UseLoss = true;
 
 setup.model.args.lossFcns.xvar.class = @ComponentLoss;
 setup.model.args.lossFcns.xvar.name = 'XVarimax';

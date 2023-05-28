@@ -35,7 +35,6 @@ function self = initLossFcns( self, setup )
     self.NumLoss = sum( self.LossFcnTbl.NumLosses.*self.LossFcnTbl.DoCalcLoss );
 
     self.LossFcnTbl.Types = categorical( self.LossFcnTbl.Types );
-    self.LossFcnTbl.Inputs = categorical( self.LossFcnTbl.Inputs );
 
     % set loss function scaling factors if required
     self = self.setLossScalingFactor;

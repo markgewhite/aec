@@ -20,7 +20,7 @@ classdef OrthogonalLoss < LossFunction
             superArgsCell = namedargs2cell( superArgs );
             self = self@LossFunction( name, superArgsCell{:}, ...
                                  type = 'Regularization', ...
-                                 input = 'ZAux', ...
+                                 input = {'dlZAux'}, ...
                                  lossNets = {'Encoder'}, ...
                                  yLim = [0, 0.25]);
 
@@ -29,26 +29,26 @@ classdef OrthogonalLoss < LossFunction
         end
 
 
-        function loss = calcLoss( self, dlZ )
+        function loss = calcLoss( self, dlZAux )
             % Calculate the orthogonality loss
             arguments
-                self        OrthogonalLoss
-                dlZ         dlarray
+                self           OrthogonalLoss
+                dlZAux         dlarray
             end
             
-            if size( dlZ, 1 ) > 1
+            if size( dlZAux, 1 ) > 1
 
                 % get the correlation
-                dlCorr = dlCorrelation( dlZ );
+                dlCorr = dlCorrelation( dlZAux );
     
                 % penalise high covariance
-                d = size( dlZ, 1 );
+                d = size( dlZAux, 1 );
                 loss = self.Alpha*sum( dlCorr.^2, 'all' )/(d*(d-1));
 
             else
                 % only one dimension so set the loss to zero
                 % with traceability
-                loss = 0*sum( dlZ );
+                loss = 0*sum( dlZAux );
             
             end
 

@@ -12,29 +12,28 @@ classdef KLDivergenceLoss < LossFunction
             arguments
                 name                 char {mustBeText}
                 superArgs.?LossFunction
-                args.Beta            double = 1
+                args.Beta            double = 0.1
             end
 
             superArgsCell = namedargs2cell( superArgs );
             self = self@LossFunction( name, superArgsCell{:}, ...
-                                 type = 'Regularization', ...
-                                 input = 'Z', ...
-                                 lossNets = {'Encoder'} );
+                                 Type = 'Regularization', ...
+                                 Input = {'dlMu', 'dlLogVar'}, ...
+                                 LossNets = {'Encoder'}, ...
+                                 YLim = [0 0.1]);
 
             self.Beta = args.Beta;
 
         end
 
 
-        function loss = calcLoss( self, dlZ )
+        function loss = calcLoss( self, dlMu, dlLogVar )
             % Calculate the KL divergence
             arguments
                 self        KLDivergenceLoss
-                dlZ         dlarray
+                dlMu        dlarray
+                dlLogVar    dlarray
             end
-
-            dlMu = mean( dlZ );
-            dlLogVar = log( var( dlZ ) );
 
             loss = -0.5*sum( 1 + dlLogVar - dlMu.^2 - exp(dlLogVar) );
             loss = self.Beta*mean( loss );

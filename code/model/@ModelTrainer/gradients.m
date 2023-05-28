@@ -1,4 +1,4 @@
-function [grad, state, loss] = gradients( nets, ...
+function [grads, states, losses] = gradients( nets, ...
                                           thisModel, ...
                                           dlXIn, ...
                                           dlXOut, ...
@@ -18,16 +18,23 @@ function [grad, state, loss] = gradients( nets, ...
     end
 
     % autoencoder training
-    [ dlZGen, dlXGen, dlXHat, dlXC, state ] = ...
+    [ vars, states ] = ...
                 forward( thisModel, nets.Encoder, nets.Decoder, dlXIn );
 
-    % determine the number of draws made if VAE
-    nDraws = size( dlXHat, 2 )/size( dlXOut, 2 );
-    if nDraws > 1
-        % duplicate X & Y to match VAE's multiple draws
-        dlXOut = repmat( dlXOut, 1, nDraws );
-        dlY = repmat( dlY, 1, nDraws );
+    % add other variables
+    vars.dlXOut = dlXOut;
+    vars.dlY = dlY;
+
+    if isfield( vars, 'dlXHat' )
+        % determine the number of draws made if VAE
+        nDraws = size( vars.dlXHat, 2 )/size( vars.dlXOut, 2 );
+        if nDraws > 1
+            % duplicate X & Y to match VAE's multiple draws
+            vars.dlXOut = repmat( vars.dlXOut, 1, nDraws );
+            vars.dlY = repmat( dlY, 1, nDraws );
+        end
     end
+
 
     % select the active loss functions
     isActive = thisModel.LossFcnTbl.DoCalcLoss;
@@ -41,7 +48,7 @@ function [grad, state, loss] = gradients( nets, ...
     
     nFcns = size( activeFcns, 1 );
     nLoss = sum( activeFcns.NumLosses );
-    loss = zeros( nLoss, 1 );
+    losses = zeros( nLoss, 1 );
     idx = 1;
     lossAccum = [];
     for i = 1:nFcns
@@ -55,27 +62,17 @@ function [grad, state, loss] = gradients( nets, ...
         idx = idx + thisLossFcn.NumLoss;
 
         % select the input variables
-        switch thisLossFcn.Input
-            case 'X-XHat'
-                dlV = { dlXOut, dlXHat };
-            case 'XHat'
-                dlV = { dlXHat };
-            case 'XGen'
-                dlV = { dlXGen };
-            case 'XC'
-                dlV = { dlXC };
-            case 'Z'
-                dlV = { dlZGen };
-            case 'ZAux'
-                dlV = { dlZGen( 1:thisModel.ZDimAux, : ) };
-            case 'P-Z'
-                dlV = { dlP, dlZGen };
-            case 'YHat'
-                dlV = dlYHat;
-            case 'Z-Y'
-                dlV = { dlZGen, dlY };
-            case 'X-Y'
-                dlV = { dlXIn, dlY };
+        nInputs = length( thisLossFcn.Input );
+        dlV = cell( nInputs, 1 );
+        for j = 1:nInputs
+            fld = thisLossFcn.Input{j};
+            if isfield( vars, fld )
+                dlV{j} = vars.(fld);
+            else
+                eid = 'LossFcn:NoForwardArg';
+                msg = ['Model forward function does not return the required field: ' fld];
+                throwAsCaller( MException(eid,msg) );
+            end
         end
 
         % calculate the loss
@@ -86,7 +83,7 @@ function [grad, state, loss] = gradients( nets, ...
             thisNetwork = nets.(thisName);
             if thisLossFcn.HasState
                 % and store the network state too
-                [ thisLoss, state.(thisName) ] = ...
+                [ thisLoss, states.(thisName) ] = ...
                         thisLossFcn.calcLoss( thisNetwork, dlV{:} );
             else
                 thisLoss = thisLossFcn.calcLoss( thisNetwork, dlV{:} );
@@ -95,7 +92,7 @@ function [grad, state, loss] = gradients( nets, ...
             % call the loss function straightforwardly
             thisLoss = thisLossFcn.calcLoss( dlV{:} );
         end
-        loss( lossIdx ) = thisLoss;
+        losses( lossIdx ) = thisLoss;
 
         if thisLossFcn.UseLoss
             lossAccum = assignLosses( lossAccum, thisLossFcn, thisLoss, lossIdx );
@@ -109,7 +106,7 @@ function [grad, state, loss] = gradients( nets, ...
     
         thisName = netNames{i};
         thisNetwork = nets.(thisName);
-        grad.(thisName) = dlgradient( lossAccum.(thisName), ...
+        grads.(thisName) = dlgradient( lossAccum.(thisName), ...
                                       thisNetwork.Learnables, ...
                                       'RetainData', true );
         

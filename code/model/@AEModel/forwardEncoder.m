@@ -1,4 +1,4 @@
-function [ dlZ, state ] = forwardEncoder( self, encoder, dlX )
+function [ outputs, state ] = forwardEncoder( self, encoder, dlX )
     % Forward-run the encoder network
     % dlnetworks are provided for tracing purposes 
     % rather than using the object's network definitions
@@ -16,6 +16,6 @@ function [ dlZ, state ] = forwardEncoder( self, encoder, dlX )
     [ dlZ, state ] = forward( encoder, dlX );
 
     % mask Z based on number of active dimensions
-    dlZ = self.maskZ( dlZ );
+    outputs.dlZ = self.maskZ( dlZ );
 
 end

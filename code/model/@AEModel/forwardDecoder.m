@@ -1,4 +1,4 @@
-function [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ )
+function [ outputs, state ] = forwardDecoder( self, decoder, dlZ )
     % Forward-run the decoder network
     % dlnetworks are provided for tracing purposes 
     % rather than using the object's network definitions
@@ -9,6 +9,6 @@ function [ dlXHat, state ] = forwardDecoder( self, decoder, dlZ )
     end
 
     % reconstruct curves from latent codes
-    [ dlXHat, state ] = forward( decoder, dlZ );
+    [ outputs.dlXGen, state ] = forward( decoder, dlZ );
 
 end

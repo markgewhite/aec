@@ -1,4 +1,4 @@
-function [dlZ, state, dlMean, dlLogVars ] = forwardEncoder( self, net, dlX, superArgs )
+function [outputs, state] = forwardEncoder( self, net, dlX, superArgs )
     % Override to perform the reparameterization trick
     % returning mean and log variance for loss calculation
     arguments
@@ -14,8 +14,9 @@ function [dlZ, state, dlMean, dlLogVars ] = forwardEncoder( self, net, dlX, supe
 
     superArgsCell = namedargs2cell( superArgs );
 
-    [ dlEncOutput, state ] = forwardEncoder@AEModel( self, net, dlX{:}, superArgsCell{:} );
+    [ outputs, state ] = forwardEncoder@AEModel( self, net, dlX{:}, superArgsCell{:} );
 
-    [ dlZ, dlMean, dlLogVars ] = reparameterize( dlEncOutput, self.NumEncodingDraws );
+    [ outputs.dlZ, outputs.dlMu, outputs.dlLogVar ] = ...
+                reparameterize( outputs.dlZ, self.NumEncodingDraws );
 
 end
