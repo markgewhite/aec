@@ -8,9 +8,11 @@ function [self, thisDataset] = finalizeInit( self, thisDataset )
     end
 
     self = self.setXTargetDim;
-    thisDataset = thisDataset.initTarget( self.XTargetDim );
 
-    self.TSpan.Target = thisDataset.TSpan.Target;
-    self.FDA.FdParamsTarget = thisDataset.FDA.FdParamsTarget;
+    self.TSpan.Target =  linspace( self.TSpan.Original(1), ...
+                                   self.TSpan.Original(end), ...
+                                   self.XTargetDim );
+
+    self.FDA.FdParamsTarget = thisDataset.setFDAParameters( self.TSpan.Target );
 
 end

@@ -4,9 +4,8 @@ classdef ModelDataset
     properties
         XLen            % array recording the length of each series
 
-        XInputDim       % number of X dimensions for input
-        XTargetDim      % number of X dimensions for output
-        XChannels       % number of X input channels
+        XDim            % number of X dimensions
+        XChannels       % number of X channels
 
         XFd             % functional data representation of raw data
 
@@ -28,9 +27,7 @@ classdef ModelDataset
     properties (Dependent = true)
         XInputCell      % processed input data as cell array
         XInput          % input data
-        XTarget         % target output
-        XTargetMean     % target output mean
-        
+       
         CDim            % number of categories
         YLabels         % Y labels
         NumObs          % number of observations
@@ -48,7 +45,6 @@ classdef ModelDataset
                 XInputRaw                   cell
                 Y
                 tSpan                       double
-                args.XTargetRaw             cell = []
                 args.Normalization          char ...
                     {mustBeMember( args.Normalization, ...
                     {'PAD', 'LTN'} )} = 'LTN'
@@ -88,7 +84,7 @@ classdef ModelDataset
                                     self.TSpan.Original(1), ...
                                     self.TSpan.Original(end), ...
                                     fix( length(self.TSpan.Original/args.ResampleRate) ) );
-            self.XInputDim = length( self.TSpan.Input );
+            self.XDim = length( self.TSpan.Input );
 
             self.FDA.BasisOrder = args.BasisOrder;
             self.FDA.PenaltyOrder = args.PenaltyOrder;
@@ -136,39 +132,6 @@ classdef ModelDataset
                                    length(self.TSpan.Input) );
 
             X = reshape( cell2mat( XCell ), [], self.NumObs, self.XChannels );
-
-        end
-
-
-        function X = get.XTarget( self )
-            % Generate the output from XFd
-            % producing an array of fixed length
-            arguments
-                self    ModelDataset
-            end
-
-            XCell = self.processX( self.TSpan.Target, ...
-                                   true, ...
-                                   self.XTargetDim );
-
-            X = reshape( cell2mat( XCell ), [], self.NumObs, self.XChannels );
-            %X = timeNormalize( XCell, self.XTargetDim );
-
-        end
-
-
-        function XMean = get.XTargetMean( self )
-            % Calculate the mean target curve
-            arguments
-                self            ModelDataset            
-            end
-
-            if self.XChannels == 1
-                XMean = mean( self.XTarget, 2 );
-            else
-                XMean = mean( self.XTarget, 2 );
-                XMean = permute( XMean, [1 3 2] );
-            end
 
         end
 
@@ -232,6 +195,10 @@ classdef ModelDataset
         fig = plot( self, args )
 
         [ fdParams, lambda ] = setTargetFdParams( self, X )
+
+        X = XTarget( self, tSpan )
+
+        XMean = XTargetMean( self, tSpan )
 
     end
 

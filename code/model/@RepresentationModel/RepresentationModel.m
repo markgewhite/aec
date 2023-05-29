@@ -82,7 +82,7 @@ classdef RepresentationModel
             end
 
             % set properties based on the data
-            self.XInputDim = thisDataset.XInputDim;
+            self.XInputDim = thisDataset.XDim;
             self.CDim = thisDataset.CDim;
             self.XChannels = thisDataset.XChannels;
             self.Info = thisDataset.Info;

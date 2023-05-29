@@ -7,7 +7,7 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
     end
     
     X = thisDataset.XInput;
-    XN = thisDataset.XTarget;
+    XN = thisDataset.XTarget( self.TSpan.Target );
 
     dlX = dlarray( X, self.XDimLabels );
     dlXN = dlarray( XN, self.XDimLabels );

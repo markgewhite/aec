@@ -6,8 +6,8 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
     end
 
     % record the input
-    pred.XTarget = squeeze( thisDataset.XTarget );
-    pred.XRegular = squeeze( thisDataset.XInput );
+    pred.XInput = squeeze( thisDataset.XInput );
+    pred.XTarget = squeeze( thisDataset.XTarget(thisModel.TSpan.Target) );
     pred.Y = thisDataset.Y;
 
     % generate latent encoding using the trained model
@@ -15,27 +15,21 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
     pred.ZAux = thisModel.encode( thisDataset, auxiliary = true );
 
     % reconstruct the curves
-    [ pred.XHat, pred.XHatSmoothed, pred.XHatRegular ] = ...
-            thisModel.reconstruct( pred.Z, smooth = true );
+    [ pred.XHat, pred.XHatSmoothed ] = thisModel.reconstruct( pred.Z, smooth = true );
        
     % compute reconstruction loss
     eval.ReconLoss = reconLoss( pred.XTarget, pred.XHat, thisModel.Scale );
-    eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XHat, ...
+    eval.ReconLossSmoothed = reconLoss( pred.XHatSmoothed, pred.XInput, ...
                                         thisModel.Scale );
 
-    % compute reconstruction loss for the regularised curves
-    eval.ReconLossRegular = reconLoss( pred.XHatRegular, pred.XRegular, ...
-                                       thisModel.Scale );
-
     % compute reconstruction roughness
-    eval.ReconRoughness = reconRoughnessLoss( pred.XHatRegular, ...
-                                              thisModel.Scale );
+    eval.ReconRoughness = reconRoughnessLoss( pred.XHat, thisModel.Scale );
     
     % compute the bias and variance
     eval.ReconBias = reconBias( pred.XTarget, pred.XHat, thisModel.Scale );
     eval.ReconVar = eval.ReconLoss - eval.ReconBias^2;
-    eval.ReconBiasRegular = reconBias( pred.XRegular, pred.XHatRegular, thisModel.Scale );
-    eval.ReconVarRegular = eval.ReconLossRegular - eval.ReconBiasRegular^2;    
+    eval.ReconBiasSmoothed = reconBias( pred.XInput, pred.XHatSmoothed, thisModel.Scale );
+    eval.ReconVarSmoothed = eval.ReconLossSmoothed - eval.ReconBiasSmoothed^2;    
     
     % compute the mean squared error as a function of time
     eval.ReconTimeMSE = reconTemporalLoss( pred.XHat, pred.XTarget, thisModel.Scale );
@@ -51,27 +45,26 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
                                     size(eval.ReconTimeBias,1), ...
                                     1, [] );
     end
-    eval.ReconTimeVar = reconTemporalLoss( XDiff, pred.XTarget, ...
-                                            thisModel.Scale );
+    eval.ReconTimeVar = reconTemporalLoss( XDiff, pred.XTarget, thisModel.Scale );
 
     % compute the mean squared error as a function of time
-    eval.ReconTimeMSERegular = reconTemporalLoss( pred.XHatRegular, pred.XRegular, ...
+    eval.ReconTimeMSESmoothed = reconTemporalLoss( pred.XHatSmoothed, pred.XInput, ...
                                            thisModel.Scale );
 
     % compute the mean error (bias) as a function of time
-    eval.ReconTimeBiasRegular = reconTemporalBias( pred.XHatRegular, pred.XRegular, ...
+    eval.ReconTimeBiasSmoothed = reconTemporalBias( pred.XHatSmoothed, pred.XInput, ...
                                            thisModel.Scale );
 
     % compute the variance as a function of time
-    if length( size(pred.XHatRegular) ) == 2
-        XDiff = pred.XHatRegular - eval.ReconTimeBiasRegular;
+    if length( size(pred.XHatSmoothed) ) == 2
+        XDiff = pred.XHatSmoothed - eval.ReconTimeBiasSmoothed;
     else
-        XDiff = pred.XHatRegular - reshape( eval.ReconTimeBiasRegular, ...
-                                    size(eval.ReconTimeBiasRegular,1), ...
+        XDiff = pred.XHatSmoothed - reshape( eval.ReconTimeBiasSmoothed, ...
+                                    size(eval.ReconTimeBiasSmoothed,1), ...
                                     1, [] );
     end
-    eval.ReconTimeVarRegular = reconTemporalLoss( XDiff, ...
-                                    pred.XRegular, thisModel.Scale );
+    eval.ReconTimeVarSmoothed = reconTemporalLoss( XDiff, ...
+                                    pred.XInput, thisModel.Scale );
 
     % compute the latent code correlation matrix
     [ cor.ZCorrelation, cor.ZCovariance ] = ...
