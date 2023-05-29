@@ -7,14 +7,13 @@ function fig = getFigure( n )
     
     for i = 1:length(allFigs)
         if allFigs(i).Number==n
+            fig = allFigs(i);
             break
         end
     end
     
     if isempty( fig )
         fig = figure(n);
-    else
-        fig = figure(i);
     end
 
 end

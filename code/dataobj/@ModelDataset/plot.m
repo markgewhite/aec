@@ -24,11 +24,11 @@ function fig = plot( self, args )
 
     % initialize the plot
     fig = getFigure( 4 );
-    tiledlayout( fig, self.XChannels, 1, TileSpacing = 'Compact' );
+    layout = tiledlayout( fig, self.XChannels, 1, TileSpacing = 'Compact' );
     axes = gobjects( self.XChannels, 1 );
     pltObj = gobjects( self.CDim, 1 );
     for c = 1:self.XChannels
-        axes(c) = nexttile;
+        axes(c) = nexttile( layout );
         cla( axes(c) );
         hold( axes(c), 'on' );
     end
