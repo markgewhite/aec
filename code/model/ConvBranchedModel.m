@@ -65,6 +65,7 @@ classdef ConvBranchedModel < BranchedModel
             self.FilterSizeDecoder = args.FilterSizeDecoder;
             self.StrideDecoder = args.StrideDecoder;
             self.PaddingDecoder = args.PaddingDecoder;
+
         end
 
 
@@ -222,8 +223,31 @@ classdef ConvBranchedModel < BranchedModel
 
         end
 
-    end
 
+        function self = setXTargetDim( self )
+            % Calculate the decoder's output size
+            arguments
+                self           ConvBranchedModel
+            end
+
+            outDim = self.ZDim - self.ZDimAux + 1;
+            for i = 1:self.NumHiddenDecoder
+                if strcmpi(self.PaddingDecoder, 'same')
+                    outDim = self.StrideDecoder*(outDim - 1) ...
+                                + self.FilterSizeDecoder;
+                else % valid padding
+                    outDim = self.StrideDecoder*(outDim - 1)...
+                                + max( self.FilterSizeDecoder, ...
+                                       self.StrideDecoder );
+                end
+            end
+
+            self.XTargetDim = outDim;
+
+        end
+
+        
+    end
 
 end
 

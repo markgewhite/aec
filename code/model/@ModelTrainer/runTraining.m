@@ -13,7 +13,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisValData = thisDataset.partition( ~trainObs );
 
     % set the mean curve for these training data
-    thisModel.MeanCurve = mean( thisTrnData.XInputRegular, 2 );
+    thisModel.MeanCurve = mean( thisTrnData.XInput, 2 );
     thisModel.MeanCurveTarget = thisTrnData.XTargetMean;
 
     % create a super datastore combining individual variable datastores

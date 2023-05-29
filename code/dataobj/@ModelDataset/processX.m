@@ -1,25 +1,27 @@
-function [ X, XDim ] = processX( ...
-                                XFd, XLen, tSpan, tSpanNew, pad, ...
-                                normalize, normalizedPts, normalization )
+function [ X, XDim ] = processX( self, tSpanNew, normalize, normalizedPts )
+    % Process XFd to the required time span
+    arguments
+        self            ModelDataset
+        tSpanNew        double
+        normalize       logical
+        normalizedPts   double
+    end
 
     % evaluate the input function at these points
     % using single not double to save on memory
-    XEval = single(eval_fd( tSpanNew, XFd ));
-   
-    % adjust lengths for non-linear re-sampling
-    XLenNew = adjustXLengths( XLen, tSpan, tSpanNew, pad.Location );
-    
-    % re-scale for resampled length
-    pad.Length = max( XLenNew );
+    XEval = single(eval_fd( tSpanNew, self.XFd ));
     
     % recreate the cell time series
-    XCell = extractXSeries( XEval, XLenNew, pad.Length, pad.Location );
+    XCell = extractXSeries( XEval, ...
+                            self.XLen, ...
+                            self.Padding.Length, ...
+                            self.Padding.Location );
 
     if normalize
         % use time-normalization method to set a fixed length
         XNorm = normalizeXSeries( XCell, normalizedPts, ...
-                                        normalization, ...
-                                        pad );
+                                         self.Normalization, ...
+                                         self.Padding );
         XDim = size( XNorm, 1);
         if size( XNorm, 3 ) > 1
             X = num2cell( permute( XNorm, [2 1 3]), [2 3] );

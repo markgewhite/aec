@@ -1,4 +1,4 @@
-function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
+function [ XHat, XHatSmth ] = reconstruct( self, Z, args )
     % Reconstruct X from Z using the model
     arguments
         self                PCAModel
@@ -11,9 +11,5 @@ function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
                             Z );
     
     XHatSmth = XHat;
-
-    XHatReg = constructCurves( self.TSpan.Regular, ...
-                               self.MeanFd, self.CompFd, ...
-                               Z );
 
 end

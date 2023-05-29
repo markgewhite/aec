@@ -83,15 +83,19 @@ classdef RepresentationModel
 
             % set properties based on the data
             self.XInputDim = thisDataset.XInputDim;
-            self.XTargetDim = thisDataset.XTargetDim;
             self.CDim = thisDataset.CDim;
             self.XChannels = thisDataset.XChannels;
-            self.TSpan = thisDataset.TSpan;
-            self.FDA = thisDataset.FDA;
             self.Info = thisDataset.Info;
 
+            % initialize the time spans
+            self.TSpan = thisDataset.TSpan;
+
+            % set the FDA parameters for input
+            % (FDA parameters for target and component are set later)
+            self.FDA = thisDataset.FDA;
+
             % set the scaling factor(s) based on all X
-            self.Scale = scalingFactor( thisDataset.XTarget );
+            self.Scale = scalingFactor( thisDataset.XInput );
 
             self.ZDim = args.ZDim;
 
@@ -155,6 +159,8 @@ classdef RepresentationModel
         self = compress( self, level )
 
         self = evaluate( self, thisTrnSet, thisValSet )
+
+        self = finalizeInit( self, thisDataset )
 
         self = getAuxResponse( self, thisDataset, args )
 

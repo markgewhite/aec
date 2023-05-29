@@ -144,7 +144,7 @@ classdef FCBranchedModel < BranchedModel
 
             for i = 1:self.NumHiddenDecoder
 
-                nNodes = fix( self.NumFC*2^(self.FCFactor*(-self.NumHiddenDecoder+i)) );
+                nNodes = fix( self.NumFCDecoder*2^(self.FCFactor*(-self.NumHiddenDecoder+i)) );
                 if nNodes < self.ZDim
                     eid = 'FCModel:Design';
                     msg = 'Decoder hidden layer smaller than latent space.';
@@ -169,6 +169,17 @@ classdef FCBranchedModel < BranchedModel
                                                      'Name', finalLayerName ) );
 
             lgraph = connectLayers( lgraph, lastLayerName, finalLayerName );
+
+        end
+
+
+        function self = setXTargetDim( self )
+            % Calculate the decoder's output size
+            arguments
+                self           FCBranchedModel
+            end
+
+            self.XTargetDim = self.NumFCDecoder;
 
         end
 

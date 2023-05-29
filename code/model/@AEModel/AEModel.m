@@ -63,8 +63,6 @@ classdef AEModel < RepresentationModel
             self = self@RepresentationModel( thisDataset, ...
                                              superArgsCell{:}, ...
                                              superArgs2Cell{:} );
-
-            self.XComponentDim = thisDataset.XTargetDim;
  
             % check dataset is suitable
             if thisDataset.isFixedLength == args.HasSeqInput
@@ -77,11 +75,14 @@ classdef AEModel < RepresentationModel
                 throwAsCaller( MException(eid,msg) );
             end
 
-            self.NetNames = {'Encoder', 'Decoder'};
-            self.NumNetworks = 2;
             self.FlattenInput = args.FlattenInput;
             self.HasSeqInput = args.HasSeqInput;
             self.HasCentredDecoder = args.HasCentredDecoder;
+
+            % set the response function for generating components
+            self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, ...
+                                                      centre = false, ...
+                                                      smooth = false );
 
             if args.InitZDimActive==0
                 self.InitZDimActive = self.ZDim;
@@ -233,6 +234,8 @@ classdef AEModel < RepresentationModel
         net = initEncoder( self )
 
         net = initDecoder( self )
+
+        setXTargetDim
 
     end
 

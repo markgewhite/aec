@@ -5,15 +5,8 @@ function self = train( self, thisData )
         thisData                ModelDataset
     end
 
-    % initialize the encoder and decoder networks
-    self.Nets.Encoder = self.initEncoder;
-    self.Nets.Decoder = self.initDecoder;
-    self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, ...
-                                                      centre = false, ...
-                                                      smooth = false );
-
-    % initialize the loss function networks, if required
-    self = self.initLossFcnNetworks;
+    % complete initialization
+    [self, thisData] = self.finalizeInit( thisData );
 
     % perform training using the trainer
     self = self.Trainer.runTraining( self, thisData );

@@ -5,6 +5,9 @@ function self = train( self, thisData )
         thisData     ModelDataset
     end
 
+    % complete initialization
+    [self, thisData] = self.finalizeInit( thisData );
+
     % perform principal components analysis
     pcaStruct = pca_fd( thisData.XFd, self.ZDim );
 
@@ -35,13 +38,12 @@ function self = train( self, thisData )
     end
 
     % compute the mean curve directly
-    self.MeanCurve = eval_fd( self.TSpan.Regular, self.MeanFd );
+    self.MeanCurve = eval_fd( self.TSpan.Input, self.MeanFd );
 
     % get the auxiliary model's response to each Z element
     self = self.getAuxResponse( thisData );
 
     % compute the functional components
-    self.LatentResponseFcn = @(Z) self.reconstruct( Z );
     self.LatentComponents = self.getLatentResponse( thisData );
 
     % set the oversmoothing level

@@ -1,4 +1,4 @@
-function [XFd, XLen, lambda] = smoothRawData( self, XCell )
+function self = smoothRawData( self, XCell )
     % Smooth the raw data with functional data analysis
     arguments
         self        ModelDataset
@@ -6,7 +6,7 @@ function [XFd, XLen, lambda] = smoothRawData( self, XCell )
     end
 
     % find the series lengths (capped at padLen)
-    XLen = min( cellfun( @length, XCell ), self.Padding.Length );
+    self.XLen = min( cellfun( @length, XCell ), self.Padding.Length );
 
     % pad the series for smoothing
     X = padData( XCell, self.Padding.Length, self.Padding.Value, ...
@@ -14,17 +14,20 @@ function [XFd, XLen, lambda] = smoothRawData( self, XCell )
                  Location = self.Padding.Location, ...
                  Anchoring = self.Padding.Anchoring );
     
-    % setup the smoothing parameters
+    % setup the smoothing parameters if not prescribed
     if isempty( self.FDA.Lambda )
         % find the best lambda using the data
-        [fdParams, lambda] = self.setFDAParameters( self.TSpan.Original, X );
+        [self.FDA.FdParamsInput, self.FDA.Lambda] = ...
+                    self.setFDAParameters( self.TSpan.Input, X );
     else
-        % use the prescribed lambda
-        fdParams = self.setFDAParameters( self.TSpan.Original );
-        lambda = self.FDA.Lambda;
+        self.FDA.FdParamsInput = ...
+                    self.setFDAParameters( self.TSpan.Input );
+    
     end
 
     % create the smooth functions
-    XFd = smooth_basis( self.TSpan.Original, double(X), fdParams );
+    self.XFd = smooth_basis( self.TSpan.Input, ...
+                             double(X), ...
+                             self.FDA.FdParamsInput );
 
 end

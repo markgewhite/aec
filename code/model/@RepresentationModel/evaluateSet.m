@@ -7,7 +7,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     % record the input
     pred.XTarget = squeeze( thisDataset.XTarget );
-    pred.XRegular = squeeze( thisDataset.XInputRegular );
+    pred.XRegular = squeeze( thisDataset.XInput );
     pred.Y = thisDataset.Y;
 
     % generate latent encoding using the trained model

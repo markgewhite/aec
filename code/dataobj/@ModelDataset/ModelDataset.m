@@ -4,8 +4,8 @@ classdef ModelDataset
     properties
         XLen            % array recording the length of each series
 
-        XInputDim       % number of X input dimensions
-        XTargetDim      % normalized X output size (time series length)
+        XInputDim       % number of X dimensions for input
+        XTargetDim      % number of X dimensions for output
         XChannels       % number of X input channels
 
         XFd             % functional data representation of raw data
@@ -15,26 +15,19 @@ classdef ModelDataset
         Normalization       % structure for time-normalization 
         NormalizedPts       % standardized number of points for normalization
         HasNormalizedInput  % whether input should be time-normalized too
-        HasMatchingOutput   % whether input and target output must match
 
         Padding         % structure specifying padding setup
         FDA             % functional data analysis settings
+        TSpan           % time span vector
 
-        TSpan           % time span structure of vectors holding
-                        %   .Original = matching the raw data
-                        %   .Regular = regularly-spaced times
-                        %   .Input = input to the model
-                        %   .Target = for autoencoder reconstructions
-
-        ResampleRate        % downsampling rate
         Perplexity          % for density estimation in X
 
         Info            % dataset information (used for plotting)
     end
 
     properties (Dependent = true)
-        XInputCell      % processed input data (variable length) as cell array
-        XInputRegular   % processed input with regularly spaced time span
+        XInputCell      % processed input data as cell array
+        XInput          % input data
         XTarget         % target output
         XTargetMean     % target output mean
         
@@ -56,145 +49,91 @@ classdef ModelDataset
                 Y
                 tSpan                       double
                 args.XTargetRaw             cell = []
-                args.normalization          char ...
-                    {mustBeMember( args.normalization, ...
+                args.Normalization          char ...
+                    {mustBeMember( args.Normalization, ...
                     {'PAD', 'LTN'} )} = 'LTN'
-                args.normalizedPts          double ...
+                args.NormalizedPts          double ...
                     {mustBeNumeric, mustBePositive, mustBeInteger} = 101
-                args.ptsPerKnot             double ...
-                    {mustBeGreaterThan( args.ptsPerKnot, 1 )} = 10
-                args.hasNormalizedInput     logical = false
-                args.hasMatchingOutput      logical = false
-                args.padding                struct ...
+                args.PtsPerKnot             double ...
+                    {mustBeGreaterThan( args.PtsPerKnot, 1 )} = 10
+                args.HasNormalizedInput     logical = false
+                args.Padding                struct ...
                     {mustBeValidPadding}
-                args.basisOrder             double ...
+                args.BasisOrder             double ...
                     {mustBePositive, mustBeInteger} = 4
-                args.penaltyOrder           double ...
+                args.PenaltyOrder           double ...
                     {mustBePositive, mustBeInteger} = 2
-                args.lambda                 double = []
-                args.tSpan                  double = []
-                args.resampleRate           double ...
+                args.Lambda                 double = []
+                args.ResampleRate           double ...
                     {mustBeNumeric} = 1
-                args.perplexity             double ...
+                args.Perplexity             double ...
                     {mustBeNumeric} = 15
-                args.datasetName            string
-                args.timeLabel              string = "Time"
-                args.channelLabels          string
-                args.classLabels            string
-                args.channelLimits          double
+                args.DatasetName            string
+                args.TimeLabel              string = "Time"
+                args.ChannelLabels          string
+                args.ClassLabels            string
+                args.ChannelLimits          double
             end
 
             self.Y = Y;
 
             % set properties
-            self.Normalization = args.normalization;
-            self.NormalizedPts = args.normalizedPts;
-            self.HasNormalizedInput = args.hasNormalizedInput;
-            self.HasMatchingOutput = args.hasMatchingOutput;
-            self.Padding = args.padding;
-
-            self.FDA.BasisOrder = args.basisOrder;
-            self.FDA.PenaltyOrder = args.penaltyOrder;
-            self.FDA.Lambda = args.lambda;
-            self.FDA.PtsPerKnot = args.ptsPerKnot;
+            self.Normalization = args.Normalization;
+            self.NormalizedPts = args.NormalizedPts;
+            self.HasNormalizedInput = args.HasNormalizedInput;
+            self.Padding = args.Padding;
 
             self.TSpan.Original = tSpan;
-            self.ResampleRate = args.resampleRate;
-            self.Perplexity = args.perplexity;
+            self.TSpan.Input = linspace( ...
+                                    self.TSpan.Original(1), ...
+                                    self.TSpan.Original(end), ...
+                                    fix( length(self.TSpan.Original/args.ResampleRate) ) );
+            self.XInputDim = length( self.TSpan.Input );
 
-            self.Info.DatasetName = args.datasetName;
-            self.Info.ChannelLabels = args.channelLabels;
-            self.Info.TimeLabel = args.timeLabel;
-            self.Info.ClassLabels = args.classLabels;
-            self.Info.ChannelLimits = args.channelLimits;
+            self.FDA.BasisOrder = args.BasisOrder;
+            self.FDA.PenaltyOrder = args.PenaltyOrder;
+            self.FDA.Lambda = args.Lambda;
+            self.FDA.PtsPerKnot = args.PtsPerKnot;
+
+            self.Perplexity = args.Perplexity;
+
+            self.Info.DatasetName = args.DatasetName;
+            self.Info.ChannelLabels = args.ChannelLabels;
+            self.Info.TimeLabel = args.TimeLabel;
+            self.Info.ClassLabels = args.ClassLabels;
+            self.Info.ChannelLimits = args.ChannelLimits;
 
             self.XChannels = size( XInputRaw{1}, 2 );
 
             % create smooth functions for the data
-            [self.XFd, self.XLen, self.FDA.Lambda] = self.smoothRawData( XInputRaw );
-
-            % re-sampling at the given rate
-            self.TSpan.Regular = linspace( ...
-                    self.TSpan.Original(1), ...
-                    self.TSpan.Original(end), ...
-                    fix( self.Padding.Length/self.ResampleRate ) );  
-
-            if isempty( args.tSpan )
-                self.TSpan.Input = self.TSpan.Regular;
-            else
-                self.TSpan.Input = args.tSpan;
-            end
-
-            if self.HasMatchingOutput
-                % ensure the input and target time spans match
-                % this usually applies for PCA
-                self.TSpan.Target = self.TSpan.Regular;
-
-            else
-                % adjust the time span in proportion to number of points
-                tSpan0 = 1:length( self.TSpan.Input );
-                tSpan1 = linspace( 1, length(self.TSpan.Input), ...
-                                   self.NormalizedPts );
-
-                self.TSpan.Target= interp1( ...
-                            tSpan0, self.TSpan.Input, tSpan1 );
-            end
-
-            % set the FD parameters for regular spacing
-            self.FDA.FdParamsRegular = self.setFDAParameters( self.TSpan.Regular);
-
-            % set the FD parameters for input
-            self.FDA.FdParamsInput = self.setFDAParameters( self.TSpan.Input );
-
-            % set the FD parameters for the target
-            self.FDA.FdParamsTarget = self.setFDAParameters( self.TSpan.Target );
-            
-            % set the FD parameters for the components to the same values for now 
-            self.FDA.FdParamsComponent = self.FDA.FdParamsTarget;
-
-            % set input and output dimensions
-            self.XInputDim = length( self.TSpan.Input );
-            if self.HasMatchingOutput
-                self.XTargetDim = self.XInputDim;
-            else 
-                self.XTargetDim = self.NormalizedPts;
-            end
+            self = self.smoothRawData( XInputRaw );
 
         end
 
 
-        function X = get.XInputCell( self )
-            % Generate cell array input from XFd
+        function XCell = get.XInputCell( self )
+            % Generate the regularly-spaced input from XFd 
+            % returned as a cell array
             arguments
                 self    ModelDataset
             end
 
-            X = processX(  self.XFd, ...
-                           self.XLen, ...
-                           self.TSpan.Original, ...
-                           self.TSpan.Regular, ...
-                           self.Padding, ...
-                           self.HasNormalizedInput, ...
-                           length(self.TSpan.Input), ...
-                           self.Normalization );
+            XCell = self.processX( self.TSpan.Input, ...
+                                   true, ...
+                                   length(self.TSpan.Input) );
 
         end
 
 
-        function X = get.XInputRegular( self )
+        function X = get.XInput( self )
             % Generate the regularly-spaced input from XFd
             arguments
                 self    ModelDataset
             end
 
-            XCell = processX( self.XFd, ...
-                               self.XLen, ...
-                               self.TSpan.Original, ...
-                               self.TSpan.Regular, ...
-                               self.Padding, ...
-                               true, ...
-                               length(self.TSpan.Regular), ...
-                               self.Normalization );
+            XCell = self.processX( self.TSpan.Input, ...
+                                   true, ...
+                                   length(self.TSpan.Input) );
 
             X = reshape( cell2mat( XCell ), [], self.NumObs, self.XChannels );
 
@@ -208,22 +147,12 @@ classdef ModelDataset
                 self    ModelDataset
             end
 
-            if self.HasMatchingOutput
-                numPts = self.XInputDim;
-            else
-                numPts = self.NormalizedPts;
-            end
+            XCell = self.processX( self.TSpan.Target, ...
+                                   true, ...
+                                   self.XTargetDim );
 
-            XCell = processX(  self.XFd, ...
-                               self.XLen, ...
-                               self.TSpan.Original, ...
-                               self.TSpan.Target, ...
-                               self.Padding, ...
-                               true, ...
-                               numPts, ...
-                               self.Normalization );
-
-            X = timeNormalize( XCell, numPts );
+            X = reshape( cell2mat( XCell ), [], self.NumObs, self.XChannels );
+            %X = timeNormalize( XCell, self.XTargetDim );
 
         end
 

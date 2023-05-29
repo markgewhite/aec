@@ -10,7 +10,7 @@ function Z = encode( self, data, args )
 
     if isa( data, 'fd' )
         % validity of the FD object
-        if ~isequal( self.PCAFdParams, thisDataset.fda.XInputRegular )
+        if ~isequal( self.PCAFdParams, thisDataset.FDA.FdParamsInput )
             eid = 'PCAModel:InvalidFDParam';
             msg = 'The input FD parameters do not match the model''s FD parameters.';
             throwAsCaller( MException(eid,msg) );
@@ -19,7 +19,7 @@ function Z = encode( self, data, args )
 
     else
         if isa( data, 'ModelDataset' )
-            X = data.XInputRegular;
+            X = data.XInput;
             %X = permute( X, [1 3 2] );
 
         elseif isa( data, 'double' )
@@ -32,8 +32,8 @@ function Z = encode( self, data, args )
 
         end
         % convert input to a functional data object
-        XFd = smooth_basis( self.TSpan.Regular, double(X), ...
-                            self.FDA.FdParamsRegular );
+        XFd = smooth_basis( self.TSpan.Input, double(X), ...
+                            self.FDA.FdParamsInput );
 
     end
 

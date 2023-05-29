@@ -1,4 +1,4 @@
-function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
+function [ XHat, XHatSmth ] = reconstruct( self, Z, args )
     % Reconstruct X from Z using the model
     arguments
         self            AEModel
@@ -34,14 +34,9 @@ function [ XHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
                                  self.TSpan.Target, ...
                                  self.TSpan.Target, ...
                                  self.FDA.FdParamsTarget );
-        XHatReg = smoothSeries( XHat, ...
-                                self.TSpan.Target, ...
-                                self.TSpan.Regular, ...
-                                self.FDA.FdParamsTarget );
 
     else
         XHatSmth = [];
-        XHatReg = [];
 
     end
 

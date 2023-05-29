@@ -31,8 +31,8 @@ function axes = plotLatentComp( self, args )
             XC = args.XC;
         end
         switch size( XC, 1 )
-            case length(self.TSpan.Regular)
-                tSpanXC = self.TSpan.Regular;
+            case length(self.TSpan.Input)
+                tSpanXC = self.TSpan.Input;
             case length(self.TSpan.Target)
                 tSpanXC = self.TSpan.Target;
             otherwise
@@ -46,13 +46,13 @@ function axes = plotLatentComp( self, args )
 
     if args.smooth
         % smooth to a regularly-spaced time span
-        tSpanXC = self.TSpan.Regular;
-        XCSmth = zeros( length(self.TSpan.Regular), ...
+        tSpanXC = self.TSpan.Input;
+        XCSmth = zeros( length(self.TSpan.Input), ...
                         nSamples, nDim, nChannels );
         for c = 1:nChannels
             XCSmth(:,:,:,c) = smoothSeries( XC(:,:,:,c), ...
                                             self.TSpan.Target, ...
-                                            self.TSpan.Regular, ...
+                                            self.TSpan.Input, ...
                                             self.FDA.FdParamsComponent );
         end
     else
@@ -76,8 +76,8 @@ function axes = plotLatentComp( self, args )
 
     % set the appropriate time span
     switch size( XMean, 1 )
-        case length(self.TSpan.Regular)
-            tSpanMean = self.TSpan.Regular;
+        case length(self.TSpan.Input)
+            tSpanMean = self.TSpan.Input;
         case length(self.TSpan.Target)
             tSpanMean = self.TSpan.Target;
         otherwise

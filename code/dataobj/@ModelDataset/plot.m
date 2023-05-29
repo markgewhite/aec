@@ -38,12 +38,12 @@ function fig = plot( self, args )
 
     % get the data, either from self or as specified
     if isempty( args.tSpan )
-        t = self.TSpan.Regular;
+        t = self.TSpan.Input;
     else
         t = args.tSpan;
     end
     if isempty( args.X )
-        X = self.XInputRegular;
+        X = self.XInput;
     else
         X = args.X;
     end

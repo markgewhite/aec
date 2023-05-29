@@ -33,6 +33,8 @@ classdef PCAModel < RepresentationModel
             self.VarProp = [];
             self.AuxModel = [];
 
+            self.LatentResponseFcn = @(Z) self.reconstruct( Z );
+
         end
 
         % class methods

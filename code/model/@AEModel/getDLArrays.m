@@ -6,7 +6,7 @@ function [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset, maxObs )
         maxObs          double = 0
     end
     
-    X = thisDataset.XInputRegular;
+    X = thisDataset.XInput;
     XN = thisDataset.XTarget;
 
     dlX = dlarray( X, self.XDimLabels );

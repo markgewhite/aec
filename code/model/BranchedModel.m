@@ -207,8 +207,7 @@ classdef BranchedModel < VAEModel
         initDecoderInputLayers;
 
         initDecoderHiddenLayers;
-
-       
+      
     end
 
 
