@@ -7,13 +7,7 @@ function [figs, axes]= initializePlots( XChannels, ZDim, show )
     end
    
     % setup figure for Z distribution and clustering
-    allFigs = findall( groot, Type = 'Figure');
-    if isempty(allFigs)
-        figs.LatentSpace = figure(1);
-    else
-        figs.LatentSpace = allFigs(1);
-        clf( figs.LatentSpace );
-    end
+    figs.LatentSpace = getFigure( 1 );
     
     if show
         figs.LatentSpace.Visible = 'on';

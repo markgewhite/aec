@@ -6,13 +6,7 @@ function [ fig, axes ] = initializeCompPlot( XChannels, ZDim, show )
         show            logical = true
     end
    
-    allFigs = findall( groot, Type = 'Figure');
-    if length(allFigs)<2
-        fig = figure(2);
-    else
-        fig = allFigs(2);
-        clf( fig );
-    end
+    fig = getFigure( 2 );
 
     if show
         fig.Visible = 'on';

@@ -23,7 +23,7 @@ function fig = plot( self, args )
     curves = randsample( self.NumObs, nSample )';
 
     % initialize the plot
-    fig = figure(4);
+    fig = getFigure( 4 );
     tiledlayout( fig, self.XChannels, 1, TileSpacing = 'Compact' );
     axes = gobjects( self.XChannels, 1 );
     pltObj = gobjects( self.CDim, 1 );

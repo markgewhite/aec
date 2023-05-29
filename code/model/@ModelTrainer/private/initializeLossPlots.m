@@ -10,19 +10,12 @@ function [fig, lossLines] = initializeLossPlots( lossFcnTbl, show )
     [ rows, cols ] = sqdim( nAxes );
     
     % setup figure for plotting loss functions
-    allFigs = findall( groot, Type = 'Figure');
-    if length(allFigs)<3
-        fig = figure(3);
-    else
-        fig = allFigs(3);
-    end
-    
+    fig = getFigure( 3 );   
     if show
         fig.Visible = 'on';
     else
         fig.Visible = 'off';
     end
-    clf( fig );
     nLines = sum( lossFcnTbl.NumLosses );
 
     layout = tiledlayout( fig, rows, cols, TileSpacing = 'Compact' );
