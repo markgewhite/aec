@@ -25,10 +25,6 @@ function self = initLossFcns( self, setup )
     % formally record the names
     self.LossFcnNames = string(names);
 
-    % add details associated with the loss function networks
-    % but without initializing them
-    self = self.addLossFcnNetworks;
-
     % store the loss functions' details 
     % and relevant details for easier access when training
     self = self.setLossInfoTbl;

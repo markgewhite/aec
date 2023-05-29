@@ -13,8 +13,14 @@ function [self, thisDataset] = finalizeInit( self, thisDataset )
     % initialize the encoder and decoder networks
     self.Nets.Encoder = self.initEncoder;
     self.Nets.Decoder = self.initDecoder;
-
-    % initialize the loss function networks, if required
+    
+    % initialize any other networks used by loss functions
     self = self.initLossFcnNetworks;
+
+    % set the response function for generating components
+    self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, ...
+                                              centre = false, ...
+                                              smooth = false );
+
 
 end

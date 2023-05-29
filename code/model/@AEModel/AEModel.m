@@ -79,11 +79,6 @@ classdef AEModel < RepresentationModel
             self.HasSeqInput = args.HasSeqInput;
             self.HasCentredDecoder = args.HasCentredDecoder;
 
-            % set the response function for generating components
-            self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, ...
-                                                      centre = false, ...
-                                                      smooth = false );
-
             if args.InitZDimActive==0
                 self.InitZDimActive = self.ZDim;
             else
@@ -92,6 +87,11 @@ classdef AEModel < RepresentationModel
 
             % initialize the loss functions
             self = self.initLossFcns( args.LossFcns );
+
+            % add details associated with the networks
+            self.NetNames = {'Encoder', 'Decoder'};
+            self.NumNetworks = 2;
+            self = self.addLossFcnNetworks;
 
             % check if trainer arguments include parallel processing
             flds = fields(args.Trainer);
