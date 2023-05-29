@@ -5,10 +5,15 @@ classdef BranchedModel < VAEModel
         HasInputNormalization % whether to apply amplitude normalization
         NumHidden             % number of hidden layers in the encoder
         NumHiddenDecoder      % number of hidden layers in the decoder
-        NetNormalizationType  % type of batch normalization applied
-        NetActivationType     % type of nonlinear activation function
-        ReluScale             % leaky ReLu scale factor
-        Dropout               % hidden layer dropout rate
+        NetNormalizationType  % normalization for the encoder
+        NetNormalizationTypeDecoder  % normalization for the decoder
+
+        NetActivationType     % nonlinear activation function for the encoder
+        NetActivationTypeDecoder     % nonlinear activation function for the decoder
+        ReluScale             % leaky ReLu scale factor for the encoder
+        ReluScaleDecoder      % leaky ReLu scale factor for the decoder
+        Dropout               % hidden layer dropout rate for the encoder
+        DropoutDecoder        % hidden layer dropout rate for the decoder 
         InputDropout          % input dropout rate
         HasBranchedEncoder    % whether to have branching in the encoder
         HasEncoderMasking     % whether to mask Z outputs from the encoder
@@ -36,15 +41,25 @@ classdef BranchedModel < VAEModel
                 args.NetNormalizationType char ...
                     {mustBeMember( args.NetNormalizationType, ...
                     {'None', 'Batch', 'Layer'} )} = 'None'
+                args.NetNormalizationTypeDecoder char ...
+                    {mustBeMember( args.NetNormalizationTypeDecoder, ...
+                    {'None', 'Batch', 'Layer'} )} = 'None'
                 args.NetActivationType char ...
                     {mustBeMember( args.NetActivationType, ...
                     {'None', 'Tanh', 'Relu'} )} = 'Tanh'
+                args.NetActivationTypeDecoder char ...
+                    {mustBeMember( args.NetActivationTypeDecoder, ...
+                    {'None', 'Tanh', 'Relu'} )} = 'Tanh'
                 args.ReluScale      double ...
                     {mustBeInRange(args.ReluScale, 0, 1)} = 0.2
+                args.ReluScaleDecoder       double ...
+                    {mustBeInRange(args.ReluScaleDecoder, 0, 1)} = 0.2
                 args.InputDropout   double ...
                     {mustBeInRange(args.InputDropout, 0, 1)} = 0.2
-                args.Dropout    double ...
+                args.Dropout                double ...
                     {mustBeInRange(args.Dropout, 0, 1)} = 0.05
+                args.DropoutDecoder         double ...
+                    {mustBeInRange(args.DropoutDecoder, 0, 1)} = 0.0
                 args.HasBranchedEncoder     logical = false
                 args.HasBranchedDecoder     logical = true
                 args.HasEncoderMasking      logical = false
@@ -68,9 +83,13 @@ classdef BranchedModel < VAEModel
             self.NumHidden = args.NumHidden;
             self.NumHiddenDecoder = args.NumHiddenDecoder;
             self.NetNormalizationType = args.NetNormalizationType;
+            self.NetNormalizationTypeDecoder = args.NetNormalizationTypeDecoder;
             self.NetActivationType = args.NetActivationType;
+            self.NetActivationTypeDecoder = args.NetActivationTypeDecoder;
             self.ReluScale = args.ReluScale;
+            self.ReluScaleDecoder = args.ReluScaleDecoder;
             self.Dropout = args.Dropout;
+            self.DropoutDecoder = args.DropoutDecoder;
             self.InputDropout = args.InputDropout;
             self.HasBranchedEncoder = args.HasBranchedEncoder;
             self.HasEncoderMasking = args.HasEncoderMasking;
@@ -190,6 +209,21 @@ classdef BranchedModel < VAEModel
 
             net = dlnetwork( lgraph );
 
+        end
+
+
+        function [ outputs, state ] = forwardDecoder( self, decoder, dlZ )
+            % Override to include outputs from branch outputs
+            arguments
+                self        BranchedModel
+                decoder     dlnetwork
+                dlZ         dlarray
+            end
+        
+            % reconstruct curves from latent codes
+            [ outputs.dlXGen, outputs.dlXB1, outputs.dlXB2, state ] = ...
+                forward( decoder, dlZ, Outputs = {'add', 'comp100', 'comp200'} );
+        
         end
         
 
