@@ -212,7 +212,7 @@ classdef AEModel < RepresentationModel
 
         YHat = predictCompNet( self, thisDataset )
 
-        [ dlXHat, XHatSmth, XHatReg ] = reconstruct( self, Z, args )
+        [ dlXHat, XHatSmth ] = reconstruct( self, Z, args )
 
         self = setLossInfoTbl( self )
 
