@@ -14,13 +14,17 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
         dlZ = dlarray( Z', 'CB' );
     end
 
-    [ dlXHat, dlXComp{1:self.ZDimAux}] = predict( self.Nets.Decoder, dlZ );
+    [ dlXComp{1:self.ZDimAux} ] = predict( self.Nets.Decoder, dlZ );
 
+    % sum the components to get the full reconstruction
+    dlXHat = dlXComp{1};
+    for i = 2:self.ZDimAux
+        dlXHat = dlXHat + dlXComp{i};
+    end
+
+    % add the mean curve if centred
     if args.centre && self.HasCentredDecoder
         dlXHat = dlXHat + self.MeanCurveTarget;
-        for i = 1:self.ZDimAux
-            dlXComp{i} = dlXComp{i} + self.MeanCurveTarget;
-        end
     end
 
     if args.points
@@ -39,7 +43,7 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
                                      self.TSpan.Input, ...
                                      self.FDA.FdParamsInput );
             XCompSmth = cell( self.ZDimAux, 1 );
-            for i = 1:ZDimAux
+            for i = 1:self.ZDimAux
                 XCompSmth{i} = smoothSeries( dlXComp{i}, ...
                                      self.TSpan.Target, ...
                                      self.TSpan.Input, ...

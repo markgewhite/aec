@@ -6,20 +6,15 @@ function [ outputs, state ] = forwardDecoder( self, decoder, dlZ )
         dlZ         dlarray
     end
 
-    % generate the list of component output layers
-    layers = strings( self.ZDimAux+1, 1 );
-    layers(1) = 'add';
-    for i = 1:self.ZDimAux
-        layers(i+1) = ['comp' num2str(i) '00'];
-    end
-
     % reconstruct curves from latent codes
-    [varargout{1:self.ZDimAux+2}] = forward( decoder, dlZ, Outputs = layers );
+    [varargout{1:self.ZDimAux+1}] = forward( decoder, dlZ );
 
-    % extract the variable number of outputs
+    % extract the output
+    % sum the components together
     outputs.dlXGen = varargout{1};
-    for i = 1:self.ZDimAux
-        outputs.(['dlXB' num2str(i)]) = varargout{i+1};
+    for i = 2:self.ZDimAux
+        outputs.dlXGen = outputs.dlXGen + varargout{i};
+        outputs.(['dlXB' num2str(i)]) = varargout{i};
     end
     state = varargout{end};
 

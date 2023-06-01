@@ -1,4 +1,4 @@
-function [ XHat, XHatSmth, XComp ] = reconstruct( self, Z, args )
+function [ XHat, XHatSmth ] = reconstruct( self, Z, args )
     % Reconstruct X from Z using the model
     arguments
         self            AEModel
@@ -14,13 +14,10 @@ function [ XHat, XHatSmth, XComp ] = reconstruct( self, Z, args )
         dlZ = dlarray( Z', 'CB' );
     end
 
-    [ dlXHat, dlXComp{1:self.ZDimAux}] = self.predictDecoder( dlZ );
+    dlXHat = predict( self.Nets.Decoder, dlZ );
 
     if args.centre && self.HasCentredDecoder
         dlXHat = dlXHat + self.MeanCurveTarget;
-        for i = 1:self.ZDimAux
-            dlXComp{i} = dlXComp{i} + self.MeanCurveTarget;
-        end
     end
 
     if args.points

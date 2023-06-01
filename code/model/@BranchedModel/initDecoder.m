@@ -10,9 +10,6 @@ function net = initDecoder( self )
 
         mask = [false( self.ZDimAux, 1 );
                 true( self.ZDim - self.ZDimAux, 1 )];
-        lgraph = addLayers( lgraph, ...
-                            additionLayer( self.ZDimAux, 'Name', 'add' ) );
-
         dRange = 1:self.ZDimAux;
 
     else
@@ -38,20 +35,11 @@ function net = initDecoder( self )
         [lgraph, lastLayerName] = self.initDecoderHiddenLayers( lgraph, lastLayerName, d*100 );
 
         if self.XChannels > 1
-            finalLayerName = ['reshape' num2str(100*d)];
             lgraph = [ lgraph;
                        reshapeLayer( [ self.XTargetDim self.XChannels], ...
-                                      'Name', finalLayerName ) ]; %#ok<AGROW> 
-        else
-            finalLayerName = lastLayerName;
+                                      'Name', ['out' num2str(100*d)] ) ]; %#ok<AGROW> 
         end
-
-        if self.HasBranchedDecoder
-            lgraph = connectLayers( lgraph, ...
-                                    finalLayerName, ...
-                                    ['add/in' num2str(d)] );
-        end
-    
+   
     end
 
     net = dlnetwork( lgraph );
