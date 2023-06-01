@@ -76,7 +76,8 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
     if any(strcmp( args.mode,{'Full', 'OutputOnly'} ))
         % reshape the output
         XDim = size( dlXCHat, 1 );
-        dlXCHat = reshape( dlXCHat, XDim, K, self.ZDimAux, [] );
+        dlXCHat = reshape( dlXCHat, XDim, self.ZDimAux, K, [] );
+        dlXCHat = permute( dlXCHat, [1 3 2 4] );
     end
 
 end

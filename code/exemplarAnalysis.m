@@ -76,7 +76,7 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 500;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 250;
+setup.model.args.trainer.UpdateFreq = 25;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
