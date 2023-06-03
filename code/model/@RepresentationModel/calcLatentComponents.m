@@ -3,7 +3,8 @@ function [ dlXC, Q, dlZC ] = calcLatentComponents( self, dlZ, args )
     arguments
         self                RepresentationModel
         dlZ                 {mustBeA( dlZ, {'dlarray', 'double'} )}
-        args.dlXC           {mustBeA( args.dlXC, {'dlarray', 'double', 'cell'} )} = []
+        args.dlXB           {mustBeA( args.dlXB, 'cell' )}
+        args.dlXC           {mustBeA( args.dlXC, {'dlarray', 'double'} )}
         args.mode           char ...
                             {mustBeMember(args.mode, ...
                             {'Full', 'InputOnly', 'OutputOnly'} )} = 'Full' 
@@ -22,7 +23,8 @@ function [ dlXC, Q, dlZC ] = calcLatentComponents( self, dlZ, args )
         case {'PDP', 'FPC'}
             [dlXC, Q, dlZC] = calcPDP( self, dlZ, argsCell{:} );
         case 'AEC'
-            [dlXC, Q, dlZC] = calcAEC( self, dlZ, argsCell{:} );
+            [dlXC, Q] = calcAEC( self, dlZ, argsCell{:} );
+            dlZC = [];
         otherwise
             dlXC = [];
             Q = [];

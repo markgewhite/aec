@@ -6,10 +6,12 @@ function [ dlXCHat, zs ] = calcAEC( self, dlZ, args )
         args.mode           char ...
                             {mustBeMember(args.mode, ...
                             {'Full', 'OutputOnly'} )} = 'Full'
-        args.dlXC           {mustBeA( args.dlXC, {'dlarray', 'double'} )} = []
+        args.dlXB           cell = []
+        args.sampling       char ...
+                            {mustBeMember(args.sampling, ...
+                            {'Regular', 'Component'} )} = 'Component' 
         args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
-        args.modelFcn       function_handle
     end
 
     if strcmp( args.mode, 'Full' )
@@ -30,12 +32,12 @@ function [ dlXCHat, zs ] = calcAEC( self, dlZ, args )
     end
 
     if strcmp( args.mode, 'Full' )
-        % run the decoder to generate a response as cell array
-        dlXB = args.modelFcn( dlZ );
+        % run the decoder to generate the components as a cell array
+        [ dlXB{1:self.ZDimAux} ] = predict( self.Nets.Decoder, dlZ );
 
     else
-        % use the provided XC values
-        dlXB = args.dlXC;
+        % use the provided XB cell array
+        dlXB = args.dlXB;
 
     end
 
@@ -48,13 +50,17 @@ function [ dlXCHat, zs ] = calcAEC( self, dlZ, args )
     end
     K = length(zs);
 
+    % define the component array
+    XDim = size( dlXB{1}, 1 );
+    dlXCHat = dlarray( zeros( XDim, K, self.ZDimAux, self.XChannels ) );
 
-
-
-
-    % reshape the output
-    XDim = size( dlXCHat, 1 );
-    dlXCHat = reshape( dlXCHat, XDim, self.ZDimAux, K, [] );
-    dlXCHat = permute( dlXCHat, [1 3 2 4] );
+    % iterate through the components computing values at z-scores
+    for i = 1:self.ZDimAux
+        dlXCMean = mean( dlXB{i}, 2 );
+        dlXCStd = std( dlXB{i}, [], 2 );
+        for k = 1:K
+            dlXCHat( :, k, i, : ) = dlXCMean + zs(k)*dlXCStd; 
+        end
+    end
 
 end
