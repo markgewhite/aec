@@ -23,6 +23,8 @@ function [F, Q, Z] = calcResponse( self, dlZ, args )
             [F, Q, Z] = calcALE( self, dlZ, argsCell{:} );
         case {'PDP', 'FPC'}
             [F, Q, Z] = calcPDP( self, dlZ, argsCell{:} );
+        case 'AEC'
+            [F, Q, Z] = calcAEC( self, dlZ, argsCell{:} );
         otherwise
             F = [];
             Q = [];

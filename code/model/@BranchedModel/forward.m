@@ -1,0 +1,43 @@
+function [ outputs, states ] = forward( self, encoder, decoder, dlX )
+    % Forward-run the encoder and decoder networks
+    arguments
+        self        BranchedModel
+        encoder     dlnetwork
+        decoder     dlnetwork
+        dlX         dlarray
+    end
+
+    % generate latent encodings
+    [ outputs, states.Encoder ] = self.forwardEncoder( encoder, dlX );
+
+    outputs.dlZAux = outputs.dlZ( 1:self.ZDimAux, : );
+
+    % reconstruct curves from latent codes
+    [ outputs2, states.Decoder ] = self.forwardDecoder( decoder, outputs.dlZ );
+
+    % combine all output fields together
+    outputs = mergeStructs( outputs, outputs2 );
+
+    idx = find( self.LossFcnTbl.Types=='Component'  ...
+                & self.LossFcnTbl.DoCalcLoss, 1 );
+    if ~isempty( idx )
+        % active component loss functions are present
+        outputs.dlXC = self.calcResponse( ...
+                                [], ...
+                                mode = 'OutputOnly', ...
+                                sampling = thisLossFcn.Sampling, ...
+                                dlXC = outputs.dlXComp );
+    end
+
+    if self.HasCentredDecoder
+        % add the target mean to the prediction
+        if self.XChannels==1
+            outputs.dlXHat = outputs.dlXHat ...
+                + repmat( self.MeanCurveTarget, 1, size(outputs.dlXHat,2) );
+        else
+            outputs.dlXHat = outputs.dlXHat ...
+                + repmat( self.MeanCurveTarget, 1, 1, size(outputs.dlXHat,3) );
+        end
+    end
+
+end
