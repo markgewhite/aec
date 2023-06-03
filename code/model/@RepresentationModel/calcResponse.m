@@ -13,7 +13,6 @@ function [F, Q, Z] = calcResponse( self, dlZ, args )
                             {'Regular', 'Component'} )} = 'Regular'
         args.nSample        double {mustBeInteger} = 20
         args.maxObs         double = 1000
-        args.modelFcn       function_handle
     end
     
     % calculate the response of the specified type

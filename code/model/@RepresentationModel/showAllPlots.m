@@ -15,9 +15,6 @@ function showAllPlots( self, args )
                             Y = self.Predictions.(args.set).Y );
         % plot the components
         self.plotLatentComp( smooth = true );
-
-        % plot the ALE distribution
-        self.plotAuxResponse( type = 'Model' );
     
     else
         % graphics objects must have been cleared

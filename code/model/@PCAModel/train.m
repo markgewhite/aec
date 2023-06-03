@@ -40,9 +40,6 @@ function self = train( self, thisData )
     % compute the mean curve directly
     self.MeanCurve = eval_fd( self.TSpan.Input, self.MeanFd );
 
-    % get the auxiliary model's response to each Z element
-    self = self.getAuxResponse( thisData );
-
     % compute the functional components
     self.LatentComponents = self.getLatentResponse( thisData );
 

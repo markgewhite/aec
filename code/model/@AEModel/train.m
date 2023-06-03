@@ -11,9 +11,6 @@ function self = train( self, thisData )
     % perform training using the trainer
     self = self.Trainer.runTraining( self, thisData );
     
-    % get the auxiliary model's response to each Z element
-    self = self.getAuxResponse( thisData );
-    
     % generate the functional components
     self.LatentComponents = self.getLatentResponse( thisData );
 

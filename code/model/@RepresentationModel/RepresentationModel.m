@@ -162,11 +162,7 @@ classdef RepresentationModel
 
         self = finalizeInit( self, thisDataset )
 
-        self = getAuxResponse( self, thisDataset, args )
-
         XC = getLatentResponse( self, thisDataset )
-
-        plotAuxResponse( self, args )
 
         plotLatentComp( self, args )
 

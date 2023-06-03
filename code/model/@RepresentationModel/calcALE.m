@@ -9,7 +9,6 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
                             {'Regular', 'Component'} )} = 'Regular'
         args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
-        args.modelFcn       function_handle
     end
     
     if isa( dlZ, 'dlarray' )
@@ -91,8 +90,8 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
     end
 
     % call the model function to generate responses
-    dlXCHat1 = args.modelFcn( dlZC1 );
-    dlXCHat2 = args.modelFcn( dlZC2 );
+    dlXCHat1 = self.LatentResponseFcn( dlZC1 );
+    dlXCHat2 = self.LatentResponseFcn( dlZC2 );
     delta = dlXCHat2 - dlXCHat1;
 
     % allocate arrays knowing the size of XCHat

@@ -18,8 +18,8 @@ function [figs, axes]= initializePlots( XChannels, ZDim, show )
     layout = tiledlayout( figs.LatentSpace, 2, 2, TileSpacing = 'Compact' );
     axes.ZDistribution = nexttile( layout );
     axes.ZClustering = nexttile( layout );
-    axes.AuxModel = nexttile( layout );
-    axes.AuxNetwork = nexttile( layout );
+    axes.Input = nexttile( layout );
+    axes.Output= nexttile( layout );
 
     % setup the components figure
     [figs.Components, axes.Comp] = initializeCompPlot( XChannels, ...

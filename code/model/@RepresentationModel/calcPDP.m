@@ -13,7 +13,6 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
                             {'Regular', 'Component'} )} = 'Regular'
         args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
-        args.modelFcn       function_handle
     end
 
     % generate the required Z values from z-scores
@@ -63,7 +62,7 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, dlZ, args )
 
     if strcmp( args.mode, 'Full' )
         % call the model function to generate a response
-        dlXCHat = args.modelFcn( dlZC );
+        dlXCHat = self.LatentResponseFcn( dlZC );
 
     elseif strcmp( args.mode, 'OutputOnly' )
         % use the provided XC values

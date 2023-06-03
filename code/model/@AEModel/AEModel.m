@@ -194,8 +194,6 @@ classdef AEModel < RepresentationModel
 
         [ dlZ, state ] = forwardEncoder( self, encoder, dlX )
 
-        self = getAuxResponse( self, thisDataset, args )
-
         [ dlX, dlY, dlXN ] = getDLArrays( self, thisDataset )
 
         self = incrementActiveZDim( self )

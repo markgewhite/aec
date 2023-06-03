@@ -37,11 +37,4 @@ function savePlots( gObjs, path, name )
 
     end
 
-    if isfield( gObjs, 'Response' )
-        % save the ALE plots
-        fullpath = strcat( path, '/aux/' );
-        saveGraphicsObject( gObjs.AuxResponse, ...
-                            fullpath, name );        
-    end
-
 end   
