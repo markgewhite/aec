@@ -22,11 +22,14 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
                 & self.LossFcnTbl.DoCalcLoss, 1 );
     if ~isempty( idx )
         % active component loss functions are present
-        outputs.dlXC = self.calcResponse( ...
+        % use the first one to determine parameters
+        thisName = self.LossFcnTbl.Names(idx(1));
+        thisLossFcn = self.LossFcns.(thisName);
+        outputs.dlXC = self.calcLatentComponents( ...
                                 [], ...
                                 mode = 'OutputOnly', ...
                                 sampling = thisLossFcn.Sampling, ...
-                                dlXC = outputs.dlXComp );
+                                dlXC = outputs.dlXB );
     end
 
     if self.HasCentredDecoder

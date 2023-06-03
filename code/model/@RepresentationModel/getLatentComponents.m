@@ -1,4 +1,4 @@
-function XC = getLatentResponse( self, thisDataset )
+function XC = getLatentComponents( self, thisDataset )
     % Generate the latent components, smoothing them
     arguments
         self            RepresentationModel            

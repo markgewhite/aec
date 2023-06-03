@@ -35,7 +35,7 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'PDP';
+setup.model.args.ComponentType = 'AEC';
 setup.model.args.NumCompLines = 51;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;

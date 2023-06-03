@@ -152,8 +152,6 @@ classdef RepresentationModel
 
         [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
 
-        [F, Q, Z] = calcResponse( self, dlZ, args )
-
         closeFigures( self )
 
         self = compress( self, level )
@@ -162,7 +160,7 @@ classdef RepresentationModel
 
         self = finalizeInit( self, thisDataset )
 
-        XC = getLatentResponse( self, thisDataset )
+        XC = getLatentComponents( self, thisDataset )
 
         plotLatentComp( self, args )
 

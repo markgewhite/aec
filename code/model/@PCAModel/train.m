@@ -41,7 +41,7 @@ function self = train( self, thisData )
     self.MeanCurve = eval_fd( self.TSpan.Input, self.MeanFd );
 
     % compute the functional components
-    self.LatentComponents = self.getLatentResponse( thisData );
+    self.LatentComponents = self.getLatentComponents( thisData );
 
     % set the oversmoothing level
     XHat = self.reconstruct( Z );

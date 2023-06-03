@@ -12,6 +12,6 @@ function self = train( self, thisData )
     self = self.Trainer.runTraining( self, thisData );
     
     % generate the functional components
-    self.LatentComponents = self.getLatentResponse( thisData );
+    self.LatentComponents = self.getLatentComponents( thisData );
 
 end
