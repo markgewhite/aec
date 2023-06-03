@@ -5,7 +5,7 @@ clear;
 runAnalysis = true;
 inParallel = false;
 catchErrors = false;
-reportIdx = 1;
+reportIdx = 2:4;
 plotDim = [2 5];
 
 % set the destinations for results and figures
@@ -36,7 +36,7 @@ setup.model.args.NetActivationType = 'None';
 setup.model.args.NetActivationTypeDecoder = 'Relu';
 
 setup.model.args.ComponentType = 'AEC';
-setup.model.args.NumCompLines = 51;
+setup.model.args.NumCompLines = 9;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
@@ -74,9 +74,9 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 50;
+setup.model.args.trainer.NumIterations = 500;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 25;
+setup.model.args.trainer.UpdateFreq = 100;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---

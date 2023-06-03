@@ -49,5 +49,8 @@ function self = train( self, thisData )
     [ self.FDA.FdParamsTarget, self.FDA.LambdaTarget ] = ...
         thisData.setFDAParameters( self.TSpan.Target, ...
                                    permute(XHat, [1 3 2]) );
+    
+    self.FDA.FdParamsComponent = self.FDA.FdParamsTarget;
+    self.FDA.LambdaComponent = self.FDA.LambdaTarget;
 
 end

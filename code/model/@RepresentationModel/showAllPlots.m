@@ -14,7 +14,7 @@ function showAllPlots( self, args )
         self.plotZClusters( self.Predictions.(args.set).Z, ...
                             Y = self.Predictions.(args.set).Y );
         % plot the components
-        self.plotLatentComp( smooth = true );
+        self.plotLatentComp;
     
     else
         % graphics objects must have been cleared
