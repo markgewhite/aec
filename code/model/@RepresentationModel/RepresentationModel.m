@@ -150,8 +150,6 @@ classdef RepresentationModel
 
         [ varProp, compVar ] = calcExplainedVariance( self, X, XC, offsets )
 
-        [ XC, XMean, offsets ] = calcLatentComponents( self, dlZ, args )
-
         closeFigures( self )
 
         self = compress( self, level )
@@ -159,8 +157,6 @@ classdef RepresentationModel
         self = evaluate( self, thisTrnSet, thisValSet )
 
         self = finalizeInit( self, thisDataset )
-
-        XC = getLatentComponents( self, thisDataset )
 
         plotLatentComp( self, args )
 
@@ -192,6 +188,10 @@ classdef RepresentationModel
 
         % Reconstruct X from Z using the model - placeholder
         XHat = reconstruct( self, Z )
+
+        % Generate the latent components
+        [ dlXC, Q, dlZC ] = calcLatentComponents( self, args )
+
 
     end
 

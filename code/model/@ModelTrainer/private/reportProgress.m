@@ -1,4 +1,4 @@
-function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch, args )
+function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch )
     % Report progress on training
     arguments
         thisModel       AEModel
@@ -27,9 +27,9 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch, args )
     fprintf('\n');
 
     % generate the centred components
-    dlXC = thisModel.calcLatentComponents( dlZ ) ;
+    XC = thisModel.calcLatentComponents( dlZ = dlZ, convert = true ) ;
     plotLatentComp( thisModel, ...
-                    XC = dlXC, ...
+                    XC = XC, ...
                     smooth = false, ...
                     centredYAxis = thisModel.HasCentredDecoder );
 

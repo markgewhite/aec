@@ -184,6 +184,8 @@ classdef AEModel < RepresentationModel
 
         closeFigures( self )
 
+        [ dlXC, Q, dlZC ] = calcLatentComponents( self, args, args2 )
+
         self = compress( self, level )
 
         dlZ = encode( self, X, arg )
@@ -215,8 +217,6 @@ classdef AEModel < RepresentationModel
         self = setLossInfoTbl( self )
 
         self = setLossScalingFactor( self )
-
-        showAllPlots( self, args )
 
     end
 

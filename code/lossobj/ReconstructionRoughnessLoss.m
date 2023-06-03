@@ -21,7 +21,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
             superArgsCell = namedargs2cell( superArgs );
             self = self@ReconstructionLoss( name, ...
                                             superArgsCell{:}, ...
-                                            Input = {'dlXGen'}, ...
+                                            Input = {'dlXHat'}, ...
                                             YLim = [0 0.10]);
             self.Lambda = args.Lambda;
             self.Dilations = args.Dilations;
@@ -38,7 +38,7 @@ classdef ReconstructionRoughnessLoss < ReconstructionLoss
 
             if size(XGen, 1) <= 1+3*max(self.Dilations)
                 eid = 'AEModel:ReconRoughnessLoss';
-                msg = 'Dilation too large for XGen.';
+                msg = 'Dilation too large for XHat.';
                 throwAsCaller( MException(eid,msg) );
             end
 

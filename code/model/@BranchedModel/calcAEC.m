@@ -1,8 +1,8 @@
-function [ dlXCHat, zs ] = calcAEC( self, dlZ, args )
+function [ dlXCHat, zs ] = calcAEC( self, args )
     % Generate autoencoder components
     arguments
         self                BranchedModel
-        dlZ                 {mustBeA( dlZ, {'dlarray', 'double'} )}
+        args.dlZ            dlarray
         args.mode           char ...
                             {mustBeMember(args.mode, ...
                             {'Full', 'OutputOnly'} )} = 'Full'
@@ -14,9 +14,13 @@ function [ dlXCHat, zs ] = calcAEC( self, dlZ, args )
         args.maxObs         double = 1000
     end
 
+    if isfield( args, 'dlZ' )
+        dlZ = args.dlZ;
+    end
+
     if strcmp( args.mode, 'Full' )
 
-        if size(dlZ,1) ~= self.ZDim
+        if size(args.dlZ,1) ~= self.ZDim
             % transpose into standard dimensions:
             % 1st=ZDim and 2nd=observations
             dlZ = dlZ';

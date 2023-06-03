@@ -1,10 +1,11 @@
-function [ dlXC, Q, dlZC ] = calcLatentComponents( self, dlZ, args )
-    % Calculate the funtional components using the response function
+function [ dlXC, Q, dlZC ] = calcLatentComponents( self, args, args2 )
+    % Calculate the funtional components 
+    % introducing the option to convert to single
     arguments
-        self                RepresentationModel
-        dlZ                 {mustBeA( dlZ, {'dlarray', 'double'} )}
-        args.dlXB           {mustBeA( args.dlXB, 'cell' )}
-        args.dlXC           {mustBeA( args.dlXC, {'dlarray', 'double'} )}
+        self                AEModel
+        args.dlZ            dlarray
+        args.dlXB           cell
+        args.dlXC           dlarray
         args.mode           char ...
                             {mustBeMember(args.mode, ...
                             {'Full', 'InputOnly', 'OutputOnly'} )} = 'Full' 
@@ -13,17 +14,18 @@ function [ dlXC, Q, dlZC ] = calcLatentComponents( self, dlZ, args )
                             {mustBeMember(args.sampling, ...
                             {'Regular', 'Component'} )} = 'Component' 
         args.nSample        double {mustBeInteger} = 20
+        args2.convert       logical = false
     end
 
     % calculate the response of the specified type
     argsCell = namedargs2cell( args );
     switch self.ComponentType
         case 'ALE'
-            [dlXC, Q, dlZC] = calcALE( self, dlZ, argsCell{:} );
+            [dlXC, Q, dlZC] = calcALE( self, argsCell{:} );
         case {'PDP', 'FPC'}
-            [dlXC, Q, dlZC] = calcPDP( self, dlZ, argsCell{:} );
+            [dlXC, Q, dlZC] = calcPDP( self, argsCell{:} );
         case 'AEC'
-            [dlXC, Q] = calcAEC( self, dlZ, argsCell{:} );
+            [dlXC, Q] = calcAEC( self, argsCell{:} );
             dlZC = [];
         otherwise
             dlXC = [];
@@ -45,6 +47,13 @@ function [ dlXC, Q, dlZC ] = calcLatentComponents( self, dlZ, args )
         case 'X'
             % centre about the mean generated curve
             dlXC = dlXC - mean( dlXC, length(size(dlXC)) );
+    end
+
+    if args2.convert
+        dlXC = double( extractdata( dlXC ) );
+        if ~isempty( dlZC )
+            dlZC = double( extractdata( dlZC ) );
+        end
     end
 
 end

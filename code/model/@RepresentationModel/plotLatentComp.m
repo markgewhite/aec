@@ -3,7 +3,7 @@ function axes = plotLatentComp( self, args )
     % in conception to the functional principal components
     arguments
         self                RepresentationModel
-        args.XC             {mustBeA( args.XC, { 'dlarray', 'double' })} = []
+        args.XC             double = []
         args.smooth         logical = false
         args.order          double ...
             {mustBeInteger, mustBePositive} = []
@@ -25,11 +25,7 @@ function axes = plotLatentComp( self, args )
 
     else
         % use the latent components specified
-        if isa( args.XC, 'dlarray' )
-            XC = double( extractdata( args.XC ) );
-        else
-            XC = args.XC;
-        end
+        XC = args.XC;
         switch size( XC, 1 )
             case length(self.TSpan.Input)
                 tSpanXC = self.TSpan.Input;

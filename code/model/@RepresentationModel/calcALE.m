@@ -1,9 +1,9 @@
-function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
+function [ F, zsMid, ZQMid ] = calcALE( self, args )
     % Accumulated Local Estimation 
     % For latent component generation and the auxiliary model
     arguments
         self                RepresentationModel
-        dlZ                 {mustBeA( dlZ, {'dlarray', 'double'} )}
+        args.dlZ            dlarray
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
                             {'Regular', 'Component'} )} = 'Regular'
@@ -11,17 +11,12 @@ function [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
         args.maxObs         double = 1000
     end
     
-    if isa( dlZ, 'dlarray' )
-        % convert to double for quantiles, sort and other functions
-        Z = double(extractdata( dlZ ));
-    else
-        if size(dlZ,1) ~= self.ZDim
-            % transpose into standard dimensions:
-            % 1st=ZDim and 2nd=observations
-            dlZ = dlZ';
-        end
-        Z = dlZ;
+    if isfield( args, 'dlZ' )
+        dlZ = args.dlZ;
     end
+
+    % convert to double for quantiles, sort and other functions
+    Z = double(extractdata( dlZ ));
 
     nObs = size( dlZ, 2 );
     if nObs > args.maxObs
