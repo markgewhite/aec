@@ -43,6 +43,12 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
     % combine all output fields together
     outputs = mergeStructs( outputs, outputs2 );
 
+    if ~isfield( outputs, 'dlXGen' )
+        % dlXGen is absent (branched model method)
+        % create it for convenience here
+        outputs.dlXGen = outputs.dlXHat;
+    end
+
     if ~isempty( idx )
         % extract the XC portion
         if self.XChannels==1

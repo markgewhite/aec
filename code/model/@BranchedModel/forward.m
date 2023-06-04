@@ -7,6 +7,12 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
         dlX         dlarray
     end
 
+    if ~strcmp( self.ComponentType, 'AEC' )
+        % revert to non-branched method
+        [ outputs, states ] = forward@AEModel( self, encoder, decoder, dlX );
+        return
+    end
+
     % generate latent encodings
     [ outputs, states.Encoder ] = self.forwardEncoder( encoder, dlX );
 

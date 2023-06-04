@@ -110,7 +110,7 @@ classdef ConvolutionalModel < FCModel
             end
             
             outLayers = [ outLayers;
-                          fullyConnectedLayer( self.ZDim, 'Name', 'out' ) ];
+                          fullyConnectedLayer( 2*self.ZDim, 'Name', 'out' ) ];
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...
@@ -142,16 +142,15 @@ classdef ConvolutionalModel < FCModel
             end
             
             % add the output layers
-            outLayers = convolution1dLayer( 1, 1, 'Name', 'add' );
-            
-            if self.XChannels > 1
-                outLayers = [ outLayers; 
-                          reshapeLayer( [self.XTargetDim self.XChannels], 'Name', 'reshape' ) ];
-            end
+            combineLayerName = 'combine';
+            outLayers = [ convolution1dLayer( 1, 1, 'Name', combineLayerName ); ...
+                          reshapeLayer( self.XTargetDim, ...
+                                        'Dims', 'CB', ...
+                                        'Name', 'out') ];
             
             lgraphDec = addLayers( lgraphDec, outLayers );
             lgraphDec = connectLayers( lgraphDec, ...
-                                       lastLayer, 'add' );
+                                       lastLayer, combineLayerName );
             
             net = dlnetwork( lgraphDec );
 
@@ -169,6 +168,30 @@ classdef ConvolutionalModel < FCModel
             dlZ = predict@AEModel( encoder, X, arg );
 
         end
+
+
+        function self = setXTargetDim( self )
+            % Calculate the decoder's output size
+            arguments
+                self           ConvolutionalModel
+            end
+
+            outDim = self.ZDim - self.ZDimAux + 1;
+            for i = 1:self.NumHiddenDecoder
+                if strcmpi(self.PaddingDecoder, 'same')
+                    outDim = self.StrideDecoder*(outDim - 1) ...
+                                + self.FilterSizeDecoder;
+                else % valid padding
+                    outDim = self.StrideDecoder*(outDim - 1)...
+                                + max( self.FilterSizeDecoder, ...
+                                       self.StrideDecoder );
+                end
+            end
+
+            self.XTargetDim = outDim;
+
+        end
+
 
     end
 
