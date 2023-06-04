@@ -33,11 +33,17 @@ function [ dlXC, Q, dlZC ] = calcLatentComponents( self, args, args2 )
             dlZC = [];
     end
 
+    
+    if isempty( dlXC )
+        return
+    end
+
     % put XC into the appropriate structure
     % Points, Samples, Components, Channels
     nSamples = size(dlXC, 2);
 
     % extract the mean curve based on Z
+    % (the central column has Z equal to the mean)
     XMean = dlXC( :, ceil(nSamples/2), :, : );
     
     switch self.ComponentCentering
@@ -50,8 +56,10 @@ function [ dlXC, Q, dlZC ] = calcLatentComponents( self, args, args2 )
     end
 
     if args2.convert
-        dlXC = double( extractdata( dlXC ) );
-        if ~isempty( dlZC )
+        if isa( dlXC, 'dlarray' )
+            dlXC = double( extractdata( dlXC ) );
+        end
+        if ~isempty( dlZC ) && isa( dlXC, 'dlarray' )
             dlZC = double( extractdata( dlZC ) );
         end
     end

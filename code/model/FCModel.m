@@ -1,4 +1,4 @@
-classdef FCModel < AEModel
+classdef FCModel < VAEModel
     % Subclass defining a fully connected autoencoder model
     properties
         NumHidden             % number of hidden layers
@@ -21,7 +21,7 @@ classdef FCModel < AEModel
             % Initialize the model
             arguments
                 thisDataset     ModelDataset
-                superArgs.?AEModel
+                superArgs.?VAEModel
                 superArgs2.name     string
                 superArgs2.path     string
                 args.NumHidden      double ...
@@ -51,7 +51,7 @@ classdef FCModel < AEModel
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
 
-            self@AEModel( thisDataset, ...
+            self@VAEModel( thisDataset, ...
                           superArgsCell{:}, ...
                           superArgs2Cell{:}, ...
                           FlattenInput = args.FlattenInput, ...
@@ -115,7 +115,7 @@ classdef FCModel < AEModel
 
             end
             
-            outLayers = fullyConnectedLayer( self.ZDim, 'Name', 'out' );
+            outLayers = fullyConnectedLayer( 2*self.ZDim, 'Name', 'out' );
             
             lgraphEnc = addLayers( lgraphEnc, outLayers );
             lgraphEnc = connectLayers( lgraphEnc, ...
@@ -203,6 +203,17 @@ classdef FCModel < AEModel
             if arg.convert
                 dlZ = double(extractdata( dlZ ))';
             end
+
+        end
+
+
+        function self = setXTargetDim( self )
+            % Calculate the decoder's output size
+            arguments
+                self           FCModel
+            end
+
+            self.XTargetDim = self.NumFC;
 
         end
 

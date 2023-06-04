@@ -21,7 +21,7 @@ setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 2;
 %setup.model.args.FilterSize = 5;
 %setup.model.args.Padding = 'None';
-setup.model.args.NumHiddenDecoder = 2;
+%setup.model.args.NumHiddenDecoder = 2;
 %setup.model.args.FilterSizeDecoder = 17;
 %setup.model.args.PaddingDecoder = 'None';
 setup.model.args.InputDropout = 0;
@@ -33,10 +33,10 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NumFCDecoder = 10;
 %setup.model.args.FCFactorDecoder = 0;
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
-setup.model.args.NetActivationTypeDecoder = 'Relu';
+%setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'AEC';
-setup.model.args.NumCompLines = 9;
+setup.model.args.ComponentType = 'PDP';
+setup.model.args.NumCompLines = 3;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
@@ -90,7 +90,7 @@ memorySaving = 3;
 % -- grid search --
 parameters = [ "model.class", ...
                "model.args.lossFcns.zcls.args.DoCalcLoss"];
-values = {{@ConvBranchedModel}, ...
+values = {{@FCModel}, ...
           {false, true}}; 
 
 %parameters = [ "model.args.NetNormalizationType", ...

@@ -7,7 +7,8 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, args )
         args.mode           char ...
                             {mustBeMember(args.mode, ...
                             {'Full', 'InputOnly', 'OutputOnly'} )} = 'Full' 
-        args.dlXC           {mustBeA( args.dlXC, {'dlarray', 'double'} )} = []
+        args.dlXC           dlarray = []
+        args.dlXB           % redundant
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
                             {'Regular', 'Component'} )} = 'Regular'
@@ -79,8 +80,7 @@ function [ dlXCHat, zs, dlZC ] = calcPDP( self, args )
     if any(strcmp( args.mode,{'Full', 'OutputOnly'} ))
         % reshape the output
         XDim = size( dlXCHat, 1 );
-        dlXCHat = reshape( dlXCHat, XDim, self.ZDimAux, K, [] );
-        dlXCHat = permute( dlXCHat, [1 3 2 4] );
+        dlXCHat = reshape( dlXCHat, XDim, K, self.ZDimAux, [] );
     end
 
 end
