@@ -13,7 +13,7 @@ function dlZC = prepPDP( self, dlZ, args )
     % generate the required Z values from z-scores
     switch args.sampling
         case 'Random'
-            zs = 4*(rand(args.nSample) - 0.5);
+            zs = 4*(rand(1, args.nSample) - 0.5);
         case 'Component'
             zs = linspace( -2, 2, self.NumCompLines );
     end

@@ -14,7 +14,7 @@ path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- model setup --
-setup.model.class = @ConvolutionalModel;
+setup.model.class = @ConvBranchedModel;
 setup.model.args.UseEncodingMean = false;
 setup.model.args.NumEncodingDraws = 10;
 setup.model.args.ZDim = 2;
@@ -35,7 +35,7 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 %setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'PDP';
+setup.model.args.ComponentType = 'AEC';
 setup.model.args.NumCompLines = 3;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
@@ -60,6 +60,11 @@ setup.model.args.lossFcns.kl.args.UseLoss = true;
 setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
 setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
 setup.model.args.lossFcns.zorth.args.UseLoss = true;
+
+setup.model.args.lossFcns.xorth.class = @ComponentLoss;
+setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
+setup.model.args.lossFcns.xorth.args.Criterion = 'Orthogonality';
+setup.model.args.lossFcns.xorth.args.Alpha = 1E-1;
 
 setup.model.args.lossFcns.xvar.class = @ComponentLoss;
 setup.model.args.lossFcns.xvar.name = 'XVarimax';
@@ -89,9 +94,11 @@ memorySaving = 3;
 
 % -- grid search --
 parameters = [ "model.class", ...
-               "model.args.lossFcns.zcls.args.DoCalcLoss"];
+               "model.args.lossFcns.zcls.args.DoCalcLoss", ...
+               "model.args.ComponentType" ];
 values = {{@ConvBranchedModel}, ...
-          {false, true}}; 
+          {false, true}, ...
+          {'PDP', 'AEC'}}; 
 
 %parameters = [ "model.args.NetNormalizationType", ...
 %               "model.args.NetActivationType", ...
@@ -207,7 +214,7 @@ if runAnalysis
    
         end
 
-        myInvestigations{i} = Investigation( name, path, parameters, values, ...
+        myInvestigations{i} = ParallelInvestigation( name, path, parameters, values, ...
                                          setup, catchErrors, memorySaving );
         
         myInvestigations{i}.run;
