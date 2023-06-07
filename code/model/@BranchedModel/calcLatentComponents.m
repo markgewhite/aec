@@ -4,6 +4,7 @@ function dlXC = calcLatentComponents( self, dlZ, args )
     arguments
         self                BranchedModel
         dlZ                 dlarray
+        args.centre         logical = true
         args.convert        logical = false
     end
 
@@ -15,7 +16,7 @@ function dlXC = calcLatentComponents( self, dlZ, args )
     end
 
     % construct the curves
-    [ ~, ~, dlXB ] = self.reconstruct( dlZ );
+    [ ~, ~, dlXB ] = self.reconstruct( dlZ, centre = args.centre );
 
     % generate the components
     dlXC = self.calcAEC( dlXB );

@@ -6,15 +6,15 @@ function [ dlZC, A, w ] = prepALE( self, dlZ, args )
         dlZ                 dlarray
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
-                            {'Regular', 'Component'} )} = 'Regular'
+                            {'Random', 'Component'} )} = 'Component'
         args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
     end
 
     % generate the quantiles and required Z values
     switch args.sampling
-        case 'Regular'
-            zsMid = linspace( -2, 2, args.nSample+1 );
+        case 'Random'
+            zsMid = sort(4*(rand(1, args.nSample) - 0.5));
         case 'Component'
             zsMid = linspace( -2, 2, self.NumCompLines );
     end
