@@ -1,54 +1,18 @@
-function [ dlXCHat, zs ] = calcAEC( self, args )
+function dlXCHat = calcAEC( self, dlXB, args )
     % Generate autoencoder components
     arguments
         self                BranchedModel
-        args.dlZ            dlarray
-        args.mode           char ...
-                            {mustBeMember(args.mode, ...
-                            {'Full', 'OutputOnly'} )} = 'Full'
-        args.dlXB           cell = []
+        dlXB                cell
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
-                            {'Regular', 'Component'} )} = 'Component' 
+                            {'Random', 'Component'} )} = 'Component'
         args.nSample        double {mustBeInteger} = 100
-        args.maxObs         double = 1000
-    end
-
-    if isfield( args, 'dlZ' )
-        dlZ = args.dlZ;
-    end
-
-    if strcmp( args.mode, 'Full' )
-
-        if size(args.dlZ,1) ~= self.ZDim
-            % transpose into standard dimensions:
-            % 1st=ZDim and 2nd=observations
-            dlZ = dlZ';
-        end
-    
-        nObs = size( dlZ, 2 );
-        if nObs > args.maxObs
-            % data too large - subsample
-            subset = randsample( nObs, args.maxObs );
-            dlZ = dlZ( :, subset );
-        end
-
-    end
-
-    if strcmp( args.mode, 'Full' )
-        % run the decoder to generate the components as a cell array
-        [ dlXB{1:self.ZDimAux} ] = predict( self.Nets.Decoder, dlZ );
-
-    else
-        % use the provided XB cell array
-        dlXB = args.dlXB;
-
     end
 
     % generate the z-scores
     switch args.sampling
-        case 'Regular'
-            zs = linspace( -2, 2, args.nSample+1 );
+        case 'Random'
+            zs = 4*(rand(args.nSample) - 0.5);
         case 'Component'
             zs = linspace( -2, 2, self.NumCompLines );
     end

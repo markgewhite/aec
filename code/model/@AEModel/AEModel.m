@@ -20,6 +20,7 @@ classdef AEModel < RepresentationModel
         XComponentDim  % dimensions of the component (may differ from XTargetDim)
         MeanCurveTarget   % mean curve for the X target time span
         AuxNetResponse % auxiliary network effect response
+        ActiveCompLossFcn % loss function object to be used in training
     end
 
     properties (Dependent = true)
@@ -92,6 +93,15 @@ classdef AEModel < RepresentationModel
             self.NetNames = {'Encoder', 'Decoder'};
             self.NumNetworks = 2;
             self = self.addLossFcnNetworks;
+
+            % check if active component loss functions are present
+            idx = find( self.LossFcnTbl.Types=='Component'  ...
+                        & self.LossFcnTbl.DoCalcLoss );
+            if ~isempty( idx )
+                % identify the active component loss function for training
+                % use the first one identified to determine parameters
+                self.ActiveCompLossFcn = self.LossFcns.(self.LossFcnTbl.Names(idx(1)));
+            end
 
             % check if trainer arguments include parallel processing
             flds = fields(args.Trainer);
@@ -186,6 +196,10 @@ classdef AEModel < RepresentationModel
 
         [ dlXC, Q, dlZC ] = calcLatentComponents( self, args, args2 )
 
+        dlXCHat = calcALE( self, dlXC, A, w )
+
+        dlXCHat = calcPDP( self, dlXC )
+
         self = compress( self, level )
 
         dlZ = encode( self, X, arg )
@@ -212,6 +226,10 @@ classdef AEModel < RepresentationModel
 
         YHat = predictCompNet( self, thisDataset )
 
+        [ dlZC, A, w ] = prepALE( self, dlZ, args )
+
+        dlZC = prepPDP( self, dlZ, args )
+        
         [ dlXHat, XHatSmth ] = reconstruct( self, Z, args )
 
         self = setLossInfoTbl( self )

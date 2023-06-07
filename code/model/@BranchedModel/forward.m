@@ -24,17 +24,10 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
     % combine all output fields together
     outputs = mergeStructs( outputs, outputs2 );
 
-    idx = find( self.LossFcnTbl.Types=='Component'  ...
-                & self.LossFcnTbl.DoCalcLoss, 1 );
-    if ~isempty( idx )
-        % active component loss functions are present
-        % use the first one to determine parameters
-        thisName = self.LossFcnTbl.Names(idx(1));
-        thisLossFcn = self.LossFcns.(thisName);
-        outputs.dlXC = self.calcLatentComponents( ...
-                                mode = 'OutputOnly', ...
-                                sampling = thisLossFcn.Sampling, ...
-                                dlXB = outputs.dlXB );
+    if ~isempty( self.ActiveCompLossFcn )
+        outputs.dlXC = self.calcAEC( outputs.dlXB, ...
+                                     sampling = self.ActiveCompLossFcn.Sampling, ...
+                                     nSample = self.ActiveCompLossFcn.NumSamples );
     end
 
     if self.HasCentredDecoder

@@ -1,19 +1,26 @@
-function [ F, zsMid, ZQMid ] = calcALE( self, args )
+function [ dlZC, A, w ] = prepALE( self, dlZ, args )
     % Accumulated Local Estimation 
     % For latent component generation and the auxiliary model
     arguments
-        self                RepresentationModel
-        args.dlZ            dlarray
+        self                AEModel
+        dlZ                 dlarray
         args.sampling       char ...
                             {mustBeMember(args.sampling, ...
                             {'Regular', 'Component'} )} = 'Regular'
         args.nSample        double {mustBeInteger} = 100
         args.maxObs         double = 1000
     end
-    
-    if isfield( args, 'dlZ' )
-        dlZ = args.dlZ;
+
+    % generate the quantiles and required Z values
+    switch args.sampling
+        case 'Regular'
+            zsMid = linspace( -2, 2, args.nSample+1 );
+        case 'Component'
+            zsMid = linspace( -2, 2, self.NumCompLines );
     end
+    zsEdge = [-5, (zsMid(1:end-1)+zsMid(2:end))/2, 5];
+    % set the number of bins
+    K = length(zsMid);
 
     % convert to double for quantiles, sort and other functions
     Z = double(extractdata( dlZ ));
@@ -26,17 +33,6 @@ function [ F, zsMid, ZQMid ] = calcALE( self, args )
         Z = Z( :, subset );
         nObs = args.maxObs;
     end
-
-    % generate the quantiles and required Z values
-    switch args.sampling
-        case 'Regular'
-            zsMid = linspace( -2, 2, args.nSample );
-        case 'Component'
-            zsMid = linspace( -2, 2, self.NumCompLines );
-    end
-    zsEdge = [-5, (zsMid(1:end-1)+zsMid(2:end))/2, 5];
-    % set the number of bins
-    K = length(zsMid);
 
     % take the mean and standard deviation
     dlZMean = mean( dlZ, 2 );
@@ -71,52 +67,26 @@ function [ F, zsMid, ZQMid ] = calcALE( self, args )
 
     % prepare all inputs for model function to avoid multiple calls
     % set all elements to the mean initially
-    dlZC1 = dlarray( repmat(dlZMean, 1, self.ZDimAux*K*nObs), 'CB' );
-    dlZC2 = dlZC1;
+    ZC1 = repmat(dlZMean, 1, self.ZDimAux*K*nObs);
+    ZC2 = ZC1;
     i = 1;
     for d = 1:self.ZDimAux
         for k = 1:K
             rng = i:i+nObs-1;
             % set the dth element to the kth value
-            dlZC1(d,rng) = ZQ(d, A(d,:));
-            dlZC2(d,rng) = ZQ(d, A(d,:)+1);
+            ZC1(d,rng) = ZQ(d, A(d,:));
+            ZC2(d,rng) = ZQ(d, A(d,:)+1);
             i = i + nObs;
         end
     end
 
-    % call the model function to generate responses
-    dlXCHat1 = self.LatentResponseFcn( dlZC1 );
-    dlXCHat2 = self.LatentResponseFcn( dlZC2 );
-    delta = dlXCHat2 - dlXCHat1;
+    dlZC = dlarray( [ ZC1 ZC2 ], 'CB' );
 
-    % allocate arrays knowing the size of XCHat
-    nPts = size( delta, 1 );
-    nChannels = size( delta, 3 );
-    F = zeros( nPts, K, self.ZDimAux, nChannels );
-    FBin = zeros( nPts, K, nChannels );
-    if isa( dlXCHat1, 'dlarray' )
-        % make it a dlarray without labels
-        F = dlarray( F );
-    end
-
+    % set the weights based on the number of occurrences
+    % the weights will be used in calcALE
+    w = zeros( self.ZDimAux, K );
     for d = 1:self.ZDimAux
-
-        % subtract the average weighted by number of occurrences
-        w = histcounts(Z(d,:), unique(ZQ(d,:)));
-
-        % calculate means of delta grouped by bin
-        % and cumulatively sum
-        for k = 1:K
-            binIdx = (A(d,:)==k);
-            if any(binIdx)
-                FBin(:,k,:) = mean( delta(:,binIdx,:), 2 );
-            end
-        end
-        FMeanCS = [ zeros( nPts, 1, nChannels ) ...
-                    cumsum( FBin, 2 ) ];
-        FMeanMid = (FMeanCS(:,1:K,:) + FMeanCS(:,2:K+1,:))/2;
-        F( :,:,d,: ) = FMeanMid - sum(w.*FMeanMid)/sum(w);
-
+        w( d, : ) = histcounts( Z(d,:), unique(ZQ(d,:)) );
     end
 
 end

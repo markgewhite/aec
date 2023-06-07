@@ -1,46 +1,34 @@
-function [ dlXC, Q, dlZC ] = calcLatentComponents( self, args, args2 )
+function dlXC = calcLatentComponents( self, dlZ, args )
     % Calculate the funtional components 
     % introducing the option to convert to single
     arguments
         self                AEModel
-        args.dlZ            dlarray
-        args.dlXB           cell
-        args.dlXC           dlarray
-        args.mode           char ...
-                            {mustBeMember(args.mode, ...
-                            {'Full', 'InputOnly', 'OutputOnly'} )} = 'Full' 
-        args.maxObs         double {mustBeInteger} = 500
-        args.sampling       char ...
-                            {mustBeMember(args.sampling, ...
-                            {'Regular', 'Component'} )} = 'Component' 
-        args.nSample        double {mustBeInteger} = 20
-        args2.convert       logical = false
+        dlZ                 dlarray
+        args.convert        logical = false
     end
 
-    % calculate the response of the specified type
-    argsCell = namedargs2cell( args );
+    % prepare the latent encoding
     switch self.ComponentType
+        case 'PDP'
+            dlZC = self.prepPDP( dlZ );
         case 'ALE'
-            [dlXC, Q, dlZC] = calcALE( self, argsCell{:} );
-        case {'PDP', 'FPC'}
-            [dlXC, Q, dlZC] = calcPDP( self, argsCell{:} );
-        case 'AEC'
-            [dlXC, Q] = calcAEC( self, argsCell{:} );
-            dlZC = [];
-        otherwise
-            dlXC = [];
-            Q = [];
-            dlZC = [];
+            [ dlZC, A, w ] = self.prepALE( dlZ );
     end
 
-    
-    if isempty( dlXC )
-        return
+    % construct the curves
+    dlXCGen = self.reconstruct( dlZC );
+
+    % generate the components
+    switch self.ComponentType
+        case 'PDP'
+            dlXC = self.calcPDP( dlXCGen );
+        case 'ALE'
+            dlXC = self.calcALE( dlXCGen, A, w );
     end
 
     % put XC into the appropriate structure
     % Points, Samples, Components, Channels
-    nSamples = size(dlXC, 2);
+    nSamples = size( dlXC, 2 );
 
     % extract the mean curve based on Z
     % (the central column has Z equal to the mean)
@@ -55,12 +43,9 @@ function [ dlXC, Q, dlZC ] = calcLatentComponents( self, args, args2 )
             dlXC = dlXC - mean( dlXC, length(size(dlXC)) );
     end
 
-    if args2.convert
+    if args.convert
         if isa( dlXC, 'dlarray' )
             dlXC = double( extractdata( dlXC ) );
-        end
-        if ~isempty( dlZC ) && isa( dlXC, 'dlarray' )
-            dlZC = double( extractdata( dlZC ) );
         end
     end
 

@@ -25,16 +25,16 @@ function [ XHat, XHatSmth ] = reconstruct( self, Z, args )
         XHat = double(extractdata(dlXHat));
         XHat = squeeze(permute( XHat, [1 3 2] ));
 
-        if args.smooth
-    
+        if args.smooth   
             XHatSmth = smoothSeries( XHat, ...
-                                     self.TSpan.Target, ...
-                                     self.TSpan.Input, ...
-                                     self.FDA.FdParamsInput );
+                                 self.TSpan.Target, ...
+                                 self.TSpan.Input, ...
+                                 self.FDA.FdParamsInput );
         end
 
     else
-        XHat = dlXHat;
+        XHatSmth = [];
+
     end
 
 end

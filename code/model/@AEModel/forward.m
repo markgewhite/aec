@@ -14,27 +14,24 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
 
     nObs = size( outputs.dlZ, 2 );
 
-    idx = find( self.LossFcnTbl.Types=='Component'  ...
-                & self.LossFcnTbl.DoCalcLoss );
-    if ~isempty( idx )
-        % active component loss functions are present
-        % use the first one to determine parameters
-        thisName = self.LossFcnTbl.Names(idx(1));
-        thisLossFcn = self.LossFcns.(thisName);
+    if ~isempty( self.ActiveCompLossFcn )
         % prepare the Z values
-        [~, ~, dlZC] = self.calcLatentComponents( ...
-                                dlZ = outputs.dlZ, ...
-                                mode = 'InputOnly', ...
-                                sampling = thisLossFcn.Sampling, ...
-                                nSample = thisLossFcn.NumSamples, ...
-                                maxObs = thisLossFcn.MaxObservations);
+
+        switch self.ComponentType
+            case 'PDP'
+                dlZC = self.prepPDP( outputs.dlZ, ...
+                         sampling = self.ActiveCompLossFcn.Sampling, ...
+                         nSample = self.ActiveCompLossFcn.NumSamples, ...
+                         maxObs = self.ActiveCompLossFcn.MaxObservations );
+            case 'ALE'
+                [ dlZC, A, w ] = self.prepALE( outputs.dlZ, ...
+                         sampling = self.ActiveCompLossFcn.Sampling, ...
+                         nSample = self.ActiveCompLossFcn.NumSamples, ...
+                         maxObs = self.ActiveCompLossFcn.MaxObservations );
+        end
 
         % append to the Z list
         dlZ2 = [outputs.dlZ dlZC];
-
-    else
-        dlZ2 = outputs.dlZ;
-
     end
 
     % reconstruct curves from latent codes
@@ -49,7 +46,7 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
         outputs.dlXGen = outputs.dlXHat;
     end
 
-    if ~isempty( idx )
+    if ~isempty( self.ActiveCompLossFcn )
         % extract the XC portion
         if self.XChannels==1
             outputs.dlXCHat = outputs.dlXGen( :, nObs+1:end );
@@ -57,10 +54,13 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
             outputs.dlXCHat = outputs.dlXGen( :, :, nObs+1:end );
         end
         % finish constructing the components
-        outputs.dlXC = self.calcLatentComponents( ...
-                                mode = 'OutputOnly', ...
-                                sampling = thisLossFcn.Sampling, ...
-                                dlXC = outputs.dlXCHat );
+        switch self.ComponentType
+            case 'PDP'
+                outputs.dlXC = self.calcPDP( outputs.dlXCHat );
+            case 'ALE'
+                outputs.dlXC = self.calcALE( outputs.dlXCHat, A, w );
+        end
+
     else
         outputs.dlXC = [];
     end

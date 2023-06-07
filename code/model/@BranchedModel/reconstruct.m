@@ -31,9 +31,11 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
         % convert from dlarray
         XHat = double(extractdata(dlXHat));
         XHat = squeeze(permute( XHat, [1 3 2] ));
+
+        XComp = cell( self.ZDimAux, 1 );
         for i = 1:self.ZDimAux
-            dlXComp{i} = double(extractdata(dlXComp{i}));
-            dlXComp{i} = squeeze(permute( dlXComp{i}, [1 3 2] ));
+            XComp{i} = double(extractdata(dlXComp{i}));
+            XComp{i} = squeeze(permute( XComp{i}, [1 3 2] ));
         end
 
         if args.smooth
@@ -44,16 +46,19 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
                                      self.FDA.FdParamsInput );
             XCompSmth = cell( self.ZDimAux, 1 );
             for i = 1:self.ZDimAux
-                XCompSmth{i} = smoothSeries( dlXComp{i}, ...
+                XCompSmth{i} = smoothSeries( XComp{i}, ...
                                      self.TSpan.Target, ...
                                      self.TSpan.Input, ...
                                      self.FDA.FdParamsInput );
             end
 
+        else
+            XHatSmth = [];
+            XCompSmth = [];
+
         end
 
     else
-
         XHat = dlXHat;
         XHatSmth = [];
         XComp = dlXComp;

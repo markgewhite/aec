@@ -35,7 +35,7 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 %setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'ALE';
+setup.model.args.ComponentType = 'AEC';
 setup.model.args.ComponentCentering = 'X';
 setup.model.args.NumCompLines = 3;
 setup.model.args.AuxModel = 'Logistic';
@@ -77,7 +77,7 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 250;
+setup.model.args.trainer.UpdateFreq = 100;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---

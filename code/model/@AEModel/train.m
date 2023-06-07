@@ -13,7 +13,6 @@ function self = train( self, thisData )
     
     % generate the functional components
     dlZ = self.encode( thisData, convert = false );
-    self.LatentComponents = self.calcLatentComponents( dlZ = dlZ, ...
-                                                       convert = true ); 
+    self.LatentComponents = self.calcLatentComponents( dlZ, convert = true ); 
 
 end

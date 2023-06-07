@@ -144,10 +144,6 @@ classdef RepresentationModel
 
         % class methods
 
-        [ F, zsMid, ZQMid ] = calcALE( self, dlZ, args )
-
-        [ F, prc, ZQ ] = calcPDP( self, dlZ, args )
-
         [ varProp, compVar ] = calcExplainedVariance( self, X, XC, offsets )
 
         closeFigures( self )
