@@ -26,7 +26,6 @@ classdef RepresentationModel
 
         MeanCurve       % estimated mean curve
         ComponentType   % type of components generated
-        ComponentCentering % how to centre the generated components
         LatentComponents % computed components across partitions
         LatentResponseFcn % method to generate output using Z
         ShowComponentPts % show the predicted points in plots
@@ -69,9 +68,6 @@ classdef RepresentationModel
                 args.ComponentType      string ...
                         {mustBeMember( args.ComponentType, ...
                         {'FPC', 'PDP', 'ALE', 'AEC'} )} = 'PDP'
-                args.ComponentCentering string ...
-                    {mustBeMember( args.ComponentCentering, ...
-                                    {'Z', 'X', 'None'} )} = 'Z'
                 args.ShowPlots          logical = true
                 args.ShowComponentPts   logical = true
                 args.IdenticalPartitions logical = false
@@ -118,7 +114,6 @@ classdef RepresentationModel
             end
 
             self.ComponentType = args.ComponentType;
-            self.ComponentCentering = args.ComponentCentering;
             
             if isfield( args, 'randomSeed' )
                 self.RandomSeed = args.RandomSeed;
