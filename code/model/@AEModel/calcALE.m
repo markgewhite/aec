@@ -9,14 +9,14 @@ function dlXCHat = calcALE( self, dlXC, A, w )
     end
 
     nObs = size( dlXC, 2 )/2;
-    delta = dlXC( :, 1:nObs, : ) - dlXC( :, nObs+1:end, : );
+    delta = dlXC( :, nObs+1:end, : ) - dlXC( :, 1:nObs, : );
 
     K = size( w, 2 );
 
     % allocate arrays knowing the size of XCHat
     nPts = size( delta, 1 );
     nChannels = size( delta, 3 );
-    dlXCHat = dlarray(zeros( nPts, K, self.ZDimAux, nChannels ));
+    dlXCHat = dlarray(zeros( nPts, K, self.ZDimAux, nChannels, 'single' ));
     XCBin = zeros( nPts, K, nChannels );
 
     for d = 1:self.ZDimAux
