@@ -35,7 +35,7 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 %setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'AEC';
+setup.model.args.ComponentType = 'PDP';
 setup.model.args.NumCompLines = 3;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
@@ -79,7 +79,7 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 10;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 100;
 setup.model.args.trainer.Holdout = 0;
@@ -214,7 +214,7 @@ if runAnalysis
    
         end
 
-        myInvestigations{i} = ParallelInvestigation( name, path, parameters, values, ...
+        myInvestigations{i} = Investigation( name, path, parameters, values, ...
                                          setup, catchErrors, memorySaving );
         
         myInvestigations{i}.run;

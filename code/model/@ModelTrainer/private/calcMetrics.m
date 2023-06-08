@@ -14,7 +14,7 @@ function [ metric, dlZ ] = calcMetrics( thisModel, dlX )
                     latentCodeCorrelation( dlZAux, summary = true );
 
     % generate validation components
-    XC = thisModel.calcLatentComponents( dlZ, convert = true, centre = false );
+    XC = thisModel.calcLatentComponents( dlZ, convert = true );
 
     % record latent codes correlation
     [ metric.XCCorrelation, metric.XCCovariance ] = ...

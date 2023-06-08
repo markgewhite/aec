@@ -4,7 +4,6 @@ function dlXC = calcLatentComponents( self, dlZ, args )
     arguments
         self                AEModel
         dlZ                 dlarray
-        args.centre         logical = true
         args.convert        logical = false
     end
 
@@ -17,7 +16,7 @@ function dlXC = calcLatentComponents( self, dlZ, args )
     end
 
     % construct the curves
-    dlXCGen = self.reconstruct( dlZC, centre = args.centre );
+    dlXCGen = self.reconstruct( dlZC, centre = false );
 
     % generate the components
     switch self.ComponentType

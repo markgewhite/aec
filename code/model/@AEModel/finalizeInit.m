@@ -18,9 +18,7 @@ function [self, thisDataset] = finalizeInit( self, thisDataset )
     self = self.initLossFcnNetworks;
 
     % set the response function for generating components
-    self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, ...
-                                              centre = false, ...
-                                              smooth = false );
+    self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, smooth = false );
 
 
 end
