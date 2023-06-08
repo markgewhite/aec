@@ -18,4 +18,13 @@ function [ outputs, state ] = forwardEncoder( self, encoder, dlX )
     % mask Z based on number of active dimensions
     outputs.dlZ = self.maskZ( dlZ );
 
+    % use the reparameterization trick if VAE
+    if self.IsVAE
+        [ outputs.dlZ, outputs.dlMu, outputs.dlLogVar ] = ...
+                reparameterize( outputs.dlZ, self.NumEncodingDraws );
+    else
+        outputs.dlMu = [];
+        outputs.dlLogVar = [];
+    end
+    
 end

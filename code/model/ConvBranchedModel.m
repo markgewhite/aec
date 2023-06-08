@@ -147,9 +147,11 @@ classdef ConvBranchedModel < BranchedModel
                     poolingLayerName = 'out';
             end
             
-            % add the final layer with double the dimensions for VAE
+            % add the final layer
+            % set the output dimension - double size if VAE
+            outDim = (1 + self.IsVAE)*self.ZDim;
             outLayers = [ outLayers;
-                          fullyConnectedLayer( self.ZDim*2, 'Name', 'out' ) ];
+                          fullyConnectedLayer( outDim, 'Name', 'out' ) ];
             
             lgraph = addLayers( lgraph, outLayers );
             lgraph = connectLayers( lgraph, ...

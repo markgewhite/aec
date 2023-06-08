@@ -1,5 +1,5 @@
-classdef BranchedModel < VAEModel
-    % A branched variational autoencoder
+classdef BranchedModel < AEModel
+    % A branched autoencoder
     % Subclasses define the hidden layers of the encoder and decoder networks
     properties
         HasInputNormalization % whether to apply amplitude normalization
@@ -30,7 +30,7 @@ classdef BranchedModel < VAEModel
             % Initialize the model
             arguments
                 thisDataset                 ModelDataset
-                superArgs.?VAEModel
+                superArgs.?AEModel
                 superArgs2.name             string
                 superArgs2.path             string
                 args.HasInputNormalization  logical = true
@@ -72,11 +72,11 @@ classdef BranchedModel < VAEModel
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
 
-            self@VAEModel( thisDataset, ...
-                           superArgsCell{:}, ...
-                           superArgs2Cell{:}, ...
-                           FlattenInput = args.FlattenInput, ...
-                           HasSeqInput = args.HasSeqInput );
+            self@AEModel( thisDataset, ...
+                          superArgsCell{:}, ...
+                          superArgs2Cell{:}, ...
+                          FlattenInput = args.FlattenInput, ...
+                          HasSeqInput = args.HasSeqInput );
 
             % store this class's properties
             self.HasInputNormalization = args.HasInputNormalization;

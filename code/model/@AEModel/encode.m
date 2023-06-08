@@ -19,6 +19,14 @@ function dlZ = encode( self, X, args )
 
     dlZ = predict( self.Nets.Encoder, dlX );
 
+    % use the reparameterization trick if VAE
+    if self.IsVAE
+        [ dlZ, dlMean ] = reparameterize( dlZ, 1 );
+        if self.UseEncodingMean
+            dlZ = dlMean;
+        end
+    end
+
     if args.auxiliary
         dlZ = dlZ( 1:self.ZDimAux, : );
     end

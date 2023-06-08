@@ -10,11 +10,12 @@ plotDim = [2 5];
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/exemplarAnalysis.m') );
-path = [path0 '/../results/test/'];
+path = [path0 '/../results/test2/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- model setup --
 setup.model.class = @ConvBranchedModel;
+setup.model.args.IsVAE = false;
 setup.model.args.UseEncodingMean = false;
 setup.model.args.NumEncodingDraws = 1;
 setup.model.args.ZDim = 2;
@@ -81,7 +82,7 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 50;
+setup.model.args.trainer.UpdateFreq = 5000;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -96,7 +97,7 @@ memorySaving = 3;
 parameters = [ "model.args.ZDim", ...
                "model.args.NumEncodingDraws", ...
                "model.args.lossFcns.zcls.args.DoCalcLoss" ];
-values = {[1, 2, 3, 4], ...
+values = {[2, 3, 4], ...
           [1, 2, 5, 10], ...
           {false, true}}; 
 

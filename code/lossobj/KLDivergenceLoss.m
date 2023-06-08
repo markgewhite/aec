@@ -35,8 +35,12 @@ classdef KLDivergenceLoss < LossFunction
                 dlLogVar    dlarray
             end
 
-            loss = -0.5*sum( 1 + dlLogVar - dlMu.^2 - exp(dlLogVar) );
-            loss = self.Beta*mean( loss );
+            if ~isempty( dlMu ) && ~isempty( dlLogVar )
+                loss = -0.5*sum( 1 + dlLogVar - dlMu.^2 - exp(dlLogVar) );
+                loss = self.Beta*mean( loss );
+            else
+                loss = 0;
+            end
 
         end
 

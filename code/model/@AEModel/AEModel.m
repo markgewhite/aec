@@ -11,6 +11,9 @@ classdef AEModel < RepresentationModel
         NumLoss        % number of computed losses
         FlattenInput   % whether to flatten input
         HasSeqInput    % supports variable-length input
+        IsVAE          % if the model is a variational autoencoder
+        NumEncodingDraws % number of draws from the distribution per row
+        UseEncodingMean  % whether to use mean output in predictions
         Trainer        % trainer object holding training parameters
         Optimizer      % optimizer object
         InitZDimActive % initial number of Z dimensions active
@@ -42,6 +45,10 @@ classdef AEModel < RepresentationModel
                 superArgs2.path         string
                 args.FlattenInput       logical = false
                 args.HasSeqInput        logical = false
+                args.IsVAE              logical = true
+                args.NumEncodingDraws    double ...
+                        {mustBeInteger,mustBePositive} = 1
+                args.UseEncodingMean     logical = true
                 args.InitZDimActive     double ...
                     {mustBeInteger} = 1
                 args.HasCentredDecoder  logical = true
@@ -75,6 +82,10 @@ classdef AEModel < RepresentationModel
                 end
                 throwAsCaller( MException(eid,msg) );
             end
+
+            self.IsVAE = args.IsVAE;
+            self.NumEncodingDraws = args.NumEncodingDraws;
+            self.UseEncodingMean = args.UseEncodingMean;
 
             self.FlattenInput = args.FlattenInput;
             self.HasSeqInput = args.HasSeqInput;
