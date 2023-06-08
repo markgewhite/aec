@@ -6,7 +6,7 @@ function self = train( self, thisData )
     end
 
     % complete initialization
-    [self, thisData] = self.finalizeInit( thisData );
+    self = self.finalizeInit( thisData );
 
     % perform principal components analysis
     pcaStruct = pca_fd( thisData.XFd, self.ZDim );

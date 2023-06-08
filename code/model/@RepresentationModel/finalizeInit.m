@@ -1,4 +1,4 @@
-function [self, thisDataset] = finalizeInit( self, thisDataset )
+function self = finalizeInit( self, thisDataset )
     % Post-construction model initialization
     % For tasks that depend on subclass initiation 
     % but apply to all models

@@ -6,7 +6,7 @@ function self = train( self, thisData )
     end
 
     % complete initialization
-    [self, thisData] = self.finalizeInit( thisData );
+    self = self.finalizeInit( thisData );
 
     % perform training using the trainer
     self = self.Trainer.runTraining( self, thisData );

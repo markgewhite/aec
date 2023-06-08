@@ -27,7 +27,6 @@ classdef RepresentationModel
         MeanCurve       % estimated mean curve
         ComponentType   % type of components generated
         LatentComponents % computed components across partitions
-        LatentResponseFcn % method to generate output using Z
         ShowComponentPts % show the predicted points in plots
 
         Predictions     % training and validation predictions

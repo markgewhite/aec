@@ -1,4 +1,4 @@
-function [self, thisDataset] = finalizeInit( self, thisDataset )
+function self = finalizeInit( self, thisDataset )
     % Post-construction model initialization
     % For tasks that depend on subclass initiation 
     % but apply to all models
@@ -8,7 +8,7 @@ function [self, thisDataset] = finalizeInit( self, thisDataset )
     end
 
     % set the target dimension
-    [self, thisDataset] = finalizeInit@RepresentationModel( self, thisDataset );
+    self = finalizeInit@RepresentationModel( self, thisDataset );
 
     % initialize the encoder and decoder networks
     self.Nets.Encoder = self.initEncoder;
@@ -16,9 +16,5 @@ function [self, thisDataset] = finalizeInit( self, thisDataset )
     
     % initialize any other networks used by loss functions
     self = self.initLossFcnNetworks;
-
-    % set the response function for generating components
-    self.LatentResponseFcn = @(dlZ) self.reconstruct( dlZ, smooth = false );
-
 
 end
