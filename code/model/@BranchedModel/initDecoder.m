@@ -19,7 +19,7 @@ function net = initDecoder( self )
 
     for d = dRange
 
-        if self.HasDecoderMasking
+        if self.HasDecoderMasking && self.ZDimAux>1
             maskD = mask;
             maskD(d) = true;
             lgraph = addLayers( lgraph, ...
@@ -29,10 +29,12 @@ function net = initDecoder( self )
             lastLayerName = ['mask' num2str(100*d)];
             lgraph = connectLayers( lgraph, ...
                                     inputLayerName, lastLayerName );
+        else
+            lastLayerName = inputLayerName;
         
         end
 
-        [lgraph, lastLayerName] = self.initDecoderHiddenLayers( lgraph, lastLayerName, d*100 );
+        [lgraph, lastLayerName] = self.initDecoderHiddenLayers( lgraph, lastLayerName, d*100 ); %#ok<ASGLU> 
 
         if self.XChannels > 1
             lgraph = [ lgraph;

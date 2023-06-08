@@ -5,7 +5,7 @@ clear;
 runAnalysis = true;
 inParallel = false;
 catchErrors = false;
-reportIdx = 2:4;
+reportIdx = 1:4;
 plotDim = [2 5];
 
 % set the destinations for results and figures
@@ -16,7 +16,7 @@ pathResults = [path0 '/../paper/results/'];
 % -- model setup --
 setup.model.class = @ConvBranchedModel;
 setup.model.args.UseEncodingMean = false;
-setup.model.args.NumEncodingDraws = 10;
+setup.model.args.NumEncodingDraws = 1;
 setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 2;
 %setup.model.args.FilterSize = 5;
@@ -35,7 +35,7 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 %setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'PDP';
+setup.model.args.ComponentType = 'AEC';
 setup.model.args.NumCompLines = 3;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
@@ -79,9 +79,9 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 10;
+setup.model.args.trainer.NumIterations = 1000;
 setup.model.args.trainer.BatchSize = 100;
-setup.model.args.trainer.UpdateFreq = 100;
+setup.model.args.trainer.UpdateFreq = 50;
 setup.model.args.trainer.Holdout = 0;
 
 % --- evaluation setup ---
@@ -93,12 +93,12 @@ setup.eval.args.InParallel = inParallel;
 memorySaving = 3;
 
 % -- grid search --
-parameters = [ "model.class", ...
-               "model.args.lossFcns.zcls.args.DoCalcLoss", ...
-               "model.args.ComponentType" ];
-values = {{@ConvBranchedModel}, ...
-          {false, true}, ...
-          {'ALE', 'PDP', 'AEC'}}; 
+parameters = [ "model.args.ZDim", ...
+               "model.args.NumEncodingDraws", ...
+               "model.args.lossFcns.zcls.args.DoCalcLoss" ];
+values = {[1, 2, 3, 4], ...
+          [1, 2, 5, 10], ...
+          {false, true}}; 
 
 %parameters = [ "model.args.NetNormalizationType", ...
 %               "model.args.NetActivationType", ...

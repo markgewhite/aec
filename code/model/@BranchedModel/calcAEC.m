@@ -20,7 +20,7 @@ function dlXCHat = calcAEC( self, dlXB, args )
 
     % define the component array
     XDim = size( dlXB{1}, 1 );
-    dlXCHat = dlarray( zeros( XDim, K, self.ZDimAux, self.XChannels ) );
+    dlXCHat = dlarray( zeros( XDim, K, self.ZDimAux, self.XChannels, 'single' ) );
 
     % iterate through the components computing values at z-scores
     for i = 1:self.ZDimAux

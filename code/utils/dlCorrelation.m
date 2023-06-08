@@ -16,7 +16,7 @@ function dlQCorr = dlCorrelation( dlQ )
     
     if any(dlSigma==0)
         % avoid divide by zero and exit
-        dlQCorr = dlarray( zeros(d, d), 'CB' );
+        dlQCorr = dlarray( zeros(d, 'single'), 'CB' );
     
     else
         % compute centered data

@@ -38,7 +38,7 @@ function [ lgraph, lastLayer ] = addBlock( firstLayer, ...
     % connect layers at the front
     lgraph = addLayers( lgraph, block );
     lgraph = connectLayers( lgraph, precedingLayer, firstLayer.Name );
-    
+
     lastLayer = block(end).Name;
 
 end

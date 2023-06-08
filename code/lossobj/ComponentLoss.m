@@ -68,7 +68,12 @@ classdef ComponentLoss < LossFunction
                 self
                 dlXC  dlarray  % generated AE components
             end
-               
+            
+            if size( dlXC, 3 )==1
+                loss = 0*dlXC(1,1,1,1);
+                return
+            end
+
             switch self.Criterion
                 case 'Orthogonality'
                     % compute the inner product as a test
