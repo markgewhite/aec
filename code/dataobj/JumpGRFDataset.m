@@ -3,22 +3,26 @@ classdef JumpGRFDataset < ModelDataset
 
     properties
         SubjectID       % identifying participants
+        OutcomeVar      % outcome variable
     end
 
     methods
 
-        function self = JumpGRFDataset( set, args, superArgs )
+        function self = JumpGRFDataset( set, superArgs, args )
             % Load the countermovement jump GRF dataset
             arguments
-                set        char ...
+                 set                char ...
                     {mustBeMember( set, ...
-                           {'Training', 'Testing', 'Combined'} )}
+                            {'Training', 'Testing', 'Combined'} )}
+                superArgs.?ModelDataset
+                args.OutcomeVar     char ...
+                    {mustBeMember( args.OutcomeVar, ...
+                           {'JumpType', 'JumpHeight', 'PeakPower'} )} = 'JumpType'
                 args.PaddingLength  double = 0
                 args.Lambda         double = []
-                superArgs.?ModelDataset
             end
 
-            [ XRaw, Y, S ] = JumpGRFDataset.load( set );
+            [ XRaw, Y, S ] = JumpGRFDataset.load( set, args.OutcomeVar );
             Y = Y+1;
 
             % setup padding
@@ -49,6 +53,7 @@ classdef JumpGRFDataset < ModelDataset
                             channelLimits = [0 3] );
 
             self.SubjectID = S;
+            self.OutcomeVar = args.OutcomeVar;
 
         end
 
@@ -67,7 +72,7 @@ classdef JumpGRFDataset < ModelDataset
 
     methods (Static)
 
-        function [ X, Y, S ] = load( set )
+        function [ X, Y, S ] = load( set, outcomeVar )
 
             path = fileparts( which('JumpGRFDataset.m') );
             path = [path '/../../data/jumps'];
@@ -133,9 +138,38 @@ classdef JumpGRFDataset < ModelDataset
                                                 subjectExclusions, jumpExclusions, ...
                                                 options );
             % extract the relevant data
-            X = rawDataSet{2}; % jumps with and without arm swing
-            Y = typeSet{2}; % jump class (with/without arm swing)
+            Y.JHtov = cell(2, 1);
+            X = rawDataSet;
+            S = subjectSet;
+            C = typeSet{2};
+            for i = 1:2
+                for j = 1:length(X{i})
+                   p = jumpperf( X{i}{j} );
+                   Y.JHtov{i}(j) = p.JHtov;
+                   Y.JHwd{i}(j) = p.JHwd;
+                   Y.PP{i}(j) = p.PP;
+                end
+            end
+
+            filename = ['jumpGRFData-' set '2'];
+            save( fullfile( path, filename ), ...
+                'X', 'Y', 'C', 'S' );
+
+            X = rawDataSet{2}; % jumps with and without arm swing               
             S = subjectSet{2}; % subject ID
+            C = typeSet{2} + 1;
+
+
+
+
+            switch outcomeVar
+                case 'JumpType'
+                    Y = typeSet{2}+1; % jump class (with/without arm swing)
+                case 'JumpHeight'
+                    Y = typeSet{1};
+                case 'PeakPower'
+                    Y = typeSet{3};
+            end
             
        end
 
