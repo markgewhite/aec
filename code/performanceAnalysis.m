@@ -27,7 +27,7 @@ setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 2;
 %setup.model.args.FilterSize = 5;
 %setup.model.args.Padding = 'None';
-%setup.model.args.NumHiddenDecoder = 2;
+setup.model.args.NumHiddenDecoder = 3;
 %setup.model.args.FilterSizeDecoder = 17;
 %setup.model.args.PaddingDecoder = 'None';
 setup.model.args.InputDropout = 0;
@@ -93,8 +93,8 @@ setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
 %setup.model.args.lossFcns.zreg.args.UseLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 100;
-setup.model.args.trainer.UpdateFreq = 25;
+setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.UpdateFreq = 100;
 setup.model.args.trainer.Holdout = 0;
 setup.model.args.trainer.ShowPlots = false;
 
