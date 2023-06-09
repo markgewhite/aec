@@ -15,6 +15,7 @@ classdef ModelDataset
         NormalizedPts       % standardized number of points for normalization
         HasNormalizedInput  % whether input should be time-normalized too
 
+        ResampleRate        % sub-sampling rate to summarise data
         Padding         % structure specifying padding setup
         FDA             % functional data analysis settings
         TSpan           % time span vector
@@ -78,12 +79,13 @@ classdef ModelDataset
             self.NormalizedPts = args.NormalizedPts;
             self.HasNormalizedInput = args.HasNormalizedInput;
             self.Padding = args.Padding;
+            self.ResampleRate = args.ResampleRate;
 
             self.TSpan.Original = tSpan;
             self.TSpan.Input = linspace( ...
                                     self.TSpan.Original(1), ...
                                     self.TSpan.Original(end), ...
-                                    fix( length(self.TSpan.Original/args.ResampleRate) ) );
+                                    fix( length(self.TSpan.Original)/args.ResampleRate ) );
             self.XDim = length( self.TSpan.Input );
 
             self.FDA.BasisOrder = args.BasisOrder;

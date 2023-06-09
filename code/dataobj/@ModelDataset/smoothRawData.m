@@ -13,21 +13,28 @@ function self = smoothRawData( self, XCell )
                  Same = self.Padding.Same, ...
                  Location = self.Padding.Location, ...
                  Anchoring = self.Padding.Anchoring );
-    
-    % setup the smoothing parameters if not prescribed
+
+    % find the appropriate smoothing parameters for the raw data
+    self.FDA.FdParamsOriginal = self.setFDAParameters( self.TSpan.Original, X );
+
+    % create the smooth functions from the original data
+    self.XFd = smooth_basis( self.TSpan.Original, ...
+                             double(X), ...
+                             self.FDA.FdParamsOriginal );
+
+    % re-sample for the input
+    XInput = eval_fd( self.TSpan.Input, self.XFd );
+
+    % setup the smoothing parameters
     if isempty( self.FDA.Lambda )
         % find the best lambda using the data
         [self.FDA.FdParamsInput, self.FDA.Lambda] = ...
-                    self.setFDAParameters( self.TSpan.Input, X );
+                    self.setFDAParameters( self.TSpan.Input, XInput );
     else
+        % use the prescribed lambda
         self.FDA.FdParamsInput = ...
                     self.setFDAParameters( self.TSpan.Input );
     
     end
-
-    % create the smooth functions
-    self.XFd = smooth_basis( self.TSpan.Input, ...
-                             double(X), ...
-                             self.FDA.FdParamsInput );
 
 end
