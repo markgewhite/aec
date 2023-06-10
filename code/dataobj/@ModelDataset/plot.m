@@ -33,9 +33,6 @@ function fig = plot( self, args )
         hold( axes(c), 'on' );
     end
 
-    colours = lines( 9 );
-    colours = colours( 3:9, : );
-
     % get the data, either from self or as specified
     if isempty( args.tSpan )
         t = self.TSpan.Input;
@@ -52,20 +49,34 @@ function fig = plot( self, args )
     else
         Y = args.Y;
     end
-    
-    classInLegend = false( self.CDim, 1 );
+
+    % set the colour scheme
+    if self.CDim==0
+        colours = lines( self.NumObs );
+        classInLegend = true;
+        C = ones( length(Y) );
+    else
+        colours = lines( self.CDim );
+        classInLegend = false( self.CDim, 1 );
+        [~, ~, C] = unique( Y );
+    end
+
 
     % plot the curves
     for i = curves
 
         % prepare the colour based on class with random saturation
-        hsv = rgb2hsv( colours( Y(i), : ) );
-        hsv(2) = 0.5+0.5*rand();
-        rgb = hsv2rgb( hsv );
+        if self.CDim==0
+            rgb = colours( i, : );
+        else
+            hsv = rgb2hsv( colours( C(i), : ) );
+            hsv(2) = 0.5+0.5*rand();
+            rgb = hsv2rgb( hsv );
+        end
 
         for c = 1:self.XChannels
 
-            if classInLegend( Y(i) )
+            if classInLegend( C(i) )
                 % plot the curve straight
                 plot( axes(c), ...
                       t, X( :, i, c ), ...
@@ -73,9 +84,9 @@ function fig = plot( self, args )
                       Color = rgb );
             else
                 % plot the curve and update the legend
-                classInLegend( Y(i) ) = true;
-                classLabel = self.Info.ClassLabels( Y(i) );
-                pltObj( Y(i) ) = plot( axes(c), ...
+                classLabel = self.Info.ClassLabels( C(i) );
+                classInLegend( C(i) ) = true;
+                pltObj( C(i) ) = plot( axes(c), ...
                                   t, X( :, i, c ), ...
                                   Color = rgb, ...
                                   LineWidth = 1, ...
@@ -92,7 +103,7 @@ function fig = plot( self, args )
         hold( axes(c), 'off' );
 
         % finalise the plot with formatting, etc
-        if args.showLegend && c==1
+        if args.showLegend && c==1 && self.CDim>0
             legend( axes(c), pltObj, Location = 'best' );
         end
         

@@ -74,15 +74,22 @@ function plotZClusters( self, Z, args )
     end
     
     % plot true classes (large dots)
-    colours = lines( length(classes) );
     if size(ZT,2)==1
         ZT = [ZT ZT];
     end
-    gscatter( axis, ZT(:,1), ZT(:,2), Y, colours, '.', dotSize );
+
+    if self.CDim==0
+        colour = lines( 1 );
+        scatter( axis, ZT(:,1), ZT(:,2), dotSize*10, colour, '.' );
+    else
+        colours = lines( self.CDim );
+        [~, ~, C] = unique( Y );
+        gscatter( axis, ZT(:,1), ZT(:,2), C, colours, '.', dotSize );
+    end
     
     hold( axis, 'off' );
     
-    if ~args.compact
+    if ~args.compact && self.CDim>0
         legend( axis, 'Location', 'Best' );
     end
 

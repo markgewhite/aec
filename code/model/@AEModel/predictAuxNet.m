@@ -4,7 +4,6 @@ function [ dlYHat, dlYHatScore ] = predictAuxNet( self, Z, args )
         self            AEModel
         Z               {mustBeA(Z, {'double', 'single', 'dlarray'})}
         args.convert    logical = true
-        args.hotdecode  logical = true
     end
         
     if isa( Z, 'dlarray' )
@@ -51,7 +50,7 @@ function [ dlYHat, dlYHatScore ] = predictAuxNet( self, Z, args )
 
     end
 
-    if args.hotdecode
+    if strcmp( self.AuxObjective, 'Classification' )
         dlYHat = dlarray(single(onehotdecode( dlYHat, 1:self.CDim, 1 )), 'CB' );
     end
 

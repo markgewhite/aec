@@ -87,7 +87,12 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
     ZLong = (ZLong-thisModel.AuxModelZMean)./thisModel.AuxModelZStd;
 
     pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
-    eval.AuxModel = evaluateClassifier( pred.Y, pred.AuxModelYHat );
+    switch thisModel.AuxObjective
+        case 'Classification'
+            eval.AuxModel = evaluateClassifier( pred.Y, pred.AuxModelYHat );
+        case 'Regression'
+            eval.AuxModel = evaluateRegressor( pred.Y, pred.AuxModelYHat );
+    end
 
     % store the model coefficients - all important
     switch class( thisModel.AuxModel )
@@ -95,6 +100,8 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
             eval.AuxModel.Coeff = thisModel.AuxModel.Beta;
         case 'ClassificationDiscriminant'
             eval.AuxModel.Coeff = thisModel.AuxModel.DeltaPredictior;
+        case 'RegressionLinear'
+            eval.AuxModel.Coeff = thisModel.AuxModel.Beta;
     end
 
     % extract the two largest coefficients

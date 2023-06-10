@@ -2,7 +2,7 @@ function [model, ZTrnMean, ZTrnSD] = trainAuxModel( modelType, dlZTrn, dlYTrn )
     % Train a non-network auxiliary model
     arguments
         modelType   string ...
-            {mustBeMember(modelType, {'Logistic', 'Fisher', 'SVM'} )}
+            {mustBeMember(modelType, {'Logistic', 'Fisher', 'SVM', 'LR'} )}
         dlZTrn      dlarray
         dlYTrn      dlarray
     end
@@ -24,6 +24,8 @@ function [model, ZTrnMean, ZTrnSD] = trainAuxModel( modelType, dlZTrn, dlYTrn )
             model = fitcdiscr( ZTrn, YTrn );
         case 'SVM'
             model = fitcecoc( ZTrn, YTrn );
+        case 'LR'
+            model = fitrlinear( ZTrn, YTrn );
     end
 
 end

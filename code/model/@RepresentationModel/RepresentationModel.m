@@ -12,6 +12,7 @@ classdef RepresentationModel
         FDA             % functional data parameters used in fitting
         Info            % information about the dataset
         Scale           % scaling factor for reconstruction loss
+        AuxObjective    % whether the objective is classification or regression 
         AuxModelType    % type of auxiliary model to use
         AuxModel        % auxiliary model
         AuxModelZMean   % mean used in standardizing Z prior to fitting (apply before prediction)
@@ -54,6 +55,9 @@ classdef RepresentationModel
                 args.ZDimAux            double ...
                     {mustBeInteger, ...
                      mustBeGreaterThanOrEqual(args.ZDimAux,0)} = 0
+                args.AuxObjective       string ...
+                        {mustBeMember( args.AuxObjective, ...
+                        {'Classification', 'Regression'} )} = 'Classification'
                 args.AuxModelType       string ...
                         {mustBeMember( args.AuxModelType, ...
                         {'Logistic', 'Fisher', 'SVM', 'LR'} )} = 'Logistic'
@@ -68,7 +72,7 @@ classdef RepresentationModel
                         {mustBeMember( args.ComponentType, ...
                         {'FPC', 'PDP', 'ALE', 'AEC'} )} = 'PDP'
                 args.ShowPlots          logical = true
-                args.ShowComponentPts   logical = true
+                args.ShowComponentPts   logical = false
                 args.IdenticalPartitions logical = false
                 args.Name               string = "[ModelName]"
                 args.Path               string = ""
@@ -105,6 +109,8 @@ classdef RepresentationModel
                 throwAsCaller( MException(eid,msg) );
                 end
             end
+
+            self.AuxObjective = args.AuxObjective;
 
             if self.CDim < 3
                 self.AuxModelType = args.AuxModelType;

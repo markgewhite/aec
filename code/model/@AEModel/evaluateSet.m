@@ -18,7 +18,12 @@ function [ eval, pred, cor ] = evaluateSet( self, thisDataset )
     if any(self.LossFcnTbl.Types == 'Auxiliary')
         % compute the auxiliary loss using the network
         pred.AuxNetworkYHat = predictAuxNet( self, pred.Z )';
-        eval.AuxNetwork = evaluateClassifier( pred.Y, pred.AuxNetworkYHat );
+        switch self.AuxObjective
+            case 'Classification'
+                eval.AuxNetwork = evaluateClassifier( pred.Y, pred.AuxNetworkYHat );
+            case 'Regression'
+                eval.AuxNetwork = evaluateRegressor( pred.Y, pred.AuxNetworkYHat );
+        end
     end
 
     eval = flattenStruct( eval );

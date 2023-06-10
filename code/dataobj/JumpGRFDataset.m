@@ -23,7 +23,7 @@ classdef JumpGRFDataset < ModelDataset
                 args.Lambda         double = []
             end
 
-            [ XRaw, Y, S ] = JumpGRFDataset.load( set, args.OutcomeVar );
+            [ XRaw, Y, S, labels ] = JumpGRFDataset.load( set, args.OutcomeVar );
 
             % setup padding
             if args.PaddingLength==0
@@ -49,7 +49,7 @@ classdef JumpGRFDataset < ModelDataset
                             datasetName = "Jumps VGRF Data", ...
                             channelLabels = "VGRF (BW)", ...
                             timeLabel = "Time (ms)", ...
-                            classLabels = ["WOA", "WA"], ...
+                            classLabels = labels, ...
                             channelLimits = [0 3] );
 
             self.SubjectID = S;
@@ -72,7 +72,7 @@ classdef JumpGRFDataset < ModelDataset
 
     methods (Static)
 
-        function [ X, Y, S ] = load( set, outcomeVar )
+        function [ X, Y, S, L ] = load( set, outcomeVar )
 
             path = fileparts( which('JumpGRFDataset.m') );
             path = [path '/../../data/jumps'];
@@ -110,21 +110,25 @@ classdef JumpGRFDataset < ModelDataset
                        
             switch outcomeVar
                 case 'JumpType'
-                    Y = C+1;
+                    Y = C;
                     X = X{2};
                     S = S{2};
+                    L = ["WOA", "WA"];
                 case 'JumpHeightWD'
                     Y = Y.JHwd{1}';
                     X = X{1};
                     S = S{1};
+                    L = [];
                 case 'JumpHeightTOV'
                     Y = Y.JHtov{1}';
                     X = X{1};
                     S = S{1};
+                    L = [];
                 case 'PeakPower'
                     Y = Y.PP{1}';
                     X = X{1};
                     S = S{1};
+                    L = [];
             end
             
        end

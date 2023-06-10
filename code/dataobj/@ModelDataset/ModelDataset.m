@@ -30,7 +30,6 @@ classdef ModelDataset
         XInput          % input data
        
         CDim            % number of categories
-        YLabels         % Y labels
         NumObs          % number of observations
         NumObsByClass   % number of observation by class
     end
@@ -138,24 +137,13 @@ classdef ModelDataset
         end
 
 
-        function YLabels = get.YLabels( self )
-            % Generate the categories from Y
-            arguments
-                self            ModelDataset            
-            end
-               
-            YLabels = categorical( unique(self.Y) );
-
-        end
-
-
         function CDim = get.CDim( self )
             % Get the number of classes
             arguments
                 self            ModelDataset            
             end
                
-            CDim = length( self.YLabels );
+            CDim = length( self.Info.ClassLabels );
 
         end
 

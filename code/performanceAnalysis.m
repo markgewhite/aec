@@ -43,7 +43,8 @@ setup.model.args.NetActivationType = 'None';
 
 setup.model.args.ComponentType = 'AEC';
 setup.model.args.NumCompLines = 3;
-setup.model.args.AuxModel = 'Logistic';
+setup.model.args.AuxModel = 'LR';
+setup.model.args.AuxObjective = 'Regression';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.ShowPlots = true;
@@ -83,14 +84,13 @@ setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
 %setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 %setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
-%setup.model.args.lossFcns.zreg.class = @RegressionLoss;
-%setup.model.args.lossFcns.zreg.name = 'ZRegressor';
-%setup.model.args.lossFcns.zreg.args.NumHidden = 1;
-%setup.model.args.lossFcns.zreg.args.NumFC= 10;
-%setup.model.args.lossFcns.zreg.args.HasBatchNormalization = false;
-%setup.model.args.lossFcns.zreg.args.ReluScale = 0;
-%setup.model.args.lossFcns.zreg.args.Dropout = 0;
-%setup.model.args.lossFcns.zreg.args.UseLoss = false;
+setup.model.args.lossFcns.zreg.class = @RegressionLoss;
+setup.model.args.lossFcns.zreg.name = 'ZRegressor';
+setup.model.args.lossFcns.zreg.args.NumHidden = 1;
+setup.model.args.lossFcns.zreg.args.NumFC= 10;
+setup.model.args.lossFcns.zreg.args.HasBatchNormalization = false;
+setup.model.args.lossFcns.zreg.args.ReluScale = 0;
+setup.model.args.lossFcns.zreg.args.Dropout = 0;
 
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 1000;
@@ -186,7 +186,7 @@ if runAnalysis
                 % Jumps vertical ground reaction force
                 name = 'JumpGRF';
                 setup.data.class = @JumpGRFDataset;
-                setup.data.args.OutcomeVar = 'JumpType';
+                setup.data.args.OutcomeVar = 'JumpHeightWD';
                 setup.data.args.Normalization = 'PAD';
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.NormalizedPts = 21;
