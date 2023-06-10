@@ -60,17 +60,17 @@ setup.model.args.lossFcns.reconrough.args.UseLoss = false;
 setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
 setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.Beta = 1E-2;
-setup.model.args.lossFcns.kl.args.UseLoss = false;
+setup.model.args.lossFcns.kl.args.UseLoss = true;
 
 setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
 setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
-setup.model.args.lossFcns.zorth.args.UseLoss = false;
+setup.model.args.lossFcns.zorth.args.UseLoss = true;
 
 setup.model.args.lossFcns.xorth.class = @ComponentLoss;
 setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
 setup.model.args.lossFcns.xorth.args.Criterion = 'Orthogonality';
 setup.model.args.lossFcns.xorth.args.Alpha = 1E-1;
-setup.model.args.lossFcns.xorth.args.UseLoss = false;
+setup.model.args.lossFcns.xorth.args.UseLoss = true;
 
 setup.model.args.lossFcns.xvar.class = @ComponentLoss;
 setup.model.args.lossFcns.xvar.name = 'XVarimax';

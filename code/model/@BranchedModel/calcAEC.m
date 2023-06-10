@@ -21,7 +21,8 @@ function dlXCHat = calcAEC( self, dlZ, dlXB, args )
         case 'Component'
             zsMid = linspace( -2, 2, self.NumCompLines );
     end
-    zsEdge = [-3, (zsMid(1:end-1)+zsMid(2:end))/2, 3];
+    zsLimit = 2*(length(zsMid)+1)/length(zsMid);
+    zsEdge = [-zsLimit, (zsMid(1:end-1)+zsMid(2:end))/2, zsLimit];
     K = length(zsMid);
 
     % take the mean and standard deviation of the latent codes
@@ -58,10 +59,10 @@ function dlXCHat = calcAEC( self, dlZ, dlXB, args )
     % define the component array
     XDim = size( dlXB{1}, 1 );
     dlXCHat = dlarray( zeros( XDim, K, self.ZDimAux, self.XChannels, 'single' ) );
+    zeroCols = [];
 
     % iterate through the components 
     for d = 1:self.ZDimAux
-        zeroCols = [];
         % iterate across bins (conditional mean)
         for k = 1:K
             inBin = (A(d,:)==k);
@@ -71,22 +72,10 @@ function dlXCHat = calcAEC( self, dlZ, dlXB, args )
                 zeroCols = [zeroCols, k]; %#ok<AGROW> 
             end
         end
-        % interpolate to fill in gaps
-        if ~isempty(zeroCols)
-            nonZeroCols = setdiff(1:K, zeroCols);
-            if ~isempty(nonZeroCols)
-                x = zsMid( nonZeroCols );
-                v = dlXCHat(:, nonZeroCols, d, :);
-                xq = zsMid( zeroCols );
-                for c = 1:self.XChannels
-                    for i = 1:XDim
-                        dlXCHat(i, zeroCols, d, c) = interp1(x, v(i,:,c), xq, 'linear', 'extrap');
-                    end
-                end
-            end
-        end
-
     end
 
+    % remove any zero columns
+    zeroCols = unique( zeroCols );
+    dlXCHat( :, zeroCols, : , : ) = [];
 
 end
