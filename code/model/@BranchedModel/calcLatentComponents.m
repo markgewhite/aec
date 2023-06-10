@@ -18,7 +18,7 @@ function dlXC = calcLatentComponents( self, dlZ, args )
     [ ~, ~, dlXB ] = self.reconstruct( dlZ, centre = false );
 
     % generate the components
-    dlXC = self.calcAEC( dlXB );
+    dlXC = self.calcAEC( dlZ, dlXB );
 
     % convert to double, if requested
     if args.convert

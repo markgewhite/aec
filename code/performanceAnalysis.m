@@ -24,7 +24,7 @@ setup.model.args.IsVAE = true;
 setup.model.args.UseEncodingMean = false;
 setup.model.args.NumEncodingDraws = 1;
 setup.model.args.ZDim = 2;
-setup.model.args.NumHidden = 2;
+setup.model.args.NumHidden = 3;
 %setup.model.args.FilterSize = 5;
 %setup.model.args.Padding = 'None';
 setup.model.args.NumHiddenDecoder = 3;
@@ -35,14 +35,13 @@ setup.model.args.Dropout = 0;
 setup.model.args.NetNormalizationType = 'None';
 setup.model.args.NetActivationType = 'None';
 
-%setup.model.args.NumHiddenDecoder = 2;
 %setup.model.args.NumFCDecoder = 10;
 %setup.model.args.FCFactorDecoder = 0;
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 %setup.model.args.NetActivationTypeDecoder = 'Relu';
 
 setup.model.args.ComponentType = 'AEC';
-setup.model.args.NumCompLines = 3;
+setup.model.args.NumCompLines = 7;
 setup.model.args.AuxModel = 'LR';
 setup.model.args.AuxObjective = 'Regression';
 setup.model.args.randomSeed = 1234;
@@ -61,20 +60,22 @@ setup.model.args.lossFcns.reconrough.args.UseLoss = false;
 setup.model.args.lossFcns.kl.class = @KLDivergenceLoss;
 setup.model.args.lossFcns.kl.name = 'KLDivergence';
 setup.model.args.lossFcns.kl.args.Beta = 1E-2;
-setup.model.args.lossFcns.kl.args.UseLoss = true;
+setup.model.args.lossFcns.kl.args.UseLoss = false;
 
 setup.model.args.lossFcns.zorth.class = @OrthogonalLoss;
 setup.model.args.lossFcns.zorth.name = 'ZOrthogonality';
-setup.model.args.lossFcns.zorth.args.UseLoss = true;
+setup.model.args.lossFcns.zorth.args.UseLoss = false;
 
 setup.model.args.lossFcns.xorth.class = @ComponentLoss;
 setup.model.args.lossFcns.xorth.name = 'XOrthogonality';
 setup.model.args.lossFcns.xorth.args.Criterion = 'Orthogonality';
 setup.model.args.lossFcns.xorth.args.Alpha = 1E-1;
+setup.model.args.lossFcns.xorth.args.UseLoss = false;
 
 setup.model.args.lossFcns.xvar.class = @ComponentLoss;
 setup.model.args.lossFcns.xvar.name = 'XVarimax';
 setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
+setup.model.args.lossFcns.xvar.args.UseLoss = false;
 
 %setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
 %setup.model.args.lossFcns.zcls.name = 'ZClassifier';
@@ -91,6 +92,7 @@ setup.model.args.lossFcns.zreg.args.NumFC= 10;
 setup.model.args.lossFcns.zreg.args.HasBatchNormalization = false;
 setup.model.args.lossFcns.zreg.args.ReluScale = 0;
 setup.model.args.lossFcns.zreg.args.Dropout = 0;
+setup.model.args.lossFcns.zreg.args.UseLoss = false;
 
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 1000;
@@ -107,10 +109,11 @@ setup.eval.args.InParallel = false;
 % --- investigation setup ---
 models = {@ConvBranchedModel};
 
-dims = [2 3 4 5];
+dims = [2 3 4];
 parameters = [ "model.class", ...
-               "model.args.ZDim"];
-values = {models, dims}; 
+               "model.args.ZDim", ...
+               "model.args.lossFcns.zreg.args.UseLoss" ];
+values = {models, dims, {false true}}; 
 memorySaving = 3;
 myInvestigations = cell( length(reportIdx), 1 );
 
