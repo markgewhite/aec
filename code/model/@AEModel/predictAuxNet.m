@@ -51,7 +51,8 @@ function [ dlYHat, dlYHatScore ] = predictAuxNet( self, Z, args )
     end
 
     if strcmp( self.AuxObjective, 'Classification' )
-        dlYHat = dlarray(single(onehotdecode( dlYHat, self.CLabels, 1 )), 'CB' );
+        C = onehotdecode( dlYHat, self.CLabels, 1 );
+        dlYHat = dlarray( single(self.CLabels(C)), 'CB' );
     end
 
     if args.convert        
