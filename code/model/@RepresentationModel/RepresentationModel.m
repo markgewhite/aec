@@ -84,7 +84,7 @@ classdef RepresentationModel
             % set properties based on the data
             self.XInputDim = thisDataset.XDim;
             self.CDim = thisDataset.CDim;
-            self.CLabels = categorical( double(unique(thisDataset.Y)) );
+            self.CLabels = single(unique(thisDataset.Y));
             self.XChannels = thisDataset.XChannels;
             self.Info = thisDataset.Info;
 

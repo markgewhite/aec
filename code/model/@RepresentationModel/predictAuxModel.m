@@ -14,7 +14,12 @@ function [ YHat, YHatScore] = predictAuxModel( self, Z )
         Z = Z';
     end
 
-    [YHat, YHatScore] = predict( self.AuxModel, Z );
+    if strcmp( self.AuxObjective, 'Classification' )
+        [YHat, YHatScore] = predict( self.AuxModel, Z );
+    else
+        YHat = predict( self.AuxModel, Z );
+        YHatScore = [];
+    end
 
     if doTranspose
         YHat = YHat';

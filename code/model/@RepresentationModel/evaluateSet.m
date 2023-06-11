@@ -86,7 +86,7 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
     ZLong = reshape( pred.ZAux, size( pred.ZAux, 1 ), [] );
     ZLong = (ZLong-thisModel.AuxModelZMean)./thisModel.AuxModelZStd;
 
-    pred.AuxModelYHat = predict( thisModel.AuxModel, ZLong );
+    pred.AuxModelYHat = predictAuxModel( thisModel, ZLong );
     switch thisModel.AuxObjective
         case 'Classification'
             eval.AuxModel = evaluateClassifier( pred.Y, pred.AuxModelYHat );

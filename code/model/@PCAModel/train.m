@@ -35,6 +35,8 @@ function self = train( self, thisData )
             self.AuxModel = fitcdiscr( ZAux, thisData.Y );
         case 'SVM'
             self.AuxModel = fitcecoc( ZAux, thisData.Y );
+        case 'LR'
+            self.AuxModel = fitrlinear( ZAux, thisData.Y );
     end
 
     % compute the mean curve directly

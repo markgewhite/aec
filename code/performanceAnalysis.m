@@ -27,6 +27,7 @@ setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 3;
 %setup.model.args.FilterSize = 5;
 %setup.model.args.Padding = 'None';
+setup.model.args.Pooling = 'GlobalMax';
 setup.model.args.NumHiddenDecoder = 3;
 %setup.model.args.FilterSizeDecoder = 17;
 %setup.model.args.PaddingDecoder = 'None';
@@ -42,7 +43,7 @@ setup.model.args.NetActivationType = 'None';
 
 setup.model.args.ComponentType = 'AEC';
 setup.model.args.NumCompLines = 7;
-setup.model.args.AuxModel = 'LR';
+setup.model.args.AuxModel = 'Logistic';
 setup.model.args.AuxObjective = 'Classification';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
@@ -109,7 +110,7 @@ setup.eval.args.InParallel = false;
 % --- investigation setup ---
 models = {@ConvBranchedModel};
 
-dims = [2 3 4];
+dims = [2 3];
 compTypes = {'PDP', 'AEC'};
 parameters = [ "model.args.ZDim", ...
                "model.args.lossFcns.zcls.args.UseLoss" ];

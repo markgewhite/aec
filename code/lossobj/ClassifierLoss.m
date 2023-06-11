@@ -81,7 +81,7 @@ classdef ClassifierLoss < LossFunction
 
             self.ZDimAux = thisModel.ZDimAux;
             self.CDim = thisModel.CDim;
-            self.CLabels = thisModel.CLabels;
+            self.CLabels = categorical( thisModel.CLabels );
 
         end
 
