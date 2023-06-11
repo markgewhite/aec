@@ -81,7 +81,7 @@ classdef ClassifierLoss < LossFunction
 
             self.ZDimAux = thisModel.ZDimAux;
             self.CDim = thisModel.CDim;
-            self.CLabels = categorical( 1:self.CDim );
+            self.CLabels = thisModel.CLabels;
 
         end
 
@@ -174,8 +174,7 @@ classdef ClassifierLoss < LossFunction
             [ dlCGen, state ] = forward( net, dlZGen );
 
             % hotcode the actual class 
-            dlCActual = dlarray( ...
-                onehotencode( self.CLabels(dlC), 1 ), 'CB' );
+            dlCActual = dlarray( onehotencode( categorical(dlC), 1 ), 'CB' );
             
             % compute the cross entropy (classifier) loss
             loss = crossentropy( dlCGen, dlCActual, ...

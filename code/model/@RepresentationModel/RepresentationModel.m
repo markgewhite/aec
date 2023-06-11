@@ -7,6 +7,7 @@ classdef RepresentationModel
         ZDim            % Z dimension (number of features)
         ZDimAux         % Z dimension for the auxiliary model
         CDim            % C dimension (number of classes)
+        CLabels         % unique class labels
         XChannels       % number of channels in X
         TSpan           % time-spans used in fitting
         FDA             % functional data parameters used in fitting
@@ -83,6 +84,7 @@ classdef RepresentationModel
             % set properties based on the data
             self.XInputDim = thisDataset.XDim;
             self.CDim = thisDataset.CDim;
+            self.CLabels = categorical( double(unique(thisDataset.Y)) );
             self.XChannels = thisDataset.XChannels;
             self.Info = thisDataset.Info;
 

@@ -43,7 +43,7 @@ setup.model.args.NetActivationType = 'None';
 setup.model.args.ComponentType = 'AEC';
 setup.model.args.NumCompLines = 7;
 setup.model.args.AuxModel = 'LR';
-setup.model.args.AuxObjective = 'Regression';
+setup.model.args.AuxObjective = 'Classification';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
 setup.model.args.ShowPlots = true;
@@ -77,26 +77,26 @@ setup.model.args.lossFcns.xvar.name = 'XVarimax';
 setup.model.args.lossFcns.xvar.args.Criterion = 'Varimax';
 setup.model.args.lossFcns.xvar.args.UseLoss = false;
 
-%setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
-%setup.model.args.lossFcns.zcls.name = 'ZClassifier';
-%setup.model.args.lossFcns.zcls.args.NumHidden = 1;
-%setup.model.args.lossFcns.zcls.args.NumFC= 10;
-%setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
-%setup.model.args.lossFcns.zcls.args.ReluScale = 0;
-%setup.model.args.lossFcns.zcls.args.Dropout = 0;
+setup.model.args.lossFcns.zcls.class = @ClassifierLoss;
+setup.model.args.lossFcns.zcls.name = 'ZClassifier';
+setup.model.args.lossFcns.zcls.args.NumHidden = 1;
+setup.model.args.lossFcns.zcls.args.NumFC= 10;
+setup.model.args.lossFcns.zcls.args.HasBatchNormalization = false;
+setup.model.args.lossFcns.zcls.args.ReluScale = 0;
+setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
-setup.model.args.lossFcns.zreg.class = @RegressionLoss;
-setup.model.args.lossFcns.zreg.name = 'ZRegressor';
-setup.model.args.lossFcns.zreg.args.NumHidden = 1;
-setup.model.args.lossFcns.zreg.args.NumFC= 10;
-setup.model.args.lossFcns.zreg.args.HasBatchNormalization = false;
-setup.model.args.lossFcns.zreg.args.ReluScale = 0;
-setup.model.args.lossFcns.zreg.args.Dropout = 0;
-setup.model.args.lossFcns.zreg.args.UseLoss = false;
+%setup.model.args.lossFcns.zreg.class = @RegressionLoss;
+%setup.model.args.lossFcns.zreg.name = 'ZRegressor';
+%setup.model.args.lossFcns.zreg.args.NumHidden = 1;
+%setup.model.args.lossFcns.zreg.args.NumFC= 10;
+%setup.model.args.lossFcns.zreg.args.HasBatchNormalization = false;
+%setup.model.args.lossFcns.zreg.args.ReluScale = 0;
+%setup.model.args.lossFcns.zreg.args.Dropout = 0;
+%setup.model.args.lossFcns.zreg.args.UseLoss = false;
 
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 1000;
-setup.model.args.trainer.UpdateFreq = 100;
+setup.model.args.trainer.UpdateFreq = 200;
 setup.model.args.trainer.Holdout = 0;
 setup.model.args.trainer.ShowPlots = false;
 
@@ -110,10 +110,10 @@ setup.eval.args.InParallel = false;
 models = {@ConvBranchedModel};
 
 dims = [2 3 4];
-parameters = [ "model.class", ...
-               "model.args.ZDim", ...
-               "model.args.lossFcns.zreg.args.UseLoss" ];
-values = {models, dims, {false true}}; 
+compTypes = {'PDP', 'AEC'};
+parameters = [ "model.args.ZDim", ...
+               "model.args.lossFcns.zcls.args.UseLoss" ];
+values = {dims, {false true}}; 
 memorySaving = 3;
 myInvestigations = cell( length(reportIdx), 1 );
 
@@ -189,7 +189,7 @@ if runAnalysis
                 % Jumps vertical ground reaction force
                 name = 'JumpGRF';
                 setup.data.class = @JumpGRFDataset;
-                setup.data.args.OutcomeVar = 'JumpHeightWD';
+                setup.data.args.OutcomeVar = 'JumpType';
                 setup.data.args.Normalization = 'PAD';
                 setup.data.args.HasNormalizedInput = true;
                 setup.data.args.NormalizedPts = 21;
