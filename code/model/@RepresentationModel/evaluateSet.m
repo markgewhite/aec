@@ -24,7 +24,8 @@ function [eval, pred, cor] = evaluateSet( thisModel, thisDataset )
 
     % compute reconstruction roughness
     eval.ReconRoughness = reconRoughnessLoss( pred.XHat, thisModel.Scale );
-    
+    eval.ComponentRoughness = reconRoughnessLoss( thisModel.LatentComponents, thisModel.Scale );
+
     % compute the bias and variance
     eval.ReconBias = reconBias( pred.XTarget, pred.XHat, thisModel.Scale );
     eval.ReconVar = eval.ReconLoss - eval.ReconBias^2;

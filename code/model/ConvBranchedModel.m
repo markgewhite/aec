@@ -2,11 +2,13 @@ classdef ConvBranchedModel < BranchedModel
     % Subclass defining a convolutional autoencoder model
     properties
         NumFilters    % number of filters aka kernels for the encoder
+        FilterFactor  % multiple applied to NumFilters for each successive layer
         FilterSize    % length of the filters for the encoder
         Stride        % filter step size for the encocer
         Padding       % encoder paddingfor the encoder
         Pooling       % pooling operator
         NumFiltersDecoder  % number of filters for the decoder
+        FilterFactorDecoder  % multiple applied to NumFiltersDecoder for each successive layer
         FilterSizeDecoder  % length of the decoder filters
         StrideDecoder      % decoder stride
         PaddingDecoder  % decoder padding better known as cropping
@@ -15,9 +17,9 @@ classdef ConvBranchedModel < BranchedModel
     methods
 
         function self = ConvBranchedModel( thisDataset, ...
-                                 superArgs, ...
-                                 superArgs2, ...
-                                 args )
+                                           superArgs, ...
+                                           superArgs2, ...
+                                           args )
             % Initialize the model
             arguments
                 thisDataset     ModelDataset
@@ -26,6 +28,8 @@ classdef ConvBranchedModel < BranchedModel
                 superArgs2.path     string
                 args.NumFilters     double ...
                     {mustBeInteger, mustBePositive} = 16
+                args.FilterFactor   double ...
+                    {mustBeInteger, mustBePositive} = 2
                 args.FilterSize     double ...
                     {mustBeInteger, mustBePositive} = 5
                 args.Stride         double ...
@@ -38,6 +42,8 @@ classdef ConvBranchedModel < BranchedModel
                       {'GlobalMax', 'GlobalAvg', 'None'} )} = 'None'
                 args.NumFiltersDecoder  double ...
                     {mustBeInteger, mustBePositive} = 16
+                args.FilterFactorDecoder  double ...
+                    {mustBeInteger, mustBePositive} = 2
                 args.FilterSizeDecoder  double ...
                     {mustBeInteger, mustBePositive} = 5
                 args.StrideDecoder  double ...
@@ -57,11 +63,13 @@ classdef ConvBranchedModel < BranchedModel
 
             % store this class's properties
             self.NumFilters = args.NumFilters;
+            self.FilterFactor = args.FilterFactor;
             self.FilterSize = args.FilterSize;
             self.Stride = args.Stride;
             self.Padding = args.Padding;
             self.Pooling = args.Pooling;
             self.NumFiltersDecoder = args.NumFiltersDecoder;
+            self.FilterFactorDecoder = args.FilterFactorDecoder;
             self.FilterSizeDecoder = args.FilterSizeDecoder;
             self.StrideDecoder = args.StrideDecoder;
             self.PaddingDecoder = args.PaddingDecoder;
@@ -133,7 +141,7 @@ classdef ConvBranchedModel < BranchedModel
                                     self.NetNormalizationType, ...
                                     self.NetActivationType );
 
-                numFilters = numFilters*2;
+                numFilters = fix( numFilters*self.FilterFactor );
 
             end
             
@@ -213,7 +221,7 @@ classdef ConvBranchedModel < BranchedModel
                                     self.NetNormalizationTypeDecoder, ...
                                     self.NetActivationTypeDecoder );
 
-                numFilters = numFilters/2;
+                numFilters = fix( numFilters/self.FilterFactorDecoder );
 
             end
 

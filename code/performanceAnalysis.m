@@ -15,7 +15,7 @@ rng('default');
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/performanceAnalysis.m') );
-path = [path0 '/../results/perf 3/'];
+path = [path0 '/../results/test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- model setup --
@@ -25,12 +25,13 @@ setup.model.args.UseEncodingMean = false;
 setup.model.args.NumEncodingDraws = 1;
 setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 3;
-%setup.model.args.FilterSize = 5;
-%setup.model.args.Padding = 'None';
-setup.model.args.Pooling = 'GlobalMax';
-setup.model.args.NumHiddenDecoder = 3;
-%setup.model.args.FilterSizeDecoder = 17;
-%setup.model.args.PaddingDecoder = 'None';
+setup.model.args.FilterSize = 4;
+setup.model.args.Stride = 2;
+setup.model.args.Pooling = 'None';
+setup.model.args.NumHiddenDecoder = 4;
+setup.model.args.NumFiltersDecoder = 8;
+setup.model.args.FilterSizeDecoder = 3;
+setup.model.args.StrideDecoder = 3;
 setup.model.args.InputDropout = 0;
 setup.model.args.Dropout = 0;
 setup.model.args.NetNormalizationType = 'None';
@@ -97,7 +98,7 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
 setup.model.args.trainer.NumIterations = 1000;
-setup.model.args.trainer.UpdateFreq = 200;
+setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
 setup.model.args.trainer.ShowPlots = false;
 
@@ -110,11 +111,22 @@ setup.eval.args.InParallel = false;
 % --- investigation setup ---
 models = {@ConvBranchedModel};
 
-dims = [2 3];
+dims = [2];
 compTypes = {'PDP', 'AEC'};
-parameters = [ "model.args.ZDim", ...
+parameters = [ "model.args.NumFilters", ...
+               "model.args.FilterSize", ...
+               "model.args.Stride", ...
+               "model.args.NumFiltersDecoder", ...
+               "model.args.FilterSizeDecoder", ...
+               "model.args.StrideDecoder", ...
                "model.args.lossFcns.zcls.args.UseLoss" ];
-values = {dims, {false true}}; 
+values = {  [8 16], ...
+            [3 4 5], ...
+            [2 3], ...
+            [8 16], ...
+            [3 4 5], ...
+            [2 3], ...
+            {false true}}; 
 memorySaving = 3;
 myInvestigations = cell( length(reportIdx), 1 );
 
@@ -236,7 +248,7 @@ if runAnalysis
 
         end
            
-        myInvestigations{i} = Investigation( name, path, parameters, values, ...
+        myInvestigations{i} = ParallelInvestigation( name, path, parameters, values, ...
                                          setup, catchErrors, memorySaving );
         
         myInvestigations{i}.run;

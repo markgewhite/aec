@@ -109,6 +109,8 @@ classdef Investigation < handle
 
         conserveMemory( self, level )
 
+        evaluateAll( self )
+
         datasets = getDatasets( self, args )
         
         report = getResults( self )
