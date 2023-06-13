@@ -100,11 +100,13 @@ classdef JumpGRFDataset < ModelDataset
                               'X', 'Y', 'C', 'S' );
 
                     for i = 1:2
-                        X{i} = [X{i} X1{i}];
-                        Y{i} = [Y{i} Y1{i}];
-                        S{i} = [S{i} S1{i}];
+                        X{i} = [X{i}; X1{i}];
+                        Y.JHwd{i} = [Y.JHwd{i} Y1.JHwd{i}];
+                        Y.JHtov{i} = [Y.JHtov{i} Y1.JHtov{i}];
+                        Y.PP{i} = [Y.PP{i} Y1.PP{i}];
+                        S{i} = [S{i}; S1{i}];
                     end
-                    C = [C C1];
+                    C = [C; C1];
 
             end
                        
