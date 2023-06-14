@@ -108,7 +108,7 @@ classdef JumpGRFDataset < ModelDataset
                     end
                     C = [C; C1];
 
-            end
+           end
                        
             switch outcomeVar
                 case 'JumpType'

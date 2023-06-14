@@ -15,7 +15,7 @@ rng('default');
 
 % set the destinations for results and figures
 path0 = fileparts( which('code/performanceAnalysis.m') );
-path = [path0 '/../results/test/'];
+path = [path0 '/../results/arch_test/'];
 pathResults = [path0 '/../paper/results/'];
 
 % -- model setup --
@@ -42,7 +42,7 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 %setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'AEC';
+setup.model.args.ComponentType = 'PDP';
 setup.model.args.NumCompLines = 7;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.AuxObjective = 'Classification';
@@ -103,9 +103,9 @@ setup.model.args.trainer.Holdout = 0;
 setup.model.args.trainer.ShowPlots = false;
 
 % --- evaluation setup ---
-setup.eval.args.CVType = 'Holdout';
+setup.eval.args.CVType = 'KFold';
 setup.eval.args.KFolds = 2;
-setup.eval.args.KFoldRepeats = 5;
+setup.eval.args.KFoldRepeats = 2;
 setup.eval.args.InParallel = false;
 
 % --- investigation setup ---

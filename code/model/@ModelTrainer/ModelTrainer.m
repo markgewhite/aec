@@ -126,8 +126,6 @@ classdef ModelTrainer < handle
                                          dlY, ...
                                          preTraining )
         
-        i = iterationsPerEpoch( mbq )
-
     end
 
 end
