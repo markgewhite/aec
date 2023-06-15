@@ -12,6 +12,7 @@ classdef RegressionLoss < LossFunction
         InitLearningRate    % initial learning rate
         ModelType           % type of classifier model
         CLabels             % categorical labels
+        Alpha               % loss scaling factor
     end
 
     methods
@@ -38,6 +39,7 @@ classdef RegressionLoss < LossFunction
                 args.HasBatchNormalization  logical = true
                 args.InitLearningRate     double ...
                     {mustBeInRange(args.InitLearningRate, 0, 1)} = 0.001
+                args.Alpha       double = 1
             end
 
             superArgsCell = namedargs2cell( superArgs );
@@ -60,6 +62,7 @@ classdef RegressionLoss < LossFunction
             self.Dropout = args.Dropout;
             self.HasBatchNormalization = args.HasBatchNormalization;
             self.ModelType = args.ModelType;
+            self.Alpha = args.Alpha;
 
             if isNet
                 self.InitLearningRate = args.InitLearningRate;
@@ -154,7 +157,8 @@ classdef RegressionLoss < LossFunction
                 state = [];
 
             end
-
+            
+            loss = self.Alpha*loss;
     
         end
 

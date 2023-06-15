@@ -42,7 +42,7 @@ classdef ClassifierLoss < LossFunction
                 args.HasBatchNormalization  logical = true
                 args.InitLearningRate     double ...
                     {mustBeInRange(args.InitLearningRate, 0, 1)} = 0.001
-                args.Alpha       double = 1E-1
+                args.Alpha       double = 1
             end
 
             superArgsCell = namedargs2cell( superArgs );
