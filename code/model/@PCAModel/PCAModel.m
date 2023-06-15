@@ -19,7 +19,6 @@ classdef PCAModel < RepresentationModel
                 args.path           string
             end
 
-            superArgs.ComponentType = 'FPC';
             superArgs.ShowComponentPts = false;
             
             superArgsCell = namedargs2cell(superArgs);

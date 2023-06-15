@@ -17,7 +17,7 @@ function [ X, XN, P, Y ] = preprocMiniBatch( XCell, XNCell, PCell, YCell, ICell,
         P = cat( 1, PCell{:} );
         % check if P is square - if so, it is being used
         pSize = size( P );
-        if pSize(1)==pSize(2)
+        if pSize(1)==pSize(2) && pSize(1)>1
             % extract the I indexing array
             if ~isempty( ICell )
                 I = cat( 2, ICell{:} );

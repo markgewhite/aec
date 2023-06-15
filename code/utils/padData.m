@@ -74,19 +74,21 @@ function XP = padData( X, padLen, padValue, args )
     end
 
     % for anchoring set the same value at limits across the dataset
-    switch args.Anchoring
-
-        case 'Left'
-            XP( 1, :, : ) = repmat( mean( XP(1, :, :), 2 ), nObs, 1 );
-
-        case 'Right'
-            XP( end, :, : ) = repmat( mean( XP(end, :, :), 2 ), nObs, 1 );
-
-        case 'Both'
-            XP( 1, :, : ) = repmat( mean( XP(1, :, :), 2 ), nObs, 1 );
-            XP( end, :, : ) = repmat( mean( XP(end, :, :), 2 ), nObs, 1 );
-
-    end
+    if nObs > 1
+        switch args.Anchoring
     
+            case 'Left'
+                XP( 1, :, : ) = repmat( mean( XP(1, :, :), 2 ), nObs, 1 );
+    
+            case 'Right'
+                XP( end, :, : ) = repmat( mean( XP(end, :, :), 2 ), nObs, 1 );
+    
+            case 'Both'
+                XP( 1, :, : ) = repmat( mean( XP(1, :, :), 2 ), nObs, 1 );
+                XP( end, :, : ) = repmat( mean( XP(end, :, :), 2 ), nObs, 1 );
+    
+        end
+    end
+
 end
 

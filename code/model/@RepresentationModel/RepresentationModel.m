@@ -27,7 +27,6 @@ classdef RepresentationModel
         NumCompLines    % number of lines in the component plot
 
         MeanCurve       % estimated mean curve
-        ComponentType   % type of components generated
         LatentComponents % computed components across partitions
         ShowComponentPts % show the predicted points in plots
 
@@ -69,9 +68,6 @@ classdef RepresentationModel
                 args.RandomSeedResets   logical = false;
                 args.NumCompLines       double...
                     {mustBeInteger, mustBePositive} = 9
-                args.ComponentType      string ...
-                        {mustBeMember( args.ComponentType, ...
-                        {'FPC', 'PDP', 'ALE', 'AEC'} )} = 'PDP'
                 args.ShowPlots          logical = true
                 args.ShowComponentPts   logical = false
                 args.IdenticalPartitions logical = false
@@ -119,9 +115,7 @@ classdef RepresentationModel
             else
                 self.AuxModelType = 'SVM';
             end
-
-            self.ComponentType = args.ComponentType;
-            
+           
             if isfield( args, 'randomSeed' )
                 self.RandomSeed = args.RandomSeed;
             else

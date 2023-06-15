@@ -37,7 +37,6 @@ function setup = initSetup
     setup.model.args.NetNormalizationTypeDecoder = 'None';
     setup.model.args.NetActivationTypeDecoder = 'None';
     
-    setup.model.args.ComponentType = 'PDP';
     setup.model.args.AuxModel = 'Logistic';
     setup.model.args.randomSeed = 1234;
     setup.model.args.HasCentredDecoder = true;

@@ -58,14 +58,8 @@ classdef AEModel < RepresentationModel
             end
 
             tic;
+
             % set the superclass's properties
-            if isfield( superArgs, 'ComponentType' )
-                if strcmp(superArgs.ComponentType, 'FPC')
-                    eid = 'AEModel:FPCComponent';
-                    msg = 'FPC component type specified for AE model.';
-                    throwAsCaller( MException(eid,msg) );
-                end
-            end
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
             self = self@RepresentationModel( thisDataset, ...

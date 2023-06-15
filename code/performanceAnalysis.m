@@ -4,7 +4,7 @@ clear;
 close all;
 
 runAnalysis = true;
-catchErrors = false;
+catchErrors = true;
 
 reportIdx = 5;
 
@@ -42,7 +42,6 @@ setup.model.args.NetActivationType = 'None';
 %setup.model.args.NetNormalizationTypeDecoder = 'None';
 %setup.model.args.NetActivationTypeDecoder = 'Relu';
 
-setup.model.args.ComponentType = 'PDP';
 setup.model.args.NumCompLines = 7;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.AuxObjective = 'Classification';

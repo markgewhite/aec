@@ -16,20 +16,10 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
 
     if ~isempty( self.ActiveCompLossFcn )
         % prepare the Z values
-
-        switch self.ComponentType
-            case 'PDP'
-                dlZC = self.prepPDP( outputs.dlZ, ...
-                         sampling = self.ActiveCompLossFcn.Sampling, ...
-                         nSample = self.ActiveCompLossFcn.NumSamples, ...
-                         maxObs = self.ActiveCompLossFcn.MaxObservations );
-            case 'ALE'
-                [ dlZC, A, w ] = self.prepALE( outputs.dlZ, ...
-                         sampling = self.ActiveCompLossFcn.Sampling, ...
-                         nSample = self.ActiveCompLossFcn.NumSamples, ...
-                         maxObs = self.ActiveCompLossFcn.MaxObservations );
-        end
-
+        dlZC = self.prepPDP( outputs.dlZ, ...
+                 sampling = self.ActiveCompLossFcn.Sampling, ...
+                 nSample = self.ActiveCompLossFcn.NumSamples, ...
+                 maxObs = self.ActiveCompLossFcn.MaxObservations );
         % append to the Z list
         dlZ2 = [outputs.dlZ dlZC];
     end
@@ -54,13 +44,7 @@ function [ outputs, states ] = forward( self, encoder, decoder, dlX )
             outputs.dlXCHat = outputs.dlXGen( :, :, nObs+1:end );
         end
         % finish constructing the components
-        switch self.ComponentType
-            case 'PDP'
-                outputs.dlXC = self.calcPDP( outputs.dlXCHat );
-            case 'ALE'
-                outputs.dlXC = self.calcALE( outputs.dlXCHat, A, w );
-        end
-
+        outputs.dlXC = self.calcPDP( outputs.dlXCHat );
     else
         outputs.dlXC = [];
     end

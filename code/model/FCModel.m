@@ -1,4 +1,4 @@
-classdef FCModel < VAEModel
+classdef FCModel < AEModel
     % Subclass defining a fully connected autoencoder model
     properties
         NumHidden             % number of hidden layers
@@ -21,7 +21,7 @@ classdef FCModel < VAEModel
             % Initialize the model
             arguments
                 thisDataset     ModelDataset
-                superArgs.?VAEModel
+                superArgs.?AEModel
                 superArgs2.name     string
                 superArgs2.path     string
                 args.NumHidden      double ...
@@ -51,7 +51,7 @@ classdef FCModel < VAEModel
             superArgsCell = namedargs2cell( superArgs );
             superArgs2Cell = namedargs2cell( superArgs2 );
 
-            self@VAEModel( thisDataset, ...
+            self@AEModel( thisDataset, ...
                           superArgsCell{:}, ...
                           superArgs2Cell{:}, ...
                           FlattenInput = args.FlattenInput, ...
