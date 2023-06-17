@@ -71,6 +71,9 @@ function [model, data] = linearModel( self, outcome, args )
                         Distribution = args.Distribution );
     end
 
+    % make predictions
+    data.Prediction = predict( model, data );
+
 end
 
 

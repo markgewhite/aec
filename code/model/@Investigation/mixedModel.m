@@ -70,14 +70,17 @@ function [model, data] = mixedModel( self, outcome, args )
     randomEffects = '(1 | Fold)';
     if isempty( args.FixedFormula )
         fixedEffects = join( predictors, ' + ');
-        formula = sprintf('%s ~  %s + %s', outcome, fixedEffects, randomEffects);
+        formula = sprintf('%s ~ %s + %s', outcome, fixedEffects, randomEffects);
     else
-        formula = sprintf('%s + %s', args.FixedFormula, randomEffects);
+        formula = sprintf('%s ~ %s + %s', outcome, args.FixedFormula, randomEffects);
     end
 
     % fit the model
     model = fitglme( data, formula, ...
                      Distribution = args.Distribution );
+
+    % make predictions
+    data.Prediction = predict( model, data );
 
 end
 
