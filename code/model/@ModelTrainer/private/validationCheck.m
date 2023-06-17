@@ -12,7 +12,7 @@ function lossVal = validationCheck( thisModel, valType, dlXVal, dlXNVal, dlYVal 
 
     lossVal = 0;
     if any(strcmp( valType, {'Reconstruction', 'Both'} ))
-        dlXValHat = squeeze(thisModel.reconstruct( dlZVal, points = false ));
+        dlXValHat = squeeze(thisModel.reconstruct( dlZVal, convert = false ));
         lossVal = lossVal + reconLoss( dlXNVal, dlXValHat, thisModel.Scale );
     end
 

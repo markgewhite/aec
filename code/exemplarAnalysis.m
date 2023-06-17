@@ -20,23 +20,8 @@ setup.model.args.UseEncodingMean = false;
 setup.model.args.NumEncodingDraws = 1;
 setup.model.args.ZDim = 2;
 setup.model.args.NumHidden = 2;
-%setup.model.args.FilterSize = 5;
-%setup.model.args.Padding = 'None';
-%setup.model.args.NumHiddenDecoder = 2;
-%setup.model.args.FilterSizeDecoder = 17;
-%setup.model.args.PaddingDecoder = 'None';
-setup.model.args.InputDropout = 0;
-setup.model.args.Dropout = 0;
-setup.model.args.NetNormalizationType = 'None';
-setup.model.args.NetActivationType = 'None';
 
-%setup.model.args.NumHiddenDecoder = 2;
-%setup.model.args.NumFCDecoder = 10;
-%setup.model.args.FCFactorDecoder = 0;
-%setup.model.args.NetNormalizationTypeDecoder = 'None';
-%setup.model.args.NetActivationTypeDecoder = 'Relu';
-
-setup.model.args.NumCompLines = 3;
+setup.model.args.NumCompLines = 7;
 setup.model.args.AuxModel = 'Logistic';
 setup.model.args.randomSeed = 1234;
 setup.model.args.HasCentredDecoder = true;
@@ -79,7 +64,7 @@ setup.model.args.lossFcns.zcls.args.ReluScale = 0;
 setup.model.args.lossFcns.zcls.args.Dropout = 0;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 100;
 setup.model.args.trainer.BatchSize = 100;
 setup.model.args.trainer.UpdateFreq = 50;
 setup.model.args.trainer.Holdout = 0;
@@ -99,21 +84,6 @@ parameters = [ "model.args.ZDim", ...
 values = {[2, 3, 4], ...
           {false, true}, ...
           {false, true}}; 
-
-%parameters = [ "model.args.NetNormalizationType", ...
-%               "model.args.NetActivationType", ...
-%               "model.args.NetNormalizationTypeDecoder", ...
-%               "model.args.NetActivationTypeDecoder" ];
-%values = {{'None', 'Batch'}, ...
-%          {'None', 'Tanh', 'Relu'}, ...
-%          {'None', 'Batch', 'Layer'}, ...
-%          {'None', 'Tanh', 'Relu'}}; 
-
-%parameters = [ "model.args.NetNormalizationTypeDecoder", ...
-%               "model.args.NetActivationTypeDecoder" ];
-%values = {{'None', 'Batch', 'Layer'}, ...
-%          {'None', 'Tanh', 'Relu'}}; 
-
 
 N = 1000;
 sigma = 0.5;

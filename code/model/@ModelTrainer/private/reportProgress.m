@@ -39,6 +39,14 @@ function reportProgress( thisModel, dlZ, dlY, lossTrn, lossVal, epoch )
     % plot the Z clusters
     plotZClusters( thisModel, dlZ, Y = dlY );
 
+    % plot the reconstructed curves
+    XHat = thisModel.reconstruct( dlZ );
+    Y = double(extractdata( dlY ));
+    thisModel.DatasetPlotFcn( axes = thisModel.Axes.Pred, ...
+                              tSpan = thisModel.TSpan.Target, ...
+                              X = XHat, ...
+                              Y = Y );
+
     drawnow;
       
 end

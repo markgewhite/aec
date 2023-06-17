@@ -143,7 +143,10 @@ classdef ModelDataset
                 self            ModelDataset            
             end
                
-            CDim = length( self.Info.ClassLabels );
+            CDim = length( unique( self.Y ));
+            if CDim > 0.5*length( self.Y )
+                CDim = 0;
+            end
 
         end
 

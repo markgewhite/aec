@@ -15,6 +15,12 @@ function showAllPlots( self, args )
                             Y = self.Predictions.(args.set).Y );
         % plot the components
         self.plotLatentComp;
+
+        % plot the reconstructed curves
+        self.DatasetPlotFcn( axes = self.Axes.Pred, ...
+                             tSpan = self.TSpan.Target, ...
+                             X = self.Predictions.(args.set).XHat, ...
+                             Y = self.Predictions.(args.set).Y );
     
     else
         % graphics objects must have been cleared

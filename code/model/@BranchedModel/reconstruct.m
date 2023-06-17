@@ -4,7 +4,7 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
         self            BranchedModel
         Z               {mustBeA(Z, {'double', 'single', 'dlarray'})}
         args.centre     logical = true
-        args.points     logical = true
+        args.convert    logical = true
         args.smooth     logical = false
     end
 
@@ -27,7 +27,7 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
         dlXHat = dlXHat + self.MeanCurveTarget;
     end
 
-    if args.points
+    if args.convert
         % convert from dlarray
         XHat = double(extractdata(dlXHat));
         XHat = squeeze(permute( XHat, [1 3 2] ));

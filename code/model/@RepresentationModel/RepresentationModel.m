@@ -25,6 +25,7 @@ classdef RepresentationModel
         Figs            % figures holding the plots
         Axes            % axes for plotting latent space and components
         NumCompLines    % number of lines in the component plot
+        DatasetPlotFcn  % function handle to ModelDataset's plot function
 
         MeanCurve       % estimated mean curve
         LatentComponents % computed components across partitions
@@ -90,6 +91,9 @@ classdef RepresentationModel
             % set the FDA parameters for input
             % (FDA parameters for target and component are set later)
             self.FDA = thisDataset.FDA;
+
+            % store the function handle of the data set's plot function
+            self.DatasetPlotFcn = @thisDataset.plot;
 
             % set the scaling factor(s) based on all X
             self.Scale = scalingFactor( thisDataset.XInput );

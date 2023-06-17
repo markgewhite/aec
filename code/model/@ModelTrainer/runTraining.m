@@ -86,10 +86,5 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     thisModel.FDA.FdParamsComponent = thisModel.FDA.FdParamsInput;
     thisModel.FDA.LambdaComponent = thisModel.FDA.Lambda;
 
-    % plot the reconstructions
-    thisTrnData.plot( tSpan = thisModel.TSpan.Target, ...
-                      X = XHatTrnAll, ...
-                      Y = double(extractdata(dlYTrnAll)) );
-
 end
     

@@ -115,22 +115,22 @@ classdef JumpGRFDataset < ModelDataset
                     Y = C;
                     X = X{2};
                     S = S{2};
-                    L = ["WOA", "WA"];
+                    L = ["Without Arms", "With Arms"];
                 case 'JumpHeightWD'
                     Y = Y.JHwd{1}';
                     X = X{1};
                     S = S{1};
-                    L = [];
+                    L = "Jump Height (WD)";
                 case 'JumpHeightTOV'
                     Y = Y.JHtov{1}';
                     X = X{1};
                     S = S{1};
-                    L = [];
+                    L = "Jump Height (TOV)";
                 case 'PeakPower'
                     Y = Y.PP{1}';
                     X = X{1};
                     S = S{1};
-                    L = [];
+                    L = "Peak Power";
             end
             
        end
