@@ -8,6 +8,14 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
         args.smooth     logical = false
     end
 
+    if ~self.HasBranchedDecoder
+        argsCell = namedargs2cell( args );
+        [ XHat, XHatSmth ] = reconstruct@AEModel( self, Z, argsCell{:} );
+        XComp = [];
+        XCompSmth = [];
+        return
+    end
+
     if isa( Z, 'dlarray' )
         dlZ = Z;
     else
@@ -15,7 +23,6 @@ function [ XHat, XHatSmth, XComp, XCompSmth ] = reconstruct( self, Z, args )
     end
 
     [ dlXComp{1:self.ZDimAux} ] = predict( self.Nets.Decoder, dlZ );
-
     % sum the components to get the full reconstruction
     dlXHat = dlXComp{1};
     for i = 2:self.ZDimAux

@@ -30,9 +30,12 @@ function [ XHat, XHatSmth ] = reconstruct( self, Z, args )
                                  self.TSpan.Target, ...
                                  self.TSpan.Input, ...
                                  self.FDA.FdParamsInput );
+        else
+            XHatSmth = [];
         end
 
     else
+        XHat = dlXHat;
         XHatSmth = [];
 
     end

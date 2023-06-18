@@ -7,13 +7,15 @@ function net = initEncoder( self )
     [lgraph, lastInputLayer] = self.initEncoderInputLayers;
 
     if self.HasBranchedEncoder
-        lgraph = addLayers( lgraph, ...
-                            additionLayer( self.ZDimAux, 'Name', 'add' ) );
+
         if self.HasEncoderMasking
-            mask = [false( self.ZDimAux, 1 );
-                    true( self.ZDim - self.ZDimAux, 1 )];
+            lgraph = addLayers( lgraph, ...
+                                concatenationLayer( 1, self.ZDim, 'Name', 'concat' ) );
+        else
+            lgraph = addLayers( lgraph, ...
+                                additionLayer( self.ZDim, 'Name', 'add' ) );
         end
-        dRange = 1:self.ZDimAux;
+        dRange = 1:self.ZDim;
 
     else
         dRange = 0;
@@ -24,23 +26,16 @@ function net = initEncoder( self )
 
         [lgraph, lastLayerName] = self.initEncoderHiddenLayers( lgraph, lastInputLayer, d*100 );
        
-        if self.HasBranchedEncoder && self.HasEncoderMasking
-            maskD = mask;
-            maskD(d) = true;
-            finalLayerName = ['mask' num2str(100*d)];
-            lgraph = addLayers( lgraph, ...
-                                maskLayer( maskD, ...
-                                           'ReduceDim', false, ...
-                                            'Name', finalLayerName ) );
-        else
-            finalLayerName = lastLayerName;
-    
-        end
-    
         if self.HasBranchedEncoder
-            lgraph = connectLayers( lgraph, ...
-                                    finalLayerName, ...
-                                    ['add/in' num2str(d)] );
+            if self.HasEncoderMasking
+                lgraph = connectLayers( lgraph, ...
+                                        lastLayerName, ...
+                                        ['concat/in' num2str(d)] );
+            else
+                lgraph = connectLayers( lgraph, ...
+                                        lastLayerName, ...
+                                        ['add/in' num2str(d)] );
+            end
         end
 
     end

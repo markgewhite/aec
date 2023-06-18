@@ -40,10 +40,10 @@ classdef BranchedModel < AEModel
                     {mustBeInteger, mustBePositive} = 4
                 args.NetNormalizationType char ...
                     {mustBeMember( args.NetNormalizationType, ...
-                    {'None', 'Batch', 'Layer'} )} = 'None'
+                    {'None', 'Batch', 'Layer'} )} = 'Batch'
                 args.NetNormalizationTypeDecoder char ...
                     {mustBeMember( args.NetNormalizationTypeDecoder, ...
-                    {'None', 'Batch', 'Layer'} )} = 'None'
+                    {'None', 'Batch', 'Layer'} )} = 'Layer'
                 args.NetActivationType char ...
                     {mustBeMember( args.NetActivationType, ...
                     {'None', 'Tanh', 'Relu'} )} = 'Tanh'
@@ -55,9 +55,9 @@ classdef BranchedModel < AEModel
                 args.ReluScaleDecoder       double ...
                     {mustBeInRange(args.ReluScaleDecoder, 0, 1)} = 0.2
                 args.InputDropout   double ...
-                    {mustBeInRange(args.InputDropout, 0, 1)} = 0.2
+                    {mustBeInRange(args.InputDropout, 0, 1)} = 0.0
                 args.Dropout                double ...
-                    {mustBeInRange(args.Dropout, 0, 1)} = 0.05
+                    {mustBeInRange(args.Dropout, 0, 1)} = 0.0
                 args.DropoutDecoder         double ...
                     {mustBeInRange(args.DropoutDecoder, 0, 1)} = 0.0
                 args.HasBranchedEncoder     logical = false
@@ -66,6 +66,19 @@ classdef BranchedModel < AEModel
                 args.HasDecoderMasking      logical = true
                 args.FlattenInput           logical = true
                 args.HasSeqInput            logical = false
+            end
+
+            % additional validation
+            if args.HasEncoderMasking && ~args.HasBranchedEncoder
+                eid = 'BranchedModel:MaskingWithoutBranching';
+                msg = 'Masking requested for the encoder without it having branching.';
+                throwAsCaller( MException(eid,msg) );
+            end
+            
+            if args.HasDecoderMasking && ~args.HasBranchedDecoder
+                eid = 'BranchedModel:MaskingWithoutBranching';
+                msg = 'Masking requested for the decoder without it having branching.';
+                throwAsCaller( MException(eid,msg) );
             end
 
             % set the superclass's properties

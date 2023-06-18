@@ -6,6 +6,12 @@ function [ outputs, state ] = forwardDecoder( self, decoder, dlZ )
         dlZ                 dlarray
     end
 
+    if ~self.HasBranchedDecoder
+        % revert to the standard method
+        [outputs, state] = forwardDecoder@AEModel( self, decoder, dlZ );
+        return
+    end
+        
     % reconstruct curves from latent codes
     [varargout{1:self.ZDimAux+1}] = forward( decoder, dlZ );
 
@@ -18,6 +24,7 @@ function [ outputs, state ] = forwardDecoder( self, decoder, dlZ )
         outputs.dlXB{i} = varargout{i};
         outputs.dlXHat = outputs.dlXHat + varargout{i};
     end
+
     state = varargout{end};
 
 end

@@ -148,25 +148,33 @@ classdef ConvBranchedModel < BranchedModel
             % add the output layers
             switch self.Pooling
                 case 'GlobalMax'
-                    outLayers = globalMaxPooling1dLayer( 'Name', 'maxPool' );
-                    poolingLayerName = 'maxPool';
+                    poolingLayerName = ['maxPool' num2str(offset)];
+                    outLayers = globalMaxPooling1dLayer( 'Name', poolingLayerName );
                 case 'GlobalAvg'
-                    outLayers = globalAveragePooling1dLayer( 'Name', 'avgPool' );
-                    poolingLayerName = 'avgPool';
+                    poolingLayerName = ['avgPool' num2str(offset)];
+                    outLayers = globalAveragePooling1dLayer( 'Name', poolingLayerName );
                 case 'None'
+                    poolingLayerName = ['fc' num2str(offset)];
                     outLayers = [];
-                    poolingLayerName = 'out';
             end
             
             % add the final layer
-            % set the output dimension - double size if VAE
-            outDim = (1 + self.IsVAE)*self.ZDim;
+            if self.HasBranchedEncoder && self.HasEncoderMasking
+                % set the output dimension to 1 only
+                outDim = 1 + self.IsVAE;
+            else
+                % set the output dimension - double size if VAE        
+                outDim = (1 + self.IsVAE)*self.ZDim;
+            end
+
             outLayers = [ outLayers;
-                          fullyConnectedLayer( outDim, 'Name', 'out' ) ];
+                          fullyConnectedLayer( outDim, ...
+                                               'Name', ['fc' num2str(offset)] ) ];
             
             lgraph = addLayers( lgraph, outLayers );
             lgraph = connectLayers( lgraph, ...
                                     lastLayerName, poolingLayerName );
+            lastLayerName = poolingLayerName;
 
         end
 
@@ -212,7 +220,7 @@ classdef ConvBranchedModel < BranchedModel
                                                    numFilters, ...
                                                    'Stride', self.StrideDecoder, ...
                                                    'Cropping', pad, ...
-                                                   'Name', ['conv' num2str(i+offset)] );
+                                                   'Name', ['tconv' num2str(i+offset)] );
 
                 [lgraph, lastLayerName] = self.addBlock( convLayer, ...
                                     lgraph, i + offset, lastLayerName, ...
@@ -246,7 +254,12 @@ classdef ConvBranchedModel < BranchedModel
                 self           ConvBranchedModel
             end
 
-            outDim = self.ZDim - self.ZDimAux + 1;
+            if self.HasBranchedDecoder && self.HasDecoderMasking
+                outDim = self.ZDim - self.ZDimAux + 1;
+            else
+                outDim = self.ZDim;
+            end
+            
             for i = 1:self.NumHiddenDecoder
                 if strcmpi(self.PaddingDecoder, 'same')
                     outDim = self.StrideDecoder*(outDim - 1) ...
