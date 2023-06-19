@@ -31,8 +31,7 @@ function thisModel = runTraining( self, thisModel, thisDataset )
     end
 
     % setup whole training set
-    [ dlXTrnAll, dlYTrnAll ] = thisModel.getDLArrays( thisTrnData, ...
-                                                      self.MetricsMaxObs );
+    dlXTrnAll = thisModel.getDLArrays( thisTrnData, self.MetricsMaxObs );
    
     % setup monitoring functions
     lossLinesFcn = @(data) updateLossLines( self.LossLines, data );
@@ -52,39 +51,6 @@ function thisModel = runTraining( self, thisModel, thisDataset )
                                       metricsFcn, ...
                                       reportFcn, ...
                                       thisTrnData.HasNormalizedInput );
-
-    % train the auxiliary model
-    tic;
-    dlZTrnAll = thisModel.encode( dlXTrnAll, convert = false );
-    dlZTrnAllAux = dlZTrnAll( 1:thisModel.ZDimAux, : );
-    [thisModel.AuxModel, ...
-        thisModel.AuxModelZMean, ...
-        thisModel.AuxModelZStd] = trainAuxModel( ...
-                                thisModel.AuxModelType, ...
-                                dlZTrnAllAux, ...
-                                dlYTrnAll );
-    thisModel.Timing.Training.AuxModelTime = toc;
-
-    % set the smoothing level for the reconstructions
-    XHatTrnAll = thisModel.reconstruct( dlZTrnAll );
-
-    [ thisModel.FDA.FdParamsTarget, thisModel.FDA.LambdaTarget ] = ...
-        thisTrnData.setFDAParameters( thisModel.TSpan.Target, ...
-                                        XHatTrnAll );
-
-    % set the smoothing level for the components (may be different)
-    XCTrnAll = thisModel.calcLatentComponents( dlZTrnAll, convert = true );
-    
-    XCTrnAll = reshape( XCTrnAll, ...
-                        thisModel.XTargetDim, [], thisModel.XChannels );
-    XCTrnAll = XCTrnAll + reshape( thisModel.MeanCurveTarget, ...
-                                   thisModel.XTargetDim, 1, thisModel.XChannels );
-
-    [ thisModel.FDA.FdParamsComponent, thisModel.FDA.LambdaComponent ] = ...
-        thisTrnData.setFDAParameters( thisModel.TSpan.Target, ...
-                                      XCTrnAll );
-    thisModel.FDA.FdParamsComponent = thisModel.FDA.FdParamsInput;
-    thisModel.FDA.LambdaComponent = thisModel.FDA.Lambda;
 
 end
     

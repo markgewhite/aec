@@ -28,7 +28,8 @@ function self = run( self )
                                                   self.Setups{ idxC{:} }, ...
                                                   argsCell{:} );
             catch ME
-                warning('*****!!!!! Evaluation failed !!!!!*****')
+                warning('***** Evaluation failed *****')
+                disp(['Evaluation: ' char(self.EvaluationNames(idxC{:})) ]);
                 disp(['Error Message: ' ME.message]);
                 for k = 1:length(ME.stack)
                     disp([ME.stack(k).name ', (line ' ...

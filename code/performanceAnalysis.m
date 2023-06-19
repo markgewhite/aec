@@ -79,13 +79,13 @@ setup.model.args.lossFcns.zcls.args.Dropout = 0;
 %setup.model.args.lossFcns.zreg.args.UseLoss = false;
 
 % -- trainer setup --
-setup.model.args.trainer.NumIterations = 1000;
+setup.model.args.trainer.NumIterations = 10;
 setup.model.args.trainer.UpdateFreq = 2000;
 setup.model.args.trainer.Holdout = 0;
 setup.model.args.trainer.ShowPlots = false;
 
 % --- evaluation setup ---
-setup.eval.args.CVType = 'KFold';
+setup.eval.args.CVType = 'Holdout';
 setup.eval.args.KFolds = 2;
 setup.eval.args.KFoldRepeats = 2;
 setup.eval.args.InParallel = false;
@@ -135,7 +135,7 @@ switch searchIdx
                        "model.args.HasEncoderMasking", ...
                        "model.args.HasBranchedDecoder", ...
                        "model.args.HasDecoderMasking" ];
-        values = {  [2 3 4], ...
+        values = {  [3 2 4], ...
                     [2 3 4], ...
                     {false, true}, ...
                     {false, true}, ...
@@ -270,7 +270,7 @@ if runAnalysis
 
         end
            
-        myInvestigations{i} = ParallelInvestigation( name, path, parameters, values, ...
+        myInvestigations{i} = Investigation( name, path, parameters, values, ...
                                          setup, catchErrors, memorySaving );
         
         myInvestigations{i}.run;
