@@ -17,7 +17,12 @@ function [fdParams, lambda] = setFDAParameters( self, tSpan, X )
     
         % find the loglambda where GCV is minimized
         warning( 'off', 'Wid2:reduce' );
+
+        % find L that minimizws gcvFcn to a precision of 0.1
+        %opt = optimset( 'MaxIter', 12, 'Display', 'off' );
+        %logLambda = fminsearch( gcvFcn, 0, opt );
         logLambda = fminsearch( gcvFcn, 0 );
+
         warning( 'on', 'Wid2:reduce' );
         lambda = 10^round( logLambda, 1 );
     else

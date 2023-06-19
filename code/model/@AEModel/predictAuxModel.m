@@ -9,14 +9,14 @@ function [ YHat, YHatScore] = predictAuxModel( self, Z )
         Z = double(extractdata(Z));
     end
 
-    doTranspose = (size(Z,2) ~= self.ZDim);
+    doTranspose = (size(Z,2) ~= self.ZDimAux) && (self.ZDimAux~=1);
     if doTranspose
         Z = Z';
     end
 
     Z = Z( :, 1:self.ZDimAux );
 
-    [YHat, YHatScore] = predictAuxModel@AEModel( self, Z );
+    [YHat, YHatScore] = predictAuxModel@RepresentationModel( self, Z );
     
     if doTranspose
         YHat = YHat';

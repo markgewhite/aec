@@ -35,7 +35,9 @@ function self = run( self )
                     disp([ME.stack(k).name ', (line ' ...
                                          num2str(ME.stack(k).line) ')']);
                 end
-                continue
+                self.ErrorMessages(i) = ME.message;
+                
+                return
             end
         
         else

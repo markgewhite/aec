@@ -14,6 +14,7 @@ classdef Investigation < handle
         EvaluationNames     % names of all evaluations
         Evaluations         % array of evaluation objects
         IsComplete          % whether the evaluations were completed successfully
+        ErrorMessages       % record of error messages returned
         TrainingResults     % structure summarising results from evaluations
         TestingResults      % structure summarising results from evaluations
         CatchErrors         % flag indicating if try-catch should be used
@@ -65,6 +66,7 @@ classdef Investigation < handle
             self.SearchDims = cellfun( @length, self.GridSearch ); 
             self.NumEvaluations = prod( self.SearchDims );
             self.IsComplete = false( self.NumEvaluations, 1 );
+            self.ErrorMessages = strings( self.NumEvaluations, 1 );
 
             % initialize evaluation arrays 
             if length( self.SearchDims ) > 1
